@@ -1,0 +1,105 @@
+Here i will explain as much as i can from what i am doing to constract this project
+first this project about platform where u can make games for students hosted by teacher; each game made in bundle where this bundle controlled by admin,
+
+The stack taken is mern, react next.js mongodb 
+
+#### Create the work folder i named this project madrassaplay, inside it had 2 folders, client and server,
+front-end, back end.
+
+### inside the server folder, open terminal and initialize the Node.js project
+using command npm init -y (node package manager, init means initialize and -y means skip all the options will be given and just get default options)
+this command will create package json will contain project details and dependencies
+
+### next is install the packages (core packages) for the project backend
+npm install : 
+-express ==> main frame work for building the API
+-mongoose ==> library helps talking to our MongoDB 
+-cors ==> will allow the frontend to communicate with backend
+-dotenv ==> let us use .env file that will help us secure and store secret informations like database connections strings
+-nodemon ==> let us restart the server each time we save a file, helps lessen consumtion of time
+
+so far are these the fondations for our server
+
+### after that, create a file name it server.js, this file will be the main entry point for the entire backend
+here a segmenet of the code with some explanation: 
+// 1. IMPORT PACKAGES
+// 'require' is the Node.js way of importing a package into a file.
+// We are importing the 'express' package we installed earlier.
+const express = require('express');
+
+// 2. INITIALIZE THE APP
+// We are creating an instance of the Express application.
+// The 'app' object will be used to configure our server.
+const app = express();
+
+// We define a port number for our server to listen on.
+// process.env.PORT is for when we deploy online. For local development,
+// it will default to 5000 if PORT isn't specified elsewhere.
+const PORT = process.env.PORT || 5000;
+
+// 3. DEFINE A TEST ROUTE
+// ==============================================================================
+// A "route" is a specific URL endpoint on our server.
+// app.get('/', ...) means "When someone makes a GET request to the root URL ('/'),
+// execute the following function."
+// The function takes a request (req) and a response (res) object.
+// res.send(...) sends a response back to the browser.
+app.get('/', (req, res) => {
+  res.send('Hello from the MadrassaPlay API!');
+});
+
+// 4. START THE SERVER
+// ==============================================================================
+// This command tells our app to start listening for incoming requests on the specified PORT.
+// The function inside is a callback that runs once the server has successfully started.
+// We use console.log to print a message in our terminal so we know it's working.
+app.listen(PORT, () => {
+  console.log(`Server is running on port: ${PORT}`);
+});
+
+
+
+////////************//////////
+
+
+
+// server/config/db.js
+
+// 1. IMPORT MONGOOSE
+// ==============================================================================
+// Mongoose is the package that will help us communicate with our MongoDB database.
+const mongoose = require('mongoose');
+
+// 2. CREATE THE DATABASE CONNECTION FUNCTION
+// ==============================================================================
+// We are creating an 'async' function. This allows us to use the 'await' keyword,
+// which is necessary because connecting to a database is an asynchronous operation
+// (it takes some time to complete).
+const connectDB = async () => {
+  try {
+    // This is the core of the connection. mongoose.connect() attempts to connect
+    // to the MongoDB database using the connection string provided.
+    // process.env.MONGO_URI is how we will access our secret connection string.
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      // These are standard options to prevent console warnings.
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    // If the connection is successful, we log a message to the console.
+    // conn.connection.host will show the database host we are connected to.
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    // If there is an error during connection, we log the error message.
+    console.error(`Error: ${error.message}`);
+    // process.exit(1) will exit the Node.js process with a failure code.
+    // This is important because if we can't connect to the database, our app can't run.
+    process.exit(1);
+  }
+};
+
+// 3. EXPORT THE FUNCTION
+// ==============================================================================
+// module.exports is the Node.js way of making a function or object from one file
+// available to be used in another file.
+module.exports = connectDB;
