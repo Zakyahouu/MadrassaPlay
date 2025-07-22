@@ -1,12 +1,54 @@
 // client/src/pages/StudentDashboard.jsx
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-
-// 1. Import the new MyAssignments component
+import { SocketContext } from '../context/SocketContext';
 import MyAssignments from '../components/student/MyAssignments';
 
 const StudentDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const socket = useContext(SocketContext);
+  const navigate = useNavigate();
+
+  const [roomCode, setRoomCode] = useState('');
+  const [joinError, setJoinError] = useState(null);
+
+  useEffect(() => {
+    if (socket) {
+      const handleJoinSuccess = (data) => {
+        console.log('Successfully joined room:', data.roomCode);
+        navigate(`/student/lobby/${data.roomCode}`);
+      };
+
+      const handleJoinError = (errorMessage) => {
+        console.error('Join error:', errorMessage);
+        setJoinError(errorMessage);
+      };
+
+      socket.on('join-success', handleJoinSuccess);
+      socket.on('join-error', handleJoinError);
+
+      return () => {
+        socket.off('join-success', handleJoinSuccess);
+        socket.off('join-error', handleJoinError);
+      };
+    }
+  }, [socket, navigate]);
+
+  const handleJoinGame = (e) => {
+    e.preventDefault();
+    if (!roomCode.trim() || !socket) return;
+    
+    setJoinError(null);
+
+    // --- FIX: Include the user's ID in the payload ---
+    // This allows the server to know which user is joining the lobby.
+    socket.emit('join-game', { 
+      roomCode, 
+      playerName: user.name,
+      userId: user._id // Add the user's ID
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -24,16 +66,27 @@ const StudentDashboard = () => {
       </header>
       <main className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {/* Join Live Game */}
+          {/* Join Live Game Form */}
           <div className="p-6 bg-white rounded-lg shadow">
             <h3 className="text-xl font-bold mb-4">Join a Live Game</h3>
-            <div className="flex space-x-2">
-              <input type="text" placeholder="Enter Room Code" className="flex-grow p-3 border rounded-md" />
-              <button className="px-6 py-3 font-bold text-white bg-green-600 rounded-md hover:bg-green-700">Join</button>
-            </div>
+            <form onSubmit={handleJoinGame} className="flex space-x-2">
+              <input 
+                type="text" 
+                placeholder="Enter Room Code" 
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value)}
+                className="flex-grow p-3 border rounded-md" 
+              />
+              <button 
+                type="submit"
+                className="px-6 py-3 font-bold text-white bg-green-600 rounded-md hover:bg-green-700"
+              >
+                Join
+              </button>
+            </form>
+            {joinError && <p className="text-red-500 mt-2">{joinError}</p>}
           </div>
           
-          {/* 2. Render the MyAssignments component */}
           <MyAssignments />
 
         </div>

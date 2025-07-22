@@ -4,14 +4,18 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // NEW: Add the server proxy configuration
   server: {
     proxy: {
-      // Any request starting with /api will be proxied
       '/api': {
-        target: 'http://localhost:5000', // The address of our backend server
-        changeOrigin: true, // Recommended for virtual hosted sites
+        target: 'http://localhost:5000',
+        changeOrigin: true,
       },
     },
+  },
+  // NEW: Add the optimizeDeps configuration
+  // This explicitly tells Vite to find and pre-bundle 'socket.io-client',
+  // which resolves the import error.
+  optimizeDeps: {
+    include: ['socket.io-client'],
   },
 })

@@ -45,14 +45,19 @@ const MyCreations = () => {
                 </p>
               </div>
               <div className="mt-4 space-y-2">
-                <Link to={`/teacher/play-game/${creation._id}`}>
+                {/* NEW: Two distinct buttons for launching game modes */}
+                <Link to={`/teacher/host-lobby/${creation._id}`}>
                   <button className="w-full px-4 py-2 font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">
-                    Launch Game
+                    Host Live Session
                   </button>
                 </Link>
-                {/* NEW: Link to the View Results page */}
+                <Link to={`/teacher/play-game/${creation._id}`}>
+                  <button className="w-full px-4 py-2 font-semibold text-indigo-700 bg-indigo-100 rounded-md hover:bg-indigo-200">
+                    Launch Hot Spot
+                  </button>
+                </Link>
                 <Link to={`/teacher/results/${creation._id}`}>
-                  <button className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                  <button className="w-full px-4 py-2 font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
                     View Results
                   </button>
                 </Link>

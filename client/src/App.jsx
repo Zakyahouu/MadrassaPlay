@@ -10,7 +10,9 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
-import ViewResults from './pages/ViewResults'; // 1. Import the new page
+import ViewResults from './pages/ViewResults';
+import HostLobby from './pages/HostLobby';
+import PlayerLobby from './pages/PlayerLobby'; // 1. Import the new page
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -83,12 +85,32 @@ function App() {
           }
         />
 
-        {/* 8. NEW ROUTE: The View Results Page */}
+        {/* Route 8: The View Results Page */}
         <Route
           path="/teacher/results/:gameCreationId"
           element={
             <ProtectedRoute>
               <ViewResults />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Route 9: The Host Lobby Page */}
+        <Route
+          path="/teacher/host-lobby/:gameCreationId"
+          element={
+            <ProtectedRoute>
+              <HostLobby />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 10. NEW ROUTE: The Player Lobby Page */}
+        <Route
+          path="/student/lobby/:roomCode"
+          element={
+            <ProtectedRoute>
+              <PlayerLobby />
             </ProtectedRoute>
           }
         />

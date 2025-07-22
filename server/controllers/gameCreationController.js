@@ -1,7 +1,7 @@
 // server/controllers/gameCreationController.js
 
 const GameCreation = require('../models/GameCreation');
-const Assignment = require('../models/Assignment'); // 1. Import the Assignment model
+const Assignment = require('../models/Assignment');
 
 // @desc    Create a new game creation
 // @route   POST /api/creations
@@ -48,27 +48,37 @@ const getGameCreationById = async (req, res) => {
     const creation = await GameCreation.findById(req.params.id);
 
     if (creation) {
-      // --- NEW: Updated Security Check ---
       const isOwner = creation.owner.toString() === req.user._id.toString();
       
-      // If the user is not the owner, check if they are a student assigned to this game.
-      if (!isOwner && req.user.role === 'student') {
-        const assignment = await Assignment.findOne({
-          gameCreations: req.params.id, // Find an assignment containing this game
-          students: req.user._id,      // And where the student is in the students list
-        });
-
-        // If no such assignment is found, the student is not authorized.
-        if (!assignment) {
-          return res.status(403).json({ message: 'Not authorized to access this game.' });
-        }
-      } else if (!isOwner) {
-        // If the user is not the owner and not a student, they are not authorized.
-        return res.status(403).json({ message: 'Not authorized to access this game.' });
+      if (isOwner) {
+        return res.status(200).json(creation);
       }
       
-      // If the checks pass, send the game data.
-      res.status(200).json(creation);
+      if (req.user.role === 'student') {
+        // Check 1: Is the student in an active live game for this creation?
+        const liveGames = req.liveGames; // Get live games from the request object
+        const activeGame = Object.values(liveGames).find(
+          game => game.gameCreationId === req.params.id && 
+                  game.players.some(player => player.userId === req.user._id.toString())
+        );
+
+        if (activeGame) {
+          return res.status(200).json(creation);
+        }
+
+        // Check 2: Is the student assigned this game for homework?
+        const assignment = await Assignment.findOne({
+          gameCreations: req.params.id,
+          students: req.user._id,
+        });
+
+        if (assignment) {
+          return res.status(200).json(creation);
+        }
+      }
+      
+      // If none of the above conditions are met, deny access.
+      return res.status(403).json({ message: 'Not authorized to access this game.' });
 
     } else {
       res.status(404).json({ message: 'Game creation not found.' });
