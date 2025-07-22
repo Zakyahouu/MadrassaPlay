@@ -11,6 +11,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './pages/ViewResults'; // 1. Import the new page
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -89,6 +90,16 @@ function App() {
           element={
             <ProtectedRoute>
               <ViewResults />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Profile Page Route (accessible to all logged-in users) */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
