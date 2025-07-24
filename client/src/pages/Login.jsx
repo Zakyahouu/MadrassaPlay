@@ -37,25 +37,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to continue to MadrassaPlay
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-purple-100">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex flex-col items-center space-y-2">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-400 flex items-center justify-center mb-2">
+            <span className="text-white text-2xl font-bold">M</span>
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900">Sign in to MadrassaPlay</h2>
+          <p className="text-sm text-gray-500">Enter your credentials below</p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-              {error}
-            </div>
+            <div className="p-2 bg-red-50 border border-red-200 text-red-600 rounded text-sm text-center">{error}</div>
           )}
-
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-4">
             <div>
               <label htmlFor="email-address" className="sr-only">Email address</label>
               <input
@@ -63,7 +58,7 @@ const Login = () => {
                 name="email"
                 type="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="block w-full px-0 py-3 border-0 border-b border-gray-300 bg-transparent placeholder-gray-400 text-gray-900 focus:outline-none focus:border-indigo-800 transition"
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -76,22 +71,20 @@ const Login = () => {
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="block w-full px-0 py-3 border-0 border-b border-gray-300 bg-transparent placeholder-gray-400 text-gray-900 focus:outline-none focus:border-indigo-800 transition"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
               />
             </div>
           </div>
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 border border-indigo-400 text-indigo-700 font-medium rounded-lg bg-white hover:bg-indigo-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
       </div>
     </div>
