@@ -15,7 +15,7 @@ import HostLobby from './pages/HostLobby';
 import PlayerLobby from './pages/PlayerLobby'; // 1. Import the new page
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
-
+import Profile from './pages/Profile'; // Import the Profile page
 function App() {
   const { user } = useContext(AuthContext);
 
@@ -114,7 +114,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
