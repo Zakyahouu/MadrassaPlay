@@ -1,61 +1,108 @@
 // client/src/components/admin/GameTemplateManager.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import TemplateUploader from './TemplateUploader'; // 1. Import the new uploader component
+import { Link } from 'react-router-dom';
+import TemplateUploader from './TemplateUploader';
 
 const GameTemplateManager = () => {
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+
+  const fetchTemplates = async () => {
+    try {
+      const token = JSON.parse(localStorage.getItem('user')).token;
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const { data } = await axios.get('/api/templates', config);
+      setTemplates(data);
+    } catch (err) {
+      setError('Failed to fetch templates');
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await axios.get('/api/templates');
-        setTemplates(response.data);
-      } catch (err) {
-        setError('Failed to fetch game templates.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTemplates();
   }, []);
 
-  // 2. Create a handler function to update the list when an upload is successful
-  const handleUploadSuccess = (newTemplate) => {
-    // Add the newly uploaded template to the top of the list
-    setTemplates(prevTemplates => [newTemplate, ...prevTemplates]);
+  const handlePublishToggle = async (templateId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to ${newStatus === 'published' ? 'publish' : 'unpublish'} this template?`)) {
+      return;
+    }
+    try {
+      const token = JSON.parse(localStorage.getItem('user')).token;
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put(`/api/templates/${templateId}/status`, { status: newStatus }, config);
+      fetchTemplates(); // Re-fetch to show updated status
+    } catch (err) {
+      setError(`Failed to ${newStatus} template`);
+      console.error(err);
+    }
   };
 
-  if (loading) {
-    return <div>Loading templates...</div>;
-  }
+  // New function to handle deleting a template
+  const handleDelete = async (templateId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this template? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const token = JSON.parse(localStorage.getItem('user')).token;
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.delete(`/api/templates/${templateId}`, config);
+      fetchTemplates(); // Re-fetch to update the list
+    } catch (err) {
+      setError('Failed to delete template');
+      console.error(err);
+    }
+  };
 
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow mt-8">
-      <h3 className="text-xl font-bold mb-4">Game Templates</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Game Templates</h3>
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
       
-      <div className="space-y-4 mb-6">
+      <div className="space-y-4">
         {templates.length > 0 ? (
           templates.map((template) => (
-            <div key={template._id} className="p-4 border rounded-md bg-gray-50">
-              <h4 className="font-semibold text-lg">{template.name}</h4>
-              <p className="text-gray-600">{template.description}</p>
+            <div key={template._id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{template.name}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
+                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                    template.status === 'published' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                }`}>
+                  {template.status}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Link to={`/teacher/create-game/${template._id}`} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                  Test
+                </Link>
+                {template.status === 'draft' ? (
+                  <button onClick={() => handlePublishToggle(template._id, 'published')} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                    Publish
+                  </button>
+                ) : (
+                  <button onClick={() => handlePublishToggle(template._id, 'draft')} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                    Unpublish
+                  </button>
+                )}
+                 <button onClick={() => handleDelete(template._id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                  Delete
+                </button>
+              </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-500">No game templates have been created yet.</p>
+          <p className="text-gray-500 dark:text-gray-400">No game templates found.</p>
         )}
       </div>
-
-      {/* 3. Render the TemplateUploader component and pass the handler function as a prop */}
-      <TemplateUploader onUploadSuccess={handleUploadSuccess} />
+      
+      <div className="mt-8 border-t pt-6">
+        <TemplateUploader onUploadSuccess={fetchTemplates} />
+      </div>
     </div>
   );
 };

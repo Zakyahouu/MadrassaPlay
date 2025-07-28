@@ -1,95 +1,147 @@
 // server/controllers/gameCreationController.js
-
+const asyncHandler = require('express-async-handler');
 const GameCreation = require('../models/GameCreation');
+const GameTemplate = require('../models/GameTemplate');
 const Assignment = require('../models/Assignment');
 
 // @desc    Create a new game creation
 // @route   POST /api/creations
-// @access  Private/Teacher
-const createGameCreation = async (req, res) => {
-  try {
-    const { template, name, config } = req.body;
-    if (!template || !name || !config) {
-      return res.status(400).json({ message: 'Missing required fields.' });
-    }
-    const gameCreation = await GameCreation.create({
-      template,
-      name,
-      config,
-      owner: req.user._id,
-    });
-    if (gameCreation) {
-      res.status(201).json(gameCreation);
-    } else {
-      res.status(400).json({ message: 'Invalid game creation data.' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
-};
+// @access  Private/Teacher or Admin
+const createGameCreation = asyncHandler(async (req, res) => {
+  const { template: templateId, settings, content } = req.body;
 
-// @desc    Get all game creations for the logged-in teacher
-// @route   GET /api/creations
-// @access  Private/Teacher
-const getMyGameCreations = async (req, res) => {
-  try {
-    const creations = await GameCreation.find({ owner: req.user._id });
-    res.status(200).json(creations);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+  // --- THIS IS THE FIX ---
+  // We extract the data and map it to the correct field names required by the model.
+  const name = settings?.title; // The model expects 'name', which comes from the form's 'title' setting.
+  const owner = req.user._id; // The model expects 'owner', which is the logged-in user's ID.
+  const config = settings; // The model expects 'config', which is our entire settings object.
+
+  if (!templateId || !config || !content || !name) {
+    res.status(400);
+    throw new Error('Please provide all required fields, including a title.');
   }
-};
+
+  const template = await GameTemplate.findById(templateId);
+  if (!template) {
+    res.status(404);
+    throw new Error('Game template not found');
+  }
+  
+  // Data processing for numbers (from our previous fix)
+  const processedConfig = { ...config };
+    Object.entries(template.formSchema.settings).forEach(([key, schema]) => {
+    if (schema.type === 'number' && processedConfig[key] !== undefined) {
+        processedConfig[key] = parseInt(processedConfig[key], 10);
+        if (isNaN(processedConfig[key])) processedConfig[key] = 0;
+    }
+  });
+
+  const processedContent = content.map(item => {
+    const processedItem = { ...item };
+    if (template.formSchema.content && template.formSchema.content.itemSchema) {
+        Object.entries(template.formSchema.content.itemSchema).forEach(([key, schema]) => {
+            if (schema.type === 'number' && processedItem[key] !== undefined) {
+                processedItem[key] = parseInt(processedItem[key], 10);
+                if (isNaN(processedItem[key])) processedItem[key] = 0;
+            }
+        });
+    }
+    return processedItem;
+  });
+
+
+  const gameCreation = await GameCreation.create({
+    name,
+    owner,
+    config: processedConfig,
+    content: processedContent,
+    template: templateId,
+    // Note: The 'teacher' field from the model is now named 'owner'
+  });
+
+  if (gameCreation) {
+    res.status(201).json(gameCreation);
+  } else {
+    res.status(400);
+    throw new Error('Invalid game creation data');
+  }
+});
+
+
+// @desc    Get all game creations for the logged-in user
+// @route   GET /api/creations
+// @access  Private/Teacher or Admin
+const getMyGameCreations = asyncHandler(async (req, res) => {
+  // Use 'owner' instead of 'teacher' to match the updated model
+  const creations = await GameCreation.find({ owner: req.user._id })
+    .populate('template', 'name')
+    .sort({ createdAt: -1 });
+  res.json(creations);
+});
 
 // @desc    Get a single game creation by ID
 // @route   GET /api/creations/:id
 // @access  Private
-const getGameCreationById = async (req, res) => {
-  try {
-    const creation = await GameCreation.findById(req.params.id);
+const getGameCreationById = asyncHandler(async (req, res) => {
+    const gameCreation = await GameCreation.findById(req.params.id)
+        .populate('template');
 
-    if (creation) {
-      const isOwner = creation.owner.toString() === req.user._id.toString();
-      
-      if (isOwner) {
-        return res.status(200).json(creation);
-      }
-      
-      if (req.user.role === 'student') {
-        // Check 1: Is the student in an active live game for this creation?
-        const liveGames = req.liveGames; // Get live games from the request object
-        const activeGame = Object.values(liveGames).find(
-          game => game.gameCreationId === req.params.id && 
-                  game.players.some(player => player.userId === req.user._id.toString())
-        );
-
-        if (activeGame) {
-          return res.status(200).json(creation);
-        }
-
-        // Check 2: Is the student assigned this game for homework?
-        const assignment = await Assignment.findOne({
-          gameCreations: req.params.id,
-          students: req.user._id,
-        });
-
-        if (assignment) {
-          return res.status(200).json(creation);
-        }
-      }
-      
-      // If none of the above conditions are met, deny access.
-      return res.status(403).json({ message: 'Not authorized to access this game.' });
-
-    } else {
-      res.status(404).json({ message: 'Game creation not found.' });
+    if (!gameCreation) {
+        res.status(404);
+        throw new Error('Game creation not found');
     }
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
-};
+
+    const isOwner = gameCreation.owner.toString() === req.user._id.toString();
+    
+    const isAssignedStudent = await Assignment.findOne({
+        students: req.user._id,
+        gameCreations: req.params.id,
+    });
+
+    let isInLiveGame = false;
+    if (req.liveGames) {
+      for (const roomCode in req.liveGames) {
+        const room = req.liveGames[roomCode];
+        if (room.gameId === req.params.id && room.players.some(p => p.id === req.user._id.toString())) {
+          isInLiveGame = true;
+          break;
+        }
+      }
+    }
+
+    if (isOwner || (req.user.role === 'student' && (isAssignedStudent || isInLiveGame))) {
+        res.json(gameCreation);
+    } else {
+        res.status(403);
+        throw new Error('User not authorized to access this game');
+    }
+});
+
+
+// @desc    Delete a game creation
+// @route   DELETE /api/creations/:id
+// @access  Private/Owner
+const deleteGameCreation = asyncHandler(async (req, res) => {
+    const gameCreation = await GameCreation.findById(req.params.id);
+
+    if (!gameCreation) {
+        res.status(404);
+        throw new Error('Game creation not found');
+    }
+
+    if (gameCreation.owner.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('User not authorized to delete this game');
+    }
+
+    await gameCreation.deleteOne();
+    res.json({ message: 'Game creation removed' });
+});
+
 
 module.exports = {
   createGameCreation,
   getMyGameCreations,
   getGameCreationById,
+  deleteGameCreation,
 };

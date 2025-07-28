@@ -1,0 +1,146 @@
+/* General Body Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Main Game Container */
+#game-container {
+  width: 100%;
+  max-width: 800px;
+  background-color: #242424;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header with Score and Counter */
+#header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #a0a0a0;
+}
+
+/* Question Container */
+#question-container {
+  margin-bottom: 24px;
+}
+
+#question-text {
+  font-size: 2em;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Options Grid */
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.option-btn {
+  background-color: #3a3a3a;
+  color: white;
+  border: 2px solid #555;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 1.2em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: left;
+}
+
+.option-btn:hover:not(:disabled) {
+  background-color: #4a4a4a;
+  border-color: #777;
+  transform: translateY(-2px);
+}
+
+.option-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Feedback Styles */
+.option-btn.correct {
+  background-color: #28a745; /* Green */
+  border-color: #218838;
+}
+
+.option-btn.incorrect {
+  background-color: #dc3545; /* Red */
+  border-color: #c82333;
+}
+
+#feedback-container {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+  height: 30px;
+}
+
+/* Results Screen */
+#results-screen {
+  text-align: center;
+  padding: 40px;
+  background-color: #242424;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+#results-screen h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+#results-screen h2 {
+    font-size: 1.5em;
+    color: #a0a0a0;
+    margin-bottom: 20px;
+}
+
+#final-score {
+  font-size: 4em;
+  font-weight: bold;
+  color: #747bff;
+  margin-bottom: 30px;
+}
+
+#restart-button {
+  background-color: #747bff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+#restart-button:hover {
+  background-color: #5a5fe0;
+}
+
+/* Utility Class */
+.hidden {
+  display: none !important;
+}

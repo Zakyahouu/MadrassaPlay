@@ -1,110 +1,144 @@
 // server/controllers/gameTemplateController.js
-
+const asyncHandler = require('express-async-handler');
 const GameTemplate = require('../models/GameTemplate');
 const AdmZip = require('adm-zip');
+const path = require('path');
+const fs = require('fs');
 
-// @desc    Upload and process a game template bundle (.zip)
-// @route   POST /api/templates/upload
-// @access  Private/Admin
-const uploadGameTemplate = async (req, res) => {
-  try {
-    // Check if a file was uploaded by multer
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
-    }
+const slugify = (text) => text.toString().toLowerCase()
+  .replace(/\s+/g, '-')
+  .replace(/[^\w\-]+/g, '')
+  .replace(/\-\-+/g, '-')
+  .replace(/^-+/, '')
+  .replace(/-+$/, '');
 
-    // Use adm-zip to read the uploaded file from memory
-    const zip = new AdmZip(req.file.buffer);
-    const zipEntries = zip.getEntries();
-
-    // Find and parse manifest.json
-    const manifestEntry = zipEntries.find(entry => entry.entryName === 'manifest.json');
-    if (!manifestEntry) {
-      return res.status(400).json({ message: 'manifest.json not found in the zip file.' });
-    }
-    const manifestData = JSON.parse(manifestEntry.getData().toString('utf8'));
-
-    // Find and parse form-schema.json
-    const formSchemaEntry = zipEntries.find(entry => entry.entryName === 'form-schema.json');
-    if (!formSchemaEntry) {
-      return res.status(400).json({ message: 'form-schema.json not found in the zip file.' });
-    }
-    const formSchemaData = JSON.parse(formSchemaEntry.getData().toString('utf8'));
-
-    // --- Create the new Game Template in the database ---
-    const { name, description, platformIntegration, gamification } = manifestData;
-
-    const templateExists = await GameTemplate.findOne({ name });
-    if (templateExists) {
-      return res.status(400).json({ message: `A game template named '${name}' already exists.` });
-    }
-
-    const newTemplate = await GameTemplate.create({
-      name,
-      description,
-      platformIntegration,
-      gamification,
-      formSchema: formSchemaData,
-    });
-    
-    // For now, we are not saving the 'engine' files. We are just creating the database entry.
-    // We will handle serving the engine files in a later step.
-
-    res.status(201).json({ message: 'Game Template uploaded and created successfully!', template: newTemplate });
-
-  } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ message: 'Server Error during file processing.', error: error.message });
+const uploadGameTemplate = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error('No template bundle file uploaded');
   }
-};
 
+  const zip = new AdmZip(req.file.buffer);
+  const zipEntries = zip.getEntries();
 
-// --- Existing Functions ---
+  const manifestEntry = zip.getEntry('manifest.json');
+  const schemaEntry = zip.getEntry('form-schema.json');
+  const engineDirEntry = zipEntries.find(entry => entry.entryName.startsWith('engine/'));
 
-const createGameTemplate = async (req, res) => {
-  // This function can be kept for manual/API-based creation if needed, or removed.
-  // For now, we will leave it.
-  try {
-    const { name, description, platformIntegration, gamification, formSchema } = req.body;
-    if (!name || !description || !formSchema) {
-      return res.status(400).json({ message: 'Missing required fields.' });
-    }
-    const templateExists = await GameTemplate.findOne({ name });
-    if (templateExists) {
-      return res.status(400).json({ message: 'A game template with this name already exists.' });
-    }
-    const template = await GameTemplate.create({ name, description, platformIntegration, gamification, formSchema });
-    res.status(201).json(template);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+  if (!manifestEntry || !schemaEntry || !engineDirEntry) {
+    res.status(400).json({ message: 'Template bundle is missing one or more required files (manifest.json, form-schema.json, or engine/ folder).' });
+    return;
   }
-};
 
-const getGameTemplates = async (req, res) => {
-  try {
-    const templates = await GameTemplate.find({});
-    res.status(200).json(templates);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+  const manifest = JSON.parse(manifestEntry.getData().toString('utf8'));
+  const formSchema = JSON.parse(schemaEntry.getData().toString('utf8'));
+  
+  // --- THIS IS THE FIX ---
+  // 1. Check if a template with this name already exists BEFORE doing anything else.
+  const existingTemplate = await GameTemplate.findOne({ name: manifest.name });
+  if (existingTemplate) {
+    res.status(400).json({ message: `A game template named "${manifest.name}" already exists.` });
+    return; // Stop the function here
   }
-};
+  // --- END OF FIX ---
 
-const getGameTemplateById = async (req, res) => {
-  try {
+
+  const templateSlug = slugify(manifest.name);
+  const uniqueDirName = `${templateSlug}-${Date.now()}`;
+  const enginePath = path.join('/engines', uniqueDirName);
+  const fullEnginePath = path.join(__dirname, '..', 'public', enginePath);
+
+  if (!fs.existsSync(fullEnginePath)) {
+    fs.mkdirSync(fullEnginePath, { recursive: true });
+  }
+
+  zipEntries.forEach((zipEntry) => {
+    if (zipEntry.entryName.startsWith('engine/') && !zipEntry.isDirectory) {
+      const relativePath = zipEntry.entryName.substring('engine/'.length);
+      const targetPath = path.join(fullEnginePath, relativePath);
+      const dir = path.dirname(targetPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(targetPath, zipEntry.getData());
+    }
+  });
+
+  const gameTemplate = await GameTemplate.create({
+    name: manifest.name,
+    description: manifest.description,
+    manifest: manifest,
+    formSchema: formSchema,
+    enginePath: enginePath,
+    status: 'draft',
+    platformIntegration: manifest.platformIntegration,
+    gamification: manifest.gamification,
+  });
+
+  if (gameTemplate) {
+    res.status(201).json(gameTemplate);
+  } else {
+    res.status(400);
+    throw new Error('Invalid game template data');
+  }
+});
+
+const getGameTemplates = asyncHandler(async (req, res) => {
+  const filter = {};
+  if (req.user.role !== 'admin') {
+    filter.status = 'published';
+  }
+  const templates = await GameTemplate.find(filter).sort({ createdAt: -1 });
+  res.json(templates);
+});
+
+const getGameTemplateById = asyncHandler(async (req, res) => {
+  const template = await GameTemplate.findById(req.params.id);
+  if (template) {
+    res.json(template);
+  } else {
+    res.status(404);
+    throw new Error('Game template not found');
+  }
+});
+
+const updateTemplateStatus = asyncHandler(async (req, res) => {
+    const { status } = req.body;
     const template = await GameTemplate.findById(req.params.id);
+
     if (template) {
-      res.status(200).json(template);
+        template.status = status;
+        const updatedTemplate = await template.save();
+        res.json(updatedTemplate);
     } else {
-      res.status(404).json({ message: 'Game template not found.' });
+        res.status(404);
+        throw new Error('Template not found');
     }
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+});
+
+const deleteTemplate = asyncHandler(async (req, res) => {
+  const template = await GameTemplate.findById(req.params.id);
+
+  if (template) {
+    if (template.enginePath) {
+      const fullEnginePath = path.join(__dirname, '..', 'public', template.enginePath);
+      if (fs.existsSync(fullEnginePath)) {
+        fs.rmSync(fullEnginePath, { recursive: true, force: true });
+      }
+    }
+    await template.deleteOne();
+    res.json({ message: 'Template removed' });
+  } else {
+    res.status(404);
+    throw new Error('Template not found');
   }
-};
+});
+
 
 module.exports = {
-  createGameTemplate,
+  uploadGameTemplate,
   getGameTemplates,
   getGameTemplateById,
-  uploadGameTemplate, // NEW: Export the upload function
+  updateTemplateStatus,
+  deleteTemplate,
 };

@@ -3,79 +3,79 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 const TemplateUploader = ({ onUploadSuccess }) => {
-  const [file, setFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   const handleFileChange = (e) => {
-    // Get the first file from the file input
-    setFile(e.target.files[0]);
+    setSelectedFile(e.target.files[0]);
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      setError('Please select a file to upload.');
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a .zip file to upload.');
       return;
     }
 
+    setError('');
+    setSuccess('');
     setUploading(true);
-    setError(null);
-    setSuccessMessage(null);
 
-    // FormData is a special object used to send files in an HTTP request.
     const formData = new FormData();
-    // We append the file to the FormData object. The key 'templateFile' must
-    // match the key we specified in our multer middleware on the backend.
-    formData.append('templateFile', file);
+    // --- THIS IS THE FIX ---
+    // The field name 'templateBundle' must match what the backend multer middleware expects.
+    formData.append('templateBundle', selectedFile);
 
     try {
-      const response = await axios.post('/api/templates/upload', formData, {
+      const token = JSON.parse(localStorage.getItem('user')).token;
+      const config = {
         headers: {
           'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
         },
-      });
-      
-      setSuccessMessage(response.data.message);
-      // We can call a function passed down from the parent to refresh the list
-      if (onUploadSuccess) {
-        onUploadSuccess(response.data.template);
-      }
-      setFile(null); // Clear the file input
+      };
 
+      const { data } = await axios.post('/api/templates/upload', formData, config);
+      setSuccess(`Template "${data.name}" uploaded successfully!`);
+      setSelectedFile(null);
+      onUploadSuccess(data); // Notify parent component of the new template
     } catch (err) {
-      setError(err.response?.data?.message || 'File upload failed.');
+      setError(err.response?.data?.message || 'File upload failed');
+      console.error(err);
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="border-t pt-6 mt-6">
-      <h4 className="font-semibold text-lg mb-2">Upload New Template Bundle (.zip)</h4>
-      <form onSubmit={handleUpload} className="flex items-center space-x-4">
-        <input
-          type="file"
-          accept=".zip"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-indigo-50 file:text-indigo-700
-            hover:file:bg-indigo-100"
-        />
-        <button
-          type="submit"
-          disabled={uploading || !file}
-          className="px-4 py-2 font-bold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-gray-400"
-        >
-          {uploading ? 'Uploading...' : 'Upload'}
-        </button>
-      </form>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {successMessage && <p className="text-green-500 mt-2">{successMessage}</p>}
+    <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Upload New Template Bundle</h3>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            {error && <div className="text-red-500 mb-4">{error}</div>}
+            {success && <div className="text-green-500 mb-4">{success}</div>}
+            <div className="flex items-center space-x-4">
+                <input 
+                    type="file" 
+                    onChange={handleFileChange} 
+                    accept=".zip"
+                    className="block w-full text-sm text-gray-500
+                               file:mr-4 file:py-2 file:px-4
+                               file:rounded-full file:border-0
+                               file:text-sm file:font-semibold
+                               file:bg-indigo-50 file:text-indigo-700
+                               hover:file:bg-indigo-100"
+                />
+                <button 
+                    onClick={handleUpload} 
+                    disabled={uploading || !selectedFile}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400"
+                >
+                    {uploading ? 'Uploading...' : 'Upload'}
+                </button>
+            </div>
+            {selectedFile && <p className="text-sm text-gray-500 mt-2">Selected: {selectedFile.name}</p>}
+        </div>
     </div>
   );
 };

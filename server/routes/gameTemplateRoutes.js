@@ -1,41 +1,39 @@
 // server/routes/gameTemplateRoutes.js
-
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
+// Configure multer for in-memory file storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 // Import controller functions
-const { 
-  createGameTemplate, 
+const {
+  uploadGameTemplate,
   getGameTemplates,
   getGameTemplateById,
-  uploadGameTemplate // Import the upload function
+  updateTemplateStatus,
+  deleteTemplate, // 1. Import the new function
 } = require('../controllers/gameTemplateController');
 
 // Import middleware for protection
 const { protect, admin } = require('../middleware/authMiddleware');
 
-// --- Multer Configuration ---
-// We configure multer to store the uploaded file in memory as a buffer,
-// instead of saving it to the disk on the server. This is efficient for
-// processing zip files directly.
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// --- Define the Routes ---
-
-// Route for uploading a new template bundle
-// - It's protected by 'protect' and 'admin' middleware.
-// - 'upload.single('templateFile')' is the multer middleware. It looks for a file
-//   in the form data with the field name 'templateFile'.
-router.post('/upload', protect, admin, upload.single('templateFile'), uploadGameTemplate);
-
-// Existing routes for getting and creating templates manually
+// Define the routes
 router.route('/')
-  .post(protect, admin, createGameTemplate)
   .get(protect, getGameTemplates);
 
+router.route('/upload')
+  .post(protect, admin, upload.single('templateBundle'), uploadGameTemplate);
+
+// Define routes for a single template by its ID
 router.route('/:id')
-  .get(protect, getGameTemplateById);
+  .get(protect, getGameTemplateById)
+  .delete(protect, admin, deleteTemplate); // 2. Add the DELETE method
+
+// Define the route for updating a template's status
+router.route('/:id/status')
+    .put(protect, admin, updateTemplateStatus);
+
 
 module.exports = router;
