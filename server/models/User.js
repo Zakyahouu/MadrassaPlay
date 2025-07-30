@@ -26,12 +26,19 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['student', 'teacher', 'admin'],
+      enum: ['student', 'teacher', 'admin', 'manager', 'principal'],
       default: 'student',
     },
     school: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'School'
+    },
+    accessLevel: {
+      type: String,
+      enum: ['principal', 'staff'],
+      required: function() {
+        return this.role === 'manager';
+      }
     },
 
     // --- Student-Specific Fields ---

@@ -1,12 +1,13 @@
 // client/src/components/admin/GameTemplateManager.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TemplateUploader from './TemplateUploader';
+import { TemplateContext } from '../../context/TemplateContext';
 
 const GameTemplateManager = () => {
-  const [templates, setTemplates] = useState([]);
   const [error, setError] = useState('');
+  const { templates, setTemplates, triggerTemplateUpdate } = useContext(TemplateContext);
 
   const fetchTemplates = async () => {
     try {
@@ -32,7 +33,8 @@ const GameTemplateManager = () => {
       const token = JSON.parse(localStorage.getItem('user')).token;
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.put(`/api/templates/${templateId}/status`, { status: newStatus }, config);
-      fetchTemplates(); // Re-fetch to show updated status
+      fetchTemplates();
+      triggerTemplateUpdate(); // Trigger update for other components
     } catch (err) {
       setError(`Failed to ${newStatus} template`);
       console.error(err);

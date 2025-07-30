@@ -13,6 +13,20 @@ const schoolSchema = new mongoose.Schema(
       unique: true,
       trim: true, // Removes any extra whitespace from the beginning or end.
     },
+    principal: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    managers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    contact: {
+      email: String,
+      phone: String,
+      address: String
+    },
     // We can add more details about the school later if needed,
     // like address, contact info, etc.
   },

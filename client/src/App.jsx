@@ -115,9 +115,20 @@ function App() {
           }
         />
 
+        {/* Add this new route for admin game testing */}
+        <Route
+          path="/admin/play-game/:creationId"
+          element={
+            <ProtectedRoute>
+              <PlayGame />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
     </Router>
   );
 }
 
 export default App;
+

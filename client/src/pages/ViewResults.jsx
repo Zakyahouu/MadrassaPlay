@@ -1,9 +1,11 @@
 // client/src/pages/ViewResults.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
 const ViewResults = () => {
+  const { user } = useContext(AuthContext);
   const { gameCreationId } = useParams();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,17 @@ const ViewResults = () => {
     fetchResults();
   }, [gameCreationId]);
 
+  const getDashboardPath = () => {
+    switch (user.role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'teacher':
+        return '/teacher/dashboard';
+      default:
+        return '/';
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading Results...</div>;
   }
@@ -35,7 +48,7 @@ const ViewResults = () => {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <header className="mb-8">
-        <Link to="/teacher/dashboard" className="text-indigo-600 hover:underline">
+        <Link to={getDashboardPath()} className="text-indigo-600 hover:underline">
           &larr; Back to Dashboard
         </Link>
         <h1 className="text-3xl font-bold mt-2">Game Results</h1>

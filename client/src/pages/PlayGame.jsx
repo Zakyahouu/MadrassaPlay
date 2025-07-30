@@ -1,9 +1,12 @@
 // client/src/pages/PlayGame.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
 const PlayGame = () => {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const { creationId } = useParams();
   const [gameCreation, setGameCreation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,19 @@ const PlayGame = () => {
     }
   };
 
+  const getDashboardPath = () => {
+    switch (user.role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'teacher':
+        return '/teacher/dashboard';
+      case 'student':
+        return '/student/dashboard';
+      default:
+        return '/';
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading Game...</div>;
   }
@@ -81,7 +97,10 @@ const PlayGame = () => {
     <div className="h-screen bg-gray-800 text-white p-4 grid grid-rows-[auto_1fr] gap-4">
       <header className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">{gameCreation?.name}</h1>
-        <Link to="/teacher/dashboard" className="px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700">
+        <Link 
+          to={getDashboardPath()} 
+          className="px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700"
+        >
           Exit Game
         </Link>
       </header>
