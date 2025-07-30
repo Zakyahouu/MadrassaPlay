@@ -10,6 +10,10 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/engines': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
   // NEW: Add the optimizeDeps configuration

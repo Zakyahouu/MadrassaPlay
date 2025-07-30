@@ -28,6 +28,10 @@ const gameCreationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       required: true,
     },
+    content: {
+      type: Array,
+      required: true,
+    },
   },
   {
     timestamps: true,

@@ -7,7 +7,8 @@ const router = express.Router();
 const { 
   createGameCreation, 
   getMyGameCreations,
-  getGameCreationById // 1. Import the new function
+  getGameCreationById, // 1. Import the new function
+  deleteGameCreation
 } = require('../controllers/gameCreationController');
 
 // Import middleware for protection
@@ -21,6 +22,7 @@ router.route('/')
 // 2. NEW ROUTE: Define the route for a single game creation by its ID
 // A GET request to /api/creations/:id will get a specific game creation.
 router.route('/:id')
-  .get(protect, getGameCreationById);
+  .get(protect, getGameCreationById)
+  .delete(protect, deleteGameCreation);
 
 module.exports = router;

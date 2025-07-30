@@ -7,6 +7,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 const connectDB = require('./config/db');
+const path = require('path');
 // Import route files
 const userRoutes = require('./routes/userRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
@@ -42,6 +43,21 @@ app.use((req, res, next) => {
   req.liveGames = liveGames;
   next();
 });
+
+// Serve static game engines from /public/engines
+app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
+
+// Serve React app static files in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(clientBuildPath));
+  // Fallback for React Router (SPA)
+  app.get('*', (req, res) => {
+    // If the request is for an engine, let the static middleware handle it
+    if (req.path.startsWith('/engines/')) return;
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
 
 
 // 4. DEFINE ROUTES

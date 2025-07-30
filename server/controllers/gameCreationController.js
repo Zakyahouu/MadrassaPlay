@@ -8,13 +8,12 @@ const Assignment = require('../models/Assignment');
 // @route   POST /api/creations
 // @access  Private/Teacher or Admin
 const createGameCreation = asyncHandler(async (req, res) => {
-  const { template: templateId, settings, content } = req.body;
+  const { template: templateId, config, content } = req.body;
 
   // --- THIS IS THE FIX ---
   // We extract the data and map it to the correct field names required by the model.
-  const name = settings?.title; // The model expects 'name', which comes from the form's 'title' setting.
+  const name = config?.title; // The model expects 'name', which comes from the form's 'title' setting.
   const owner = req.user._id; // The model expects 'owner', which is the logged-in user's ID.
-  const config = settings; // The model expects 'config', which is our entire settings object.
 
   if (!templateId || !config || !content || !name) {
     res.status(400);
@@ -48,7 +47,6 @@ const createGameCreation = asyncHandler(async (req, res) => {
     }
     return processedItem;
   });
-
 
   const gameCreation = await GameCreation.create({
     name,
@@ -122,20 +120,17 @@ const getGameCreationById = asyncHandler(async (req, res) => {
 // @route   DELETE /api/creations/:id
 // @access  Private/Owner
 const deleteGameCreation = asyncHandler(async (req, res) => {
-    const gameCreation = await GameCreation.findById(req.params.id);
-
-    if (!gameCreation) {
-        res.status(404);
-        throw new Error('Game creation not found');
-    }
-
-    if (gameCreation.owner.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('User not authorized to delete this game');
-    }
-
-    await gameCreation.deleteOne();
-    res.json({ message: 'Game creation removed' });
+  const gameCreation = await GameCreation.findById(req.params.id);
+  if (!gameCreation) {
+    res.status(404);
+    throw new Error('Game creation not found');
+  }
+  if (gameCreation.owner.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('User not authorized to delete this game');
+  }
+  await gameCreation.deleteOne();
+  res.json({ message: 'Game creation removed' });
 });
 
 

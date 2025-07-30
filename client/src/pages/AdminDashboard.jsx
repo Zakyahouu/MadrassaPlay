@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 // Import the components for the dashboard
 import SchoolManager from '../components/admin/SchoolManager';
 import GameTemplateManager from '../components/admin/GameTemplateManager'; // 1. Import the new component
+import AdminTestGames from '../components/admin/AdminTestGames';
 
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -25,10 +26,10 @@ const AdminDashboard = () => {
       </header>
       <main className="p-8 max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold mb-6">Platform Management</h2>
-        
+        {/* Admin's test games */}
+        <AdminTestGames />
         {/* Render the SchoolManager component */}
         <SchoolManager />
-
         {/* 2. Render the GameTemplateManager component */}
         <GameTemplateManager />
       </main>

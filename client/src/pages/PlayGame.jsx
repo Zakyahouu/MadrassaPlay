@@ -87,13 +87,32 @@ const PlayGame = () => {
       </header>
       
       <main className="bg-black rounded-lg overflow-hidden">
-        <iframe
-          ref={iframeRef}
-          src="/games/quiz/index.html"
-          title="Game Engine"
-          className="w-full h-full border-0"
-          onLoad={handleIframeLoad}
-        ></iframe>
+        {gameCreation?.template?.enginePath ? (
+          <iframe
+            ref={iframeRef}
+            src={gameCreation.template.enginePath + '/index.html'}
+            title="Game Engine"
+            className="w-full h-full border-0"
+            onLoad={() => {
+              if (iframeRef.current && gameCreation) {
+                // Send both the original payload and a 'questions' alias for compatibility
+                const payload = {
+                  ...gameCreation,
+                  questions: gameCreation.content,
+                };
+                iframeRef.current.contentWindow.postMessage(
+                  {
+                    type: 'INIT_GAME',
+                    payload,
+                  },
+                  '*'
+                );
+              }
+            }}
+          ></iframe>
+        ) : (
+          <div className="text-center p-8 text-red-500">Game engine not found for this template.</div>
+        )}
       </main>
     </div>
   );

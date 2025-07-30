@@ -21,21 +21,21 @@ let gameCreationId = null;
 
 function initializeGame(data) {
   console.log('Game Engine: Received data from platform', data);
-  gameConfig = data.config.settings;
-  questions = data.config.content;
+  gameConfig = data.config?.settings || data.config || {};
+  questions = data.questions || data.content || data.config?.content || [];
   gameCreationId = data._id;
-  
+
   currentQuestionIndex = 0;
   score = 0;
-  
+
   gameContainer.classList.remove('hidden');
   resultsScreen.classList.add('hidden');
-  
+
   showNextQuestion();
 }
 
 function showNextQuestion() {
-  if (currentQuestionIndex >= questions.length) {
+  if (!Array.isArray(questions) || currentQuestionIndex >= questions.length) {
     showResults();
     return;
   }
