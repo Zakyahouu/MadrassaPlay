@@ -79,7 +79,10 @@ const GameTemplateManager = () => {
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <Link to={`/teacher/create-game/${template._id}`} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                <Link 
+                  to={`/teacher/create-game/${template._id}`} 
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm"
+                >
                   Test
                 </Link>
                 {template.status === 'draft' ? (

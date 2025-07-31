@@ -15,18 +15,40 @@ const schoolSchema = new mongoose.Schema(
     },
     principal: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    managers: [{
-      type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
-    }],
-    contact: {
-      email: String,
-      phone: String,
-      address: String
     },
+    staff: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      role: String,
+      dateAdded: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    address: {
+      type: {
+        street: String,
+        city: String,
+        state: String,
+        country: String,
+        postalCode: String
+      }
+    },
+    contact: {
+      type: {
+        phone: String,
+        email: String,
+        website: String
+      }
+    },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active'
+    }
     // We can add more details about the school later if needed,
     // like address, contact info, etc.
   },

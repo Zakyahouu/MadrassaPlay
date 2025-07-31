@@ -68,7 +68,7 @@ const AdminTestGames = () => {
                   )}
                 </div>
                 <div className="mt-4 space-y-2">
-                  <Link to={`/admin/play-game/${creation._id}`}>
+                  <Link to={`/teacher/play-game/${creation._id}`}>
                     <button className={`w-full px-4 py-2 font-semibold text-white rounded-md bg-indigo-600 hover:bg-indigo-700'`}>
                       Play/Test
                     </button>

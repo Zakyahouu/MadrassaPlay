@@ -8,11 +8,14 @@ import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './pages/ViewResults';
 import HostLobby from './pages/HostLobby';
-import PlayerLobby from './pages/PlayerLobby'; // 1. Import the new page
+import PlayerLobby from './pages/PlayerLobby';
+import SchoolManagement from './pages/SchoolManagement';
+import AdminSchoolDetailsPage from './pages/AdminSchoolDetailsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -22,7 +25,6 @@ function App() {
   return (
     <Router>
       <Routes>
-        
         {/* Route 1: The Login Page */}
         <Route 
           path="/login" 
@@ -45,7 +47,17 @@ function App() {
           } 
         />
 
-        {/* Route 4: The Teacher Dashboard */}
+        {/* Route 4: The Manager Dashboard */}
+        <Route 
+          path="/manager/dashboard" 
+          element={
+            <ProtectedRoute>
+              <ManagerDashboard />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Route 5: The Teacher Dashboard */}
         <Route 
           path="/teacher/dashboard" 
           element={
@@ -55,7 +67,7 @@ function App() {
           } 
         />
 
-        {/* Route 5: The Student Dashboard */}
+        {/* Route 6: The Student Dashboard */}
         <Route 
           path="/student/dashboard" 
           element={
@@ -65,7 +77,7 @@ function App() {
           } 
         />
 
-        {/* Route 6: The Create Game Page */}
+        {/* Route 7: The Create Game Page */}
         <Route
           path="/teacher/create-game/:templateId"
           element={
@@ -75,7 +87,7 @@ function App() {
           }
         />
 
-        {/* Route 7: The Play Game Page */}
+        {/* Route 8: The Play Game Page */}
         <Route
           path="/teacher/play-game/:creationId"
           element={
@@ -85,7 +97,7 @@ function App() {
           }
         />
 
-        {/* Route 8: The View Results Page */}
+        {/* Route 9: The View Results Page */}
         <Route
           path="/teacher/results/:gameCreationId"
           element={
@@ -95,7 +107,7 @@ function App() {
           }
         />
 
-        {/* Route 9: The Host Lobby Page */}
+        {/* Route 10: The Host Lobby Page */}
         <Route
           path="/teacher/host-lobby/:gameCreationId"
           element={
@@ -105,7 +117,7 @@ function App() {
           }
         />
 
-        {/* 10. NEW ROUTE: The Player Lobby Page */}
+        {/* Route 11: The Player Lobby Page */}
         <Route
           path="/student/lobby/:roomCode"
           element={
@@ -115,7 +127,17 @@ function App() {
           }
         />
 
-        {/* Add this new route for admin game testing */}
+        {/* Route 12: School Management Page */}
+        <Route
+          path="/admin/schools/:schoolId"
+          element={
+            <ProtectedRoute>
+              <SchoolManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Route 13: Admin Play Game */}
         <Route
           path="/admin/play-game/:creationId"
           element={
@@ -125,10 +147,28 @@ function App() {
           }
         />
 
+        {/* Route 14: Admin Results */}
+        <Route
+          path="/admin/results/:gameCreationId"
+          element={
+            <ProtectedRoute>
+              <ViewResults />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Add this new route for admin to view/edit school details */}
+        <Route
+          path="/admin/schools/:schoolId/details"
+          element={
+            <ProtectedRoute>
+              <AdminSchoolDetailsPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );
 }
 
 export default App;
-

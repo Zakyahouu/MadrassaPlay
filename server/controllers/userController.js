@@ -7,6 +7,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 // NEW: Import jsonwebtoken for creating user tokens
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
 
 
 // 2. HELPER FUNCTION TO GENERATE A TOKEN
@@ -99,10 +100,102 @@ const loginUser = async (req, res) => {
   }
 };
 
+// @desc    Create a user for a school (admin)
+// @route   POST /api/users/school/:schoolId
+// @access  Private (admin)
+const createSchoolUser = asyncHandler(async (req, res) => {
+  const { name, email, password, role, staffRole } = req.body;
+  const { schoolId } = req.params;
+
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    res.status(400);
+    throw new Error('User already exists');
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    role,
+    staffRole: staffRole || 'none',
+    school: schoolId
+  });
+
+  res.status(201).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    school: user.school
+  });
+});
+
+// @desc    Get users for a school (admin)
+// @route   GET /api/users/school/:schoolId
+// @access  Private (admin)
+const getSchoolUsers = asyncHandler(async (req, res) => {
+  const { schoolId } = req.params;
+  const { role } = req.query;
+
+  const query = { school: schoolId };
+  if (role) {
+    query.role = role;
+  }
+
+  const users = await User.find(query).select('-password');
+  res.json(users);
+});
+
+// @desc    Get the current user's details
+// @route   GET /api/users/profile
+// @access  Private
+const getCurrentUser = asyncHandler(async (req, res) => {
+  // Get user data (excluding password)
+  const user = await User.findById(req.user._id)
+    .select('-password')
+    .populate('school', 'name');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.json(user);
+});
+
+// @desc    Delete a user (admin)
+// @route   DELETE /api/users/school/:schoolId/:userId
+// @access  Private (admin)
+const deleteSchoolUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Optional: Add check to ensure the user belongs to the school being managed
+  if (user.school.toString() !== req.params.schoolId) {
+    res.status(403);
+    throw new Error('User does not belong to this school');
+  }
+
+  await user.deleteOne();
+  res.json({ message: 'User removed successfully' });
+});
 
 // 4. EXPORT THE FUNCTIONS
 // ==============================================================================
 module.exports = {
   registerUser,
   loginUser,
+  createSchoolUser,
+  getSchoolUsers,
+  getCurrentUser,
+  deleteSchoolUser,
 };

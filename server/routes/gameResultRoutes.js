@@ -12,11 +12,12 @@ const {
 // Import middleware for protection
 const { protect } = require('../middleware/authMiddleware');
 
-// Define the route for submitting a result
-router.post('/', protect, submitGameResult);
+router.route('/')
+  .post(protect, submitGameResult);
 
 // 2. NEW ROUTE: Define the route for getting results for a specific game
 // A GET request to /api/results/:gameCreationId will get all results for that game.
-router.get('/:gameCreationId', protect, getResultsForGame);
+router.route('/:gameCreationId')
+  .get(protect, getResultsForGame);
 
 module.exports = router;

@@ -13,17 +13,16 @@ const router = express.Router();
 // 3. IMPORT CONTROLLER FUNCTIONS
 // ==============================================================================
 // We are now importing the functions from the controller file we created.
-const { registerUser, loginUser } = require('../controllers/userController');
-
+const { registerUser, loginUser, getCurrentUser } = require('../controllers/userController');
+const { protect } = require('../middleware/authMiddleware');
 
 // 4. DEFINE THE ROUTES
 // ==============================================================================
-// When a POST request is made to the root of this router ('/'), we call the registerUser function.
-// We changed '/register' to just '/' because we will mount this whole file at '/api/users/register' later.
 router.post('/register', registerUser);
-
-// When a POST request is made to '/login', we will call the loginUser function.
 router.post('/login', loginUser);
+
+// Make sure protect middleware is applied correctly
+router.get('/me', protect, getCurrentUser);
 
 
 // 5. EXPORT THE ROUTER

@@ -26,9 +26,24 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['student', 'teacher', 'admin', 'manager', 'principal'],
+      enum: ['student', 'teacher', 'admin', 'staff', 'principal'],
       default: 'student',
     },
+    managedSchool: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'School',
+    },
+    staffPermissions: [{
+      type: String,
+      enum: [
+        'manage_students',
+        'manage_teachers',
+        'manage_classes',
+        'manage_staff',
+        'manage_grades',
+        'view_reports'
+      ]
+    }],
     school: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'School'

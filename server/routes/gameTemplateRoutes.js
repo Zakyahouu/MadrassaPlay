@@ -13,7 +13,7 @@ const {
   getGameTemplates,
   getGameTemplateById,
   updateTemplateStatus,
-  deleteTemplate, // 1. Import the new function
+  deleteTemplate,
 } = require('../controllers/gameTemplateController');
 
 // Import middleware for protection
@@ -21,19 +21,12 @@ const { protect, admin } = require('../middleware/authMiddleware');
 
 // Define the routes
 router.route('/')
-  .get(protect, getGameTemplates);
+  .get(protect, getGameTemplates)
+  .post(protect, admin, upload.single('templateBundle'), uploadGameTemplate); // Combined upload and get routes
 
-router.route('/upload')
-  .post(protect, admin, upload.single('templateBundle'), uploadGameTemplate);
-
-// Define routes for a single template by its ID
 router.route('/:id')
   .get(protect, getGameTemplateById)
-  .delete(protect, admin, deleteTemplate); // 2. Add the DELETE method
-
-// Define the route for updating a template's status
-router.route('/:id/status')
-    .put(protect, admin, updateTemplateStatus);
-
+  .put(protect, admin, updateTemplateStatus)
+  .delete(protect, admin, deleteTemplate); // Combined all methods for a single template
 
 module.exports = router;

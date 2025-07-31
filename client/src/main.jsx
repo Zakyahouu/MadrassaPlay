@@ -7,13 +7,16 @@ import './index.css'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { SocketProvider } from './context/SocketContext.jsx'
 import { TemplateProvider } from './context/TemplateContext.jsx'
+import { ManagerProvider } from './context/ManagerContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <TemplateProvider>
         <SocketProvider>
-          <App />
+          <ManagerProvider>
+            <App />
+          </ManagerProvider>
         </SocketProvider>
       </TemplateProvider>
     </AuthProvider>

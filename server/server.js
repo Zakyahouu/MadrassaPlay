@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 const connectDB = require('./config/db');
 const path = require('path');
+const cors = require('cors');
 // Import route files
 const userRoutes = require('./routes/userRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
@@ -15,6 +16,12 @@ const gameTemplateRoutes = require('./routes/gameTemplateRoutes');
 const gameCreationRoutes = require('./routes/gameCreationRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const gameResultRoutes = require('./routes/gameResultRoutes');
+const schoolStaffRoutes = require('./routes/schoolStaffRoutes');
+const gradeSystemRoutes = require('./routes/gradeSystemRoutes');
+const classRoutes = require('./routes/classRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const schoolUserRoutes = require('./routes/schoolUserRoutes');
+const permissionRoutes = require('./routes/permissionRoutes');
 
 
 // 2. INITIALIZE THE APP & SERVER
@@ -34,9 +41,16 @@ const PORT = process.env.PORT || 5000;
 
 // 3. MIDDLEWARE
 // ==============================================================================
+app.use(cors({
+  origin: "http://localhost:5173", // Ensure this matches your frontend URL
+  credentials: true
+}));
 app.use(express.json());
 
-// --- NEW: Middleware to attach io and liveGames to each request ---
+// Define liveGames before using it in middleware
+const liveGames = {};
+
+// --- Middleware to attach io and liveGames to each request ---
 // This makes them accessible in our controllers.
 app.use((req, res, next) => {
   req.io = io;
@@ -64,16 +78,21 @@ if (process.env.NODE_ENV === 'production') {
 // ==============================================================================
 app.use('/api/users', userRoutes);
 app.use('/api/schools', schoolRoutes);
+app.use('/api/permissions', permissionRoutes); // Only register this once
 app.use('/api/templates', gameTemplateRoutes);
 app.use('/api/creations', gameCreationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/results', gameResultRoutes);
+app.use('/api/schools/:schoolId/staff', schoolStaffRoutes);
+// Mount routes
+app.use('/api/schools/:schoolId/users', schoolUserRoutes);
+app.use('/api/schools/:schoolId/grades', gradeSystemRoutes);
+app.use('/api/schools/:schoolId/classes', classRoutes);
+app.use('/api/schools/:schoolId/classes/:classId/attendance', attendanceRoutes);
 
 
 // 5. SOCKET.IO CONNECTION HANDLING
 // ==============================================================================
-const liveGames = {};
-
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
@@ -130,3 +149,4 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
 });
+

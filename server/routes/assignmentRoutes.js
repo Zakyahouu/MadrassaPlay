@@ -12,11 +12,11 @@ const {
 // Import middleware for protection
 const { protect } = require('../middleware/authMiddleware');
 
-// Define the routes
-// A POST request to /api/assignments will create a new assignment.
-router.post('/', protect, createAssignment);
+router.route('/')
+  .post(protect, createAssignment);
 
 // A GET request to /api/assignments/my-assignments will get all assignments for the logged-in student.
-router.get('/my-assignments', protect, getMyAssignments);
+router.route('/my-assignments')
+  .get(protect, getMyAssignments);
 
 module.exports = router;
