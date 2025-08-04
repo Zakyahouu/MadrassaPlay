@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 // Import the components for the dashboard
-import SchoolManager from '../components/admin/SchoolManager';
+import SchoolPanel from '../components/admin/SchoolPanel';
 import GameTemplateManager from '../components/admin/GameTemplateManager'; // 1. Import the new component
 import AdminTestGames from '../components/admin/AdminTestGames';
 
@@ -28,8 +28,8 @@ const AdminDashboard = () => {
         <h2 className="text-2xl font-bold mb-6">Platform Management</h2>
         {/* Admin's test games */}
         <AdminTestGames />
-        {/* Render the SchoolManager component */}
-        <SchoolManager />
+        {/* Render the SchoolPanel component */}
+        <SchoolPanel />
         {/* 2. Render the GameTemplateManager component */}
         <GameTemplateManager />
       </main>

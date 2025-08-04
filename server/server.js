@@ -64,10 +64,19 @@ if (process.env.NODE_ENV === 'production') {
 // ==============================================================================
 app.use('/api/users', userRoutes);
 app.use('/api/schools', schoolRoutes);
+app.use('/api/teachers', require('./routes/teacherRoutes'));
+app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/templates', gameTemplateRoutes);
 app.use('/api/creations', gameCreationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/results', gameResultRoutes);
+// Register class routes
+const classRoutes = require('./routes/classRoutes');
+app.use('/api/classes', classRoutes);
+
+// Register payment routes
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api/payments', paymentRoutes);
 
 
 // 5. SOCKET.IO CONNECTION HANDLING

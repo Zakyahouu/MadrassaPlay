@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import ManagerDashboardPage from './pages/ManagerDashboard';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './pages/ViewResults';
@@ -22,17 +23,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        
         {/* Route 1: The Login Page */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to="/" replace /> : <Login />} 
+          element={
+            user ? <RoleBasedRedirect /> : <Login />
+          } 
         />
 
         {/* Route 2: The Home/Redirect Page */}
         <Route 
           path="/" 
-          element={user ? <RoleBasedRedirect /> : <Navigate to="/login" replace />} 
+          element={<RoleBasedRedirect />} 
         />
 
         {/* Route 3: The Admin Dashboard */}
@@ -63,6 +65,16 @@ function App() {
               <StudentDashboard />
             </ProtectedRoute>
           } 
+        />
+
+        {/* Route 6: The Manager Dashboard */}
+        <Route
+          path="/manager/dashboard"
+          element={
+            <ProtectedRoute>
+              <ManagerDashboardPage />
+            </ProtectedRoute>
+          }
         />
 
         {/* Route 6: The Create Game Page */}

@@ -38,4 +38,22 @@ const admin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin };
+// Middleware to check for manager role
+const manager = (req, res, next) => {
+  if (req.user && req.user.role === 'manager') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized as a manager' });
+  }
+};
+
+// Middleware to check for staff role
+const staff = (req, res, next) => {
+  if (req.user && req.user.role === 'staff') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized as staff' });
+  }
+};
+
+module.exports = { protect, admin, manager, staff };

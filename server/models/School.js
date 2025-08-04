@@ -16,7 +16,7 @@ const schoolSchema = new mongoose.Schema(
     principal: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
     },
     managers: [{
       type: mongoose.Schema.Types.ObjectId,
