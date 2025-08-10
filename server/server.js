@@ -70,6 +70,9 @@ app.use('/api/templates', gameTemplateRoutes);
 app.use('/api/creations', gameCreationRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/results', gameResultRoutes);
+// Register staff routes
+const staffRoutes = require('./routes/staffRoutes');
+app.use('/api/staff', staffRoutes);
 // Register class routes
 const classRoutes = require('./routes/classRoutes');
 app.use('/api/classes', classRoutes);

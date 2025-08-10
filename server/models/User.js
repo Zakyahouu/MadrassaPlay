@@ -1,76 +1,58 @@
-// server/models/User.js
 
-// 1. IMPORT MONGOOSE
-// ==============================================================================
 const mongoose = require('mongoose');
 
-// 2. CREATE THE USER SCHEMA
-// ==============================================================================
-// This is the blueprint for our User documents.
 const userSchema = new mongoose.Schema(
   {
-    // --- Core Fields (for all users) ---
-    name: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
+    // --- Core Fields ---
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
     role: {
       type: String,
       required: true,
-      enum: ['student', 'teacher', 'admin', 'manager', 'principal'],
-      default: 'student',
+      enum: ['student', 'teacher', 'admin', 'manager', 'principal','staff pedagogique', 'staff '], // Add more roles as needed
     },
     school: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'School'
     },
-    accessLevel: {
+    // ... other fields
+
+    // --- NEW: Teacher-Specific Fields ---
+    // These fields will only be populated for users with role: 'teacher'
+    subject: {
       type: String,
-      enum: ['principal', 'staff'],
-      required: function() {
-        return this.role === 'manager';
-      }
+      required: function() { return this.role === 'teacher'; } // Required only if the user is a teacher
     },
-
-    // --- Student-Specific Fields ---
-    // These fields will only be populated and used if the user's role is 'student'.
-    // For teachers and admins, they will simply be empty or null in the database.
-    level: {
+    department: {
+      type: String,
+      required: function() { return this.role === 'teacher'; }
+    },
+    experience: {
       type: Number,
-      default: 1, // Students start at level 1
+      required: function() { return this.role === 'teacher'; },
+      min: 0
     },
-    xp: {
-      type: Number,
-      default: 0, // Students start with 0 experience points
+    phone: {
+      type: String,
+      required: false // Optional field
     },
-    badges: [
-      {
-        type: String, // We will store the badge IDs as strings
-      },
-    ],
-    
-    // --- Teacher-Specific Fields ---
-    // We can add fields just for teachers here in the future if needed.
-    // For example:
-    // subjectTaught: {
-    //   type: String
-    // }
-
+    status: {
+        type: String,
+        enum: ['active', 'on_leave', 'retired'],
+        default: 'active',
+        required: function() { return this.role === 'teacher'; }
+    },
+    rating: {
+        type: Number,
+        min: 0,
+        max: 5,
+        default: 0
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// 3. CREATE AND EXPORT THE USER MODEL
-// ==============================================================================
 module.exports = mongoose.model('User', userSchema);
