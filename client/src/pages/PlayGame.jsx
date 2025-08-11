@@ -1,4 +1,4 @@
-// client/src/pages/PlayGame.jsx
+// PlayGame.jsx - Enhanced with minimal clean design
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -11,127 +11,157 @@ const PlayGame = () => {
   const [gameCreation, setGameCreation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
     const fetchGameCreation = async () => {
       try {
-        const response = await axios.get(`/api/creations/${creationId}`);
-        setGameCreation(response.data);
+        const { data } = await axios.get(`/api/creations/${creationId}`);
+        setGameCreation(data);
       } catch (err) {
-        setError('Failed to load the game. Please try again.');
+        setError('Failed to load game');
       } finally {
         setLoading(false);
       }
     };
-
     fetchGameCreation();
   }, [creationId]);
 
-  // --- NEW: useEffect to handle messages from the game engine ---
   useEffect(() => {
     const handleGameMessage = async (event) => {
-      // We only care about messages from our iframe's origin
-      // In a real app, you would check event.origin for security.
-
-      if (event.data && event.data.type === 'GAME_COMPLETE') {
-        console.log('React App: Received GAME_COMPLETE message from engine.', event.data.payload);
-        
-        // Call our backend API to save the result.
+      if (event.data?.type === 'GAME_COMPLETE') {
         try {
           await axios.post('/api/results', event.data.payload);
-          console.log('Result saved successfully!');
-          // You could show a success message to the user here.
+          console.log('Result saved successfully');
         } catch (err) {
-          console.error('Failed to save game result:', err);
-          // You could show an error message to the user here.
+          console.error('Failed to save result:', err);
         }
       }
     };
 
-    // Add the event listener
     window.addEventListener('message', handleGameMessage);
-
-    // Clean up the event listener when the component unmounts
-    return () => {
-      window.removeEventListener('message', handleGameMessage);
-    };
-  }, []); // The empty dependency array means this effect runs only once.
-
+    return () => window.removeEventListener('message', handleGameMessage);
+  }, []);
 
   const handleIframeLoad = () => {
     if (iframeRef.current && gameCreation) {
-      console.log('React App: Iframe loaded. Sending game data to engine...');
+      const payload = {
+        ...gameCreation,
+        questions: gameCreation.content,
+      };
       iframeRef.current.contentWindow.postMessage(
-        {
-          type: 'INIT_GAME',
-          payload: gameCreation,
-        },
+        { type: 'INIT_GAME', payload },
         '*'
       );
     }
   };
 
-  const getDashboardPath = () => {
-    switch (user.role) {
-      case 'admin':
-        return '/admin/dashboard';
-      case 'teacher':
-        return '/teacher/dashboard';
-      case 'student':
-        return '/student/dashboard';
-      default:
-        return '/';
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
     }
   };
 
-  if (loading) {
-    return <div className="text-center p-8">Loading Game...</div>;
-  }
+  const getDashboardPath = () => {
+    const paths = {
+      admin: '/admin/dashboard',
+      teacher: '/teacher/dashboard',
+      student: '/student/dashboard'
+    };
+    return paths[user.role] || '/';
+  };
 
-  if (error) {
-    return <div className="text-center p-8 text-red-500">{error}</div>;
-  }
+  if (loading) return (
+    <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full mx-auto mb-3"></div>
+        <p className="text-gray-600 text-sm">Loading game...</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+        <div className="text-3xl mb-3">⚠️</div>
+        <p className="text-gray-700 mb-4">{error}</p>
+        <button 
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="h-screen bg-gray-800 text-white p-4 grid grid-rows-[auto_1fr] gap-4">
-      <header className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{gameCreation?.name}</h1>
-        <Link 
-          to={getDashboardPath()} 
-          className="px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700"
-        >
-          Exit Game
-        </Link>
+    <div className="h-screen bg-white flex flex-col">
+      {/* Header */}
+      <header className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link 
+              to={getDashboardPath()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
+              title="Exit Game"
+            >
+              ←
+            </Link>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">
+                {gameCreation?.name || 'Game'}
+              </h1>
+              <p className="text-xs text-gray-500">
+                Playing • {gameCreation?.template?.name}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? '🔳' : '⛶'}
+            </button>
+            <Link 
+              to={getDashboardPath()}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+            >
+              Exit
+            </Link>
+          </div>
+        </div>
       </header>
       
-      <main className="bg-black rounded-lg overflow-hidden">
-        {gameCreation?.template?.enginePath ? (
-          <iframe
-            ref={iframeRef}
-            src={gameCreation.template.enginePath + '/index.html'}
-            title="Game Engine"
-            className="w-full h-full border-0"
-            onLoad={() => {
-              if (iframeRef.current && gameCreation) {
-                // Send both the original payload and a 'questions' alias for compatibility
-                const payload = {
-                  ...gameCreation,
-                  questions: gameCreation.content,
-                };
-                iframeRef.current.contentWindow.postMessage(
-                  {
-                    type: 'INIT_GAME',
-                    payload,
-                  },
-                  '*'
-                );
-              }
-            }}
-          ></iframe>
-        ) : (
-          <div className="text-center p-8 text-red-500">Game engine not found for this template.</div>
-        )}
+      {/* Game Container */}
+      <main className="flex-1 bg-gray-100 p-4">
+        <div className="h-full bg-black rounded-lg overflow-hidden shadow-sm">
+          {gameCreation?.template?.enginePath ? (
+            <iframe
+              ref={iframeRef}
+              src={`${gameCreation.template.enginePath}/index.html`}
+              title="Game Engine"
+              className="w-full h-full border-0"
+              onLoad={handleIframeLoad}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center text-white bg-gray-900">
+              <div className="text-center">
+                <div className="text-4xl mb-4">🎮</div>
+                <p className="text-gray-300">Game engine not available</p>
+                <p className="text-gray-500 text-sm mt-1">Contact administrator for support</p>
+              </div>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

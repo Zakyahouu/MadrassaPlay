@@ -1,4 +1,4 @@
-// client/src/pages/CreateGame.jsx
+// CreateGame.jsx - Enhanced with creative minimal design
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -12,6 +12,7 @@ const CreateGame = () => {
     const [template, setTemplate] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
     
     const [settingsData, setSettingsData] = useState({});
     const [contentItems, setContentItems] = useState([{}]);
@@ -19,13 +20,12 @@ const CreateGame = () => {
     useEffect(() => {
         const fetchTemplate = async () => {
             try {
-                const token = user.token;
-                const config = {
-                    headers: { Authorization: `Bearer ${token}` }
-                };
-                const { data } = await axios.get(`/api/templates/${templateId}`, config);
+                const { data } = await axios.get(`/api/templates/${templateId}`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
                 setTemplate(data);
 
+                // Initialize settings
                 const initialSettings = {};
                 if (data.formSchema.settings) {
                     Object.keys(data.formSchema.settings).forEach(key => {
@@ -34,8 +34,9 @@ const CreateGame = () => {
                 }
                 setSettingsData(initialSettings);
 
+                // Initialize content items
                 const initialItem = {};
-                if (data.formSchema.content && data.formSchema.content.itemSchema) {
+                if (data.formSchema.content?.itemSchema) {
                     Object.keys(data.formSchema.content.itemSchema).forEach(key => {
                         initialItem[key] = '';
                     });
@@ -43,8 +44,7 @@ const CreateGame = () => {
                 setContentItems([initialItem]);
 
             } catch (err) {
-                setError('Failed to load game template');
-                console.error(err);
+                setError('Failed to load template');
             } finally {
                 setLoading(false);
             }
@@ -57,130 +57,247 @@ const CreateGame = () => {
     };
 
     const handleContentChange = (index, field, value) => {
-        const newItems = [...contentItems];
-        newItems[index][field] = value;
-        setContentItems(newItems);
+        setContentItems(prev => {
+            const newItems = [...prev];
+            newItems[index][field] = value;
+            return newItems;
+        });
     };
 
     const addContentItem = () => {
         const newItem = {};
-        if (template.formSchema.content && template.formSchema.content.itemSchema) {
+        if (template.formSchema.content?.itemSchema) {
             Object.keys(template.formSchema.content.itemSchema).forEach(key => {
                 newItem[key] = '';
             });
         }
-        setContentItems([...contentItems, newItem]);
+        setContentItems(prev => [...prev, newItem]);
     };
     
     const removeContentItem = (index) => {
-        const newItems = [...contentItems];
-        newItems.splice(index, 1);
-        setContentItems(newItems);
+        setContentItems(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
         setError('');
 
-        // --- THIS IS THE FIX ---
-        // We create the final data object, ensuring the key 'config' matches
-        // what the backend controller (`gameCreationController.js`) expects.
         const gameData = {
             template: templateId,
-            config: settingsData, // Changed 'settings' to 'config'
+            config: settingsData,
             content: contentItems,
         };
 
         try {
-            const token = user.token;
-            const apiConfig = {
+            await axios.post('/api/creations', gameData, {
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${user.token}`,
                 },
-            };
-            console.log(gameData);
-            await axios.post('/api/creations', gameData, apiConfig);
-            
-            navigate(-1); // Go back to the previous dashboard
-
+            });
+            navigate(-1);
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Failed to create game';
-            setError(errorMessage);
-            console.error('Server Response Error:', err.response?.data || err.message);
+            setError(err.response?.data?.message || 'Failed to create game');
+        } finally {
+            setSaving(false);
         }
     };
 
-    if (loading) return <div className="text-center p-8">Loading template...</div>;
-    if (error) return <div className="text-red-500 text-center p-8">{error}</div>;
+    if (loading) return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 flex items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading template...</p>
+            </div>
+        </div>
+    );
+
+    if (error && !template) return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 flex items-center justify-center">
+            <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
+                <div className="text-6xl mb-4">⚠️</div>
+                <p className="text-red-600 font-medium">{error}</p>
+                <button 
+                    onClick={() => navigate(-1)}
+                    className="mt-4 px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                >
+                    Go Back
+                </button>
+            </div>
+        </div>
+    );
+
     if (!template) return null;
 
     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Create Game from "{template.name}"</h1>
-            
-            <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Game Settings</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {Object.entries(template.formSchema.settings).map(([key, field]) => (
-                            <div key={key}>
-                                <label htmlFor={key} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
-                                <input 
-                                    type={field.type}
-                                    name={key}
-                                    id={key}
-                                    value={settingsData[key] || ''}
-                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
-                                    required
-                                    className="block w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-white"
-                                />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+            {/* Header */}
+            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+                <div className="max-w-4xl mx-auto px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => navigate(-1)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                ← Back
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-800">Create Game</h1>
+                                <p className="text-sm text-gray-500">Using template: {template.name}</p>
                             </div>
-                        ))}
+                        </div>
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
+                            <span className="text-lg">🎯</span>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {template.formSchema.content && (
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                        <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">{template.formSchema.content.label}</h2>
-                        {contentItems.map((item, index) => (
-                            <div key={index} className="border-b dark:border-gray-700 pb-6 mb-6 last:border-b-0 last:mb-0">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-medium text-gray-600 dark:text-gray-300">Item #{index + 1}</h3>
-                                    {contentItems.length > 1 && (
-                                        <button type="button" onClick={() => removeContentItem(index)} className="text-red-500 hover:text-red-700 font-semibold">Remove</button>
-                                    )}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
-                                        <div key={key}>
-                                            <label htmlFor={`${key}-${index}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{field.label}</label>
-                                            <input
-                                                type={field.type}
-                                                name={`${key}-${index}`}
-                                                id={`${key}-${index}`}
-                                                value={item[key] || ''}
-                                                onChange={(e) => handleContentChange(index, key, e.target.value)}
-                                                required
-                                                className="block w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-white"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                         <button type="button" onClick={addContentItem} className="mt-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-lg">
-                            + Add Item
-                        </button>
+            {/* Main Content */}
+            <div className="max-w-4xl mx-auto px-6 py-8">
+                {error && (
+                    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
+                        <p className="text-red-700">{error}</p>
                     </div>
                 )}
-                
-                <div className="flex justify-end">
-                    <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg">
-                        Save Game
-                    </button>
-                </div>
-            </form>
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Game Settings Section */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                    <span className="text-white text-sm">⚙️</span>
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-800">Game Settings</h2>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="grid gap-6 md:grid-cols-2">
+                                {Object.entries(template.formSchema.settings).map(([key, field]) => (
+                                    <div key={key} className="group">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {field.label}
+                                        </label>
+                                        <input 
+                                            type={field.type}
+                                            value={settingsData[key] || ''}
+                                            onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                            required
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                            placeholder={`Enter ${field.label.toLowerCase()}`}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content Section */}
+                    {template.formSchema.content && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                            <span className="text-white text-sm">📝</span>
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-800">{template.formSchema.content.label}</h2>
+                                        <span className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
+                                            {contentItems.length} items
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 space-y-6">
+                                {contentItems.map((item, index) => (
+                                    <div key={index} className="relative">
+                                        {/* Item Header */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                                                    <span className="text-sm font-bold text-blue-600">{index + 1}</span>
+                                                </div>
+                                                <h3 className="font-semibold text-gray-700">Content Item {index + 1}</h3>
+                                            </div>
+                                            {contentItems.length > 1 && (
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => removeContentItem(index)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Item Fields */}
+                                        <div className="grid gap-4 md:grid-cols-2 p-4 bg-gray-50 rounded-xl">
+                                            {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
+                                                <div key={key}>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        {field.label}
+                                                    </label>
+                                                    <input
+                                                        type={field.type}
+                                                        value={item[key] || ''}
+                                                        onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                        required
+                                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {/* Add Item Button */}
+                                <button 
+                                    type="button" 
+                                    onClick={addContentItem}
+                                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-green-600"
+                                >
+                                    <span className="text-xl">+</span>
+                                    <span className="font-medium">Add Content Item</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Submit Section */}
+                    <div className="flex justify-end gap-4">
+                        <button 
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-xl transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={saving}
+                            className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <>
+                                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                    <span>Creating...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>💾</span>
+                                    <span>Save Game</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
