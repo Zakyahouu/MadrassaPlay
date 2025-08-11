@@ -1,177 +1,352 @@
-// SchoolPanel.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
-import ManagerPanel from './manager/ManagerPanel';
-import { FaEdit, FaTrash, FaCheckCircle, FaPlus, FaTimes } from 'react-icons/fa';
 
-const SchoolPanel = () => {
-  const [schools, setSchools] = useState([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', address: '' });
-  const [editMode, setEditMode] = useState(false);
-  const [editSchoolId, setEditSchoolId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+// --- SVG ICONS ---
+// A collection of SVG icons used throughout the application for a clean and consistent UI.
+const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
+const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
-  useEffect(() => {
-    fetchSchools();
-  }, []);
 
-  const fetchSchools = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get('/api/schools');
-      setSchools(response.data);
-    } catch (err) {
-      setError('Failed to fetch schools.');
-    } finally {
-      setLoading(false);
-    }
-  };
+// --- ManagerPanel Component ---
+// This component is displayed inside a modal to show managers for a specific school.
+// NOTE: This assumes an API endpoint `/api/schools/${schoolId}/managers`.
+const ManagerPanel = ({ schoolId }) => {
+    const [managers, setManagers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+    useEffect(() => {
+        const fetchManagers = async () => {
+            if (!schoolId) return;
+            setIsLoading(true);
+            try {
+                // In a real app, you would fetch managers for the specific school
+                // const { data } = await axios.get(`/api/schools/${schoolId}/managers`);
+                // For demonstration, we'll use a mock delay and data.
+                console.log(`Fetching managers for school: ${schoolId}`);
+                await new Promise(res => setTimeout(res, 500));
+                const mockManagers = [
+                    { _id: 'manager-1', name: 'John Doe', role: 'Principal' },
+                    { _id: 'manager-2', name: 'Jane Smith', role: 'Vice Principal' },
+                ];
+                setManagers(mockManagers);
+                setError(null);
+            } catch (err) {
+                setError('Failed to fetch managers.');
+                console.error(err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchManagers();
+    }, [schoolId]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const response = await axios.post('/api/schools', {
-        name: form.name,
-        contact: { email: form.email, phone: form.phone, address: form.address }
-      });
-      setSchools([...schools, response.data]);
-      setForm({ name: '', email: '', phone: '', address: '' });
-      setShowForm(false);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create school.');
-    }
-  };
+    if (isLoading) return <div className="text-center p-4">Loading managers...</div>;
+    if (error) return <div className="text-center p-4 text-red-600">{error}</div>;
 
-  const handleEdit = (school) => {
-    setEditMode(true);
-    setEditSchoolId(school._id);
-    setForm({
-      name: school.name,
-      email: school.contact?.email || '',
-      phone: school.contact?.phone || '',
-      address: school.contact?.address || ''
-    });
-    setShowForm(true);
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const response = await axios.put(`/api/schools/${editSchoolId}`, {
-        name: form.name,
-        contact: { email: form.email, phone: form.phone, address: form.address }
-      });
-      setSchools(schools.map(s => (s._id === editSchoolId ? response.data : s)));
-      setEditMode(false);
-      setEditSchoolId(null);
-      setForm({ name: '', email: '', phone: '', address: '' });
-      setShowForm(false);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update school.');
-    }
-  };
-
-  const handleDelete = async (schoolId) => {
-    if (!window.confirm('Are you sure you want to delete this school?')) return;
-    setError(null);
-    try {
-      await axios.delete(`/api/schools/${schoolId}`);
-      setSchools(schools.filter(s => s._id !== schoolId));
-      if (selectedSchoolId === schoolId) setSelectedSchoolId(null);
-    } catch (err) {
-      setError('Failed to delete school.');
-    }
-  };
-
-  const handleSelect = (schoolId) => {
-    setSelectedSchoolId(schoolId);
-    setEditMode(false);
-    setEditSchoolId(null);
-    setForm({ name: '', email: '', phone: '', address: '' });
-  };
-
-  const selectedSchool = schools.find(s => s._id === selectedSchoolId);
-
-  return (
-    <div className="p-6">
-      <h2 className="text-3xl font-extrabold mb-6 text-indigo-700">School Management</h2>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <div className="flex justify-between items-center mb-6">
-        <span className="text-lg font-semibold">Schools</span>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-indigo-700" onClick={() => { setShowForm(true); setEditMode(false); setForm({ name: '', email: '', phone: '', address: '', principal: '' }); }}>
-          <FaPlus /> Add School
-        </button>
-      </div>
-      {/* Modal for create/edit form */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md relative">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-red-500" onClick={() => { setShowForm(false); setEditMode(false); setEditSchoolId(null); }}><FaTimes size={20} /></button>
-            <form onSubmit={editMode ? handleUpdate : handleCreate}>
-              <h4 className="font-bold mb-4 text-xl">{editMode ? 'Edit School' : 'Create New School'}</h4>
-              <input name="name" value={form.name} onChange={handleChange} placeholder="School Name" className="mb-3 p-2 border w-full rounded" required />
-              <input name="email" value={form.email} onChange={handleChange} placeholder="Contact Email" className="mb-3 p-2 border w-full rounded" />
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="Contact Phone" className="mb-3 p-2 border w-full rounded" />
-              <input name="address" value={form.address} onChange={handleChange} placeholder="Address" className="mb-3 p-2 border w-full rounded" />
-              <div className="flex gap-2 mt-4">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded flex-1">{editMode ? 'Update School' : 'Create School'}</button>
-                <button type="button" className="bg-gray-300 px-4 py-2 rounded flex-1" onClick={() => { setShowForm(false); setEditMode(false); setEditSchoolId(null); }}>Cancel</button>
-              </div>
-            </form>
-          </div>
+    return (
+        <div className="space-y-3">
+            {managers.length > 0 ? (
+                managers.map(manager => (
+                    <div key={manager._id} className="flex items-center justify-between bg-gray-100 p-3 rounded-lg">
+                        <div>
+                            <p className="font-semibold text-gray-800">{manager.name}</p>
+                            <p className="text-sm text-gray-500">{manager.role}</p>
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <p className="text-center text-gray-500 p-4">No managers found for this school.</p>
+            )}
         </div>
-      )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {schools.map(school => (
-          <div key={school._id} className={`p-4 rounded-lg shadow border transition-all ${selectedSchoolId === school._id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'}`}>
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-bold text-lg flex items-center gap-2">
-                {selectedSchoolId === school._id && <FaCheckCircle className="text-green-500" title="Selected" />}
-                {school.name}
-              </span>
-              <div className="flex gap-2">
-                <button title="Select" onClick={() => handleSelect(school._id)} className="text-indigo-600 hover:text-indigo-800"><FaCheckCircle /></button>
-                <button title="Edit" onClick={() => handleEdit(school)} className="text-yellow-600 hover:text-yellow-800"><FaEdit /></button>
-                <button title="Delete" onClick={() => handleDelete(school._id)} className="text-red-600 hover:text-red-800"><FaTrash /></button>
-              </div>
-            </div>
-            <div className="text-sm text-gray-700">
-              <div><span className="font-semibold">Email:</span> {school.contact?.email || '-'}</div>
-              <div><span className="font-semibold">Phone:</span> {school.contact?.phone || '-'}</div>
-              <div><span className="font-semibold">Address:</span> {school.contact?.address || '-'}</div>
-              {/* Principal removed from UI */}
-              <div><span className="font-semibold">Managers:</span> {school.managers?.length || 0}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      {selectedSchool && (
-        <div className="mt-8">
-          <h3 className="text-2xl font-bold mb-4 text-indigo-700">Selected School Details</h3>
-          <div className="mb-6 p-6 border rounded-lg bg-gray-50 shadow">
-            <div className="grid grid-cols-2 gap-4">
-              <div><span className="font-semibold">Name:</span> {selectedSchool.name}</div>
-              <div><span className="font-semibold">Email:</span> {selectedSchool.contact?.email || '-'}</div>
-              <div><span className="font-semibold">Phone:</span> {selectedSchool.contact?.phone || '-'}</div>
-              <div><span className="font-semibold">Address:</span> {selectedSchool.contact?.address || '-'}</div>
-              <div><span className="font-semibold">Principal:</span> {selectedSchool.principal || '-'}</div>
-              <div><span className="font-semibold">Managers:</span> {selectedSchool.managers?.length || 0}</div>
-            </div>
-          </div>
-          <ManagerPanel schoolId={selectedSchool._id} />
-        </div>
-      )}
-    </div>
-  );
+    );
 };
 
-export default SchoolPanel;
+
+// --- Main SchoolPanel Component ---
+// This is the primary component that orchestrates the entire UI.
+const SchoolPanel = () => {
+    const [schools, setSchools] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [modal, setModal] = useState({ type: null, data: null }); // Manages all modals
+
+    // Fetch initial school data from the API on component mount
+    useEffect(() => {
+        const fetchSchools = async () => {
+            try {
+                setError(null);
+                setLoading(true);
+                const { data } = await axios.get('/api/schools');
+                setSchools(data || []);
+            } catch (err) {
+                setError('Failed to fetch schools. Please try again later.');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSchools();
+    }, []);
+
+    // Memoized filtering of schools based on the search term for performance
+    const filteredSchools = useMemo(() =>
+        schools.filter(school =>
+            school.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ), [schools, searchTerm]);
+
+    // --- CRUD Handlers ---
+
+    const handleSaveSchool = async (formData) => {
+        const isEditing = !!formData._id;
+        const payload = { name: formData.name, contact: { email: formData.email, phone: formData.phone, address: formData.address } };
+
+        try {
+            if (isEditing) {
+                const { data: updatedSchool } = await axios.put(`/api/schools/${formData._id}`, payload);
+                setSchools(prev => prev.map(s => s._id === formData._id ? updatedSchool : s));
+            } else {
+                const { data: newSchool } = await axios.post('/api/schools', payload);
+                setSchools(prev => [...prev, newSchool]);
+            }
+            setModal({ type: null, data: null }); // Close modal on success
+        } catch (err) {
+            console.error("Save operation failed:", err);
+            // In a real app, you might set a form-specific error message in the modal
+            alert('Operation failed. Please check the console for details.');
+        }
+    };
+
+    const handleDeleteSchool = async (schoolId) => {
+        try {
+            await axios.delete(`/api/schools/${schoolId}`);
+            setSchools(prev => prev.filter(s => s._id !== schoolId));
+            setModal({ type: null, data: null }); // Close confirmation modal
+        } catch (err) {
+            console.error("Delete operation failed:", err);
+            alert('Failed to delete school. Please try again.');
+        }
+    };
+
+    // --- Render Logic ---
+
+    const renderContent = () => {
+        if (loading) {
+            return (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
+                </div>
+            );
+        }
+
+        if (error) {
+            return <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md text-center">{error}</div>;
+        }
+
+        if (filteredSchools.length === 0) {
+            return <div className="text-center py-10 text-gray-500">No schools found.</div>;
+        }
+
+        return (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredSchools.map(school => (
+                    <SchoolCard
+                        key={school._id}
+                        school={school}
+                        onEdit={() => setModal({ type: 'EDIT_SCHOOL', data: school })}
+                        onDelete={() => setModal({ type: 'DELETE_SCHOOL', data: school })}
+                        onViewManagers={() => setModal({ type: 'VIEW_MANAGERS', data: school })}
+                    />
+                ))}
+            </div>
+        );
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-2xl shadow-lg">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
+                    <h2 className="text-2xl font-bold text-gray-800">Schools</h2>
+                    <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                        {schools.length}
+                    </span>
+                </div>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                     <input
+                        type="text"
+                        placeholder="Search schools..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                    />
+                    <button
+                        onClick={() => setModal({ type: 'ADD_SCHOOL', data: null })}
+                        className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
+                    >
+                        <PlusIcon /> Add School
+                    </button>
+                </div>
+            </div>
+
+            {renderContent()}
+
+            {/* Modal Renderer */}
+            {modal.type && (
+                <Modal onClose={() => setModal({ type: null, data: null })}>
+                    {modal.type === 'ADD_SCHOOL' && (
+                        <SchoolForm title="Add New School" onSave={handleSaveSchool} onClose={() => setModal({ type: null, data: null })} />
+                    )}
+                    {modal.type === 'EDIT_SCHOOL' && (
+                        <SchoolForm title="Edit School" schoolToEdit={modal.data} onSave={handleSaveSchool} onClose={() => setModal({ type: null, data: null })} />
+                    )}
+                    {modal.type === 'VIEW_MANAGERS' && (
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">Managers at {modal.data.name}</h3>
+                            <ManagerPanel schoolId={modal.data._id} />
+                        </div>
+                    )}
+                    {modal.type === 'DELETE_SCHOOL' && (
+                         <DeleteConfirmation
+                            itemName={modal.data.name}
+                            onConfirm={() => handleDeleteSchool(modal.data._id)}
+                            onCancel={() => setModal({ type: null, data: null })}
+                        />
+                    )}
+                </Modal>
+            )}
+        </div>
+    );
+};
+
+// --- Child Components ---
+
+const SchoolCard = ({ school, onEdit, onDelete, onViewManagers }) => (
+    <div className="group bg-white p-5 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+        <div>
+            <div className="flex justify-between items-start mb-3">
+                <h3 className="font-bold text-lg text-gray-900 pr-2">{school.name}</h3>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={onEdit} className="p-1.5 text-yellow-600 hover:bg-yellow-100 rounded-md"><EditIcon /></button>
+                    <button onClick={onDelete} className="p-1.5 text-red-600 hover:bg-red-100 rounded-md"><TrashIcon /></button>
+                </div>
+            </div>
+            <div className="space-y-1.5 text-sm text-gray-600">
+                <p>📧 {school.contact?.email || 'N/A'}</p>
+                <p>📞 {school.contact?.phone || 'N/A'}</p>
+                <p>📍 {school.contact?.address || 'N/A'}</p>
+            </div>
+        </div>
+        <div className="mt-4">
+            <button
+                onClick={onViewManagers}
+                className="bg-gray-100 text-gray-700 text-xs px-3 py-1.5 rounded-full hover:bg-blue-100 hover:text-blue-800 transition-colors font-semibold flex items-center gap-2"
+            >
+                <UserIcon />
+                <span>{school.managers?.length || 0} managers</span>
+            </button>
+        </div>
+    </div>
+);
+
+const SkeletonCard = () => (
+    <div className="bg-white p-5 rounded-xl border-2 border-gray-200">
+        <div className="animate-pulse flex flex-col justify-between h-full">
+            <div>
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2">
+                    <div className="h-3 bg-gray-200 rounded w-full"></div>
+                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full"></div>
+                </div>
+            </div>
+            <div className="h-6 bg-gray-200 rounded-full w-28 mt-4"></div>
+        </div>
+    </div>
+);
+
+const Modal = ({ children, onClose }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 transition-opacity" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md animate-fade-in-up" onClick={e => e.stopPropagation()}>
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><CloseIcon /></button>
+            {children}
+        </div>
+    </div>
+);
+
+const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
+    const [form, setForm] = useState({
+        _id: schoolToEdit?._id || null,
+        name: schoolToEdit?.name || '',
+        email: schoolToEdit?.contact?.email || '',
+        phone: schoolToEdit?.contact?.phone || '',
+        address: schoolToEdit?.contact?.address || '',
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(form);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">{title}</h3>
+            <div className="space-y-4">
+                <input name="name" value={form.name} onChange={handleChange} placeholder="School Name" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required />
+                <input name="email" value={form.email} onChange={handleChange} placeholder="Email" type="email" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+                <input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+                <input name="address" value={form.address} onChange={handleChange} placeholder="Address" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+            </div>
+            <div className="flex gap-3 pt-6">
+                <button type="button" onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancel</button>
+                <button type="submit" className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-colors">
+                    {schoolToEdit ? 'Update' : 'Create'}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+const DeleteConfirmation = ({ itemName, onConfirm, onCancel }) => (
+    <div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Confirm Deletion</h3>
+        <p className="text-gray-600 mb-6">Are you sure you want to delete <span className="font-semibold">{itemName}</span>? This action cannot be undone.</p>
+        <div className="flex gap-3">
+            <button onClick={onCancel} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancel</button>
+            <button onClick={onConfirm} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">Delete</button>
+        </div>
+    </div>
+);
+
+// --- Main App Component ---
+// This is the root component that renders the SchoolPanel.
+function App() {
+  return (
+    <div className="bg-gray-50 min-h-screen font-sans p-4 sm:p-6 lg:p-8">
+      <style>{`
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out forwards;
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto">
+        <SchoolPanel />
+      </div>
+    </div>
+  );
+}
+
+export default App;

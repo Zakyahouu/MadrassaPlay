@@ -1,4 +1,3 @@
-// client/src/components/admin/GameTemplateManager.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
@@ -12,101 +11,124 @@ const GameTemplateManager = () => {
   const fetchTemplates = async () => {
     try {
       const token = JSON.parse(localStorage.getItem('user')).token;
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const { data } = await axios.get('/api/templates', config);
+      const { data } = await axios.get('/api/templates', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTemplates(data);
     } catch (err) {
       setError('Failed to fetch templates');
-      console.error(err);
     }
   };
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
+  useEffect(() => { fetchTemplates(); }, []);
 
   const handlePublishToggle = async (templateId, newStatus) => {
-    if (!window.confirm(`Are you sure you want to ${newStatus === 'published' ? 'publish' : 'unpublish'} this template?`)) {
-      return;
-    }
+    if (!confirm(`${newStatus === 'published' ? 'Publish' : 'Unpublish'} this template?`)) return;
+    
     try {
       const token = JSON.parse(localStorage.getItem('user')).token;
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put(`/api/templates/${templateId}/status`, { status: newStatus }, config);
+      await axios.put(`/api/templates/${templateId}/status`, 
+        { status: newStatus }, 
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
       fetchTemplates();
-      triggerTemplateUpdate(); // Trigger update for other components
+      triggerTemplateUpdate();
     } catch (err) {
       setError(`Failed to ${newStatus} template`);
-      console.error(err);
     }
   };
 
-  // New function to handle deleting a template
   const handleDelete = async (templateId) => {
-    if (!window.confirm('Are you sure you want to permanently delete this template? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Permanently delete this template?')) return;
+    
     try {
       const token = JSON.parse(localStorage.getItem('user')).token;
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`/api/templates/${templateId}`, config);
-      fetchTemplates(); // Re-fetch to update the list
+      await axios.delete(`/api/templates/${templateId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchTemplates();
     } catch (err) {
       setError('Failed to delete template');
-      console.error(err);
     }
   };
 
-
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Game Templates</h3>
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-8 bg-gradient-to-b from-emerald-500 to-teal-600 rounded-full"></div>
+        <h3 className="text-2xl font-bold text-gray-800">Game Templates</h3>
+        <span className="bg-emerald-100 text-emerald-800 text-sm font-medium px-3 py-1 rounded-full">
+          {templates.length}
+        </span>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
       
-      <div className="space-y-4">
+      <div className="space-y-3 mb-8">
         {templates.length > 0 ? (
           templates.map((template) => (
-            <div key={template._id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{template.name}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
-                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                    template.status === 'published' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                }`}>
-                  {template.status}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Link to={`/teacher/create-game/${template._id}`} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                  Test
-                </Link>
-                {template.status === 'draft' ? (
-                  <button onClick={() => handlePublishToggle(template._id, 'published')} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                    Publish
+            <div key={template._id} className="group p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="font-bold text-lg text-gray-800">{template.name}</h4>
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      template.status === 'published' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {template.status === 'published' ? '✓ Published' : '⏳ Draft'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-sm">{template.description}</p>
+                </div>
+                
+                <div className="flex items-center gap-2 ml-4">
+                  <Link 
+                    to={`/teacher/create-game/${template._id}`}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Test
+                  </Link>
+                  
+                  <button 
+                    onClick={() => handlePublishToggle(template._id, template.status === 'draft' ? 'published' : 'draft')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      template.status === 'draft'
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    }`}
+                  >
+                    {template.status === 'draft' ? 'Publish' : 'Unpublish'}
                   </button>
-                ) : (
-                  <button onClick={() => handlePublishToggle(template._id, 'draft')} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                    Unpublish
+                  
+                  <button 
+                    onClick={() => handleDelete(template._id)}
+                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    🗑️
                   </button>
-                )}
-                 <button onClick={() => handleDelete(template._id)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
-                  Delete
-                </button>
+                </div>
               </div>
             </div>
           ))
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">No game templates found.</p>
+          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-emerald-50 rounded-xl">
+            <div className="text-6xl mb-4">🎯</div>
+            <p className="text-gray-600 mb-2">No game templates</p>
+            <p className="text-sm text-gray-500">Upload templates to get started!</p>
+          </div>
         )}
       </div>
       
-      <div className="mt-8 border-t pt-6">
+      <div className="border-t border-gray-200 pt-6">
         <TemplateUploader onUploadSuccess={fetchTemplates} />
       </div>
     </div>
   );
 };
-
 export default GameTemplateManager;
