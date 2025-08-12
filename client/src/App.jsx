@@ -14,6 +14,7 @@ import PlayGame from './pages/PlayGame';
 import ViewResults from './pages/ViewResults';
 import HostLobby from './pages/HostLobby';
 import PlayerLobby from './pages/PlayerLobby'; // 1. Import the new page
+import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -133,6 +134,16 @@ function App() {
           element={
             <ProtectedRoute>
               <PlayGame />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Profile Route - Unified for all roles */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

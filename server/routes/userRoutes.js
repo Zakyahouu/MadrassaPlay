@@ -13,7 +13,11 @@ const router = express.Router();
 // 3. IMPORT CONTROLLER FUNCTIONS
 // ==============================================================================
 // We are now importing the functions from the controller file we created.
-const { registerUser, loginUser } = require('../controllers/userController');
+const { registerUser, loginUser, getUserProfile, updateUserProfile } = require('../controllers/userController');
+
+// 3.1. IMPORT MIDDLEWARE
+// ==============================================================================
+const { protect } = require('../middleware/authMiddleware');
 
 
 // 4. DEFINE THE ROUTES
@@ -24,6 +28,10 @@ router.post('/register', registerUser);
 
 // When a POST request is made to '/login', we will call the loginUser function.
 router.post('/login', loginUser);
+
+// Profile routes (protected)
+router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
 
 
 // 5. EXPORT THE ROUTER

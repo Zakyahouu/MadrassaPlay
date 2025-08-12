@@ -1,22 +1,22 @@
-import { 
-  Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell, 
-  UserCheck, Building2, FileText, Search, Plus, Edit, Trash2, Eye,
-  Clock, Star, Award, TrendingUp, Filter, Download, Mail, Phone
-} from 'lucide-react';
 import React from 'react';
+import UnifiedCard from '@shared/UnifiedCard';
+
 const QuickActionCard = ({ title, description, icon: Icon, color, onClick }) => (
-  <button
+  <UnifiedCard 
+    className="cursor-pointer group"
     onClick={onClick}
-    className="bg-white rounded-lg border border-gray-200 p-4 text-left hover:shadow-md transition-shadow duration-200"
+    padding="p-4"
   >
-    <div className="flex items-start gap-3">
-      <Icon className={`w-6 h-6 ${color} mt-1`} />
-      <div>
-        <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
+    <div className="flex items-start space-x-3">
+      <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
+        <Icon className={`w-5 h-5 ${color}`} />
+      </div>
+      <div className="flex-1">
+        <h4 className="font-medium text-gray-900 mb-1">{title}</h4>
         <p className="text-sm text-gray-600">{description}</p>
       </div>
     </div>
-  </button>
+  </UnifiedCard>
 );
 
 export default QuickActionCard;

@@ -1,75 +1,129 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { LogOut, Plus, Sparkles, BookOpen, Play, Edit3, Trash2 } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext'; // Assuming this context provides user and logout function
+import { AuthContext } from '../context/AuthContext';
 
-// --- Child Components ---
-// In a real app, these would likely be in separate files. They are included here for a complete example.
-// Import the components for the dashboard
+// Import layout components
+import UnifiedSidebar from '../components/layout/UnifiedSidebar';
+import TopNav from '../components/layout/TopNav';
+
+// Import dashboard components
+import TeacherOverview from '../components/teacher/TeacherOverview';
+import TeacherResults from '../components/teacher/TeacherResults';
+import TeacherLiveSessions from '../components/teacher/TeacherLiveSessions';
+import TeacherAssignments from '../components/teacher/TeacherAssignments';
+import TeacherStudents from '../components/teacher/TeacherStudents';
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
 
 const TeacherDashboard = () => {
-  // In a real app, user and logout would come from a real AuthContext
-  const { user, logout } = useContext(AuthContext) || { user: { name: 'Dr. Anya Sharma' }, logout: () => console.log('Logout clicked') };
+  const { user, logout } = useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState({
+    totalGames: 24,
+    totalStudents: 156,
+    averageScore: 87,
+    liveSessions: 8
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  const navigationItems = [
+    { id: 'overview', name: 'Overview' },
+    { id: 'my-games', name: 'My Games' },
+    { id: 'create-game', name: 'Create Game' },
+    { id: 'live-sessions', name: 'Live Sessions' },
+    { id: 'results', name: 'Results & Analytics' },
+    { id: 'assignments', name: 'Assignments' },
+    { id: 'students', name: 'My Students' },
+    { id: 'calendar', name: 'Calendar' },
+    { id: 'performance', name: 'Performance' },
+    { id: 'achievements', name: 'Achievements' }
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return <TeacherOverview stats={stats} />;
+      case 'my-games':
+        return <MyCreations />;
+      case 'create-game':
+        return <TemplateSelector />;
+      case 'live-sessions':
+        return <TeacherLiveSessions />;
+      case 'results':
+        return <TeacherResults />;
+      case 'assignments':
+        return <TeacherAssignments />;
+      case 'students':
+        return <TeacherStudents />;
+      case 'calendar':
+        return <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Calendar</h2>
+          <p className="text-gray-600">Calendar and scheduling features coming soon...</p>
+        </div>;
+      case 'performance':
+        return <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Performance</h2>
+          <p className="text-gray-600">Performance tracking features coming soon...</p>
+        </div>;
+      case 'achievements':
+        return <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Achievements</h2>
+          <p className="text-gray-600">Achievement and rewards features coming soon...</p>
+        </div>;
+      default:
+        return <TeacherOverview stats={stats} />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white font-sans">
-      <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center shadow-md">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Creator Dashboard</h1>
-              <p className="text-sm text-gray-500">Design amazing learning experiences</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">Welcome back!</p>
-              <p className="text-xs text-gray-500">{user?.name}</p>
-            </div>
-            <button
-              onClick={logout}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors group"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      <UnifiedSidebar 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        user={user}
+        role="teacher"
+      />
 
-      <main className="px-6 py-8 max-w-7xl mx-auto">
-        <section className="mb-12">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">My Creations</h2>
-            <p className="text-gray-600 max-w-2xl">
-              Your personalized learning games are ready to engage and inspire. Launch existing games or edit them to keep the content fresh.
-            </p>
-          </div>
-          <MyCreations />
-        </section>
+      <div className="flex-1 relative">
+        <TopNav 
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeTab={activeTab}
+          navigationItems={navigationItems}
+          logout={logout}
+        />
 
-        <section>
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create New Game</h2>
-            <p className="text-gray-600 max-w-2xl">
-              Transform your lessons into interactive adventures. Choose a template that matches your teaching style and watch your students light up with excitement.
-            </p>
-          </div>
-          <TemplateSelector />
-        </section>
-        
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
-            <div className="w-8 h-px bg-gradient-to-r from-transparent to-gray-300"></div>
-            <Sparkles className="w-4 h-4" />
-            <div className="w-8 h-px bg-gradient-to-l from-transparent to-gray-300"></div>
-          </div>
-        </div>
-      </main>
+        <main className="p-6">
+          {renderContent()}
+        </main>
+      </div>
+
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
