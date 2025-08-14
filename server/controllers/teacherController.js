@@ -1,5 +1,6 @@
 
 const User = require('../models/User'); // Using the User model instead of a separate Teacher model
+const bcrypt = require('bcryptjs');
 
 // @desc    Get all teachers for the manager's school
 // @route   GET /api/teachers
@@ -22,26 +23,40 @@ const getTeachersForSchool = async (req, res) => {
 const createTeacher = async (req, res) => {
   try {
     const schoolId = req.user.school;
-    // Ensure the new user is assigned the 'teacher' role and the manager's school
-    const teacherData = { ...req.body, school: schoolId, role: 'teacher' };
-    
-    // Check if a user with this email already exists
-    const userExists = await User.findOne({ email: teacherData.email });
-    if (userExists) {
-        return res.status(400).json({ message: 'User with this email already exists.' });
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required.' });
     }
 
-    // NOTE: Password hashing should be handled by a pre-save middleware in your User model.
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+
+    // Hash password (since no pre-save hook currently)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Provide defaults for required teacher fields if not supplied
+    const teacherData = {
+      name,
+      email,
+      password: hashedPassword,
+      role: 'teacher',
+      school: schoolId,
+      subject: req.body.subject || 'General',
+      department: req.body.department || 'General',
+      experience: typeof req.body.experience === 'number' ? req.body.experience : 0,
+      status: req.body.status || 'active',
+      phone: req.body.phone || ''
+    };
+
     const newTeacher = new User(teacherData);
     const savedTeacher = await newTeacher.save();
-    
-    // Exclude the password from the response
     const teacherResponse = savedTeacher.toObject();
     delete teacherResponse.password;
-
-    res.status(201).json({ message: "Teacher created successfully", teacher: teacherResponse });
+    res.status(201).json({ message: 'Teacher created successfully', teacher: teacherResponse });
   } catch (error) {
-    res.status(400).json({ message: "Error creating teacher", error: error.message });
+    res.status(400).json({ message: 'Error creating teacher', error: error.message });
   }
 };
 

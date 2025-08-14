@@ -14,6 +14,8 @@ const router = express.Router();
 // ==============================================================================
 // We are now importing the functions from the controller file we created.
 const { registerUser, loginUser } = require('../controllers/userController');
+const { protect, admin } = require('../middleware/authMiddleware');
+const User = require('../models/User');
 
 
 // 4. DEFINE THE ROUTES
@@ -24,6 +26,39 @@ router.post('/register', registerUser);
 
 // When a POST request is made to '/login', we will call the loginUser function.
 router.post('/login', loginUser);
+
+// Authenticated: get my gamification snapshot
+router.get('/me/gamification', protect, async (req, res) => {
+	try {
+		const self = await User.findById(req.user._id).select('xp level totalPoints');
+		res.json(self || { xp: 0, level: 1, totalPoints: 0 });
+	} catch (err) {
+		res.status(500).json({ message: 'Server Error', error: err.message });
+	}
+});
+
+// Counts endpoint
+// Admin: global; Manager: scoped to their school; role filter optional (?role=student|teacher|manager|admin)
+router.get('/count', protect, async (req, res) => {
+	try {
+		const { role } = req.query;
+		const filter = {};
+		if (role) filter.role = role;
+
+		if (req.user.role === 'admin') {
+			// no extra scoping
+		} else if (req.user.role === 'manager' && req.user.school) {
+			filter.school = req.user.school;
+		} else {
+			return res.status(403).json({ message: 'Not authorized.' });
+		}
+
+		const count = await User.countDocuments(filter);
+		res.json({ count });
+	} catch (err) {
+		res.status(500).json({ message: 'Server Error', error: err.message });
+	}
+});
 
 
 // 5. EXPORT THE ROUTER

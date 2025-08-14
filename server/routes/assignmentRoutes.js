@@ -6,7 +6,10 @@ const router = express.Router();
 // Import controller functions
 const { 
   createAssignment, 
-  getMyAssignments 
+  getMyAssignments,
+  getAssignmentsForTeacher,
+  getMyAssignmentsDetailed,
+  getAssignmentBreakdown,
 } = require('../controllers/assignmentController');
 
 // Import middleware for protection
@@ -18,5 +21,10 @@ router.post('/', protect, createAssignment);
 
 // A GET request to /api/assignments/my-assignments will get all assignments for the logged-in student.
 router.get('/my-assignments', protect, getMyAssignments);
+router.get('/my-assignments/detailed', protect, getMyAssignmentsDetailed);
+router.get('/:id/breakdown', protect, getAssignmentBreakdown);
+
+// Teacher: list own assignments
+router.get('/teacher', protect, getAssignmentsForTeacher);
 
 module.exports = router;

@@ -7,6 +7,9 @@ import { AuthContext } from '../context/AuthContext'; // Assuming this context p
 // Import the components for the dashboard
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
+import Reports from '../components/teacher/Reports';
+import AssignmentCreate from '../components/teacher/AssignmentCreate';
+import AssignmentsList from '../components/teacher/AssignmentsList';
 
 const TeacherDashboard = () => {
   // In a real app, user and logout would come from a real AuthContext
@@ -50,6 +53,28 @@ const TeacherDashboard = () => {
             </p>
           </div>
           <MyCreations />
+        </section>
+
+        <section className="mt-12">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Reports</h2>
+            <p className="text-gray-600 max-w-2xl">Assignment progress at a glance.</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-2xl border p-6">
+              <h3 className="text-xl font-semibold mb-3">My Assignments</h3>
+              <AssignmentsList />
+            </div>
+            <Reports />
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Assignment</h2>
+            <p className="text-gray-600 max-w-2xl">Target classes and pick games to assign.</p>
+          </div>
+          <AssignmentCreate />
         </section>
 
         <section>

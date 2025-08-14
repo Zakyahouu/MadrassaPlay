@@ -59,6 +59,9 @@ const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+  xp: user.xp,
+  level: user.level,
+  totalPoints: user.totalPoints,
         token: generateToken(user._id), // Generate and include the token
       });
     } else {
@@ -89,6 +92,9 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         school: user.school,
+  xp: user.xp,
+  level: user.level,
+  totalPoints: user.totalPoints,
         token: generateToken(user._id),
       });
     } else {

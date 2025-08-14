@@ -10,6 +10,8 @@ import TopNav from '../components/layout/TopNav';
 import SchoolManager from '../components/admin/SchoolPanel';
 import GameTemplateManager from '../components/admin/GameTemplateManager';
 import Analytics from '../components/admin/Analytics';
+import AdminTestGames from '../components/admin/AdminTestGames';
+import BadgeManager from '../components/admin/BadgeManager';
 import Overview from '../components/admin/Overview';
 
 const AdminDashboard = () => {
@@ -50,7 +52,9 @@ const AdminDashboard = () => {
   const navigationItems = [
     { id: 'overview', name: 'Overview' },
     { id: 'schools', name: 'Schools' },
+    { id: 'games', name: 'Games' },
     { id: 'templates', name: 'Game Templates' },
+    { id: 'badges', name: 'Badges' },
     { id: 'analytics', name: 'Analytics' }
   ];
 
@@ -60,8 +64,12 @@ const AdminDashboard = () => {
         return <Overview stats={stats} loading={loading} />;
       case 'schools':
         return <SchoolManager />;
+      case 'games':
+        return <AdminTestGames />;
       case 'templates':
         return <GameTemplateManager />;
+      case 'badges':
+        return <BadgeManager />;
       case 'analytics':
         return <Analytics />;
       default:

@@ -8,19 +8,13 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 const connectDB = require('./config/db');
 const path = require('path');
-// Import route files
-const userRoutes = require('./routes/userRoutes');
-const schoolRoutes = require('./routes/schoolRoutes');
-const gameTemplateRoutes = require('./routes/gameTemplateRoutes');
-const gameCreationRoutes = require('./routes/gameCreationRoutes');
-const assignmentRoutes = require('./routes/assignmentRoutes');
+const app = require('./app');
 const gameResultRoutes = require('./routes/gameResultRoutes');
 
 
 // 2. INITIALIZE THE APP & SERVER
 // ==============================================================================
 connectDB();
-const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -60,26 +54,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 
-// 4. DEFINE ROUTES
-// ==============================================================================
-app.use('/api/users', userRoutes);
-app.use('/api/schools', schoolRoutes);
-app.use('/api/teachers', require('./routes/teacherRoutes'));
-app.use('/api/students', require('./routes/studentRoutes'));
-app.use('/api/templates', gameTemplateRoutes);
-app.use('/api/creations', gameCreationRoutes);
-app.use('/api/assignments', assignmentRoutes);
+// 4. DEFINE ROUTES (app core routes mounted in app.js; only add those needing socket scope here)
 app.use('/api/results', gameResultRoutes);
-// Register staff routes
-const staffRoutes = require('./routes/staffRoutes');
-app.use('/api/staff', staffRoutes);
-// Register class routes
-const classRoutes = require('./routes/classRoutes');
-app.use('/api/classes', classRoutes);
-
-// Register payment routes
-const paymentRoutes = require('./routes/paymentRoutes');
-app.use('/api/payments', paymentRoutes);
 
 
 // 5. SOCKET.IO CONNECTION HANDLING

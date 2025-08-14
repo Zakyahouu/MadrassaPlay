@@ -1,0 +1,23 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game Title", "required": true, "default": "Arithmetic Sprint" },
+    "timeLimit": { "type": "number", "label": "Time Limit (seconds)", "required": true, "default": 60, "min": 10, "max": 600 },
+    "operations": { "type": "enum", "label": "Operations (choose one or more)", "required": true, "options": ["+","-","*","/"], "default": ["+","-"] },
+    "maxOperand": { "type": "number", "label": "Max Operand Value", "required": true, "default": 20, "min": 5, "max": 500 },
+    "choicesPerQuestion": { "type": "number", "label": "Choices per Question", "required": true, "default": 4, "min": 2, "max": 6 },
+    "autoGenerate": { "type": "boolean", "label": "Auto Generate Questions", "required": false, "default": true },
+    "questionCount": { "type": "number", "label": "Question Count (if auto)", "required": false, "default": 20, "min": 1, "max": 200 }
+  },
+  "content": {
+    "collection": true,
+    "itemSchema": {
+      "operandA": { "type": "number", "label": "Operand A", "required": true },
+      "operandB": { "type": "number", "label": "Operand B", "required": true },
+      "operation": { "type": "enum", "label": "Operation", "required": true, "options": ["+","-","*","/"] },
+      "correctAnswer": { "type": "number", "label": "Correct Answer", "required": true },
+      "distractors": { "type": "json", "label": "Distractor Choices (array)", "required": false }
+    },
+    "minItems": 0,
+    "maxItems": 500
+  }
+}

@@ -1,6 +1,6 @@
 // PlayGame.jsx - Enhanced with minimal clean design
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -8,6 +8,8 @@ const PlayGame = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { creationId } = useParams();
+  const location = useLocation();
+  const assignmentId = location.state?.assignmentId || null;
   const [gameCreation, setGameCreation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,10 +32,15 @@ const PlayGame = () => {
 
   useEffect(() => {
     const handleGameMessage = async (event) => {
-      if (event.data?.type === 'GAME_COMPLETE') {
+    if (event.data?.type === 'GAME_COMPLETE') {
         try {
-          await axios.post('/api/results', event.data.payload);
+      const payload = { ...event.data.payload };
+      if (assignmentId && !payload.assignmentId) payload.assignmentId = assignmentId;
+      await axios.post('/api/results', payload);
           console.log('Result saved successfully');
+          // Dispatch events so dashboards/components can refresh without polling
+          window.dispatchEvent(new Event('assignmentProgressRefresh'));
+          window.dispatchEvent(new Event('templateBadgesRefresh'));
         } catch (err) {
           console.error('Failed to save result:', err);
         }
@@ -49,6 +56,7 @@ const PlayGame = () => {
       const payload = {
         ...gameCreation,
         questions: gameCreation.content,
+        assignmentId,
       };
       iframeRef.current.contentWindow.postMessage(
         { type: 'INIT_GAME', payload },

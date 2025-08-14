@@ -89,7 +89,25 @@ function App() {
 
         {/* Route 7: The Play Game Page */}
         <Route
+          path="/admin/play-game/:creationId"
+          element={
+            <ProtectedRoute>
+              <PlayGame />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/teacher/play-game/:creationId"
+          element={
+            <ProtectedRoute>
+              <PlayGame />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Student direct play route (assignments) */}
+        <Route
+          path="/student/play-game/:creationId"
           element={
             <ProtectedRoute>
               <PlayGame />

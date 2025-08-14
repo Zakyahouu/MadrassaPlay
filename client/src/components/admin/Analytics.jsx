@@ -1,5 +1,6 @@
 // client/src/components/admin/Analytics.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   LineChart,
   Line,
@@ -15,27 +16,33 @@ import {
 import { TrendingUp, Users, Activity, BarChart3 } from 'lucide-react';
 
 const Analytics = () => {
-  // Fake analytics data
-  const kpis = [
-    {
-      id: 1,
-      label: 'Active Users',
-      value: '2,453',
-      icon: <Users className="w-6 h-6 text-blue-500" />,
-    },
-    {
-      id: 2,
-      label: 'Sessions',
-      value: '8,210',
-      icon: <Activity className="w-6 h-6 text-green-500" />,
-    },
-    {
-      id: 3,
-      label: 'Bounce Rate',
-      value: '32.5%',
-      icon: <BarChart3 className="w-6 h-6 text-red-500" />,
-    },
-  ];
+  const [kpis, setKpis] = useState([
+    { id: 1, label: 'Total Users', value: '—', icon: <Users className="w-6 h-6 text-blue-500" /> },
+    { id: 2, label: 'Total Schools', value: '—', icon: <Activity className="w-6 h-6 text-green-500" /> },
+    { id: 3, label: 'Game Templates', value: '—', icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [u, s, t] = await Promise.all([
+          axios.get('/api/users/count'),
+          axios.get('/api/schools/count'),
+          axios.get('/api/templates/count'),
+        ]);
+        if (!mounted) return;
+        setKpis([
+          { id: 1, label: 'Total Users', value: (u.data?.count ?? 0).toString(), icon: <Users className="w-6 h-6 text-blue-500" /> },
+          { id: 2, label: 'Total Schools', value: (s.data?.count ?? 0).toString(), icon: <Activity className="w-6 h-6 text-green-500" /> },
+          { id: 3, label: 'Game Templates', value: (t.data?.count ?? 0).toString(), icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
+        ]);
+      } catch (_) {
+        // leave placeholders
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const userTrends = [
     { day: 'Mon', users: 240 },

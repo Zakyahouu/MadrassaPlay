@@ -12,6 +12,7 @@ const gameTemplateSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Raw manifest snapshot (immutable parts come from here)
   manifest: {
     type: Object,
     required: true,
@@ -29,6 +30,14 @@ const gameTemplateSchema = new mongoose.Schema({
   enginePath: { // We will keep this field for when we add the engine files later
     type: String,
   },
+  // ---- Admin editable presentation/meta overrides (do NOT alter manifest on disk) ----
+  displayName: { type: String }, // optional nicer name
+  tags: [{ type: String }],
+  category: { type: String },
+  iconUrl: { type: String },
+  isFeatured: { type: Boolean, default: false },
+  deprecated: { type: Boolean, default: false },
+  defaultConfigOverrides: { type: mongoose.Schema.Types.Mixed }, // only value overrides for existing formSchema.settings keys
 }, {
   timestamps: true,
 });

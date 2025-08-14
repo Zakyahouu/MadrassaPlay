@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 import { 
   Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell, 
   UserCheck, Building2, FileText, Search, Plus, Edit, Trash2, Eye,
@@ -13,6 +15,44 @@ import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
 const ReportsTab = () => {
   const [reportType, setReportType] = useState('academic');
   const [dateRange, setDateRange] = useState('month');
+  const [classes, setClasses] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [performance, setPerformance] = useState({ items: [] });
+  const [loadingPerf, setLoadingPerf] = useState(false);
+
+  // Load classes for this manager's school (server will scope by role)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await axios.get('/api/classes');
+        if (!mounted) return;
+        setClasses(res.data || []);
+        if ((res.data || []).length > 0) setSelectedClass(res.data[0]._id);
+      } catch (_) {
+        setClasses([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Load performance for the selected class
+  useEffect(() => {
+    if (!selectedClass) return;
+    let mounted = true;
+    (async () => {
+      setLoadingPerf(true);
+      try {
+        const res = await axios.get(`/api/reporting/classes/${selectedClass}/performance`);
+        if (mounted) setPerformance(res.data || { items: [] });
+      } catch (_) {
+        if (mounted) setPerformance({ items: [] });
+      } finally {
+        if (mounted) setLoadingPerf(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [selectedClass]);
 
   const reportData = {
     academic: {
@@ -48,6 +88,16 @@ const ReportsTab = () => {
             <option value="academic">Academic Performance</option>
             <option value="attendance">Attendance Reports</option>
             <option value="financial">Financial Reports</option>
+          </select>
+          <select
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Select a Class</option>
+            {classes.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
           </select>
           <select
             value={dateRange}
@@ -89,97 +139,48 @@ const ReportsTab = () => {
         {/* Chart Area */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold mb-4">
-            {reportType === 'academic' ? 'Grade Distribution' :
-             reportType === 'attendance' ? 'Attendance Trends' : 'Revenue vs Expenses'}
+            {selectedClass ? 'Class Assignment Performance' : 'Select a class'}
           </h3>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <BarChart3 className="w-16 h-16 mx-auto mb-2 text-gray-300" />
-              <p>Chart visualization would be displayed here</p>
-              <p className="text-sm">(Integration with charting library needed)</p>
-            </div>
+          <div className="h-64">
+            {selectedClass && performance.items?.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={performance.items} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="title" angle={-20} textAnchor="end" interval={0} height={60} tick={{ fontSize: 12 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(v)=>`${v}%`} />
+                  <Bar dataKey="averagePercentage" fill="#6366f1" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <BarChart3 className="w-16 h-16 mx-auto mb-2 text-gray-300" />
+                  <p>No performance data to display</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Data Table */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Detailed Breakdown</h3>
-          <div className="space-y-3">
-            {reportType === 'academic' && (
-              <>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Grade A</span>
-                  <span className="font-medium">32%</span>
+          <h3 className="text-lg font-semibold mb-4">Class Performance</h3>
+          {!selectedClass && <div className="text-sm text-gray-500">Select a class to view performance.</div>}
+          {selectedClass && (
+            <div className="space-y-3">
+              {loadingPerf && <div className="text-sm text-gray-500">Loading…</div>}
+              {!loadingPerf && performance.items?.length === 0 && (
+                <div className="text-sm text-gray-500">No performance data yet.</div>
+              )}
+              {!loadingPerf && performance.items?.map((item) => (
+                <div key={item.assignmentId} className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">{item.title}</span>
+                  <span className="font-medium">{item.averagePercentage}%</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Grade B</span>
-                  <span className="font-medium">41%</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Grade C</span>
-                  <span className="font-medium">21%</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Grade D</span>
-                  <span className="font-medium">4%</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Grade F</span>
-                  <span className="font-medium">2%</span>
-                </div>
-              </>
-            )}
-            
-            {reportType === 'attendance' && (
-              <>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">95-100%</span>
-                  <span className="font-medium">156 students</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">90-94%</span>
-                  <span className="font-medium">284 students</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">85-89%</span>
-                  <span className="font-medium">142 students</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">80-84%</span>
-                  <span className="font-medium">89 students</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Below 80%</span>
-                  <span className="font-medium">45 students</span>
-                </div>
-              </>
-            )}
-
-            {reportType === 'financial' && (
-              <>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Tuition Fees</span>
-                  <span className="font-medium">DA 1,890,000</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Registration Fees</span>
-                  <span className="font-medium">DA 340,000</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Extra Activities</span>
-                  <span className="font-medium">DA 220,000</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-sm text-gray-600">Staff Salaries</span>
-                  <span className="font-medium text-red-600">-DA 1,200,000</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Operating Costs</span>
-                  <span className="font-medium text-red-600">-DA 690,000</span>
-                </div>
-              </>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import TemplateUploader from './TemplateUploader';
+import TemplateMetaEditor from './TemplateMetaEditor';
 import { TemplateContext } from '../../context/TemplateContext';
 
 const GameTemplateManager = () => {
   const [error, setError] = useState('');
   const { templates, setTemplates, triggerTemplateUpdate } = useContext(TemplateContext);
+  const [editing, setEditing] = useState(null);
 
   const fetchTemplates = async () => {
     try {
@@ -48,7 +50,12 @@ const GameTemplateManager = () => {
       });
       fetchTemplates();
     } catch (err) {
-      setError('Failed to delete template');
+      const msg = err.response?.data?.message || 'Failed to delete template';
+      setError(msg);
+      // If published, guide the user
+      if (/Cannot delete a published template/i.test(msg)) {
+        alert('This template is published and cannot be deleted. Unpublish or deprecate it first.');
+      }
     }
   };
 
@@ -106,12 +113,14 @@ const GameTemplateManager = () => {
                     {template.status === 'draft' ? 'Publish' : 'Unpublish'}
                   </button>
                   
+                  <button
+                    onClick={() => setEditing(template)}
+                    className="px-3 py-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                  >✏️</button>
                   <button 
                     onClick={() => handleDelete(template._id)}
                     className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    🗑️
-                  </button>
+                  >🗑️</button>
                 </div>
               </div>
             </div>
@@ -128,6 +137,13 @@ const GameTemplateManager = () => {
       <div className="border-t border-gray-200 pt-6">
         <TemplateUploader onUploadSuccess={fetchTemplates} />
       </div>
+      {editing && (
+        <TemplateMetaEditor
+          template={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); fetchTemplates(); triggerTemplateUpdate(); }}
+        />
+      )}
     </div>
   );
 };

@@ -82,3 +82,31 @@ module.exports = {
   updateClass,
   deleteClass,
 };
+
+// @desc    Get classes for the logged-in student
+// @route   GET /api/classes/my
+// @access  Private
+const getMyClasses = async (req, res) => {
+  try {
+    const classes = await Class.find({ students: req.user._id }).select('name subject level teacher students');
+    res.status(200).json(classes);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+module.exports.getMyClasses = getMyClasses;
+
+// @desc    Get classes taught by the logged-in teacher
+// @route   GET /api/classes/teaching
+// @access  Private/Teacher
+const getMyTeachingClasses = async (req, res) => {
+  try {
+    const classes = await Class.find({ teacher: req.user._id }).select('name subject level students');
+    res.status(200).json(classes);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+module.exports.getMyTeachingClasses = getMyTeachingClasses;
