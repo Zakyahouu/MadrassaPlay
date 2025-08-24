@@ -1,398 +1,365 @@
 import React, { useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { LogOut, Play, Users, Trophy, Star, Target, Zap, BookOpen, Award, TrendingUp, Flame, Crown, Medal, Gamepad2 } from 'lucide-react';
+import { 
+  LogOut, 
+  Play, 
+  Users, 
+  Trophy, 
+  Star, 
+  Clock, 
+  Target, 
+  Zap, 
+  BookOpen, 
+  Award,
+  TrendingUp,
+  Calendar,
+  Flame,
+  Crown,
+  Medal,
+  Gamepad2,
+  Timer,
+  CheckCircle,
+  Lock
+} from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import MyAssignments from '../components/student/MyAssignments'; // legacy (kept for now elsewhere if needed)
-import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
-import { SocketContext } from '../context/SocketContext';
-import StudentBadges from '../components/student/StudentBadges';
-import { useNavigate } from 'react-router-dom';
+import UnifiedCard from '../components/shared/UnifiedCard';
 
-// Removed mock MyAssignments; using the real component from ../components/student/MyAssignments
-
-// QuickActions removed per new UX requirements.
-
-// Achievements Component (Template Badge System)
-const Achievements = () => {
-  const [earned, setEarned] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await axios.get('/api/template-badges/me/list');
-        if (mounted) setEarned(res.data || []);
-      } catch (_) {
-        if (mounted) setEarned([]);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  if (loading) return <div className="text-sm text-gray-500">Loading achievements…</div>;
-
-  if (!earned.length) return <div className="text-sm text-gray-500">No template badges yet. Keep playing!</div>;
-
-  const resolveIcon = (tb, label) => tb?.variants?.find(v => v.label === label)?.iconUrl;
+// Mock MyAssignments component with student-focused features
+const MyAssignments = () => {
+  const assignments = [
+    { 
+      id: 1, 
+      title: 'Math Quest: Fractions Adventure', 
+      subject: 'Mathematics',
+      teacher: 'Ms. Rodriguez',
+      dueDate: 'Tomorrow',
+      difficulty: 'Medium',
+      estimatedTime: '15 min',
+      progress: 60,
+      status: 'in-progress',
+      points: 150,
+      color: 'text-purple-600'
+    },
+    { 
+      id: 2, 
+      title: 'Science Lab: Chemical Reactions', 
+      subject: 'Science',
+      teacher: 'Mr. Johnson',
+      dueDate: '3 days',
+      difficulty: 'Hard',
+      estimatedTime: '25 min',
+      progress: 0,
+      status: 'new',
+      points: 200,
+      color: 'text-blue-600'
+    },
+    { 
+      id: 3, 
+      title: 'History Timeline Challenge', 
+      subject: 'History',
+      teacher: 'Mrs. Davis',
+      dueDate: 'Completed',
+      difficulty: 'Easy',
+      estimatedTime: '10 min',
+      progress: 100,
+      status: 'completed',
+      points: 120,
+      color: 'text-green-600'
+    }
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-        {earned.map(eb => {
-          const iconUrl = resolveIcon(eb.templateBadge, eb.variantLabel);
-          const next = eb.progress?.nextVariant;
-          const needed = eb.progress?.neededForNext;
-          const pct = eb.progress?.percentage ?? null;
-          return (
-            <div key={eb._id} className="p-3 rounded-xl bg-white border hover:shadow-sm transition flex items-center gap-4">
-              <div className="shrink-0">
-                {iconUrl ? (
-                  <img src={iconUrl} alt={eb.variantLabel} className="w-12 h-12 object-contain" />
-                ) : (
-                  <Trophy className="w-10 h-10 text-yellow-500" />
-                )}
+      {assignments.map((assignment) => (
+        <UnifiedCard key={assignment.id} className="group">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+                <BookOpen className={`w-6 h-6 ${assignment.color}`} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-900 truncate">{eb.templateBadge?.name || 'Badge'}</p>
-                <p className="text-[10px] text-indigo-600 font-medium">{eb.variantLabel}</p>
-                {pct !== null && (
-                  <div className="mt-1">
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${Math.min(100, pct)}%` }}></div>
-                    </div>
-                    {next ? (
-                      <p className="mt-1 text-[10px] text-gray-500">{needed} pts to {next.label}</p>
-                    ) : (
-                      <p className="mt-1 text-[10px] text-emerald-600 font-medium">Top tier achieved</p>
-                    )}
-                  </div>
-                )}
+              
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">{assignment.title}</h3>
+                <p className="text-sm text-gray-500 mb-2">{assignment.subject} • {assignment.teacher}</p>
+                
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {assignment.estimatedTime}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full border ${
+                    assignment.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' :
+                    assignment.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                    'bg-red-50 text-red-700 border-red-200'
+                  }`}>
+                    {assignment.difficulty}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3 h-3 text-yellow-500" />
+                    {assignment.points} pts
+                  </span>
+                </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Leaderboard Component (API-backed) with class/global toggle
-const Leaderboard = () => {
-  const { user } = useContext(AuthContext);
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [metric, setMetric] = useState('points');
-  const [timeframe, setTimeframe] = useState('all'); // UI-only for now
-  const [scope, setScope] = useState('auto'); // auto | class | school
-  const [myClasses, setMyClasses] = useState([]);
-
-  const [offset, setOffset] = useState(0);
-  const pageSize = 5;
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        let params = { metric, limit: pageSize, offset };
-        if (timeframe !== 'all') {
-          const now = new Date();
-          const since = new Date(now);
-            if (timeframe === 'month') since.setDate(now.getDate() - 30);
-            if (timeframe === 'week') since.setDate(now.getDate() - 7);
-          params.since = since.toISOString();
-        }
-        const classesRes = await axios.get('/api/classes/my');
-        const classes = classesRes.data || [];
-        if (mounted) setMyClasses(classes);
-        let endpoint;
-        if (scope === 'school') endpoint = '/api/leaderboard/school';
-        else if (scope === 'class' && classes.length) endpoint = `/api/leaderboard/class/${classes[0]._id}`;
-        else {
-          // auto: prefer class if exists
-          endpoint = classes.length ? `/api/leaderboard/class/${classes[0]._id}` : '/api/leaderboard/school';
-        }
-        const res = await axios.get(endpoint, { params });
-        if (mounted) setItems(res.data?.items || []);
-      } catch (e) {
-        if (mounted) setError('Failed to load leaderboard');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [metric, offset, timeframe, scope]);
-
-  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
-  if (error) return <div className="text-sm text-red-500">{error}</div>;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-end gap-2 mb-1 flex-wrap">
-        <select value={metric} onChange={(e)=>setMetric(e.target.value)} className="text-xs border rounded px-2 py-1">
-          <option value="points">Points</option>
-          <option value="xp">XP</option>
-        </select>
-        {/* timeframe UI placeholder */}
-        <select value={timeframe} onChange={(e)=>setTimeframe(e.target.value)} className="text-xs border rounded px-2 py-1">
-          <option value="all">All-time</option>
-          <option value="month">This month</option>
-          <option value="week">This week</option>
-        </select>
-        <select value={scope} onChange={(e)=>{setScope(e.target.value); setOffset(0);}} className="text-xs border rounded px-2 py-1">
-          <option value="auto">Auto ({myClasses.length ? 'Class' : 'School'})</option>
-          <option value="class" disabled={!myClasses.length}>Class Only</option>
-          <option value="school">School</option>
-        </select>
-      </div>
-      {items.length === 0 && (
-        <div className="text-sm text-gray-500">No leaderboard data yet.</div>
-      )}
-      {items.map((stu, idx) => {
-        const rank = idx + 1;
-        const isMe = stu._id === user?._id;
-        return (
-          <div key={stu._id} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-            isMe ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200' : 'bg-gray-50 hover:bg-gray-100'
-          }`}>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-              rank === 1 ? 'bg-yellow-400 text-white' :
-              rank === 2 ? 'bg-gray-400 text-white' :
-              rank === 3 ? 'bg-orange-400 text-white' :
-              'bg-gray-200 text-gray-600'
-            }`}>
-              {rank <= 3 ? (
-                rank === 1 ? <Crown className="w-4 h-4" /> : rank === 2 ? <Medal className="w-4 h-4" /> : <Award className="w-4 h-4" />
-              ) : rank}
-            </div>
-            <span className="text-2xl">🎯</span>
-            <div className="flex-1">
-              <p className={`font-medium ${isMe ? 'text-gray-900' : 'text-gray-700'}`}>{stu.name}</p>
-              <p className="text-[10px] text-gray-500">Lvl {stu.level} • {stu.totalPoints} pts</p>
-            </div>
+            
             <div className="text-right">
-              <p className="font-bold text-gray-900">{stu.totalPoints}</p>
-              <p className="text-xs text-gray-500">points</p>
-            </div>
-          </div>
-        );
-      })}
-      <div className="flex items-center justify-between mt-2">
-        <button disabled={offset===0} onClick={()=>setOffset(Math.max(0, offset - pageSize))} className="text-xs px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-        <button onClick={()=>setOffset(offset + pageSize)} className="text-xs px-2 py-1 border rounded">Next</button>
-      </div>
-    </div>
-  );
-};
-
-const StudentDashboard = () => {
-  const { user, logout } = useContext(AuthContext);
-  const socket = useContext(SocketContext);
-  const navigate = useNavigate();
-  const [roomCode, setRoomCode] = useState('');
-  const [gamification, setGamification] = useState(null);
-  const [rankInfo, setRankInfo] = useState({ rank: null, total: null });
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await axios.get('/api/users/me/gamification');
-        if (mounted) setGamification(res.data);
-      } catch (_) {
-        // ignore
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  // Fetch my rank within my first class if any, otherwise within my school
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const classesRes = await axios.get('/api/classes/my');
-        const classes = classesRes.data || [];
-        if (classes.length > 0) {
-          const classId = classes[0]._id;
-          const r = await axios.get(`/api/leaderboard/class/${classId}/rank`, { params: { metric: 'points' } });
-          if (mounted) setRankInfo({ rank: r.data?.rank ?? null, total: r.data?.total ?? null });
-        } else {
-          const r = await axios.get('/api/leaderboard/school/rank', { params: { metric: 'points' } });
-          if (mounted) setRankInfo({ rank: r.data?.rank ?? null, total: r.data?.total ?? null });
-        }
-      } catch (_) {
-        if (mounted) setRankInfo({ rank: null, total: null });
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      {/* Enhanced Header */}
-      <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 border-b border-gray-200/50 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Gamepad2 className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Student Launchpad
-              </h1>
-              <p className="text-sm text-gray-500">Ready for your next adventure?</p>
+              <div className="text-sm font-medium text-gray-900 mb-1">
+                {assignment.dueDate}
+              </div>
+              <div className="text-xs text-gray-500">
+                {assignment.status === 'completed' ? 'Completed' : 
+                 assignment.status === 'in-progress' ? 'In Progress' : 'New'}
+              </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm rounded-2xl px-4 py-2 border border-gray-200/50">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-bold text-gray-900">{user?.streak}</span>
-                <span className="text-xs text-gray-500">day streak</span>
-              </div>
-              
-              <div className="w-px h-4 bg-gray-300"></div>
-              
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm font-medium text-gray-900">Level {user?.level}</span>
-              </div>
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Progress</span>
+              <span>{assignment.progress}%</span>
             </div>
-            
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">Welcome back!</p>
-              <p className="text-xs text-gray-500">{user?.name}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  assignment.progress === 100 ? 'bg-green-500' :
+                  assignment.progress > 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                }`}
+                style={{ width: `${assignment.progress}%` }}
+              ></div>
             </div>
-            
-            <button 
-              onClick={logout}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors group"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
-            </button>
           </div>
-        </div>
-      </header>
+          
+          {/* Action Button */}
+          <div className="flex justify-end">
+            {assignment.status === 'completed' ? (
+              <div className="flex items-center text-green-600 text-sm">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Completed
+              </div>
+            ) : (
+              <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                <Play className="w-4 h-4 mr-2" />
+                {assignment.status === 'in-progress' ? 'Continue' : 'Start'}
+              </button>
+            )}
+          </div>
+        </UnifiedCard>
+      ))}
+    </div>
+  );
+};
 
-      <main className="px-6 py-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Join Live Game - Enhanced */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-gray-200/50">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Play className="w-6 h-6 text-white" />
-                </div>
+// Main Student Dashboard Component
+const StudentDashboard = () => {
+  const { user, logout } = useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const stats = [
+    { title: 'Games Completed', value: '24', icon: Trophy, color: 'text-yellow-600', change: '+12%' },
+    { title: 'Current Streak', value: '7 days', icon: Flame, color: 'text-orange-600', change: '+2 days' },
+    { title: 'Total Points', value: '1,847', icon: Star, color: 'text-purple-600', change: '+156 pts' },
+    { title: 'Time Spent', value: '12.5 hrs', icon: Clock, color: 'text-blue-600', change: '+2.3 hrs' }
+  ];
+
+  const achievements = [
+    { name: 'First Victory', description: 'Complete your first game', icon: Crown, earned: true },
+    { name: 'Streak Master', description: 'Maintain a 7-day streak', icon: Flame, earned: true },
+    { name: 'Speed Demon', description: 'Complete 5 games in under 10 minutes', icon: Zap, earned: false },
+    { name: 'Perfect Score', description: 'Get 100% on any game', icon: Medal, earned: false }
+  ];
+
+  const recentGames = [
+    { name: 'Math Quiz: Fractions', score: '92%', time: '15 min', date: '2 hours ago' },
+    { name: 'Science Lab: Chemistry', score: '88%', time: '20 min', date: '1 day ago' },
+    { name: 'History Timeline', score: '95%', time: '12 min', date: '2 days ago' }
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="space-y-6">
+            {/* Welcome Section */}
+            <UnifiedCard className="bg-blue-50 border-blue-200">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">Join Live Game</h3>
-                  <p className="text-gray-600">Enter a room code to join a live multiplayer game</p>
+                  <h1 className="text-2xl font-bold text-blue-900 mb-2">Welcome back, {user?.name}!</h1>
+                  <p className="text-blue-700">Ready to continue your learning journey?</p>
+                </div>
+                <div className="hidden md:block">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">
+                    <Trophy className="w-8 h-8 text-blue-600" />
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex gap-4">
-                <input 
-                  type="text" 
-                  placeholder="Enter Room Code (e.g. ABC123)" 
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value)}
-                  className="flex-1 p-4 border-2 border-gray-200 rounded-2xl focus:border-green-500 focus:outline-none transition-colors text-lg font-mono tracking-wider text-center"
-                />
-                <button
-                  onClick={() => {
-                    const code = roomCode.trim();
-                    if (socket && code) {
-                      socket.emit('join-game', { roomCode: code, playerName: user?.name || 'Student', userId: user?._id });
-                      navigate(`/student/lobby/${code}`);
-                    }
-                  }}
-                  className="px-8 py-4 font-bold text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5"
-                >
-                  Join Game
-                </button>
-              </div>
+            </UnifiedCard>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {stats.map((stat, index) => (
+                <UnifiedCard key={index} padding="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                      <p className="text-xs text-green-600">{stat.change}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </UnifiedCard>
+              ))}
             </div>
 
-            {/* Assignments (Enhanced Panel) */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-gray-200/50">
-              <StudentAssignmentsPanel />
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Games */}
+              <UnifiedCard>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Games</h3>
+                <div className="space-y-3">
+                  {recentGames.map((game, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <Gamepad2 className="w-4 h-4 text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{game.name}</p>
+                          <p className="text-sm text-gray-500">{game.time} • {game.date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">{game.score}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </UnifiedCard>
+
+              {/* Achievements */}
+              <UnifiedCard>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Achievements</h3>
+                <div className="space-y-3">
+                  {achievements.map((achievement, index) => (
+                    <div key={index} className={`flex items-center space-x-3 p-3 rounded-lg border ${
+                      achievement.earned 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        achievement.earned ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        <achievement.icon className={`w-4 h-4 ${
+                          achievement.earned ? 'text-green-600' : 'text-gray-400'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={`font-medium ${
+                          achievement.earned ? 'text-green-900' : 'text-gray-500'
+                        }`}>{achievement.name}</p>
+                        <p className="text-sm text-gray-500">{achievement.description}</p>
+                      </div>
+                      {achievement.earned && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </UnifiedCard>
             </div>
           </div>
+        );
+      case 'assignments':
+        return <MyAssignments />;
+      case 'games':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Games</h2>
+            <p className="text-gray-600">Browse and play educational games</p>
+          </div>
+        );
+      case 'progress':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Learning Progress</h2>
+            <p className="text-gray-600">Track your academic progress and achievements</p>
+          </div>
+        );
+      case 'leaderboard':
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Leaderboard</h2>
+            <p className="text-gray-600">Compare your performance with classmates</p>
+          </div>
+        );
+      default:
+        return (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h2>
+            <p className="text-gray-600">Welcome to your student dashboard</p>
+          </div>
+        );
+    }
+  };
 
-          {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Progress Card - Enhanced */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-gray-200/50">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-indigo-600" />
-                My Progress
-              </h3>
-              
-              <div className="space-y-6">
-                {/* Level Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-gray-700">Level {gamification?.level ?? user?.level ?? 1}</span>
-                    <span className="text-sm text-gray-500">{(gamification?.xp ?? user?.xp ?? 0) % 100}% to next level</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-1000 shadow-lg"
-                      style={{ width: `${(gamification?.xp ?? user?.xp ?? 0) % 100}%` }}
-                    ></div>
-                  </div>
-                </div>
+  const navigationItems = [
+    { id: 'overview', name: 'Overview' },
+    { id: 'assignments', name: 'My Assignments' },
+    { id: 'games', name: 'Games' },
+    { id: 'progress', name: 'Progress' },
+    { id: 'leaderboard', name: 'Leaderboard' }
+  ];
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl">
-                    <Star className="w-6 h-6 mx-auto mb-1 text-yellow-500" />
-                    <p className="text-lg font-bold text-gray-900">{gamification?.totalPoints ?? user?.totalPoints ?? 0}</p>
-                    <p className="text-xs text-gray-500">Total Points</p>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl">
-                    <Trophy className="w-6 h-6 mx-auto mb-1 text-blue-500" />
-                    <p className="text-lg font-bold text-gray-900">
-                      {rankInfo.rank ? `${rankInfo.rank}${rankInfo.total ? ` / ${rankInfo.total}` : ''}` : '—'}
-                    </p>
-                    <p className="text-xs text-gray-500">Current Rank {rankInfo.total ? '(cohort)' : ''}</p>
-                  </div>
-                </div>
-              </div>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             </div>
-
-            {/* Badges & Achievements Unified */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-gray-200/50">
-              <StudentBadges />
-            </div>
-
-            {/* Class Leaderboard */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-gray-200/50">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-orange-600" />
-                Class Leaderboard
-              </h3>
-              <Leaderboard />
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+              <button
+                onClick={logout}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Footer decoration */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
-            <div className="w-8 h-px bg-gradient-to-r from-transparent to-gray-300"></div>
-            <Gamepad2 className="w-4 h-4" />
-            <span>Keep learning, keep growing!</span>
-            <Gamepad2 className="w-4 h-4" />
-            <div className="w-8 h-px bg-gradient-to-l from-transparent to-gray-300"></div>
-          </div>
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === item.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {item.name}
+              </button>
+            ))}
+          </nav>
         </div>
-      </main>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderTabContent()}
+      </div>
     </div>
   );
 };

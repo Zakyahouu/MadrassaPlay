@@ -17,10 +17,13 @@ import NotificationItem from './shared/NotificationItem';
 import ManagerClassPanel from './shared/ManagerClassPanel';
 import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
 import StaffesTab from './StaffesTab';
+import UnifiedSidebar from '../layout/UnifiedSidebar';
+import TopNav from '../layout/TopNav';
 // Main Dashboard Component
 export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const stats = [
     { title: 'Total Students', value: '1,247', icon: Users, color: 'text-blue-600', change: 5.2 },
@@ -67,6 +70,15 @@ export const ManagerDashboard = () => {
     { message: 'System maintenance tonight at 2 AM', time: '2 hours ago', type: 'urgent' },
   ];
 
+  const navigationItems = [
+    { id: 'overview', name: 'Overview' },
+    { id: 'classes', name: 'Classes' },
+    { id: 'students', name: 'Students' },
+    { id: 'teachers', name: 'Teachers' },
+    { id: 'staffes', name: 'Staff' },
+    { id: 'reports', name: 'Reports' }
+  ];
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -96,49 +108,37 @@ export const ManagerDashboard = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-8 bg-white rounded-lg border border-gray-200 p-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manager Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, {user?.name || 'Manager'}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
-          </button>
-          <button
-            onClick={logout}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+    return (
+    <div className="min-h-screen bg-gray-50 lg:flex">
+      <UnifiedSidebar 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        user={user}
+        role="manager"
+      />
 
-      {/* Navigation Tabs */}
-      <div className="mb-6">
-        <nav className="flex space-x-1 bg-white rounded-lg border border-gray-200 p-1">
-          {['overview', 'classes', 'students', 'teachers', 'reports','staffes'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </nav>
+      <div className="flex-1 relative">
+        <TopNav 
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeTab={activeTab}
+          navigationItems={navigationItems}
+          logout={logout}
+        />
+
+        <main className="p-6">
+          {renderTabContent()}
+        </main>
       </div>
 
-      {/* Tab Content */}
-      {renderTabContent()}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };

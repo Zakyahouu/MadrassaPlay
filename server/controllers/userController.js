@@ -92,9 +92,15 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         school: user.school,
-  xp: user.xp,
-  level: user.level,
-  totalPoints: user.totalPoints,
+        xp: user.xp,
+        level: user.level,
+        totalPoints: user.totalPoints,
+        subject: user.subject,
+        department: user.department,
+        experience: user.experience,
+        phone: user.phone,
+        status: user.status,
+        rating: user.rating,
         token: generateToken(user._id),
       });
     } else {
@@ -106,10 +112,86 @@ const loginUser = async (req, res) => {
   }
 };
 
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    
+    if (user) {
+      res.status(200).json(user);
+    } else {
+      res.status(404).json({ message: 'User not found.' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+  try {
+    const { name, email, phone, subject, department, experience, status } = req.body;
+
+    // Find the user by ID
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email already exists.' });
+      }
+    }
+
+    // Update user fields
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    
+    // Update teacher-specific fields if user is a teacher
+    if (user.role === 'teacher') {
+      user.subject = subject || user.subject;
+      user.department = department || user.department;
+      user.experience = experience !== undefined ? experience : user.experience;
+      user.status = status || user.status;
+    }
+
+    // Save the updated user
+    const updatedUser = await user.save();
+
+    // Send back the updated user data (without password)
+    res.status(200).json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      school: updatedUser.school,
+      subject: updatedUser.subject,
+      department: updatedUser.department,
+      experience: updatedUser.experience,
+      phone: updatedUser.phone,
+      status: updatedUser.status,
+      rating: updatedUser.rating,
+      token: generateToken(updatedUser._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
 
 // 4. EXPORT THE FUNCTIONS
 // ==============================================================================
 module.exports = {
   registerUser,
   loginUser,
+  getUserProfile,
+  updateUserProfile,
 };

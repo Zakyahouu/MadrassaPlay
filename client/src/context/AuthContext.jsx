@@ -57,10 +57,17 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
-  // The Provider component makes the 'user', 'login', 'logout', and 'loading'
+  // Update user function
+  const updateUser = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+  };
+
+  // The Provider component makes the 'user', 'login', 'logout', 'loading', and 'updateUser'
   // values available to any child component that calls useContext(AuthContext).
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

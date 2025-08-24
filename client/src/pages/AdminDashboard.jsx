@@ -3,7 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 
 // Import layout components
-import Sidebar from '../components/layout/SideBar';
+import UnifiedSidebar from '../components/layout/UnifiedSidebar';
 import TopNav from '../components/layout/TopNav';
 
 // Import dashboard components
@@ -79,12 +79,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
-      <Sidebar 
+      <UnifiedSidebar 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         user={user}
+        role="admin"
       />
 
       <div className="flex-1 relative">

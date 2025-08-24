@@ -1,4 +1,6 @@
 import { Users, School, Plus, TrendingUp, Settings } from 'lucide-react';
+import UnifiedCard from '../shared/UnifiedCard';
+import UnifiedStatsCard from '../shared/UnifiedStatsCard';
 
 const Overview = ({ stats, loading }) => {
   const statCards = [
@@ -70,14 +72,11 @@ const Overview = ({ stats, loading }) => {
         {statCards.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
-            <div 
-              key={index} 
-              className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-            >
+            <UnifiedCard key={index}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-100 rounded-lg">
-                    <IconComponent className="w-6 h-6 text-indigo-600" />
+                  <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+                    <IconComponent className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -85,7 +84,7 @@ const Overview = ({ stats, loading }) => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-100">
                     {stat.change}
                   </span>
                 </div>
@@ -98,12 +97,12 @@ const Overview = ({ stats, loading }) => {
                   <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
                 )}
               </div>
-            </div>
+            </UnifiedCard>
           );
         })}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+      <UnifiedCard>
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Quick Actions
@@ -117,11 +116,11 @@ const Overview = ({ stats, loading }) => {
             return (
               <button 
                 key={index}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-left group"
               >
                 <div className="flex items-center space-x-3 mb-2">
-                  <div className="p-2 bg-indigo-100 rounded-lg">
-                    <IconComponent className="w-5 h-5 text-indigo-600" />
+                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
+                    <IconComponent className="w-5 h-5 text-blue-600" />
                   </div>
                   <h4 className="font-medium text-gray-900">{action.title}</h4>
                 </div>
@@ -130,9 +129,9 @@ const Overview = ({ stats, loading }) => {
             );
           })}
         </div>
-      </div>
+      </UnifiedCard>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+      <UnifiedCard>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
         <div className="space-y-3">
           {[
@@ -143,9 +142,9 @@ const Overview = ({ stats, loading }) => {
           ].map((activity, index) => {
             const IconComponent = activity.icon;
             return (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <IconComponent className="w-4 h-4 text-indigo-600" />
+              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <IconComponent className="w-4 h-4 text-gray-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{activity.action}</p>
@@ -155,7 +154,7 @@ const Overview = ({ stats, loading }) => {
             );
           })}
         </div>
-      </div>
+      </UnifiedCard>
     </div>
   );
 };
