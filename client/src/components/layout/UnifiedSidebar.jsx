@@ -51,12 +51,9 @@ const UnifiedSidebar = ({
           { id: 'my-games', name: 'My Games', icon: BookOpen },
           { id: 'create-game', name: 'Create Game', icon: Plus },
           { id: 'live-sessions', name: 'Live Sessions', icon: Play },
-          { id: 'results', name: 'Results & Analytics', icon: Trophy },
           { id: 'assignments', name: 'Assignments', icon: FileText },
           { id: 'students', name: 'My Students', icon: Users },
-          { id: 'calendar', name: 'Calendar', icon: Calendar },
-          { id: 'performance', name: 'Performance', icon: TrendingUp },
-          { id: 'achievements', name: 'Achievements', icon: Award }
+          { id: 'calendar', name: 'Calendar', icon: Calendar }
         ];
       default:
         return [

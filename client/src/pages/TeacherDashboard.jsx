@@ -7,7 +7,6 @@ import TopNav from '../components/layout/TopNav';
 
 // Import dashboard components
 import TeacherOverview from '../components/teacher/TeacherOverview';
-import TeacherResults from '../components/teacher/TeacherResults';
 import TeacherLiveSessions from '../components/teacher/TeacherLiveSessions';
 import TeacherAssignments from '../components/teacher/TeacherAssignments';
 import TeacherStudents from '../components/teacher/TeacherStudents';
@@ -38,12 +37,9 @@ const TeacherDashboard = () => {
     { id: 'my-games', name: 'My Games' },
     { id: 'create-game', name: 'Create Game' },
     { id: 'live-sessions', name: 'Live Sessions' },
-    { id: 'results', name: 'Results & Analytics' },
     { id: 'assignments', name: 'Assignments' },
     { id: 'students', name: 'My Students' },
-    { id: 'calendar', name: 'Calendar' },
-    { id: 'performance', name: 'Performance' },
-    { id: 'achievements', name: 'Achievements' }
+    { id: 'calendar', name: 'Calendar' }
   ];
 
   const renderContent = () => {
@@ -56,8 +52,6 @@ const TeacherDashboard = () => {
         return <TemplateSelector />;
       case 'live-sessions':
         return <TeacherLiveSessions />;
-      case 'results':
-        return <TeacherResults />;
       case 'assignments':
         return <TeacherAssignments />;
       case 'students':
@@ -66,16 +60,6 @@ const TeacherDashboard = () => {
         return <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Calendar</h2>
           <p className="text-gray-600">Calendar and scheduling features coming soon...</p>
-        </div>;
-      case 'performance':
-        return <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Performance</h2>
-          <p className="text-gray-600">Performance tracking features coming soon...</p>
-        </div>;
-      case 'achievements':
-        return <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Achievements</h2>
-          <p className="text-gray-600">Achievement and rewards features coming soon...</p>
         </div>;
       default:
         return <TeacherOverview stats={stats} />;

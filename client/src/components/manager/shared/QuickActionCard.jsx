@@ -1,5 +1,5 @@
 import React from 'react';
-import UnifiedCard from '@shared/UnifiedCard';
+import UnifiedCard from '../../shared/UnifiedCard';
 
 const QuickActionCard = ({ title, description, icon: Icon, color, onClick }) => (
   <UnifiedCard 

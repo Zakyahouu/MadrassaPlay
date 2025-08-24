@@ -1,5 +1,5 @@
 import React from 'react';
-import UnifiedCard from '@shared/UnifiedCard';
+import UnifiedCard from '../../shared/UnifiedCard';
 
 const StatsCard = ({ title, value, icon: Icon, color, change }) => (
   <UnifiedCard>

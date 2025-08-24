@@ -9,7 +9,7 @@ import QuickActionCard from './shared/QuickActionCard';
 import NotificationItem from './shared/NotificationItem'; 
 import ManagerClassPanel from './shared/ManagerClassPanel';
 import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
-import UnifiedCard from '@shared/UnifiedCard';
+import UnifiedCard from '../shared/UnifiedCard';
 
 // Overview Tab Component
 const OverviewTab = ({ stats, quickActions, notifications, setActiveTab }) => (
