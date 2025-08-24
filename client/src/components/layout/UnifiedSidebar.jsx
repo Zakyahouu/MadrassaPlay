@@ -34,6 +34,7 @@ const UnifiedSidebar = ({
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'schools', name: 'Schools', icon: School },
           { id: 'templates', name: 'Game Templates', icon: Plus },
+          { id: 'badges', name: 'Badges', icon: Award },
           { id: 'analytics', name: 'Analytics', icon: TrendingUp }
         ];
       case 'manager':
