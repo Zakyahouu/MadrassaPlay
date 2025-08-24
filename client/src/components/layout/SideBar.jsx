@@ -18,8 +18,10 @@ const Sidebar = ({
   const navigationItems = [
     { id: 'overview', name: 'Overview', icon: BarChart3 },
     { id: 'schools', name: 'Schools', icon: School },
+  { id: 'games', name: 'Games', icon: Plus },
     { id: 'templates', name: 'Game Templates', icon: Plus },
-    { id: 'analytics', name: 'Analytics', icon: TrendingUp }
+  { id: 'badges', name: 'Badges', icon: Plus },
+  { id: 'analytics', name: 'Analytics', icon: TrendingUp }
   ];
 
   return (

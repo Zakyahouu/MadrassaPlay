@@ -1,5 +1,6 @@
 
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // @desc    Get all students for the manager's school
 // @route   GET /api/students
@@ -28,7 +29,8 @@ const createStudent = async (req, res) => {
     }
 
     const schoolId = req.user.school;
-    const studentData = { ...req.body, school: schoolId, role: 'student' };
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const studentData = { ...req.body, password: hashedPassword, school: schoolId, role: 'student' };
 
     const userExists = await User.findOne({ email: studentData.email });
     if (userExists) {

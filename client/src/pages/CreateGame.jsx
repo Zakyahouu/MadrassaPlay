@@ -16,6 +16,7 @@ const CreateGame = () => {
     
     const [settingsData, setSettingsData] = useState({});
     const [contentItems, setContentItems] = useState([{}]);
+    const [autoMode, setAutoMode] = useState(false);
 
     useEffect(() => {
         const fetchTemplate = async () => {
@@ -25,14 +26,19 @@ const CreateGame = () => {
                 });
                 setTemplate(data);
 
-                // Initialize settings
+                // Initialize settings with defaults
                 const initialSettings = {};
                 if (data.formSchema.settings) {
-                    Object.keys(data.formSchema.settings).forEach(key => {
-                        initialSettings[key] = '';
+                    Object.entries(data.formSchema.settings).forEach(([key, schema]) => {
+                        if (schema.default !== undefined) {
+                            initialSettings[key] = schema.default;
+                        } else {
+                            initialSettings[key] = schema.type === 'boolean' ? false : '';
+                        }
                     });
                 }
                 setSettingsData(initialSettings);
+                if (initialSettings.autoGenerate !== undefined) setAutoMode(!!initialSettings.autoGenerate);
 
                 // Initialize content items
                 const initialItem = {};
@@ -54,6 +60,9 @@ const CreateGame = () => {
 
     const handleSettingsChange = (field, value) => {
         setSettingsData(prev => ({ ...prev, [field]: value }));
+        if (field === 'autoGenerate') {
+            setAutoMode(!!value);
+        }
     };
 
     const handleContentChange = (index, field, value) => {
@@ -82,11 +91,19 @@ const CreateGame = () => {
         e.preventDefault();
         setSaving(true);
         setError('');
+        // Filter empty content items if manual mode
+        let filteredContent = contentItems;
+        if (!autoMode) {
+            filteredContent = contentItems.filter(item => Object.values(item).some(v => v !== '' && v !== undefined));
+        } else {
+            // In auto mode, we can send empty array
+            filteredContent = [];
+        }
 
         const gameData = {
             template: templateId,
-            config: settingsData,
-            content: contentItems,
+            config: { ...settingsData, autoGenerate: autoMode },
+            content: filteredContent,
         };
 
         try {
@@ -177,27 +194,99 @@ const CreateGame = () => {
                         
                         <div className="p-6">
                             <div className="grid gap-6 md:grid-cols-2">
-                                {Object.entries(template.formSchema.settings).map(([key, field]) => (
-                                    <div key={key} className="group">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            {field.label}
-                                        </label>
-                                        <input 
-                                            type={field.type}
-                                            value={settingsData[key] || ''}
-                                            onChange={(e) => handleSettingsChange(key, e.target.value)}
-                                            required
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
-                                            placeholder={`Enter ${field.label.toLowerCase()}`}
-                                        />
-                                    </div>
-                                ))}
+                                {Object.entries(template.formSchema.settings).map(([key, field]) => {
+                                    const hasAuto = Object.prototype.hasOwnProperty.call(template.formSchema.settings, 'autoGenerate');
+                                    if (key === 'questionCount' && !autoMode) return null;
+                                    if (key === 'autoGenerate') {
+                                        return (
+                                            <div key={key} className="flex items-center gap-3">
+                                                <input
+                                                    id="auto-generate-toggle"
+                                                    type="checkbox"
+                                                    checked={autoMode}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.checked)}
+                                                    className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                                />
+                                                <label htmlFor="auto-generate-toggle" className="text-sm font-medium text-gray-700">
+                                                    {field.label}
+                                                </label>
+                                            </div>
+                                        );
+                                    }
+                                    // Enum: choose UI based on multiplicity
+                                    if (field.type === 'enum') {
+                                        const isMultiple = Array.isArray(field.default) || field.multiple === true;
+                                        const currentVal = settingsData[key] ?? (isMultiple ? [] : '');
+                                        if (isMultiple) {
+                                            return (
+                                                <div key={key} className="group">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {field.options.map(opt => {
+                                                            const active = (currentVal || []).includes(opt);
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={opt}
+                                                                    onClick={() => {
+                                                                        let next = Array.isArray(currentVal) ? [...currentVal] : [];
+                                                                        if (active) next = next.filter(o => o !== opt); else next.push(opt);
+                                                                        handleSettingsChange(key, next);
+                                                                    }}
+                                                                    className={`px-3 py-1 rounded-full text-sm border transition ${active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-300'}`}
+                                                                >
+                                                                    {opt}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+                                                <select
+                                                    value={currentVal}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                >
+                                                    <option value="" disabled>Choose...</option>
+                                                    {field.options.map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div key={key} className="group">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                {field.label}
+                                            </label>
+                                            <input
+                                                type={field.type === 'text' ? 'text' : field.type}
+                                                value={settingsData[key] ?? ''}
+                                                onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                required={field.required}
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
+                            {Object.prototype.hasOwnProperty.call(template.formSchema.settings, 'autoGenerate') && (
+                                <div className="mt-4 text-xs text-gray-500 space-y-1">
+                                    <p><strong>Auto Mode:</strong> System generates math questions based on operations, max operand and question count.</p>
+                                    <p><strong>Manual Mode:</strong> Uncheck Auto Generate to enter your own questions below.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Content Section */}
-                    {template.formSchema.content && (
+                    {template.formSchema.content && (!Object.prototype.hasOwnProperty.call(template.formSchema.settings, 'autoGenerate') || !autoMode) && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
@@ -242,14 +331,70 @@ const CreateGame = () => {
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         {field.label}
                                                     </label>
-                                                    <input
-                                                        type={field.type}
-                                                        value={item[key] || ''}
-                                                        onChange={(e) => handleContentChange(index, key, e.target.value)}
-                                                        required
-                                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
-                                                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                                                    />
+                                                    {field.type === 'enum' && Array.isArray(field.options) ? (
+                                                        <select
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                const updated = { ...item, [key]: value };
+                                                                if (['operandA','operandB','operation'].includes(key)) {
+                                                                    const a = parseFloat(updated.operandA);
+                                                                    const b = parseFloat(updated.operandB);
+                                                                    const op = updated.operation;
+                                                                    if (!isNaN(a) && !isNaN(b) && ['+','-','*','/'].includes(op)) {
+                                                                        let ans = '';
+                                                                        switch(op){
+                                                                            case '+': ans = a + b; break;
+                                                                            case '-': ans = a - b; break;
+                                                                            case '*': ans = a * b; break;
+                                                                            case '/': ans = b !== 0 ? parseFloat((a / b).toFixed(2)) : ''; break;
+                                                                        }
+                                                                        updated.correctAnswer = ans;
+                                                                    }
+                                                                }
+                                                                handleContentChange(index, key, value);
+                                                                if (updated.correctAnswer !== item.correctAnswer) {
+                                                                    handleContentChange(index, 'correctAnswer', updated.correctAnswer);
+                                                                }
+                                                            }}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        >
+                                                            <option value="" disabled>Choose...</option>
+                                                            {field.options.map(opt => (
+                                                                <option key={opt} value={opt}>{opt}</option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <input
+                                                            type={field.type}
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => {
+                                                                let value = e.target.value;
+                                                                const updated = { ...item, [key]: value };
+                                                                if (['operandA','operandB','operation'].includes(key)) {
+                                                                    const a = parseFloat(updated.operandA);
+                                                                    const b = parseFloat(updated.operandB);
+                                                                    const op = updated.operation;
+                                                                    if (!isNaN(a) && !isNaN(b) && ['+','-','*','/'].includes(op)) {
+                                                                        let ans = '';
+                                                                        switch(op){
+                                                                            case '+': ans = a + b; break;
+                                                                            case '-': ans = a - b; break;
+                                                                            case '*': ans = a * b; break;
+                                                                            case '/': ans = b !== 0 ? parseFloat((a / b).toFixed(2)) : ''; break;
+                                                                        }
+                                                                        updated.correctAnswer = ans;
+                                                                    }
+                                                                }
+                                                                handleContentChange(index, key, value);
+                                                                if (updated.correctAnswer !== item.correctAnswer) {
+                                                                    handleContentChange(index, 'correctAnswer', updated.correctAnswer);
+                                                                }
+                                                            }}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                            placeholder={`Enter ${field.label.toLowerCase()}`}
+                                                        />
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

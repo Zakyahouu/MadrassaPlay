@@ -31,11 +31,21 @@ const gameResultSchema = new mongoose.Schema(
     totalPossibleScore: {
         type: Number,
         required: true,
-    }
+  },
+  // Attempt sequence number for this assignment/game pair
+  attemptNumber: { type: Number, default: 1 }
   },
   {
     timestamps: true,
   }
 );
+
+// Performance indexes for frequent query patterns
+// Composite index accelerates filtering by student + assignment + gameCreation
+gameResultSchema.index({ student: 1, assignment: 1, gameCreation: 1 });
+// Secondary index for assignment aggregations (teacher analytics potential)
+gameResultSchema.index({ assignment: 1 });
+// Index for template badge evaluation by gameCreation & student
+gameResultSchema.index({ gameCreation: 1, student: 1 });
 
 module.exports = mongoose.model('GameResult', gameResultSchema);

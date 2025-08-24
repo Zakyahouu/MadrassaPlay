@@ -18,6 +18,17 @@ router.route('/:schoolId/managers/:managerId')
 // GET all schools, POST create school
 router.route('/').get(protect, admin, getSchools).post(protect, admin, createSchool);
 
+// GET schools count
+router.get('/count', protect, admin, async (req, res) => {
+  try {
+    const School = require('../models/School');
+    const count = await School.countDocuments();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
 // GET school by id, PUT update school, DELETE remove school
 router.route('/:id')
   .get(protect, adminOrManager, require('../controllers/schoolController').getSchoolById)

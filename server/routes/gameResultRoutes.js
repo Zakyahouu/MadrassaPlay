@@ -6,7 +6,8 @@ const router = express.Router();
 // Import controller function
 const { 
   submitGameResult,
-  getResultsForGame // 1. Import the new function
+  getResultsForGame, // existing
+  getAttemptHistory // newly wired attempt history endpoint
 } = require('../controllers/gameResultController');
 
 // Import middleware for protection
@@ -15,8 +16,10 @@ const { protect } = require('../middleware/authMiddleware');
 // Define the route for submitting a result
 router.post('/', protect, submitGameResult);
 
-// 2. NEW ROUTE: Define the route for getting results for a specific game
-// A GET request to /api/results/:gameCreationId will get all results for that game.
+// Attempt history for a specific assignment/game pair for the logged-in student
+router.get('/history/:assignmentId/:gameCreationId', protect, getAttemptHistory);
+
+// Route for getting results for a specific game creation
 router.get('/:gameCreationId', protect, getResultsForGame);
 
 module.exports = router;

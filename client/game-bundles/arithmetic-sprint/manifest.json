@@ -1,0 +1,12 @@
+{
+  "name": "Arithmetic Sprint",
+  "version": "1.0.0",
+  "description": "Answer as many arithmetic questions as you can before time runs out.",
+  "gameType": "arithmetic-sprint",
+  "engineEntry": "index.html",
+  "scoring": { "method": "per-item" },
+  "capabilities": ["timed", "multiple-choice"],
+  "author": { "name": "System" },
+  "recommended": { "maxOperand": 20, "timeLimit": 60 },
+  "createdAt": "2025-08-12"
+}

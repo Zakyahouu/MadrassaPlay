@@ -15,6 +15,11 @@ const assignmentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     }],
+    // Optional: one or more classes this assignment targets
+    classes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Class',
+    }],
     // The list of game creations included in this assignment.
     gameCreations: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -35,6 +40,12 @@ const assignmentSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    // Maximum number of attempts a student can make
+    attemptLimit: {
+        type: Number,
+        default: 1,
+        min: 1,
+    },
     // The status of the assignment
     status: {
         type: String,
@@ -46,5 +57,25 @@ const assignmentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Indexes to speed up student & class membership queries
+assignmentSchema.index({ students: 1 });
+assignmentSchema.index({ classes: 1 });
+assignmentSchema.index({ teacher: 1, createdAt: -1 });
+
+// Basic automation of status based on start/end dates
+function computeStatus(start, end) {
+  const now = new Date();
+  if (now < new Date(start)) return 'upcoming';
+  if (now > new Date(end)) return 'closed';
+  return 'active';
+}
+
+assignmentSchema.pre('save', function(next) {
+  if (this.startDate && this.endDate) {
+    this.status = computeStatus(this.startDate, this.endDate);
+  }
+  next();
+});
 
 module.exports = mongoose.model('Assignment', assignmentSchema);

@@ -1,5 +1,6 @@
 
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema(
   {
@@ -48,11 +49,37 @@ const userSchema = new mongoose.Schema(
         min: 0,
         max: 5,
         default: 0
-    }
+  },
+
+  // --- Gamification Fields ---
+  xp: { type: Number, default: 0 },
+  level: { type: Number, default: 1 },
+  totalPoints: { type: Number, default: 0 }
   },
   {
     timestamps: true,
   }
 );
+
+// Pre-save hook to hash password if modified and not already hashed
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  // If password already appears hashed (60 chars bcrypt), skip
+  if (typeof this.password === 'string' && this.password.startsWith('$2') && this.password.length >= 60) {
+    return next();
+  }
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Instance method for comparing passwords
+userSchema.methods.matchPassword = function(entered) {
+  return bcrypt.compare(entered, this.password);
+};
 
 module.exports = mongoose.model('User', userSchema);

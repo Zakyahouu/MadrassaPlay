@@ -89,13 +89,19 @@ const getGameTemplates = asyncHandler(async (req, res) => {
     filter.status = 'published';
   }
   const templates = await GameTemplate.find(filter).sort({ createdAt: -1 });
-  res.json(templates);
+  const mapped = templates.map(t => ({
+    ...t.toObject(),
+    name: t.displayName || t.name,
+  }));
+  res.json(mapped);
 });
 
 const getGameTemplateById = asyncHandler(async (req, res) => {
   const template = await GameTemplate.findById(req.params.id);
   if (template) {
-    res.json(template);
+  const obj = template.toObject();
+  obj.name = template.displayName || template.name;
+  res.json(obj);
   } else {
     res.status(404);
     throw new Error('Game template not found');
@@ -120,6 +126,9 @@ const deleteTemplate = asyncHandler(async (req, res) => {
   const template = await GameTemplate.findById(req.params.id);
 
   if (template) {
+    if (template.status === 'published') {
+      return res.status(400).json({ message: 'Cannot delete a published template. Deprecate instead.' });
+    }
     if (template.enginePath) {
       const fullEnginePath = path.join(__dirname, '..', 'public', template.enginePath);
       if (fs.existsSync(fullEnginePath)) {
@@ -134,6 +143,37 @@ const deleteTemplate = asyncHandler(async (req, res) => {
   }
 });
 
+// PATCH: update editable meta fields (admin only)
+const updateTemplateMeta = asyncHandler(async (req, res) => {
+  const editable = ['displayName','description','tags','category','iconUrl','isFeatured','deprecated','defaultConfigOverrides','status'];
+  const bodyKeys = Object.keys(req.body || {});
+  const illegal = bodyKeys.filter(k => !editable.includes(k));
+  if (illegal.length) {
+    return res.status(400).json({ message: 'Illegal fields in update', illegal });
+  }
+  const template = await GameTemplate.findById(req.params.id);
+  if (!template) {
+    res.status(404); throw new Error('Template not found');
+  }
+  // If trying to change status from published back to draft, forbid
+  if (template.status === 'published' && req.body.status === 'draft') {
+    return res.status(400).json({ message: 'Cannot revert a published template to draft' });
+  }
+  // Validate defaultConfigOverrides keys
+  if (req.body.defaultConfigOverrides) {
+    const allowedKeys = Object.keys(template.formSchema?.settings || {});
+    const overrideKeys = Object.keys(req.body.defaultConfigOverrides);
+    const bad = overrideKeys.filter(k => !allowedKeys.includes(k));
+    if (bad.length) {
+      return res.status(400).json({ message: 'Invalid override keys', invalid: bad });
+    }
+  }
+  // Apply overrides
+  bodyKeys.forEach(k => { template[k] = req.body[k]; });
+  const updated = await template.save();
+  res.json(updated);
+});
+
 
 module.exports = {
   uploadGameTemplate,
@@ -141,4 +181,5 @@ module.exports = {
   getGameTemplateById,
   updateTemplateStatus,
   deleteTemplate,
+  updateTemplateMeta,
 };

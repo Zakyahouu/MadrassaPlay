@@ -15,9 +15,17 @@ const createGameCreation = asyncHandler(async (req, res) => {
   const name = config?.title; // The model expects 'name', which comes from the form's 'title' setting.
   const owner = req.user._id; // The model expects 'owner', which is the logged-in user's ID.
 
-  if (!templateId || !config || !content || !name) {
+  if (!templateId || !config) {
     res.status(400);
-    throw new Error('Please provide all required fields, including a title.');
+    throw new Error('Missing template or config.');
+  }
+
+  // Allow name fallback if not explicitly provided
+  let finalName = name;
+  if (!finalName) {
+    // fallback to template name plus timestamp
+    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    finalName = `Game - ${template?.name || templateId}-${ts}`;
   }
 
   const template = await GameTemplate.findById(templateId);
@@ -35,21 +43,37 @@ const createGameCreation = asyncHandler(async (req, res) => {
     }
   });
 
-  const processedContent = content.map(item => {
-    const processedItem = { ...item };
-    if (template.formSchema.content && template.formSchema.content.itemSchema) {
-        Object.entries(template.formSchema.content.itemSchema).forEach(([key, schema]) => {
-            if (schema.type === 'number' && processedItem[key] !== undefined) {
-                processedItem[key] = parseInt(processedItem[key], 10);
-                if (isNaN(processedItem[key])) processedItem[key] = 0;
-            }
-        });
+  // Validate content requirement depending on schema and autoGenerate flag
+  const hasContentSchema = !!template.formSchema?.content;
+  const minItems = hasContentSchema ? (template.formSchema.content.minItems ?? 1) : 0;
+  const hasAutoSetting = !!template.formSchema?.settings && Object.prototype.hasOwnProperty.call(template.formSchema.settings, 'autoGenerate');
+  const autoSelected = !!config.autoGenerate;
+
+  if (hasContentSchema && !autoSelected && minItems > 0) {
+    if (!Array.isArray(content) || content.length < minItems) {
+      res.status(400);
+      throw new Error(`Please add at least ${minItems} content item(s).`);
     }
-    return processedItem;
-  });
+  }
+
+  let processedContent = [];
+  if (Array.isArray(content) && content.length > 0) {
+    processedContent = content.map(item => {
+      const processedItem = { ...item };
+      if (template.formSchema.content && template.formSchema.content.itemSchema) {
+          Object.entries(template.formSchema.content.itemSchema).forEach(([key, schema]) => {
+              if (schema.type === 'number' && processedItem[key] !== undefined) {
+                  processedItem[key] = parseFloat(processedItem[key]);
+                  if (isNaN(processedItem[key])) processedItem[key] = 0;
+              }
+          });
+      }
+      return processedItem;
+    });
+  }
 
   const gameCreation = await GameCreation.create({
-    name,
+  name: finalName,
     owner,
     config: processedConfig,
     content: processedContent,

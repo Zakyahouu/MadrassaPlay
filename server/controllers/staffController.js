@@ -1,5 +1,7 @@
 
 const User = require('../models/User');
+const Class = require('../models/Class');
+const Assignment = require('../models/Assignment');
 
 // @desc    Get all staff members for the manager's school
 // @route   GET /api/staff
@@ -103,3 +105,25 @@ module.exports = {
   updateStaff,
   deleteStaff,
 };
+
+// @desc    Staff dashboard overview for manager's school
+// @route   GET /api/staff/overview
+// @access  Private/Manager
+const staffOverview = async (req, res) => {
+    try {
+        const schoolId = req.user.school;
+        if (!schoolId) return res.status(400).json({ message: 'Manager not linked to school.' });
+        const [students, teachers, staffCount, classes, assignments] = await Promise.all([
+            User.countDocuments({ role: 'student', school: schoolId }),
+            User.countDocuments({ role: 'teacher', school: schoolId }),
+            User.countDocuments({ role: { $nin: ['student', 'teacher'] }, school: schoolId }),
+            Class.countDocuments({ school: schoolId }),
+            Assignment.countDocuments({ teacher: { $exists: true } }).exec(),
+        ]);
+        res.json({ students, teachers, staff: staffCount, classes, assignments });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error', error: err.message });
+    }
+};
+
+module.exports.staffOverview = staffOverview;

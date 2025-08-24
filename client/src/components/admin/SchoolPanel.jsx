@@ -11,56 +11,83 @@ const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
 
 
 // --- ManagerPanel Component ---
-// This component is displayed inside a modal to show managers for a specific school.
-// NOTE: This assumes an API endpoint `/api/schools/${schoolId}/managers`.
-const ManagerPanel = ({ schoolId }) => {
+// This component is displayed inside a modal to show and manage managers for a specific school.
+const ManagerPanel = ({ schoolId, schoolName }) => {
     const [managers, setManagers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [form, setForm] = useState({ name: '', email: '', password: '' });
 
-    useEffect(() => {
-        const fetchManagers = async () => {
-            if (!schoolId) return;
-            setIsLoading(true);
-            try {
-                // In a real app, you would fetch managers for the specific school
-                // const { data } = await axios.get(`/api/schools/${schoolId}/managers`);
-                // For demonstration, we'll use a mock delay and data.
-                console.log(`Fetching managers for school: ${schoolId}`);
-                await new Promise(res => setTimeout(res, 500));
-                const mockManagers = [
-                    { _id: 'manager-1', name: 'John Doe', role: 'Principal' },
-                    { _id: 'manager-2', name: 'Jane Smith', role: 'Vice Principal' },
-                ];
-                setManagers(mockManagers);
-                setError(null);
-            } catch (err) {
-                setError('Failed to fetch managers.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchManagers();
-    }, [schoolId]);
+        const load = async () => {
+        if (!schoolId) return;
+        setIsLoading(true);
+        try {
+                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                const { data } = await axios.get(`/api/schools/${schoolId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            setManagers(data.managers || []);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch managers');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, [schoolId]);
+
+        const createManager = async (e) => {
+        e.preventDefault();
+        try {
+                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                await axios.post(`/api/schools/${schoolId}/managers`, form, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            setForm({ name: '', email: '', password: '' });
+            await load();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to create manager');
+        }
+    };
+
+        const deleteManager = async (managerId) => {
+        if (!confirm('Remove this manager?')) return;
+        try {
+                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                await axios.delete(`/api/schools/${schoolId}/managers/${managerId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            await load();
+        } catch (err) {
+            alert('Failed to delete manager');
+        }
+    };
 
     if (isLoading) return <div className="text-center p-4">Loading managers...</div>;
     if (error) return <div className="text-center p-4 text-red-600">{error}</div>;
 
     return (
-        <div className="space-y-3">
-            {managers.length > 0 ? (
-                managers.map(manager => (
-                    <div key={manager._id} className="flex items-center justify-between bg-gray-100 p-3 rounded-lg">
+        <div className="space-y-4">
+            <form onSubmit={createManager} className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <input className="border p-2 rounded" placeholder="Name" value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} required />
+                <input className="border p-2 rounded" placeholder="Email" type="email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} required />
+                <input className="border p-2 rounded" placeholder="Password" type="password" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} required />
+            <button type="submit" className="bg-blue-600 text-white rounded px-3 py-2">Add Manager</button>
+            </form>
+            <div className="space-y-3">
+                {managers.length > 0 ? managers.map(m => (
+                    <div key={m._id} className="flex items-center justify-between bg-gray-100 p-3 rounded-lg">
                         <div>
-                            <p className="font-semibold text-gray-800">{manager.name}</p>
-                            <p className="text-sm text-gray-500">{manager.role}</p>
+                            <p className="font-semibold text-gray-800">{m.name}</p>
+                            <p className="text-sm text-gray-500">{m.email}</p>
                         </div>
+                        <button onClick={()=>deleteManager(m._id)} className="text-red-600 hover:bg-red-50 px-3 py-1 rounded">Delete</button>
                     </div>
-                ))
-            ) : (
-                <p className="text-center text-gray-500 p-4">No managers found for this school.</p>
-            )}
+                )) : (
+                    <p className="text-center text-gray-500 p-4">No managers found for {schoolName}.</p>
+                )}
+            </div>
         </div>
     );
 };
@@ -81,7 +108,10 @@ const SchoolPanel = () => {
             try {
                 setError(null);
                 setLoading(true);
-                const { data } = await axios.get('/api/schools');
+                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                const { data } = await axios.get('/api/schools', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setSchools(data || []);
             } catch (err) {
                 setError('Failed to fetch schools. Please try again later.');
@@ -106,11 +136,16 @@ const SchoolPanel = () => {
         const payload = { name: formData.name, contact: { email: formData.email, phone: formData.phone, address: formData.address } };
 
         try {
+            const token = JSON.parse(localStorage.getItem('user'))?.token;
             if (isEditing) {
-                const { data: updatedSchool } = await axios.put(`/api/schools/${formData._id}`, payload);
+                const { data: updatedSchool } = await axios.put(`/api/schools/${formData._id}`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setSchools(prev => prev.map(s => s._id === formData._id ? updatedSchool : s));
             } else {
-                const { data: newSchool } = await axios.post('/api/schools', payload);
+                const { data: newSchool } = await axios.post('/api/schools', payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 setSchools(prev => [...prev, newSchool]);
             }
             setModal({ type: null, data: null }); // Close modal on success
@@ -123,7 +158,10 @@ const SchoolPanel = () => {
 
     const handleDeleteSchool = async (schoolId) => {
         try {
-            await axios.delete(`/api/schools/${schoolId}`);
+            const token = JSON.parse(localStorage.getItem('user'))?.token;
+            await axios.delete(`/api/schools/${schoolId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setSchools(prev => prev.filter(s => s._id !== schoolId));
             setModal({ type: null, data: null }); // Close confirmation modal
         } catch (err) {
@@ -208,7 +246,7 @@ const SchoolPanel = () => {
                     {modal.type === 'VIEW_MANAGERS' && (
                         <div>
                             <h3 className="text-xl font-bold text-gray-800 mb-4">Managers at {modal.data.name}</h3>
-                            <ManagerPanel schoolId={modal.data._id} />
+                            <ManagerPanel schoolId={modal.data._id} schoolName={modal.data.name} />
                         </div>
                     )}
                     {modal.type === 'DELETE_SCHOOL' && (
@@ -328,25 +366,5 @@ const DeleteConfirmation = ({ itemName, onConfirm, onCancel }) => (
     </div>
 );
 
-// --- Main App Component ---
-// This is the root component that renders the SchoolPanel.
-function App() {
-  return (
-    <div className="bg-gray-50 min-h-screen font-sans p-4 sm:p-6 lg:p-8">
-      <style>{`
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.3s ease-out forwards;
-        }
-      `}</style>
-      <div className="max-w-7xl mx-auto">
-        <SchoolPanel />
-      </div>
-    </div>
-  );
-}
-
-export default App;
+// Export the actual panel (AdminDashboard handles page layout)
+export default SchoolPanel;
