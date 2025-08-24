@@ -12,9 +12,12 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import AssignmentCreate from './AssignmentCreate';
+import AssignmentsList from './AssignmentsList';
 
 const TeacherAssignments = () => {
   const [activeTab, setActiveTab] = useState('active');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const assignments = [
     {
@@ -77,11 +80,21 @@ const TeacherAssignments = () => {
           <h1 className="text-2xl font-bold text-gray-900">Assignments</h1>
           <p className="text-gray-600">Manage homework and learning tasks</p>
         </div>
-        <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
+        <button 
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700"
+        >
           <Plus className="w-4 h-4" />
-          <span>New Assignment</span>
+          <span>{showCreateForm ? 'Cancel' : 'New Assignment'}</span>
         </button>
       </div>
+
+      {/* Create Assignment Form */}
+      {showCreateForm && (
+        <div className="mb-6">
+          <AssignmentCreate />
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
@@ -115,6 +128,16 @@ const TeacherAssignments = () => {
             }`}
           >
             Completed ({assignments.filter(a => a.status === 'completed').length})
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'all'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            All Assignments
           </button>
         </nav>
       </div>
@@ -349,6 +372,16 @@ const TeacherAssignments = () => {
           </div>
         </div>
       </div>
+
+      {/* All Assignments List */}
+      {activeTab === 'all' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">All Assignments</h3>
+            <AssignmentsList />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

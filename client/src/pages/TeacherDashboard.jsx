@@ -12,6 +12,7 @@ import TeacherAssignments from '../components/teacher/TeacherAssignments';
 import TeacherStudents from '../components/teacher/TeacherStudents';
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
+import Reports from '../components/teacher/Reports';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -38,6 +39,7 @@ const TeacherDashboard = () => {
     { id: 'create-game', name: 'Create Game' },
     { id: 'live-sessions', name: 'Live Sessions' },
     { id: 'assignments', name: 'Assignments' },
+    { id: 'reports', name: 'Reports' },
     { id: 'students', name: 'My Students' },
     { id: 'calendar', name: 'Calendar' }
   ];
@@ -54,6 +56,16 @@ const TeacherDashboard = () => {
         return <TeacherLiveSessions />;
       case 'assignments':
         return <TeacherAssignments />;
+      case 'reports':
+        return <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+              <p className="text-gray-600">View assignment performance and analytics</p>
+            </div>
+          </div>
+          <Reports />
+        </div>;
       case 'students':
         return <TeacherStudents />;
       case 'calendar':

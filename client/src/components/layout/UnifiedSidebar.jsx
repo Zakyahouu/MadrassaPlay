@@ -53,6 +53,7 @@ const UnifiedSidebar = ({
           { id: 'create-game', name: 'Create Game', icon: Plus },
           { id: 'live-sessions', name: 'Live Sessions', icon: Play },
           { id: 'assignments', name: 'Assignments', icon: FileText },
+          { id: 'reports', name: 'Reports', icon: TrendingUp },
           { id: 'students', name: 'My Students', icon: Users },
           { id: 'calendar', name: 'Calendar', icon: Calendar }
         ];
