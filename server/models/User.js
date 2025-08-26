@@ -5,7 +5,9 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema(
   {
     // --- Core Fields ---
-    name: { type: String, required: true },
+    name: { type: String, required: false }, // Keep for backward compatibility
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: {
@@ -61,10 +63,32 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Pre-save hook to hash password if modified and not already hashed
+// Virtual field for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
+});
+
+// Pre-save hook to maintain backward compatibility and hash password
 userSchema.pre('save', async function(next) {
+  // Maintain backward compatibility with 'name' field
+  if (this.firstName && this.lastName && !this.name) {
+    this.name = `${this.firstName} ${this.lastName}`;
+  }
+  
+  // If name is provided but not firstName/lastName, split it
+  if (this.name && (!this.firstName || !this.lastName)) {
+    const nameParts = this.name.trim().split(' ');
+    if (nameParts.length >= 2) {
+      this.firstName = nameParts[0];
+      this.lastName = nameParts.slice(1).join(' ');
+    } else {
+      this.firstName = nameParts[0] || '';
+      this.lastName = '';
+    }
+  }
+
+  // Hash password if modified and not already hashed
   if (!this.isModified('password')) return next();
-  // If password already appears hashed (60 chars bcrypt), skip
   if (typeof this.password === 'string' && this.password.startsWith('$2') && this.password.length >= 60) {
     return next();
   }

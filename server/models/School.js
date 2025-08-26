@@ -27,6 +27,30 @@ const schoolSchema = new mongoose.Schema(
       phone: String,
       address: String
     },
+    
+    // Trial System Fields
+    status: {
+      type: String,
+      enum: ['trial', 'active', 'inactive', 'deleted'],
+      default: 'trial'
+    },
+    trialStartedAt: {
+      type: Date,
+      default: Date.now
+    },
+    trialExpiresAt: {
+      type: Date,
+      default: function() {
+        // 30 days trial by default
+        return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      }
+    },
+    subscriptionStartedAt: {
+      type: Date
+    },
+    subscriptionExpiresAt: {
+      type: Date
+    }
     // We can add more details about the school later if needed,
     // like address, contact info, etc.
   },

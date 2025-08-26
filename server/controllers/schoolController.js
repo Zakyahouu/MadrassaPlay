@@ -181,26 +181,46 @@ const getSchools = async (req, res) => {
 const updateSchool = async (req, res) => {
   try {
     const schoolId = req.params.id;
-    const { name, contact, managers } = req.body;
+    const updateData = req.body;
 
     const school = await School.findById(schoolId);
     if (!school) {
       return res.status(404).json({ message: 'School not found.' });
     }
 
-    if (name) school.name = name;
-    if (contact) {
-      school.contact.email = contact.email || school.contact.email;
-      school.contact.phone = contact.phone || school.contact.phone;
-      school.contact.address = contact.address || school.contact.address;
+    // Handle all possible update fields
+    if (updateData.name !== undefined) school.name = updateData.name;
+    
+    if (updateData.contact) {
+      if (!school.contact) school.contact = {};
+      if (updateData.contact.email !== undefined) school.contact.email = updateData.contact.email;
+      if (updateData.contact.phone !== undefined) school.contact.phone = updateData.contact.phone;
+      if (updateData.contact.address !== undefined) school.contact.address = updateData.contact.address;
     }
-    if (Array.isArray(managers)) {
-      school.managers = managers.filter(id => typeof id === 'string');
+    
+    if (updateData.status !== undefined) school.status = updateData.status;
+    if (updateData.trialExpiresAt !== undefined) school.trialExpiresAt = updateData.trialExpiresAt;
+    if (updateData.subscriptionStartDate !== undefined) school.subscriptionStartDate = updateData.subscriptionStartDate;
+    if (updateData.commercialRegistryNo !== undefined) school.commercialRegistryNo = updateData.commercialRegistryNo;
+    
+    if (updateData.socialLinks) {
+      if (!school.socialLinks) school.socialLinks = {};
+      Object.keys(updateData.socialLinks).forEach(key => {
+        if (updateData.socialLinks[key] !== undefined) {
+          school.socialLinks[key] = updateData.socialLinks[key];
+        }
+      });
+    }
+    
+    if (Array.isArray(updateData.managers)) {
+      school.managers = updateData.managers.filter(id => typeof id === 'string');
     }
 
-    await school.save();
-    res.status(200).json(school);
+    const updatedSchool = await school.save();
+    
+    res.status(200).json(updatedSchool);
   } catch (error) {
+    console.error('Error updating school:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };

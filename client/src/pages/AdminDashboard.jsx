@@ -7,7 +7,7 @@ import UnifiedSidebar from '../components/layout/UnifiedSidebar';
 import TopNav from '../components/layout/TopNav';
 
 // Import dashboard components
-import SchoolManager from '../components/admin/SchoolPanel';
+import SchoolManager from '../components/admin/SchoolManager';
 import GameTemplateManager from '../components/admin/GameTemplateManager';
 import Analytics from '../components/admin/Analytics';
 import AdminTestGames from '../components/admin/AdminTestGames';

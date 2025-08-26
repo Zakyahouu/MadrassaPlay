@@ -13,9 +13,12 @@ app.use(express.json());
 app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
 // Serve uploaded media (icons/content assets)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve school documents
+app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
 
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
+app.use('/api/school-documents', require('./routes/schoolDocumentRoutes'));
 app.use('/api/teachers', require('./routes/teacherRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/templates', require('./routes/gameTemplateRoutes'));

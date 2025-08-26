@@ -133,25 +133,36 @@ const SchoolPanel = () => {
 
     const handleSaveSchool = async (formData) => {
         const isEditing = !!formData._id;
-        const payload = { name: formData.name, contact: { email: formData.email, phone: formData.phone, address: formData.address } };
+        const payload = { 
+            name: formData.name, 
+            contact: { 
+                email: formData.email, 
+                phone: formData.phone, 
+                address: formData.address 
+            } 
+        };
 
         try {
             const token = JSON.parse(localStorage.getItem('user'))?.token;
             if (isEditing) {
-                const { data: updatedSchool } = await axios.put(`/api/schools/${formData._id}`, payload, {
+                const response = await axios.put(`/api/schools/${formData._id}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setSchools(prev => prev.map(s => s._id === formData._id ? updatedSchool : s));
+                
+                setSchools(prev => prev.map(s => s._id === formData._id ? response.data : s));
+                
+                // Refresh the school list to ensure we have the latest data
+                fetchSchools();
             } else {
-                const { data: newSchool } = await axios.post('/api/schools', payload, {
+                const response = await axios.post('/api/schools', payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                setSchools(prev => [...prev, newSchool]);
+                setSchools(prev => [...prev, response.data]);
             }
             setModal({ type: null, data: null }); // Close modal on success
         } catch (err) {
-            console.error("Save operation failed:", err);
-            // In a real app, you might set a form-specific error message in the modal
+            console.error("SchoolPanel - Save operation failed:", err);
+            console.error("SchoolPanel - Error response:", err.response?.data);
             alert('Operation failed. Please check the console for details.');
         }
     };
