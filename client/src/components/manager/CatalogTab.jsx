@@ -101,14 +101,64 @@ const CatalogTab = () => {
     });
   };
 
+  // Helper function to format subject display
+  const formatSubjectDisplay = (subject) => {
+    if (!subject) return '';
+    
+    const subjects = subject.split(',').map(s => s.trim());
+    if (subjects.length <= 3) {
+      return subjects.join(', ');
+    }
+    
+    return `${subjects.slice(0, 2).join(', ')} +${subjects.length - 2} more`;
+  };
+
+  // Helper function to get level display
+  const getLevelDisplay = (level) => {
+    switch (level) {
+      case 'primary': return 'Primary';
+      case 'middle': return 'Middle';
+      case 'high_school': return 'High School';
+      default: return level;
+    }
+  };
+
+  // Helper function to get grade display
+  const getGradeDisplay = (grade, level) => {
+    if (level === 'high_school') {
+      return `Year ${grade}`;
+    }
+    return `Grade ${grade}`;
+  };
+
+  // Helper function to group items by level
+  const groupItemsByLevel = (items) => {
+    const grouped = {
+      primary: [],
+      middle: [],
+      high_school: []
+    };
+
+    items.forEach(item => {
+      if (item.level && grouped[item.level]) {
+        grouped[item.level].push(item);
+      }
+    });
+
+    return grouped;
+  };
+
   // Render section content
   const renderSectionContent = () => {
     if (!catalog) return null;
 
     switch (activeSection) {
       case 'support-lessons':
+        const supportLessons = filterItems(catalog.supportLessons || []);
+        const groupedSupportLessons = groupItemsByLevel(supportLessons);
+        
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Support Lessons</h3>
               <button
@@ -119,79 +169,172 @@ const CatalogTab = () => {
                 Add Lesson
               </button>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterItems(catalog.supportLessons || []).map((lesson, index) => (
-                <UnifiedCard key={lesson._id || index} className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{lesson.subject}</h4>
-                      <p className="text-sm text-gray-600">
-                        {lesson.level} - Grade {lesson.grade}
-                        {lesson.stream && ` - ${lesson.stream}`}
-                      </p>
+            <div className="space-y-6">
+              {Object.entries(groupedSupportLessons).map(([level, levelItems]) => {
+                if (levelItems.length === 0) return null;
+                
+                const levelNames = {
+                  primary: 'Primary School',
+                  middle: 'Middle School', 
+                  high_school: 'High School'
+                };
+
+                return (
+                  <div key={level} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        {levelNames[level]}
+                      </h4>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {levelItems.length} {levelItems.length === 1 ? 'item' : 'items'}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setModal({ type: 'support-lessons', data: lesson, isOpen: true })}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem('support-lessons', lesson._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 ml-4">
+                      {levelItems.map((lesson, index) => (
+                        <UnifiedCard key={lesson._id || index} className="p-4 hover:shadow-lg transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <BookOpen className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                <h4 className="font-semibold text-gray-900 truncate">
+                                  {formatSubjectDisplay(lesson.subject)}
+                                </h4>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                    {getGradeDisplay(lesson.grade, lesson.level)}
+                                  </span>
+                                  {lesson.stream && (
+                                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                                      {lesson.stream}
+                                    </span>
+                                  )}
+                                </div>
+                                {lesson.subject && lesson.subject.split(',').length > 3 && (
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {lesson.subject.split(',').length} subjects total
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <button
+                                onClick={() => setModal({ type: 'support-lessons', data: lesson, isOpen: true })}
+                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem('support-lessons', lesson._id)}
+                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </UnifiedCard>
+                      ))}
                     </div>
                   </div>
-                </UnifiedCard>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
 
       case 'review-courses':
+        const reviewCourses = filterItems(catalog.reviewCourses || []);
+        const groupedReviewCourses = groupItemsByLevel(reviewCourses);
+        
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Review Courses</h3>
               <button
                 onClick={() => setModal({ type: 'review-courses', data: null, isOpen: true })}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Course
               </button>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterItems(catalog.reviewCourses || []).map((course, index) => (
-                <UnifiedCard key={course._id || index} className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{course.subject}</h4>
-                      <p className="text-sm text-gray-600">
-                        {course.level} - Grade {course.grade}
-                        {course.stream && ` - ${course.stream}`}
-                      </p>
+            <div className="space-y-6">
+              {Object.entries(groupedReviewCourses).map(([level, levelItems]) => {
+                if (levelItems.length === 0) return null;
+                
+                const levelNames = {
+                  primary: 'Primary School',
+                  middle: 'Middle School', 
+                  high_school: 'High School'
+                };
+
+                return (
+                  <div key={level} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        {levelNames[level]}
+                      </h4>
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        {levelItems.length} {levelItems.length === 1 ? 'item' : 'items'}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setModal({ type: 'review-courses', data: course, isOpen: true })}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem('review-courses', course._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 ml-4">
+                      {levelItems.map((course, index) => (
+                        <UnifiedCard key={course._id || index} className="p-4 hover:shadow-lg transition-shadow">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <GraduationCap className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                                <h4 className="font-semibold text-gray-900 truncate">
+                                  {formatSubjectDisplay(course.subject)}
+                                </h4>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                                    {getGradeDisplay(course.grade, course.level)}
+                                  </span>
+                                  {course.stream && (
+                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                      {course.stream}
+                                    </span>
+                                  )}
+                                </div>
+                                {course.subject && course.subject.split(',').length > 3 && (
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {course.subject.split(',').length} subjects total
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <button
+                                onClick={() => setModal({ type: 'review-courses', data: course, isOpen: true })}
+                                className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem('review-courses', course._id)}
+                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </UnifiedCard>
+                      ))}
                     </div>
                   </div>
-                </UnifiedCard>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -296,7 +439,7 @@ const CatalogTab = () => {
               <h3 className="text-lg font-semibold text-gray-900">Other Activities</h3>
               <button
                 onClick={() => setModal({ type: 'other-activities', data: null, isOpen: true })}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Activity
@@ -304,22 +447,31 @@ const CatalogTab = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filterItems(catalog.otherActivities || []).map((activity, index) => (
-                <UnifiedCard key={activity._id || index} className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{activity.activityName}</h4>
-                      <p className="text-sm text-gray-600">Type: {activity.activityType}</p>
+                <UnifiedCard key={activity._id || index} className="p-4 hover:shadow-lg transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Activity className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                        <h4 className="font-semibold text-gray-900 truncate">{activity.activityName}</h4>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
+                          {activity.activityType}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 ml-2">
                       <button
                         onClick={() => setModal({ type: 'other-activities', data: activity, isOpen: true })}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                        title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteItem('other-activities', activity._id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
