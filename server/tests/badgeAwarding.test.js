@@ -7,6 +7,7 @@ const EarnedTemplateBadge = require('../models/EarnedTemplateBadge');
 const GameCreation = require('../models/GameCreation');
 const GameResult = require('../models/GameResult');
 const User = require('../models/User');
+const Assignment = require('../models/Assignment');
 const jwt = require('jsonwebtoken');
 
 function tokenFor(user) {
@@ -14,16 +15,17 @@ function tokenFor(user) {
 }
 
 describe('Template Badge Awarding', () => {
-  let student, templateId, creation, auth;
+  let student, templateId, creation, auth, owner;
 
   beforeAll(async () => {
     await connectDB();
   });
 
   beforeEach(async () => {
-    student = await User.create({ name: 'Stu', email: `stu${Date.now()}@ex.com`, password: 'pass123', role: 'student' });
+  student = await User.create({ firstName: 'Stu', lastName: 'Dent', email: `stu${Date.now()}@ex.com`, password: 'pass123', role: 'student' });
     templateId = new mongoose.Types.ObjectId();
-    creation = await GameCreation.create({ template: templateId, name: 'Game 1', questions: [] });
+  owner = await User.create({ firstName: 'Teach', lastName: 'Er', email: `t${Date.now()}@ex.com`, password: 'pass123', role: 'teacher', experience: 0, teacherStatus: 'employed' });
+  creation = await GameCreation.create({ template: templateId, owner: owner._id, name: 'Game 1', config: {}, content: [] });
     await TemplateBadge.create({
       template: templateId,
       name: 'Quiz Master',
@@ -38,9 +40,18 @@ describe('Template Badge Awarding', () => {
   });
 
   test('awards bronze then upgrades to silver then gold based on highestAttempt', async () => {
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 5, totalPossibleScore: 10 }); // 50%
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 7, totalPossibleScore: 10 }); // 70%
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 9, totalPossibleScore: 10 }); // 90%
+    const Assignment = require('../models/Assignment');
+    const assignment = await Assignment.create({
+      teacher: owner._id,
+      title: 'A1',
+      students: [student._id],
+      gameCreations: [creation._id],
+      startDate: new Date(Date.now() - 3600_000),
+      endDate: new Date(Date.now() + 3600_000)
+    });
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment._id, score: 5, totalPossibleScore: 10 }); // 50%
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment._id, score: 7, totalPossibleScore: 10 }); // 70%
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment._id, score: 9, totalPossibleScore: 10 }); // 90%
 
     const badge = await TemplateBadge.findOne({ template: templateId });
     // simulate evaluation after last game result
@@ -66,8 +77,16 @@ describe('Template Badge Awarding', () => {
       ]
     });
 
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 6, totalPossibleScore: 10 }); // 60%
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 9, totalPossibleScore: 10 }); // 90% but should not upgrade
+    const assignment2 = await Assignment.create({
+      teacher: owner._id,
+      title: 'A2',
+      students: [student._id],
+      gameCreations: [creation._id],
+      startDate: new Date(Date.now() - 3600_000),
+      endDate: new Date(Date.now() + 3600_000)
+    });
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment2._id, score: 6, totalPossibleScore: 10 }); // 60%
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment2._id, score: 9, totalPossibleScore: 10 }); // 90% but should not upgrade
 
     const controller = require('../controllers/templateBadgeController');
     await controller.evaluateTemplateBadgeForResult({ userId: student._id, gameCreationId: creation._id, percentage: 90 });

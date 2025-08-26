@@ -134,11 +134,11 @@ const loginUser = async (req, res) => {
         xp: user.xp,
         level: user.level,
         totalPoints: user.totalPoints,
-        subject: user.subject,
-        department: user.department,
+        username: user.username,
+        contact: user.contact,
         experience: user.experience,
-        phone: user.phone,
         status: user.status,
+        activities: user.activities,
         rating: user.rating,
         token: generateToken(user._id),
       });
@@ -173,7 +173,7 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
   try {
-    const { name, email, phone, subject, department, experience, status } = req.body;
+  const { name, email, username, contact, experience, status, activities } = req.body;
 
     // Find the user by ID
     const user = await User.findById(req.user._id);
@@ -193,14 +193,24 @@ const updateUserProfile = async (req, res) => {
     // Update user fields
     user.name = name || user.name;
     user.email = email || user.email;
-    user.phone = phone || user.phone;
+    if (username) user.username = username;
+    if (contact) {
+      user.contact = {
+        phone1: contact.phone1 ?? user.contact?.phone1,
+        phone2: contact.phone2 ?? user.contact?.phone2,
+        address: contact.address ?? user.contact?.address,
+      };
+    }
     
     // Update teacher-specific fields if user is a teacher
     if (user.role === 'teacher') {
-      user.subject = subject || user.subject;
-      user.department = department || user.department;
-      user.experience = experience !== undefined ? experience : user.experience;
-      user.status = status || user.status;
+      if (experience !== undefined) user.experience = experience;
+      if (status) user.teacherStatus = status;
+      if (Array.isArray(activities)) user.activities = activities;
+    }
+    // Optional: allow staff/employees to update their own status if exposed in UI
+    if ((user.role === 'staff' || user.role === 'employee') && status) {
+      user.staffStatus = status;
     }
 
     // Save the updated user
@@ -213,11 +223,11 @@ const updateUserProfile = async (req, res) => {
       email: updatedUser.email,
       role: updatedUser.role,
       school: updatedUser.school,
-      subject: updatedUser.subject,
-      department: updatedUser.department,
       experience: updatedUser.experience,
-      phone: updatedUser.phone,
-      status: updatedUser.status,
+  username: updatedUser.username,
+  contact: updatedUser.contact,
+  activities: updatedUser.activities,
+  status: updatedUser.status,
       rating: updatedUser.rating,
       token: generateToken(updatedUser._id),
     });

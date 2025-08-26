@@ -19,9 +19,9 @@ describe('TemplateBadge validation & progress listing', () => {
   let student, studentAuth;
   beforeAll(async () => { await connectDB(); });
   beforeEach(async () => {
-    admin = await User.create({ name: 'Admin', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
+  admin = await User.create({ firstName: 'Admin', lastName: 'User', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
     adminAuth = `Bearer ${tokenFor(admin)}`;
-    student = await User.create({ name: 'Stu', email: `stu${Date.now()}@ex.com`, password: 'pass123', role: 'student' });
+  student = await User.create({ firstName: 'Stu', lastName: 'Dent', email: `stu${Date.now()}@ex.com`, password: 'pass123', role: 'student' });
     studentAuth = `Bearer ${tokenFor(student)}`;
   });
 
@@ -80,12 +80,22 @@ describe('TemplateBadge validation & progress listing', () => {
       .expect(201);
 
     // Game creation + results
-    const creation = await GameCreation.create({ template: templateId, name: 'Game 1', questions: [] });
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 5, totalPossibleScore: 10 }); // 50
-    await GameResult.create({ student: student._id, gameCreation: creation._id, score: 7, totalPossibleScore: 10 }); // 70
+  const creationOwner = await User.create({ firstName: 'Teach', lastName: 'Er', email: `t${Date.now()}@ex.com`, password: 'pass123', role: 'teacher', experience: 0, teacherStatus: 'employed' });
+  const creation = await GameCreation.create({ template: templateId, owner: creationOwner._id, name: 'Game 1', config: {}, content: [] });
+    const Assignment = require('../models/Assignment');
+    const assignment = await Assignment.create({
+      teacher: creationOwner._id,
+      title: 'A1',
+      students: [student._id],
+      gameCreations: [creation._id],
+      startDate: new Date(Date.now() - 3600_000),
+      endDate: new Date(Date.now() + 3600_000)
+    });
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment._id, score: 5, totalPossibleScore: 10 }); // 50
+    await GameResult.create({ student: student._id, gameCreation: creation._id, assignment: assignment._id, score: 7, totalPossibleScore: 10 }); // 70
 
     // Evaluate (simulating post-result hook)
-    await controller.evaluateTemplateBadgeForResult({ userId: student._id, gameCreationId: creation._id, percentage: 70 });
+  await controller.evaluateTemplateBadgeForResult({ userId: student._id, gameCreationId: creation._id, percentage: 70 });
 
     const listRes = await request(app)
       .get('/api/template-badges/me/list')

@@ -44,7 +44,7 @@ const UnifiedSidebar = ({
           { id: 'classes', name: 'Classes', icon: BookOpen },
           { id: 'students', name: 'Students', icon: Users },
           { id: 'teachers', name: 'Teachers', icon: UserCheck },
-          { id: 'staffes', name: 'Staff', icon: Building2 },
+          { id: 'employees', name: 'Staff', icon: Building2 },
           { id: 'rooms', name: 'Rooms', icon: Building2 },
           { id: 'equipment', name: 'Equipment', icon: Package },
           { id: 'catalog', name: 'Catalog', icon: Package },

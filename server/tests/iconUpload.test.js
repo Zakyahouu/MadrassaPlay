@@ -14,7 +14,7 @@ describe('Badge Icon Upload Validation', () => {
   let admin, auth;
   beforeAll(async () => { await connectDB(); });
   beforeEach(async () => {
-    admin = await User.create({ name: 'Admin', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
+    admin = await User.create({ firstName: 'Admin', lastName: 'User', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
     auth = `Bearer ${tokenFor(admin)}`;
   });
 

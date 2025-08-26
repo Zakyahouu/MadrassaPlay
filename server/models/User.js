@@ -8,12 +8,18 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: false }, // Keep for backward compatibility
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+  email: { 
+    type: String, 
+    required: function() { return this.role !== 'employee'; }, // 'Other' employees can be created without email
+    unique: true,
+    sparse: true,
+  },
+  username: { type: String, required: false, trim: true },
     password: { type: String, required: true },
     role: {
       type: String,
       required: true,
-      enum: ['student', 'teacher', 'admin', 'manager', 'principal','staff pedagogique', 'staff '], // Add more roles as needed
+  enum: ['student', 'teacher', 'admin', 'manager', 'principal', 'staff', 'employee'],
     },
     school: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,31 +27,51 @@ const userSchema = new mongoose.Schema(
     },
     // ... other fields
 
-    // --- NEW: Teacher-Specific Fields ---
-    // These fields will only be populated for users with role: 'teacher'
-    subject: {
-      type: String,
-      required: function() { return this.role === 'teacher'; } // Required only if the user is a teacher
+  // Contact and banking (optional, used by manager flows)
+    contact: {
+      phone1: { type: String, trim: true },
+      phone2: { type: String, trim: true },
+      address: { type: String, trim: true },
     },
-    department: {
-      type: String,
-      required: function() { return this.role === 'teacher'; }
+    banking: {
+      ccp: { type: String, trim: true },
+      bankAccount: { type: String, trim: true },
     },
+  // Employee HR fields
+  educationLevel: { type: String, trim: true },
+  contractType: { type: String, trim: true },
+  startDate: { type: Date },
+  salary: { type: Number, min: 0 },
+  permissions: [{ type: String, trim: true }],
+
+    // --- Teacher Fields ---
     experience: {
       type: Number,
       required: function() { return this.role === 'teacher'; },
       min: 0
     },
-    phone: {
+    // Teacher employment status (separate from staff)
+    teacherStatus: {
       type: String,
-      required: false // Optional field
+      enum: ['employed', 'freelance', 'retired'],
+      default: 'employed',
+      required: function() { return this.role === 'teacher'; }
     },
-    status: {
-        type: String,
-        enum: ['active', 'on_leave', 'retired'],
-        default: 'active',
-        required: function() { return this.role === 'teacher'; }
+    // Staff/Employee status (separate from teachers)
+    staffStatus: {
+      type: String,
+      enum: ['active', 'on_vacation', 'stopped'],
+      default: 'active',
     },
+  // Teacher activities chosen from SchoolCatalog (per school)
+  activities: [{
+    type: {
+      type: String,
+      enum: ['supportLessons', 'reviewCourses', 'vocationalTrainings', 'languages', 'otherActivities'],
+      required: true,
+    },
+    items: [{ type: mongoose.Schema.Types.Mixed }],
+  }],
     rating: {
         type: Number,
         min: 0,
@@ -60,6 +86,8 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
@@ -105,5 +133,12 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.matchPassword = function(entered) {
   return bcrypt.compare(entered, this.password);
 };
+
+// Virtual: unified status for API compatibility (teacher -> teacherStatus, staff/employee -> staffStatus)
+userSchema.virtual('status').get(function() {
+  if (this.role === 'teacher') return this.teacherStatus;
+  if (this.role === 'staff' || this.role === 'employee') return this.staffStatus;
+  return undefined;
+});
 
 module.exports = mongoose.model('User', userSchema);

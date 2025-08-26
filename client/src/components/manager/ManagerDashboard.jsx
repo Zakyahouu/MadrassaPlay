@@ -14,13 +14,13 @@ import ReportsTab from './ReportsTab';
 import CatalogTab from './CatalogTab';
 import RoomsTab from './RoomsTab';
 import EquipmentTab from './EquipmentTab';
+import EmployeesTab from './EmployeesTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
 import NotificationItem from './shared/NotificationItem'; 
 import ManagerClassPanel from './shared/ManagerClassPanel';
 import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
-import StaffesTab from './StaffesTab';
 import UnifiedSidebar from '../layout/UnifiedSidebar';
 import TopNav from '../layout/TopNav';
 // Main Dashboard Component
@@ -137,8 +137,8 @@ export const ManagerDashboard = () => {
     { id: 'overview', name: 'Overview' },
     { id: 'classes', name: 'Classes' },
     { id: 'students', name: 'Students' },
-    { id: 'teachers', name: 'Teachers' },
-    { id: 'staffes', name: 'Staff' },
+    { id: 'teachers', name: 'All Teachers' },
+    { id: 'employees', name: 'All Employees' },
   { id: 'rooms', name: 'Rooms' },
   { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
@@ -155,6 +155,8 @@ export const ManagerDashboard = () => {
         return <StudentsTab />;
       case 'teachers':
         return <TeachersTab />;
+      case 'employees':
+        return <EmployeesTab />;
       case 'catalog':
         return <CatalogTab />;
       case 'rooms':
@@ -163,8 +165,7 @@ export const ManagerDashboard = () => {
         return <EquipmentTab />;
       case 'reports':
         return <ReportsTab />;
-      case 'staffes':
-        return <StaffesTab />;
+  // legacy staff tab hidden
       default:
         return (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">

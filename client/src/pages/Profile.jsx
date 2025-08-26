@@ -34,9 +34,11 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
-    subject: user?.subject || '',
-    department: user?.department || '',
+    contact: {
+      phone1: user?.contact?.phone1 || '',
+      phone2: user?.contact?.phone2 || '',
+      address: user?.contact?.address || '',
+    },
     experience: user?.experience || 0,
     status: user?.status || 'active'
   });
@@ -46,9 +48,11 @@ const Profile = () => {
     setFormData({
       name: user?.name || '',
       email: user?.email || '',
-      phone: user?.phone || '',
-      subject: user?.subject || '',
-      department: user?.department || '',
+      contact: {
+        phone1: user?.contact?.phone1 || '',
+        phone2: user?.contact?.phone2 || '',
+        address: user?.contact?.address || '',
+      },
       experience: user?.experience || 0,
       status: user?.status || 'active'
     });
@@ -82,9 +86,11 @@ const Profile = () => {
     setFormData({
       name: user?.name || '',
       email: user?.email || '',
-      phone: user?.phone || '',
-      subject: user?.subject || '',
-      department: user?.department || '',
+      contact: {
+        phone1: user?.contact?.phone1 || '',
+        phone2: user?.contact?.phone2 || '',
+        address: user?.contact?.address || '',
+      },
       experience: user?.experience || 0,
       status: user?.status || 'active'
     });
@@ -93,7 +99,7 @@ const Profile = () => {
 
   const getRoleDisplayName = (role) => {
     const roleNames = {
-      'admin': 'Administrator',
+      'admin': 'Admin',
       'manager': 'Manager',
       'teacher': 'Teacher',
       'student': 'Student',
@@ -121,7 +127,9 @@ const Profile = () => {
     const colors = {
       'active': 'bg-green-50 text-green-700 border-green-200',
       'on_leave': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'retired': 'bg-gray-50 text-gray-700 border-gray-200'
+      'retired': 'bg-gray-50 text-gray-700 border-gray-200',
+      'employed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'freelance': 'bg-amber-50 text-amber-700 border-amber-200',
     };
     return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -133,73 +141,34 @@ const Profile = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Subject
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
             {isEditing ? (
-                             <input
-                 type="text"
-                 name="subject"
-                 value={formData.subject}
-                 onChange={handleInputChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               />
-            ) : (
-              <p className="text-gray-900">{user?.subject || 'Not specified'}</p>
-            )}
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Department
-            </label>
-            {isEditing ? (
-                             <input
-                 type="text"
-                 name="department"
-                 value={formData.department}
-                 onChange={handleInputChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               />
-            ) : (
-              <p className="text-gray-900">{user?.department || 'Not specified'}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Years of Experience
-            </label>
-            {isEditing ? (
-                             <input
-                 type="number"
-                 name="experience"
-                 value={formData.experience}
-                 onChange={handleInputChange}
-                 min="0"
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               />
+              <input
+                type="number"
+                name="experience"
+                value={formData.experience}
+                onChange={handleInputChange}
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             ) : (
               <p className="text-gray-900">{user?.experience || 0} years</p>
             )}
           </div>
-          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
             {isEditing ? (
-                             <select
-                 name="status"
-                 value={formData.status}
-                 onChange={handleInputChange}
-                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-               >
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
                 <option value="active">Active</option>
                 <option value="on_leave">On Leave</option>
                 <option value="retired">Retired</option>
+                <option value="employed">Employed</option>
+                <option value="freelance">Freelance</option>
               </select>
             ) : (
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
@@ -209,28 +178,21 @@ const Profile = () => {
           </div>
         </div>
 
-        {user?.rating && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Rating
-            </label>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < Math.floor(user.rating) 
-                        ? 'text-yellow-400 fill-current' 
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-gray-600">({user.rating}/5)</span>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
+          {Array.isArray(user?.activities) && user.activities.length ? (
+            <div className="space-y-2">
+              {user.activities.map((act, idx) => (
+                <div key={idx} className="text-sm text-gray-800">
+                  <span className="font-semibold mr-1">{(act.type || '').replace(/([A-Z])/g,' $1').replace(/^\w/, c=>c.toUpperCase())}:</span>
+                  <span>{(act.items||[]).length} item{(act.items||[]).length!==1?'s':''}</span>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-gray-500">No activities configured.</p>
+          )}
+        </div>
       </div>
     );
   };

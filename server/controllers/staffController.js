@@ -27,7 +27,7 @@ const getStaffForSchool = async (req, res) => {
 // @access  Private/Manager
 const createStaff = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+    const { name, email, password, role, status } = req.body;
         if (!name || !email || !password || !role) {
             return res.status(400).json({ message: 'Please provide name, email, password, and role.' });
         }
@@ -37,6 +37,15 @@ const createStaff = async (req, res) => {
 
         const schoolId = req.user.school;
         const staffData = { ...req.body, school: schoolId };
+        // Map generic status to role-specific field
+        if (status) {
+            if (role === 'teacher') {
+                staffData.teacherStatus = status;
+            } else if (role === 'staff' || role === 'employee') {
+                staffData.staffStatus = status;
+            }
+            delete staffData.status;
+        }
 
         const userExists = await User.findOne({ email: staffData.email });
         if (userExists) {
@@ -68,6 +77,15 @@ const updateStaff = async (req, res) => {
 
         const updateData = { ...req.body };
         delete updateData.password; // Do not update password this way
+        // Map generic status to role-specific field on update
+        if (updateData.status) {
+            if (staffMember.role === 'teacher') {
+                updateData.teacherStatus = updateData.status;
+            } else if (staffMember.role === 'staff' || staffMember.role === 'employee') {
+                updateData.staffStatus = updateData.status;
+            }
+            delete updateData.status;
+        }
 
         const updatedStaff = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
         res.status(200).json({ message: "Staff member updated successfully", staff: updatedStaff });
