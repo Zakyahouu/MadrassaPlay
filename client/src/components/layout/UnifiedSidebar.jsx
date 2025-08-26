@@ -16,7 +16,8 @@ import {
   UserCheck,
   Building2,
   GraduationCap,
-  Bell
+  Bell,
+  Package
 } from 'lucide-react';
 
 const UnifiedSidebar = ({ 
@@ -44,6 +45,7 @@ const UnifiedSidebar = ({
           { id: 'students', name: 'Students', icon: Users },
           { id: 'teachers', name: 'Teachers', icon: UserCheck },
           { id: 'staffes', name: 'Staff', icon: Building2 },
+          { id: 'catalog', name: 'Catalog', icon: Package },
           { id: 'reports', name: 'Reports', icon: TrendingUp }
         ];
       case 'teacher':

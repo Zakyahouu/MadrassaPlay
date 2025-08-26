@@ -57,10 +57,12 @@ const bcrypt = require('bcryptjs');
 const createManagerForSchool = async (req, res) => {
   try {
     const schoolId = req.params.id;
-    const { name, email, password } = req.body;
+    const { name, firstName, lastName, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required.' });
+    // Support both name (legacy) and firstName/lastName (new) formats
+    const hasName = name || (firstName && lastName);
+    if (!hasName || !email || !password) {
+      return res.status(400).json({ message: 'Name (or first name and last name), email, and password are required.' });
     }
 
     const school = await School.findById(schoolId);
@@ -78,18 +80,33 @@ const createManagerForSchool = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create manager user
-    const manager = await User.create({
-      name,
+    const managerData = {
       email,
       password: hashedPassword,
       role: 'manager',
       school: school._id,
       accessLevel: 'principal'
-    });
+    };
+
+    // Handle name fields - support both formats
+    if (firstName && lastName) {
+      managerData.firstName = firstName;
+      managerData.lastName = lastName;
+    } else if (name) {
+      managerData.name = name;
+    }
+
+    const manager = await User.create(managerData);
 
     // Add manager to school's managers array
-    school.managers.push(manager._id);
-    await school.save();
+    try {
+      school.managers.push(manager._id);
+      await school.save();
+    } catch (error) {
+      // If adding to school fails, delete the manager to prevent orphaned data
+      await User.findByIdAndDelete(manager._id);
+      throw new Error('Failed to associate manager with school');
+    }
 
     res.status(201).json({ manager, school });
   } catch (error) {

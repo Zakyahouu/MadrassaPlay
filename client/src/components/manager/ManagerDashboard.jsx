@@ -1,5 +1,6 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import axios from 'axios';
 import { 
   Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell, 
   UserCheck, Building2, FileText, Search, Plus, Edit, Trash2, Eye,
@@ -10,6 +11,7 @@ import ClassesTab from './ClassesTab';
 import StudentsTab from './StudentsTab';
 import TeachersTab from './TeachersTab';
 import ReportsTab from './ReportsTab';
+import CatalogTab from './CatalogTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -24,13 +26,72 @@ export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stats, setStats] = useState([
+    { title: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', change: 0 },
+    { title: 'Active Teachers', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
+    { title: 'Total Classes', value: '0', icon: BookOpen, color: 'text-purple-600', change: 0 },
+    { title: 'Total Staff', value: '0', icon: BarChart3, color: 'text-orange-600', change: 0 },
+  ]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { title: 'Total Students', value: '1,247', icon: Users, color: 'text-blue-600', change: 5.2 },
-    { title: 'Active Teachers', value: '89', icon: UserCheck, color: 'text-green-600', change: 2.1 },
-    { title: 'Classes Today', value: '156', icon: BookOpen, color: 'text-purple-600', change: -1.3 },
-    { title: 'Attendance Rate', value: '94%', icon: BarChart3, color: 'text-orange-600', change: 1.8 },
-  ];
+  // Fetch real stats data
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
+        if (!token) return;
+
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        // Fetch counts for different user types
+        const [studentsRes, teachersRes, classesRes, staffRes] = await Promise.all([
+          axios.get('/api/users/count?role=student', config),
+          axios.get('/api/users/count?role=teacher', config),
+          axios.get('/api/classes', config),
+          axios.get('/api/users/count?role=staff', config)
+        ]);
+
+        const newStats = [
+          { 
+            title: 'Total Students', 
+            value: studentsRes.data.count?.toString() || '0', 
+            icon: Users, 
+            color: 'text-blue-600', 
+            change: 0 
+          },
+          { 
+            title: 'Active Teachers', 
+            value: teachersRes.data.count?.toString() || '0', 
+            icon: UserCheck, 
+            color: 'text-green-600', 
+            change: 0 
+          },
+          { 
+            title: 'Total Classes', 
+            value: (classesRes.data?.length || 0).toString(), 
+            icon: BookOpen, 
+            color: 'text-purple-600', 
+            change: 0 
+          },
+          { 
+            title: 'Total Staff', 
+            value: staffRes.data.count?.toString() || '0', 
+            icon: BarChart3, 
+            color: 'text-orange-600', 
+            change: 0 
+          },
+        ];
+
+        setStats(newStats);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const quickActions = [
     {
@@ -76,19 +137,22 @@ export const ManagerDashboard = () => {
     { id: 'students', name: 'Students' },
     { id: 'teachers', name: 'Teachers' },
     { id: 'staffes', name: 'Staff' },
+    { id: 'catalog', name: 'Catalog' },
     { id: 'reports', name: 'Reports' }
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} />;
+        return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
         return <ClassesTab />;
       case 'students':
         return <StudentsTab />;
       case 'teachers':
         return <TeachersTab />;
+      case 'catalog':
+        return <CatalogTab />;
       case 'reports':
         return <ReportsTab />;
       case 'staffes':

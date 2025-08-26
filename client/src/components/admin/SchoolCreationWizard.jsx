@@ -76,21 +76,66 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         break;
       case 4:
         if (!formData.skipManager) {
-          if (!formData.managerData.firstName.trim()) newErrors.managerFirstName = 'First name is required';
-          if (!formData.managerData.lastName.trim()) newErrors.managerLastName = 'Last name is required';
-          if (!formData.managerData.email.trim()) newErrors.managerEmail = 'Email is required';
-          if (!/\S+@\S+\.\S+/.test(formData.managerData.email)) newErrors.managerEmail = 'Valid email is required';
+          if (!formData.managerData.firstName.trim()) {
+            newErrors.managerFirstName = 'First name is required';
+          }
+          if (!formData.managerData.lastName.trim()) {
+            newErrors.managerLastName = 'Last name is required';
+          }
+          if (!formData.managerData.email.trim()) {
+            newErrors.managerEmail = 'Email is required';
+          } else if (!/\S+@\S+\.\S+/.test(formData.managerData.email)) {
+            newErrors.managerEmail = 'Valid email is required';
+          }
           if (!formData.managerData.password || formData.managerData.password.length < 6) {
             newErrors.managerPassword = 'Password must be at least 6 characters';
           }
-          if (!formData.managerData.address.trim()) newErrors.managerAddress = 'Address is required';
-          if (!formData.managerData.phone1.trim()) newErrors.managerPhone1 = 'Phone number is required';
+          if (!formData.managerData.address.trim()) {
+            newErrors.managerAddress = 'Address is required';
+          }
+          if (!formData.managerData.phone1.trim()) {
+            newErrors.managerPhone1 = 'Phone number is required';
+          }
         }
         break;
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const validateManagerData = () => {
+    const errors = {};
+    
+    if (!formData.skipManager) {
+      if (!formData.managerData.firstName.trim()) {
+        errors.managerFirstName = 'First name is required';
+      }
+      if (!formData.managerData.lastName.trim()) {
+        errors.managerLastName = 'Last name is required';
+      }
+      if (!formData.managerData.email.trim()) {
+        errors.managerEmail = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.managerData.email)) {
+        errors.managerEmail = 'Please enter a valid email';
+      }
+      if (!formData.managerData.password.trim()) {
+        errors.managerPassword = 'Password is required';
+      } else if (formData.managerData.password.length < 6) {
+        errors.managerPassword = 'Password must be at least 6 characters';
+      }
+      if (!formData.managerData.address.trim()) {
+        errors.managerAddress = 'Address is required';
+      }
+      if (!formData.managerData.phone1.trim()) {
+        errors.managerPhone1 = 'Phone number is required';
+      }
+    }
+    
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
   };
 
   const handleNext = async () => {
@@ -186,6 +231,8 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         school: schoolId
       };
 
+      console.log('Creating manager with payload:', { ...managerPayload, password: '[HIDDEN]' });
+
       const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: {
@@ -196,9 +243,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       });
 
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to create manager: ${response.status}`);
+      }
+      
       if (data && data._id) {
         // Add manager to school's managers array
-        await fetch(`/api/schools/${schoolId}`, {
+        const updateResponse = await fetch(`/api/schools/${schoolId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${getToken()}`,
@@ -208,10 +260,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
             managers: [data._id]
           })
         });
+
+        if (!updateResponse.ok) {
+          console.warn('Manager created but failed to add to school managers array');
+        }
         
         return data;
       } else {
-        throw new Error(data.message || 'Failed to create manager');
+        throw new Error('Manager creation returned invalid data');
       }
     } catch (error) {
       console.error('Error creating manager:', error);
@@ -224,13 +280,36 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
     setLoading(true);
     try {
+      // Validate all data before creating anything
+      if (!formData.skipManager) {
+        const managerValidation = validateManagerData();
+        if (!managerValidation.isValid) {
+          setErrors(managerValidation.errors);
+          setLoading(false);
+          return;
+        }
+      }
+
       // Step 1: Create the school
       const school = await createSchool();
       setCreatedSchoolId(school._id);
       
       // Step 2: Create manager if not skipped
       if (!formData.skipManager) {
+        try {
         await createManager(school._id);
+        } catch (managerError) {
+          // If manager creation fails, delete the school to prevent orphaned data
+          console.error('Manager creation failed, rolling back school creation:', managerError);
+          await fetch(`/api/schools/${school._id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${getToken()}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          throw managerError;
+        }
       }
       
       // Step 3: Handle document upload if not skipped

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arithmetic Sprint</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="root" class="container" role="application" aria-label="Arithmetic Sprint Game">
+    <header class="hud" aria-live="polite">
+      <div class="hud-block">
+        <span class="hud-label">Time</span>
+        <div class="timer pill" id="timer" aria-label="Time remaining">--</div>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">Score</span>
+        <div class="score pill" id="score" aria-label="Current score">0</div>
+      </div>
+      <div class="hud-block wide">
+        <span class="hud-label">Progress</span>
+        <div class="progress" aria-label="Question progress" aria-live="polite">
+          <div id="progressFill" class="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div id="question" class="question" aria-live="polite"></div>
+      <div id="choices" class="choices" role="listbox" aria-label="Answer choices"></div>
+      <button id="startBtn" class="primary" aria-label="Start game">Start</button>
+      <div id="finished" class="finished hidden" aria-live="polite"></div>
+      <p id="hint" class="hint muted">Select the correct answer as fast as you can!</p>
+    </main>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

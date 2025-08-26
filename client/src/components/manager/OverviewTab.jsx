@@ -12,13 +12,27 @@ import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
 import UnifiedCard from '../shared/UnifiedCard';
 
 // Overview Tab Component
-const OverviewTab = ({ stats, quickActions, notifications, setActiveTab }) => (
+const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading }) => (
   <div className="space-y-6">
     {/* Stats Cards */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat, index) => (
-        <StatsCard key={index} {...stat} />
-      ))}
+      {loading ? (
+        // Loading skeleton for stats cards
+        Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-6 w-6 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-12"></div>
+          </div>
+        ))
+      ) : (
+        stats.map((stat, index) => (
+          <StatsCard key={index} {...stat} />
+        ))
+      )}
     </div>
 
     {/* Main Content Grid */}
@@ -60,30 +74,7 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab }) => (
           </button>
         </UnifiedCard>
 
-        {/* Today's Schedule */}
-        <UnifiedCard>
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Today's Schedule</h3>
-          </div>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-900">Staff Meeting</span>
-              <span className="text-gray-500">9:00 AM</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-900">Parent Conference</span>
-              <span className="text-gray-500">2:00 PM</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-900">Faculty Review</span>
-              <span className="text-gray-500">4:30 PM</span>
-            </div>
-          </div>
-          <button className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
-            View full calendar →
-          </button>
-        </UnifiedCard>
+
       </div>
     </div>
   </div>

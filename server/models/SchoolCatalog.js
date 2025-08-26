@@ -56,7 +56,7 @@ const lessonSchema = {
         if (this.level !== 'high_school') return true;
         
         if (this.grade === 1) {
-          return ['common core science and technology', 'common core arts'].includes(stream);
+          return ['common core science and technology', 'common core literature and languages'].includes(stream);
         } else if (this.grade === 2 || this.grade === 3) {
           return [
             'experimental sciences', 'technical math', 'mathematics',

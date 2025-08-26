@@ -19,6 +19,7 @@ app.use('/school-documents', express.static(path.join(__dirname, 'public', 'scho
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
 app.use('/api/school-documents', require('./routes/schoolDocumentRoutes'));
+app.use('/api/catalog', require('./routes/catalogRoutes'));
 app.use('/api/teachers', require('./routes/teacherRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/templates', require('./routes/gameTemplateRoutes'));

@@ -3,6 +3,7 @@
 // 1. IMPORT PACKAGES AND MODELS
 // ==============================================================================
 const User = require('../models/User');
+const School = require('../models/School');
 // NEW: Import bcrypt for password hashing
 const bcrypt = require('bcryptjs');
 // NEW: Import jsonwebtoken for creating user tokens
@@ -28,9 +29,12 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, firstName, lastName, email, password, role, school } = req.body;
 
-    if (!name || !email || !password) {
+    // Support both name (legacy) and firstName/lastName (new) formats
+    const hasName = name || (firstName && lastName);
+    if (!hasName || !email || !password) {
+      console.log('Validation failed:', { name, firstName, lastName, email, password: password ? '[PROVIDED]' : '[MISSING]' });
       return res.status(400).json({ message: 'Please enter all required fields.' });
     }
 
@@ -45,23 +49,58 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt); // Hash the password with the salt
 
     // Create the user with the HASHED password
-    const user = await User.create({
-      name,
+    const userData = {
       email,
       password: hashedPassword, // Store the hashed password
       role,
-    });
+    };
+
+    // Handle name fields - support both formats
+    if (firstName && lastName) {
+      userData.firstName = firstName;
+      userData.lastName = lastName;
+    } else if (name) {
+      userData.name = name;
+    }
+
+    // Add school if provided
+    if (school) {
+      userData.school = school;
+    }
+
+    const user = await User.create(userData);
 
     if (user) {
+      // If user is a manager and has a school, add them to the school's managers array
+      if (user.role === 'manager' && user.school) {
+        try {
+          const school = await School.findById(user.school);
+          if (school) {
+            // Add manager to school's managers array if not already present
+            if (!school.managers.includes(user._id)) {
+              school.managers.push(user._id);
+              await school.save();
+              console.log(`Manager ${user._id} added to school ${school._id} managers array`);
+            }
+          } else {
+            console.warn(`School ${user.school} not found for manager ${user._id}`);
+          }
+        } catch (error) {
+          console.error('Error adding manager to school:', error);
+          // Don't fail the registration if adding to school fails
+        }
+      }
+
       // If user is created, generate a token and send it back
       res.status(201).json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-  xp: user.xp,
-  level: user.level,
-  totalPoints: user.totalPoints,
+        school: user.school,
+        xp: user.xp,
+        level: user.level,
+        totalPoints: user.totalPoints,
         token: generateToken(user._id), // Generate and include the token
       });
     } else {
