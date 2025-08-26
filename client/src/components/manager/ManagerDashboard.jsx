@@ -12,6 +12,8 @@ import StudentsTab from './StudentsTab';
 import TeachersTab from './TeachersTab';
 import ReportsTab from './ReportsTab';
 import CatalogTab from './CatalogTab';
+import RoomsTab from './RoomsTab';
+import EquipmentTab from './EquipmentTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -137,6 +139,8 @@ export const ManagerDashboard = () => {
     { id: 'students', name: 'Students' },
     { id: 'teachers', name: 'Teachers' },
     { id: 'staffes', name: 'Staff' },
+  { id: 'rooms', name: 'Rooms' },
+  { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
     { id: 'reports', name: 'Reports' }
   ];
@@ -153,6 +157,10 @@ export const ManagerDashboard = () => {
         return <TeachersTab />;
       case 'catalog':
         return <CatalogTab />;
+      case 'rooms':
+        return <RoomsTab />;
+      case 'equipment':
+        return <EquipmentTab />;
       case 'reports':
         return <ReportsTab />;
       case 'staffes':

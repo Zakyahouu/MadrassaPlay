@@ -40,8 +40,17 @@ const classSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   }],
+  // Optional room assignment (used for room deletion constraints)
+  room: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Room',
+    required: false,
+  },
 }, {
   timestamps: true,
 });
+
+// Index to optimize queries by school and room
+classSchema.index({ school: 1, room: 1 });
 
 module.exports = mongoose.model('Class', classSchema);
