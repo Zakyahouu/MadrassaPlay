@@ -15,7 +15,7 @@ const protect = async (req, res, next) => {
 
       // Get user from the database using the id from the token
       // and attach it to the request object so our controllers can access it
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findById(decoded.id).select('-password').populate('school');
 
       next(); // Move on to the next piece of middleware or the controller
     } catch (error) {

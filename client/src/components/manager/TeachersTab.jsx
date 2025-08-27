@@ -268,191 +268,171 @@ const TeachersTab = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Enhanced Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
-            <div className="flex-1 space-y-4 lg:space-y-0 lg:flex lg:gap-4 lg:items-center">
-              <div className="relative group">
-                <Search className="
-                  absolute left-4 top-1/2 transform -translate-y-1/2 
-                  text-slate-400 group-focus-within:text-blue-500 w-5 h-5 
-                  transition-colors
-                " />
+    <div className="p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-lg p-4 shadow-sm border">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search teachers by name or phone..."
+                  placeholder="Search teachers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="
-                    pl-12 pr-4 py-3 w-full lg:w-80 
-                    bg-white border border-slate-200 rounded-xl 
-                    focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 
-                    transition-all duration-200 shadow-sm
-                    placeholder:text-slate-400
-                  "
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-64"
                 />
               </div>
               
-              <div className="relative">
-                <Filter className="
-                  absolute left-3 top-1/2 transform -translate-y-1/2 
-                  text-slate-400 w-4 h-4
-                " />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="
-                    pl-10 pr-8 py-3 bg-white border border-slate-200 rounded-xl
-                    focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400
-                    transition-all duration-200 shadow-sm appearance-none
-                    cursor-pointer min-w-48
-                  "
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="employed">Employed</option>
-                  <option value="freelance">Freelance</option>
-                  <option value="retired">Retired</option>
-                </select>
-              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="all">All Statuses</option>
+                <option value="employed">Employed</option>
+                <option value="freelance">Freelance</option>
+                <option value="retired">Retired</option>
+              </select>
             </div>
             
             <button 
               onClick={() => openModal('add')}
-              className="
-                flex items-center gap-3 px-6 py-3 
-                bg-gradient-to-r from-blue-600 to-indigo-600 
-                text-white rounded-xl shadow-lg
-                hover:from-blue-700 hover:to-indigo-700 
-                hover:shadow-xl hover:scale-105
-                transition-all duration-200 font-medium
-              "
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              <Plus className="w-5 h-5" />
-              Add New Teacher
+              <Plus className="w-4 h-4" />
+              Add Teacher
             </button>
           </div>
         </div>
 
-        {/* Enhanced Main Content */}
+        {/* Main Content */}
         {isLoading ? (
-          <div className="
-            flex flex-col justify-center items-center 
-            bg-white/60 backdrop-blur-sm rounded-2xl p-16 shadow-lg
-          ">
-            <Loader className="animate-spin text-blue-500 mb-4" size={48} />
-            <p className="text-slate-600 font-medium">Loading teachers...</p>
+          <div className="flex justify-center items-center bg-white rounded-lg p-8 shadow-sm border">
+            <Loader className="animate-spin text-blue-500 mr-3" />
+            <span className="text-gray-600">Loading teachers...</span>
           </div>
         ) : error ? (
-          <div className="
-            bg-red-50 border border-red-200 rounded-2xl p-6 shadow-lg
-            flex items-center gap-4
-          ">
-            <AlertTriangle className="text-red-500 w-6 h-6 flex-shrink-0" />
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="text-red-500 w-5 h-5" />
             <div>
-              <h3 className="font-semibold text-red-800 mb-1">Error</h3>
-              <p className="text-red-700">{error}</p>
+              <h3 className="font-medium text-red-800">Error</h3>
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
         ) : (
           <>
-            {/* Enhanced Teacher Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Teacher Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTeachers.map((teacher) => (
                 <div 
                   key={teacher._id} 
-                  className="
-                    group bg-white/90 backdrop-blur-sm rounded-2xl p-6 
-                    shadow-lg border border-white/20 
-                    hover:shadow-2xl hover:scale-[1.02]
-                    transition-all duration-300
-                  "
+                  className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow"
                 >
                   {/* Card Header */}
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="
-                        w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 
-                        rounded-xl flex items-center justify-center text-white font-bold text-lg
-                      ">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold">
                         {(teacher.firstName?.[0] || teacher.name?.[0] || '?').toUpperCase()}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
                           {`${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.name}
                         </h3>
-                        <p className="text-sm text-slate-500">
-                          {Array.isArray(teacher.activities) && teacher.activities.length
-                            ? `${teacher.activities.length} activit${teacher.activities.length>1?'ies':'y'}`
-                            : 'No activities'}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-500">
+                            {Array.isArray(teacher.activities) && teacher.activities.length
+                              ? `${teacher.activities.length} activities`
+                              : 'No activities'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     {getStatusPill(teacher.status)}
                   </div>
 
-                  {/* Card Content */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                        <Award className="w-4 h-4 text-amber-600" />
+                  {/* Card Content - Grouped Information */}
+                  <div className="space-y-3 mb-4">
+                    {/* Personal Info Group */}
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Personal Info</span>
                       </div>
-                      <span className="font-medium">
-                        {teacher.experience || 0} years experience
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Mail className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <span className="text-sm truncate">
-                        {teacher.email}
-                      </span>
-                    </div>
-                    {(teacher.contact?.phone1 || teacher.phone) && (
-                      <div className="flex items-center gap-3 text-slate-600">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Phone className="w-4 h-4 text-green-600" />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Award className="w-3 h-3 text-amber-500" />
+                          <span>{teacher.experience || 0} years experience</span>
                         </div>
-                        <span className="text-sm">
-                          {teacher.contact?.phone1 || teacher.phone}
-                        </span>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail className="w-3 h-3 text-blue-500" />
+                          <span className="truncate">{teacher.email}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Info Group */}
+                    {(teacher.contact?.phone1 || teacher.phone || teacher.contact?.phone2) && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Phone className="w-4 h-4 text-gray-500" />
+                          <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Contact</span>
+                        </div>
+                        <div className="space-y-2">
+                          {(teacher.contact?.phone1 || teacher.phone) && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Phone className="w-3 h-3 text-green-500" />
+                              <span>{teacher.contact?.phone1 || teacher.phone}</span>
+                            </div>
+                          )}
+                          {teacher.contact?.phone2 && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Phone className="w-3 h-3 text-green-500" />
+                              <span>{teacher.contact?.phone2}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                    {teacher.contact?.phone2 && (
-                      <div className="flex items-center gap-3 text-slate-600">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <Phone className="w-4 h-4 text-green-600" />
+
+                    {/* Activities Group */}
+                    {Array.isArray(teacher.activities) && teacher.activities.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <BookOpen className="w-4 h-4 text-gray-500" />
+                          <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Activities</span>
                         </div>
-                        <span className="text-sm">
-                          {teacher.contact?.phone2}
-                        </span>
+                        <div className="space-y-1">
+                          {teacher.activities.slice(0, 2).map((activity, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                              <span className="truncate">{activityTypeLabel(activity.type)}</span>
+                            </div>
+                          ))}
+                          {teacher.activities.length > 2 && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                              <span>+{teacher.activities.length - 2} more</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Enhanced Action Buttons */}
-                  <div className="flex gap-2 pt-4 border-t border-slate-100">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-3 border-t border-gray-100">
                     <button 
                       onClick={() => openModal('view', teacher)} 
-                      className="
-                        flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
-                        bg-blue-50 text-blue-700 rounded-lg font-medium
-                        hover:bg-blue-100 hover:text-blue-800
-                        transition-all duration-200
-                      "
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded text-sm hover:bg-blue-100 transition-colors"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3 h-3" />
                       View
                     </button>
                     <button 
                       onClick={() => openModal('delete', teacher)} 
-                      className="
-                        flex items-center justify-center px-3 py-2.5 
-                        text-red-600 hover:bg-red-50 rounded-lg
-                        transition-all duration-200
-                      "
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -461,34 +441,25 @@ const TeachersTab = () => {
               ))}
             </div>
 
-            {/* Enhanced Empty State */}
+            {/* Empty State */}
             {filteredTeachers.length === 0 && (
-              <div className="
-                text-center py-16 bg-white/60 backdrop-blur-sm 
-                rounded-2xl shadow-lg
-              ">
-                <div className="
-                  w-20 h-20 bg-slate-100 rounded-2xl mx-auto mb-6
-                  flex items-center justify-center
-                ">
-                  <Users className="h-10 w-10 text-slate-400" />
+              <div className="text-center bg-white rounded-lg p-8 shadow-sm border">
+                <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                  <Users className="h-8 w-8 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No teachers found
                 </h3>
-                <p className="text-slate-600 max-w-md mx-auto">
+                <p className="text-gray-600 max-w-md mx-auto">
                   {searchTerm || statusFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria to find teachers.' 
-                    : 'Get started by adding your first teacher to the system.'
+                    ? 'Try adjusting your search or filter criteria.' 
+                    : 'Get started by adding your first teacher.'
                   }
                 </p>
                 {!searchTerm && statusFilter === 'all' && (
                   <button 
                     onClick={() => openModal('add')}
-                    className="
-                      mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl
-                      hover:bg-blue-700 transition-colors font-medium
-                    "
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Add First Teacher
                   </button>

@@ -2,26 +2,39 @@
 
 const express = require('express');
 const router = express.Router();
+const {
+  getClasses,
+  getClass,
+  createClass,
+  updateClass,
+  deleteClass,
+  getAvailableTeachers,
+  getAvailableRooms,
+  getCatalogItems,
+  checkConflicts
+} = require('../controllers/classController');
+const { protect, manager } = require('../middleware/authMiddleware');
 
-const { createClass, getClasses, updateClass, deleteClass, getMyClasses, getMyTeachingClasses } = require('../controllers/classController');
-const { protect, admin, manager, staff, teacher } = require('../middleware/authMiddleware');
+// All routes are protected and require manager role
+router.use(protect, manager);
 
-// Student: get my classes
-router.get('/my', protect, getMyClasses);
+// Helper routes for class creation - MUST come before /:id route
+router.get('/available-teachers', getAvailableTeachers);
+router.get('/available-rooms', getAvailableRooms);
+router.get('/catalog-items', getCatalogItems);
 
-// Teacher: get classes I teach
-router.get('/teaching', protect, teacher, getMyTeachingClasses);
+// Conflict checking route
+router.post('/check-conflicts', checkConflicts);
 
-// Create a new class
-router.post('/', protect, manager, createClass);
+// Main class routes
+router.route('/')
+  .get(getClasses)
+  .post(createClass);
 
-// Get all classes for a school
-router.get('/', protect, manager, getClasses);
-
-// Update a class
-router.put('/:id', protect, manager, updateClass);
-
-// Delete a class
-router.delete('/:id', protect, manager, deleteClass);
+// Individual class routes - MUST come after helper routes
+router.route('/:id')
+  .get(getClass)
+  .put(updateClass)
+  .delete(deleteClass);
 
 module.exports = router;

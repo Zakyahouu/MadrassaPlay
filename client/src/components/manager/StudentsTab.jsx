@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Search, Plus, Edit, Trash2, Eye, Mail, Phone, X, Loader,
-  User, Users, GraduationCap, BarChart3, Star, AlertTriangle,
-  Award, TrendingUp
+  Search, Plus, Edit, Trash2, Eye, Mail, Phone, X, Loader, Download,
+  User, Users, GraduationCap, BarChart3, Star, AlertTriangle, Filter,
+  Award, TrendingUp, BookOpen, CreditCard, Calendar, MapPin, FileText,
+  QrCode, Building2, UserCheck
 } from 'lucide-react';
 import axios from 'axios';
+import StudentProfile from './StudentProfile';
 
 const API_BASE_URL = '/api/students';
 
@@ -25,9 +27,18 @@ const StudentsTab = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [educationLevelFilter, setEducationLevelFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ type: '', data: null });
   const [formData, setFormData] = useState({});
+  const [showEnrollmentStep, setShowEnrollmentStep] = useState(false);
+  const [enrollmentData, setEnrollmentData] = useState({
+    selectedClass: null,
+    paymentMethod: 'cash',
+    sessionsCount: 1
+  });
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -57,6 +68,13 @@ const StudentsTab = () => {
     fetchStudents();
   }, []);
 
+  // Generate unique student code
+  const generateStudentCode = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `STU${timestamp}${random}`;
+  };
+
   const handleSave = async () => {
     const token = getAuthToken();
     const config = { 
@@ -66,26 +84,70 @@ const StudentsTab = () => {
       } 
     };
 
+    const payload = {
+      firstName: formData.firstName?.trim(),
+      lastName: formData.lastName?.trim(),
+      email: formData.email?.trim(),
+      phone: formData.phone?.trim(),
+      address: formData.address?.trim() || undefined,
+      educationLevel: formData.educationLevel,
+      username: formData.username?.trim(),
+      password: formData.password,
+      studentCode: formData.studentCode || generateStudentCode()
+    };
+
     try {
       if (modalContent.type === 'edit') {
         const { data } = await axios.put(
           `${API_BASE_URL}/${modalContent.data._id}`, 
-          formData, 
+          payload, 
           config
         );
         setStudents(students.map(s => 
           s._id === data.student._id ? data.student : s
         ));
         alert('Student updated successfully!');
+        closeModal();
       } else {
-        const { data } = await axios.post(API_BASE_URL, formData, config);
+        const { data } = await axios.post(API_BASE_URL, payload, config);
         setStudents([...students, data.student]);
         alert('Student created successfully!');
+        
+        // Show enrollment step
+        setShowEnrollmentStep(true);
+        setEnrollmentData(prev => ({ ...prev, selectedStudent: data.student }));
       }
-      closeModal();
     } catch (err) {
       const message = err.response?.data?.message || 
         "An error occurred while saving.";
+      alert(`Error: ${message}`);
+    }
+  };
+
+  const handleEnrollment = async () => {
+    if (!enrollmentData.selectedClass) {
+      alert('Please select a class to enroll in.');
+      return;
+    }
+
+    const token = getAuthToken();
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
+    try {
+      const enrollmentPayload = {
+        studentId: enrollmentData.selectedStudent._id,
+        classId: enrollmentData.selectedClass._id,
+        paymentMethod: enrollmentData.paymentMethod,
+        sessionsCount: enrollmentData.sessionsCount,
+        amount: enrollmentData.selectedClass.price * enrollmentData.sessionsCount
+      };
+
+      await axios.post('/api/enrollments', enrollmentPayload, config);
+      alert('Student enrolled successfully!');
+      closeModal();
+    } catch (err) {
+      const message = err.response?.data?.message || 
+        "An error occurred during enrollment.";
       alert(`Error: ${message}`);
     }
   };
@@ -105,270 +167,288 @@ const StudentsTab = () => {
 
   const openModal = (type, student = null) => {
     setModalContent({ type, data: student });
+    setShowEnrollmentStep(false);
     setFormData(student ? {
-      name: student.name,
-      email: student.email,
-      level: student.level || 1,
-      xp: student.xp || 0,
+      firstName: student.firstName || student.name?.split(' ')[0] || '',
+      lastName: student.lastName || student.name?.split(' ').slice(1).join(' ') || '',
+      email: student.email || '',
+      phone: student.contact?.phone || student.phone || '',
+      address: student.contact?.address || student.address || '',
+      educationLevel: student.educationLevel || 'primary',
+      username: student.username || '',
+      studentCode: student.studentCode || '',
     } : {
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
+      phone: '',
+      address: '',
+      educationLevel: 'primary',
+      username: '',
       password: '',
-      level: 1,
-      xp: 0,
+      studentCode: generateStudentCode()
     });
     setIsModalOpen(true);
   };
 
-  const closeModal = () => setIsModalOpen(false);
-
-  const filteredStudents = useMemo(() => {
-    if (!searchTerm) return students;
-    return students.filter(student =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [students, searchTerm]);
-
-  const getLevelBadge = (level) => {
-    const colors = {
-      1: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      2: 'bg-blue-50 text-blue-700 border-blue-200',
-      3: 'bg-purple-50 text-purple-700 border-purple-200',
-      4: 'bg-orange-50 text-orange-700 border-orange-200',
-      5: 'bg-red-50 text-red-700 border-red-200',
-    };
-    const defaultColor = 'bg-gray-50 text-gray-700 border-gray-200';
-    return colors[level] || defaultColor;
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalContent({ type: '', data: null });
+    setShowEnrollmentStep(false);
+    setEnrollmentData({
+      selectedClass: null,
+      paymentMethod: 'cash',
+      sessionsCount: 1
+    });
   };
 
-  const getXPProgress = (xp) => {
-    const maxXP = 1000; // Assuming max XP for progress bar
-    const percentage = Math.min((xp / maxXP) * 100, 100);
-    return percentage;
+  const filteredStudents = useMemo(() => {
+    let filtered = students;
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(student => {
+        const fullName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '';
+        const phone = student.contact?.phone || student.phone || '';
+        const studentCode = student.studentCode || '';
+        
+        return fullName.toLowerCase().includes(term) ||
+               phone.toLowerCase().includes(term) ||
+               studentCode.toLowerCase().includes(term);
+      });
+    }
+
+    if (educationLevelFilter !== 'all') {
+      filtered = filtered.filter(student => student.educationLevel === educationLevelFilter);
+    }
+
+    if (classFilter !== 'all') {
+      filtered = filtered.filter(student => student.enrolledClass === classFilter);
+    }
+
+    return filtered;
+  }, [students, searchTerm, educationLevelFilter, classFilter]);
+
+  const getEducationLevelBadge = (level) => {
+    const colors = {
+      primary: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      middle: 'bg-blue-100 text-blue-800 border-blue-200',
+      high_school: 'bg-purple-100 text-purple-800 border-purple-200'
+    };
+    const labels = {
+      primary: 'Primary',
+      middle: 'Middle School',
+      high_school: 'High School'
+    };
+    return { color: colors[level] || 'bg-gray-100 text-gray-800 border-gray-200', label: labels[level] || level };
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Student Code', 'Name', 'Email', 'Phone', 'Education Level', 'Enrollment Status'];
+    const csvData = filteredStudents.map(student => [
+      student.studentCode,
+      `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name,
+      student.email,
+      student.contact?.phone || student.phone,
+      getEducationLevelBadge(student.educationLevel).label,
+      student.enrollmentStatus || 'Not Enrolled'
+    ]);
+    
+    const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `students_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Enhanced Header */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex-1 max-w-md">
+        <div className="bg-white rounded-lg p-4 shadow-sm border">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative">
-                <Search className="
-                  absolute left-4 top-1/2 transform -translate-y-1/2 
-                  text-gray-400 w-5 h-5
-                " />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search by name or email..."
+                  placeholder="Search by name, phone, or student code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="
-                    pl-12 pr-4 py-3 w-full
-                    bg-gray-50 border-0 rounded-lg
-                    focus:bg-white focus:ring-2 focus:ring-blue-500/20
-                    transition-all duration-200
-                    placeholder:text-gray-400
-                  "
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-80"
                 />
               </div>
+              
+              <select
+                value={educationLevelFilter}
+                onChange={(e) => setEducationLevelFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="all">All Education Levels</option>
+                <option value="primary">Primary</option>
+                <option value="middle">Middle School</option>
+                <option value="high_school">High School</option>
+              </select>
+
+              <select
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="all">All Classes</option>
+                <option value="enrolled">Enrolled</option>
+                <option value="not_enrolled">Not Enrolled</option>
+              </select>
             </div>
             
-            <button
-              onClick={() => openModal('add')}
-              className="
-                flex items-center gap-2 px-5 py-3
-                bg-blue-600 text-white rounded-lg
-                hover:bg-blue-700 hover:shadow-lg
-                transition-all duration-200 font-medium
-              "
-            >
-              <Plus className="w-4 h-4" />
-              Add Student
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => openModal('add')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Student
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Content Area */}
         {isLoading ? (
-          <div className="
-            flex flex-col justify-center items-center 
-            bg-white rounded-xl p-16 shadow-sm
-          ">
-            <Loader className="animate-spin text-blue-500 mb-4" size={40} />
-            <p className="text-gray-600">Loading students...</p>
+          <div className="flex justify-center items-center bg-white rounded-lg p-8 shadow-sm border">
+            <Loader className="animate-spin text-blue-500 mr-3" />
+            <span className="text-gray-600">Loading students...</span>
           </div>
         ) : error ? (
-          <div className="
-            bg-red-50 border border-red-100 rounded-xl p-6
-            flex items-center gap-4
-          ">
-            <AlertTriangle className="text-red-500 w-6 h-6 flex-shrink-0" />
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="text-red-500 w-5 h-5" />
             <div>
-              <h3 className="font-medium text-red-800 mb-1">Error</h3>
-              <p className="text-red-600">{error}</p>
+              <h3 className="font-medium text-red-800">Error</h3>
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
             {filteredStudents.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="
-                        px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                         Student
                       </th>
-                      <th className="
-                        px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
-                        Level
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                        Education Level
                       </th>
-                      <th className="
-                        px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
-                        Experience Points
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                        Enrollments
                       </th>
-                      <th className="
-                        px-6 py-4 text-right text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredStudents.map((student, index) => (
-                      <tr 
-                        key={student._id} 
-                        className="
-                          hover:bg-gray-50 transition-colors duration-150
-                          group
-                        "
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-4">
-                            <div className="
-                              w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 
-                              rounded-xl flex items-center justify-center 
-                              text-white font-semibold
-                            ">
-                              {student.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="
-                                font-medium text-gray-900 
-                                group-hover:text-blue-600 transition-colors
-                              ">
-                                {student.name}
+                    {filteredStudents.map((student) => {
+                      const levelBadge = getEducationLevelBadge(student.educationLevel);
+                      return (
+                        <tr key={student._id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold text-sm">
+                                {student.firstName?.[0] || student.name?.[0]?.toUpperCase()}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {student.email}
+                              <div>
+                                <div className="font-medium text-gray-900">
+                                  {`${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {student.studentCode}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {student.email}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`
-                            inline-flex items-center gap-1 px-3 py-1 
-                            text-sm font-medium rounded-full border
-                            ${getLevelBadge(student.level)}
-                          `}>
-                            <Award className="w-3 h-3" />
-                            Level {student.level}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-sm font-medium text-gray-900">
-                                  {student.xp} XP
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${levelBadge.color}`}>
+                              <GraduationCap className="w-3 h-3 mr-1" />
+                              {levelBadge.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="w-4 h-4 text-blue-500" />
+                              <span className="text-sm text-gray-900">
+                                {student.enrollmentCount || 0} classes
+                              </span>
+                              {student.balance && (
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                  Credit: {student.balance} sessions
                                 </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="
-                                    bg-gradient-to-r from-blue-500 to-indigo-600 
-                                    h-2 rounded-full transition-all duration-300
-                                  "
-                                  style={{ width: `${getXPProgress(student.xp)}%` }}
-                                ></div>
-                              </div>
+                              )}
                             </div>
-                            <TrendingUp className="w-4 h-4 text-green-500" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-1">
-                            <button
-                              onClick={() => openModal('view', student)}
-                              className="
-                                p-2 text-blue-600 hover:bg-blue-50 
-                                rounded-lg transition-colors
-                              "
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openModal('edit', student)}
-                              className="
-                                p-2 text-gray-600 hover:bg-gray-50 
-                                rounded-lg transition-colors
-                              "
-                              title="Edit Student"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => openModal('delete', student)}
-                              className="
-                                p-2 text-red-600 hover:bg-red-50 
-                                rounded-lg transition-colors
-                              "
-                              title="Delete Student"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setSelectedStudent(student)}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="View Profile"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openModal('edit', student)}
+                                className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                                title="Edit Student"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openModal('delete', student)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Delete Student"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="text-center py-16">
-                <div className="
-                  w-16 h-16 bg-gray-100 rounded-xl mx-auto mb-4
-                  flex items-center justify-center
-                ">
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
                   <Users className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No students found
                 </h3>
-                <p className="text-gray-500 max-w-sm mx-auto">
+                <p className="text-gray-600 max-w-sm mx-auto">
                   {searchTerm 
-                    ? 'Try adjusting your search criteria to find students.' 
-                    : 'Get started by adding your first student to the system.'
+                    ? 'Try adjusting your search criteria.' 
+                    : 'Get started by adding your first student.'
                   }
                 </p>
                 {!searchTerm && (
                   <button
                     onClick={() => openModal('add')}
-                    className="
-                      mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg
-                      hover:bg-blue-700 transition-colors font-medium
-                    "
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Add First Student
                   </button>
@@ -380,28 +460,16 @@ const StudentsTab = () => {
 
         {/* Enhanced Modal */}
         {isModalOpen && (
-          <div className="
-            fixed inset-0 bg-black/40 backdrop-blur-sm 
-            flex items-center justify-center z-50 p-4
-          ">
-            <div className="
-              bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] 
-              overflow-hidden shadow-xl
-            ">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl">
               {/* Modal Header */}
-              <div className="
-                flex items-center justify-between p-6 
-                bg-gray-50 border-b border-gray-200
-              ">
+              <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                  {modalContent.type} Student
+                  {showEnrollmentStep ? 'Enroll Student' : `${modalContent.type} Student`}
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="
-                    p-2 text-gray-400 hover:text-gray-600 
-                    hover:bg-white rounded-lg transition-all
-                  "
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -409,110 +477,134 @@ const StudentsTab = () => {
 
               {/* Modal Content */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                {modalContent.type === 'view' && (
+                {showEnrollmentStep ? (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="
-                        w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 
-                        rounded-2xl flex items-center justify-center 
-                        text-white font-bold text-xl
-                      ">
-                        {modalContent.data.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {modalContent.data.name}
-                        </h3>
-                        <p className="text-gray-600">{modalContent.data.email}</p>
-                      </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h3 className="font-medium text-blue-900 mb-2">
+                        Enroll {enrollmentData.selectedStudent?.firstName} {enrollmentData.selectedStudent?.lastName}
+                      </h3>
+                      <p className="text-blue-700 text-sm">
+                        Student created successfully! You can now enroll them in classes.
+                      </p>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="
-                        bg-gradient-to-br from-blue-50 to-indigo-50 
-                        rounded-xl p-4 border border-blue-100
-                      ">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Award className="w-5 h-5 text-blue-600" />
-                          <span className="text-sm font-medium text-blue-800">
-                            Current Level
-                          </span>
-                        </div>
-                        <p className="text-2xl font-bold text-blue-900">
-                          Level {modalContent.data.level}
-                        </p>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Class
+                        </label>
+                        <select
+                          value={enrollmentData.selectedClass?._id || ''}
+                          onChange={(e) => {
+                            // Mock class selection - in real app, fetch from API
+                            const mockClass = {
+                              _id: e.target.value,
+                              name: 'Math Support - Grade 5',
+                              price: 200,
+                              schedule: 'Monday, Wednesday 2:00 PM'
+                            };
+                            setEnrollmentData(prev => ({ ...prev, selectedClass: mockClass }));
+                          }}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        >
+                          <option value="">Choose a class...</option>
+                          <option value="math_5">Math Support - Grade 5</option>
+                          <option value="science_6">Science Review - Grade 6</option>
+                          <option value="english_7">English Language - Grade 7</option>
+                        </select>
                       </div>
                       
-                      <div className="
-                        bg-gradient-to-br from-green-50 to-emerald-50 
-                        rounded-xl p-4 border border-green-100
-                      ">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Star className="w-5 h-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-800">
-                            Experience Points
-                          </span>
-                        </div>
-                        <p className="text-2xl font-bold text-green-900">
-                          {modalContent.data.xp} XP
-                        </p>
-                        <div className="mt-3">
-                          <div className="w-full bg-green-200 rounded-full h-2">
-                            <div 
-                              className="
-                                bg-gradient-to-r from-green-500 to-emerald-600 
-                                h-2 rounded-full
-                              "
-                              style={{ width: `${getXPProgress(modalContent.data.xp)}%` }}
-                            ></div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Payment Method
+                        </label>
+                        <select
+                          value={enrollmentData.paymentMethod}
+                          onChange={(e) => setEnrollmentData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Sessions
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={enrollmentData.sessionsCount}
+                          onChange={(e) => setEnrollmentData(prev => ({ ...prev, sessionsCount: parseInt(e.target.value) }))}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      
+                      {enrollmentData.selectedClass && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="font-medium text-gray-900 mb-2">Enrollment Summary</h4>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            <div>Class: {enrollmentData.selectedClass.name}</div>
+                            <div>Schedule: {enrollmentData.selectedClass.schedule}</div>
+                            <div>Price per session: ${enrollmentData.selectedClass.price}</div>
+                            <div className="font-medium text-gray-900">
+                              Total: ${enrollmentData.selectedClass.price * enrollmentData.sessionsCount}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                     
-                    <div className="flex justify-end pt-6 border-t border-gray-200">
+                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                       <button
+                        type="button"
                         onClick={closeModal}
-                        className="
-                          px-6 py-2 bg-gray-100 text-gray-700 rounded-lg 
-                          hover:bg-gray-200 transition-colors font-medium
-                        "
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                       >
-                        Close
+                        Skip for Now
+                      </button>
+                      <button
+                        onClick={handleEnrollment}
+                        disabled={!enrollmentData.selectedClass}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Complete Enrollment
                       </button>
                     </div>
                   </div>
-                )}
-
-                {(modalContent.type === 'add' || modalContent.type === 'edit') && (
-                  <form
-                    onSubmit={(e) => { e.preventDefault(); handleSave(); }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-4">
+                ) : (
+                  <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="
-                          block text-sm font-medium text-gray-700 mb-2
-                        ">
-                          Full Name *
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          First Name *
                         </label>
                         <input
                           required
-                          value={formData.name || ''}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="Enter full name"
-                          className="
-                            w-full p-3 border border-gray-300 rounded-lg
-                            focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
-                            transition-all
-                          "
+                          value={formData.firstName || ''}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          placeholder="Enter first name"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         />
                       </div>
                       
                       <div>
-                        <label className="
-                          block text-sm font-medium text-gray-700 mb-2
-                        ">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Last Name *
+                        </label>
+                        <input
+                          required
+                          value={formData.lastName || ''}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          placeholder="Enter last name"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email Address *
                         </label>
                         <input
@@ -521,19 +613,67 @@ const StudentsTab = () => {
                           value={formData.email || ''}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="Enter email address"
-                          className="
-                            w-full p-3 border border-gray-300 rounded-lg
-                            focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
-                            transition-all
-                          "
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number *
+                        </label>
+                        <input
+                          required
+                          value={formData.phone || ''}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="Enter phone number"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Education Level *
+                        </label>
+                        <select
+                          required
+                          value={formData.educationLevel || 'primary'}
+                          onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        >
+                          <option value="primary">Primary School</option>
+                          <option value="middle">Middle School</option>
+                          <option value="high_school">High School</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Address
+                        </label>
+                        <input
+                          value={formData.address || ''}
+                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                          placeholder="Enter address"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Username *
+                        </label>
+                        <input
+                          required
+                          value={formData.username || ''}
+                          onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                          placeholder="Choose username"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         />
                       </div>
                       
                       {modalContent.type === 'add' && (
                         <div>
-                          <label className="
-                            block text-sm font-medium text-gray-700 mb-2
-                          ">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
                             Password *
                           </label>
                           <input
@@ -542,53 +682,27 @@ const StudentsTab = () => {
                             value={formData.password || ''}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             placeholder="Enter password"
-                            className="
-                              w-full p-3 border border-gray-300 rounded-lg
-                              focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
-                              transition-all
-                            "
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           />
                         </div>
                       )}
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="
-                            block text-sm font-medium text-gray-700 mb-2
-                          ">
-                            Level
-                          </label>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Student Code
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <QrCode className="w-5 h-5 text-blue-500" />
                           <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={formData.level || 1}
-                            onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) })}
-                            className="
-                              w-full p-3 border border-gray-300 rounded-lg
-                              focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
-                              transition-all
-                            "
+                            value={formData.studentCode || ''}
+                            onChange={(e) => setFormData({ ...formData, studentCode: e.target.value.toUpperCase() })}
+                            placeholder="Student code"
+                            className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
                           />
                         </div>
-                        <div>
-                          <label className="
-                            block text-sm font-medium text-gray-700 mb-2
-                          ">
-                            Experience Points
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={formData.xp || 0}
-                            onChange={(e) => setFormData({ ...formData, xp: parseInt(e.target.value) })}
-                            className="
-                              w-full p-3 border border-gray-300 rounded-lg
-                              focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400
-                              transition-all
-                            "
-                          />
-                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This code will be auto-generated if left empty
+                        </p>
                       </div>
                     </div>
                     
@@ -596,73 +710,35 @@ const StudentsTab = () => {
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="
-                          px-6 py-2 bg-gray-100 text-gray-700 rounded-lg
-                          hover:bg-gray-200 transition-colors font-medium
-                        "
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="
-                          px-6 py-2 bg-blue-600 text-white rounded-lg
-                          hover:bg-blue-700 transition-colors font-medium
-                        "
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                       >
-                        Save Changes
+                        Save Student
                       </button>
                     </div>
                   </form>
-                )}
-
-                {modalContent.type === 'delete' && (
-                  <div className="space-y-6">
-                    <div className="text-center">
-                      <div className="
-                        w-16 h-16 bg-red-100 rounded-xl mx-auto mb-4
-                        flex items-center justify-center
-                      ">
-                        <AlertTriangle className="w-8 h-8 text-red-600" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        Delete Student
-                      </h3>
-                      <p className="text-gray-600 max-w-sm mx-auto">
-                        Are you sure you want to delete{' '}
-                        <span className="font-semibold text-gray-900">
-                          {modalContent.data.name}
-                        </span>
-                        ? This action cannot be undone.
-                      </p>
-                    </div>
-                    
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={closeModal}
-                        className="
-                          px-6 py-2 bg-gray-100 text-gray-700 rounded-lg
-                          hover:bg-gray-200 transition-colors font-medium
-                        "
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleDelete}
-                        className="
-                          px-6 py-2 bg-red-600 text-white rounded-lg
-                          hover:bg-red-700 transition-colors font-medium
-                        "
-                      >
-                        Delete Student
-                      </button>
-                    </div>
-                  </div>
                 )}
               </div>
             </div>
           </div>
         )}
+
+        {/* Conditional Rendering */}
+        {selectedStudent ? (
+          <StudentProfile 
+            student={selectedStudent}
+            onBack={() => setSelectedStudent(null)}
+            onRefresh={() => {
+              // Refresh student list when returning from profile
+              window.location.reload();
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );
