@@ -33,7 +33,7 @@ const getClass = asyncHandler(async (req, res) => {
   const { id } = req.params;
   
   const classItem = await Class.findOne({ _id: id, schoolId })
-    .populate('teacherId', 'firstName lastName email phone')
+    .populate('teacherId', 'firstName lastName email contact.phone1')
     .populate('roomId', 'name capacity activityTypes')
     .populate('enrolledStudents.studentId', 'firstName lastName email studentCode');
   
@@ -79,7 +79,7 @@ const createClass = asyncHandler(async (req, res) => {
   }
   
   // Validate teacher exists and is assigned to school
-  const teacher = await User.findOne({ _id: teacherId, role: 'teacher' });
+  const teacher = await User.findOne({ _id: teacherId, role: 'teacher', school: schoolId });
   if (!teacher) {
     res.status(404);
     throw new Error('Teacher not found');
@@ -93,7 +93,7 @@ const createClass = asyncHandler(async (req, res) => {
   }
   
   // Validate time format
-  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
   if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
     res.status(400);
     throw new Error('Invalid time format. Use HH:MM format');
@@ -188,7 +188,7 @@ const updateClass = asyncHandler(async (req, res) => {
   
   // Validate teacher if being updated
   if (teacherId && teacherId !== classItem.teacherId.toString()) {
-    const teacher = await User.findOne({ _id: teacherId, role: 'teacher' });
+    const teacher = await User.findOne({ _id: teacherId, role: 'teacher', school: schoolId });
     if (!teacher) {
       res.status(404);
       throw new Error('Teacher not found');
@@ -208,7 +208,7 @@ const updateClass = asyncHandler(async (req, res) => {
   
   // Validate schedule if being updated
   if (schedule) {
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
       res.status(400);
       throw new Error('Invalid time format. Use HH:MM format');
@@ -303,8 +303,8 @@ const getAvailableTeachers = asyncHandler(async (req, res) => {
     throw new Error('Manager must be assigned to a school');
   }
   
-  const teachers = await User.find({ role: 'teacher' })
-    .select('firstName lastName email phone experience activities')
+  const teachers = await User.find({ role: 'teacher', school: schoolId })
+    .select('firstName lastName email contact.phone1 experience activities')
     .sort({ firstName: 1, lastName: 1 });
   
   res.json(teachers);
@@ -422,12 +422,14 @@ const getCatalogItems = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const checkConflicts = asyncHandler(async (req, res) => {
   const { schedule, teacherId, roomId, excludeClassId } = req.body;
+  const { school: schoolId } = req.user;
   
   const Class = require('../models/Class');
   
   // Check room conflicts
   const roomConflict = await Class.findOne({
     _id: { $ne: excludeClassId },
+    schoolId,
     roomId,
     status: { $in: ['active'] },
     'schedule.dayOfWeek': schedule.dayOfWeek,
@@ -459,6 +461,7 @@ const checkConflicts = asyncHandler(async (req, res) => {
   // Check teacher conflicts
   const teacherConflict = await Class.findOne({
     _id: { $ne: excludeClassId },
+    schoolId,
     teacherId,
     status: { $in: ['active'] },
     'schedule.dayOfWeek': schedule.dayOfWeek,

@@ -1,5 +1,6 @@
-
-const Student = require('../models/Student');
+const User = require('../models/User');
+const ClassModel = require('../models/Class');
+const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
 
 // @desc    Get all students for a school (manager only)
@@ -14,7 +15,7 @@ const getStudents = asyncHandler(async (req, res) => {
     throw new Error('Manager must be assigned to a school to access students');
   }
   
-  const students = await Student.find({ schoolId }).select('-password');
+  const students = await User.find({ school: schoolId, role: 'student' }).select('-password');
   
   res.json(students);
 });
@@ -26,7 +27,7 @@ const getStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
   
-  const student = await Student.findOne({ _id: id, schoolId }).select('-password');
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' }).select('-password');
   
   if (!student) {
     res.status(404);
@@ -52,8 +53,9 @@ const createStudent = asyncHandler(async (req, res) => {
     firstName,
     lastName,
     email,
-    phone,
-    address,
+    phone, // legacy key, map to contact.phone1
+    phone2, // new optional phone 2
+    address, // legacy key, map to contact.address
     educationLevel,
     username,
     password,
@@ -61,40 +63,42 @@ const createStudent = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Generate student code if not provided
-  const finalStudentCode = studentCode || Student.generateStudentCode();
+  const finalStudentCode = studentCode || User.generateStudentCode();
 
-  // Check if email already exists
-  const emailExists = await Student.findOne({ email });
-  if (emailExists) {
-    res.status(400);
-    throw new Error('Email already registered');
+  // Check if email already exists (only if provided)
+  if (email) {
+    const emailExists = await User.findOne({ email });
+    if (emailExists) {
+      res.status(400);
+      throw new Error('Email already registered');
+    }
   }
 
   // Check if username already exists
-  const usernameExists = await Student.findOne({ username });
+  const usernameExists = await User.findOne({ username });
   if (usernameExists) {
     res.status(400);
     throw new Error('Username already taken');
   }
 
   // Check if student code already exists
-  const codeExists = await Student.findOne({ studentCode: finalStudentCode });
+  const codeExists = await User.findOne({ studentCode: finalStudentCode });
   if (codeExists) {
     res.status(400);
     throw new Error('Student code already exists');
   }
 
-  const student = await Student.create({
+  const student = await User.create({
     firstName,
     lastName,
     email,
-    phone,
-    address,
+    contact: { phone1: phone, phone2, address },
     educationLevel,
     username,
     password,
     studentCode: finalStudentCode,
-    schoolId
+    role: 'student',
+    school: schoolId
   });
 
   const studentResponse = student.toObject();
@@ -114,7 +118,7 @@ const updateStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
   
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   
   if (!student) {
     res.status(404);
@@ -126,6 +130,7 @@ const updateStudent = asyncHandler(async (req, res) => {
     lastName,
     email,
     phone,
+    phone2,
     address,
     educationLevel,
     username,
@@ -134,7 +139,7 @@ const updateStudent = asyncHandler(async (req, res) => {
 
   // Check if email already exists (if being updated)
   if (email && email !== student.email) {
-    const emailExists = await Student.findOne({ email, _id: { $ne: id } });
+    const emailExists = await User.findOne({ email, _id: { $ne: id } });
     if (emailExists) {
       res.status(400);
       throw new Error('Email already registered');
@@ -143,7 +148,7 @@ const updateStudent = asyncHandler(async (req, res) => {
 
   // Check if username already exists (if being updated)
   if (username && username !== student.username) {
-    const usernameExists = await Student.findOne({ username, _id: { $ne: id } });
+    const usernameExists = await User.findOne({ username, _id: { $ne: id } });
     if (usernameExists) {
       res.status(400);
       throw new Error('Username already taken');
@@ -154,11 +159,12 @@ const updateStudent = asyncHandler(async (req, res) => {
   if (firstName !== undefined) student.firstName = firstName;
   if (lastName !== undefined) student.lastName = lastName;
   if (email !== undefined) student.email = email;
-  if (phone !== undefined) student.phone = phone;
-  if (address !== undefined) student.address = address;
+  if (phone !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), phone1: phone };
+  if (phone2 !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), phone2 };
+  if (address !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), address };
   if (educationLevel !== undefined) student.educationLevel = educationLevel;
   if (username !== undefined) student.username = username;
-  if (status !== undefined) student.status = status;
+  if (status !== undefined) student.studentStatus = status;
 
   const updatedStudent = await student.save();
   
@@ -172,6 +178,74 @@ const updateStudent = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Enroll a student to a class (validates school, capacity, and level)
+// @route   POST /api/students/:id/enroll
+// @access  Private (Manager)
+const enrollStudent = asyncHandler(async (req, res) => {
+  const { school: schoolId } = req.user;
+  const { id: studentId } = req.params;
+  const { classId } = req.body;
+
+  if (!classId) {
+    res.status(400);
+    throw new Error('classId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const klass = await ClassModel.findById(classId);
+  if (!klass) {
+    res.status(404);
+    throw new Error('Class not found');
+  }
+  if (klass.schoolId.toString() !== schoolId.toString()) {
+    res.status(403);
+    throw new Error('Class does not belong to your school');
+  }
+  // Capacity check
+  const activeCount = (klass.enrolledStudents || []).filter(e => e.status === 'active').length;
+  if (activeCount >= klass.capacity) {
+    res.status(409);
+    throw new Error('Class is full');
+  }
+
+  // For catalog types that carry level/grade, verify compatibility with student.educationLevel
+  if (['supportLessons', 'reviewCourses'].includes(klass.catalogItem?.type)) {
+    const catalog = await SchoolCatalog.findOne({ schoolId });
+    if (catalog) {
+      const items = klass.catalogItem.type === 'supportLessons' ? catalog.supportLessons : catalog.reviewCourses;
+      const item = items.find(it => it._id?.toString() === klass.catalogItem.itemId.toString());
+      if (item && student.educationLevel) {
+        if (['primary','middle','high_school'].includes(item.level) && student.educationLevel !== item.level) {
+          res.status(400);
+          throw new Error('Student education level does not match class level');
+        }
+      }
+    }
+  }
+
+  // Prevent duplicate active enrollment
+  const alreadyEnrolled = (klass.enrolledStudents || []).some(e => e.studentId?.toString() === student._id.toString() && e.status === 'active');
+  if (alreadyEnrolled) {
+    res.status(409);
+    throw new Error('Student already enrolled in this class');
+  }
+
+  klass.enrolledStudents.push({ studentId: student._id, status: 'active' });
+  await klass.save();
+
+  // Update student counters
+  student.enrollmentCount = (student.enrollmentCount || 0) + 1;
+  student.enrollmentStatus = 'enrolled';
+  await student.save();
+
+  res.status(200).json({ success: true, message: 'Student enrolled', class: klass });
+});
+
 // @desc    Delete student
 // @route   DELETE /api/students/:id
 // @access  Private (Manager)
@@ -179,7 +253,7 @@ const deleteStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
   
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   
   if (!student) {
     res.status(404);
@@ -202,7 +276,7 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
   const { id } = req.params;
   
   // Verify student exists and belongs to school
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -239,7 +313,7 @@ const getStudentPayments = asyncHandler(async (req, res) => {
   const { id } = req.params;
   
   // Verify student exists and belongs to school
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -272,7 +346,7 @@ const updateEnrollmentCount = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { count, increment = true } = req.body;
   
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   
   if (!student) {
     res.status(404);
@@ -302,7 +376,7 @@ const updateBalance = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { balance, increment = true } = req.body;
   
-  const student = await Student.findOne({ _id: id, schoolId });
+  const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   
   if (!student) {
     res.status(404);
@@ -338,14 +412,15 @@ const searchStudents = asyncHandler(async (req, res) => {
 
   const searchRegex = new RegExp(q, 'i');
   
-  const students = await Student.find({
-    schoolId,
+  const students = await User.find({
+    school: schoolId,
+    role: 'student',
     $or: [
       { firstName: searchRegex },
       { lastName: searchRegex },
       { name: searchRegex },
       { email: searchRegex },
-      { phone: searchRegex },
+      { 'contact.phone1': searchRegex },
       { studentCode: searchRegex }
     ]
   }).select('-password');
@@ -363,5 +438,6 @@ module.exports = {
   getStudentPayments,
   updateEnrollmentCount,
   updateBalance,
-  searchStudents
+  searchStudents,
+  enrollStudent
 };

@@ -2,10 +2,28 @@ const Room = require('../models/Room');
 const ClassModel = require('../models/Class');
 const SchoolCatalog = require('../models/SchoolCatalog');
 
+// Helper: normalize user.school to an id string whether it's populated (document) or ObjectId/string
+function getUserSchoolId(user) {
+  if (!user) return undefined;
+  const s = user.school;
+  if (!s) return undefined;
+  if (typeof s === 'string') return s;
+  if (typeof s === 'object' && s !== null) {
+    if (s._id) return s._id.toString();
+  }
+  try {
+    return s.toString();
+  } catch (e) {
+    return undefined;
+  }
+}
+
 // Helper: ensure manager access to resource by school
 function assertManagerAccess(req, resourceSchoolId) {
   if (req.user.role === 'admin') return true;
-  if (req.user.role === 'manager' && req.user.school?.toString() === resourceSchoolId.toString()) return true;
+  const userSchoolId = getUserSchoolId(req.user);
+  const resourceId = resourceSchoolId?.toString?.() ?? String(resourceSchoolId);
+  if (req.user.role === 'manager' && userSchoolId && resourceId && userSchoolId === resourceId) return true;
   return false;
 }
 
@@ -32,7 +50,7 @@ exports.listRooms = async (req, res) => {
   try {
     const query = {};
     if (req.user.role === 'manager') {
-      query.schoolId = req.user.school;
+  query.schoolId = getUserSchoolId(req.user);
     } else if (req.user.role === 'admin' && req.query.schoolId) {
       query.schoolId = req.query.schoolId;
     }
@@ -56,7 +74,7 @@ exports.getRoom = async (req, res) => {
 
 exports.createRoom = async (req, res) => {
   try {
-    const schoolId = req.user.role === 'manager' ? req.user.school : (req.body.schoolId || req.query.schoolId);
+  const schoolId = req.user.role === 'manager' ? getUserSchoolId(req.user) : (req.body.schoolId || req.query.schoolId);
     if (!schoolId) return res.status(400).json({ message: 'schoolId is required' });
 
     const { name, capacity, activityTypes } = req.body;

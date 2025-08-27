@@ -65,4 +65,12 @@ const teacher = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin, manager, staff, teacher };
+// Middleware factory to authorize any of the specified roles
+const authorize = (...roles) => (req, res, next) => {
+  if (req.user && roles.includes(req.user.role)) {
+    return next();
+  }
+  res.status(403).json({ message: `Not authorized. Requires one of roles: ${roles.join(', ')}` });
+};
+
+module.exports = { protect, admin, manager, staff, teacher, authorize };

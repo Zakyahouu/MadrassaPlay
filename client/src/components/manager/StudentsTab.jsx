@@ -39,6 +39,7 @@ const StudentsTab = () => {
     sessionsCount: 1
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [availableClasses, setAvailableClasses] = useState([]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -87,8 +88,9 @@ const StudentsTab = () => {
     const payload = {
       firstName: formData.firstName?.trim(),
       lastName: formData.lastName?.trim(),
-      email: formData.email?.trim(),
+      email: formData.email?.trim() || undefined,
       phone: formData.phone?.trim(),
+      phone2: formData.phone2?.trim(),
       address: formData.address?.trim() || undefined,
       educationLevel: formData.educationLevel,
       username: formData.username?.trim(),
@@ -114,8 +116,8 @@ const StudentsTab = () => {
         alert('Student created successfully!');
         
         // Show enrollment step
-        setShowEnrollmentStep(true);
-        setEnrollmentData(prev => ({ ...prev, selectedStudent: data.student }));
+  setShowEnrollmentStep(true);
+  setEnrollmentData(prev => ({ ...prev, selectedStudent: data.student }));
       }
     } catch (err) {
       const message = err.response?.data?.message || 
@@ -135,14 +137,10 @@ const StudentsTab = () => {
 
     try {
       const enrollmentPayload = {
-        studentId: enrollmentData.selectedStudent._id,
         classId: enrollmentData.selectedClass._id,
-        paymentMethod: enrollmentData.paymentMethod,
-        sessionsCount: enrollmentData.sessionsCount,
-        amount: enrollmentData.selectedClass.price * enrollmentData.sessionsCount
       };
 
-      await axios.post('/api/enrollments', enrollmentPayload, config);
+      await axios.post(`/api/students/${enrollmentData.selectedStudent._id}/enroll`, enrollmentPayload, config);
       alert('Student enrolled successfully!');
       closeModal();
     } catch (err) {
@@ -171,8 +169,9 @@ const StudentsTab = () => {
     setFormData(student ? {
       firstName: student.firstName || student.name?.split(' ')[0] || '',
       lastName: student.lastName || student.name?.split(' ').slice(1).join(' ') || '',
-      email: student.email || '',
-      phone: student.contact?.phone || student.phone || '',
+  email: student.email || '',
+  phone: student.contact?.phone1 || student.phone || '',
+  phone2: student.contact?.phone2 || '',
       address: student.contact?.address || student.address || '',
       educationLevel: student.educationLevel || 'primary',
       username: student.username || '',
@@ -181,7 +180,8 @@ const StudentsTab = () => {
       firstName: '',
       lastName: '',
       email: '',
-      phone: '',
+  phone: '',
+  phone2: '',
       address: '',
       educationLevel: 'primary',
       username: '',
@@ -189,6 +189,8 @@ const StudentsTab = () => {
       studentCode: generateStudentCode()
     });
     setIsModalOpen(true);
+
+    // If opening add or edit and will show enrollment later, prefetch classes once when needed
   };
 
   const closeModal = () => {
@@ -198,9 +200,42 @@ const StudentsTab = () => {
     setEnrollmentData({
       selectedClass: null,
       paymentMethod: 'cash',
-      sessionsCount: 1
+      sessionsCount: 1,
     });
+    setAvailableClasses([]);
   };
+
+  useEffect(() => {
+    const fetchClassesForEnrollment = async () => {
+      if (!showEnrollmentStep || !enrollmentData.selectedStudent) return;
+      try {
+        const token = getAuthToken();
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const { data } = await axios.get('/api/classes', config);
+        // Filter by education level if class has level metadata
+        const studentLevel = enrollmentData.selectedStudent.educationLevel;
+        const filtered = Array.isArray(data)
+          ? data.filter(c => {
+              // If class has catalogItem.type with level in metadata, enforce match for supportLessons/reviewCourses
+              const item = c.catalogItem;
+              if (!item) return true;
+              if (['supportLessons', 'reviewCourses'].includes(item.type)) {
+                // Prefer server validation; client just lightly filter if level present
+                if (item.level && ['primary','middle','high_school'].includes(item.level)) {
+                  return item.level === studentLevel;
+                }
+              }
+              return true;
+            })
+          : [];
+        setAvailableClasses(filtered);
+      } catch (e) {
+        console.error('Failed to fetch classes', e);
+        setAvailableClasses([]);
+      }
+    };
+    fetchClassesForEnrollment();
+  }, [showEnrollmentStep, enrollmentData.selectedStudent]);
 
   const filteredStudents = useMemo(() => {
     let filtered = students;
@@ -209,7 +244,7 @@ const StudentsTab = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(student => {
         const fullName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || '';
-        const phone = student.contact?.phone || student.phone || '';
+  const phone = student.contact?.phone1 || student.contact?.phone2 || student.phone || '';
         const studentCode = student.studentCode || '';
         
         return fullName.toLowerCase().includes(term) ||
@@ -231,14 +266,20 @@ const StudentsTab = () => {
 
   const getEducationLevelBadge = (level) => {
     const colors = {
+      before_education: 'bg-gray-100 text-gray-800 border-gray-200',
       primary: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       middle: 'bg-blue-100 text-blue-800 border-blue-200',
-      high_school: 'bg-purple-100 text-purple-800 border-purple-200'
+      high_school: 'bg-purple-100 text-purple-800 border-purple-200',
+      university: 'bg-orange-100 text-orange-800 border-orange-200',
+      other: 'bg-slate-100 text-slate-800 border-slate-200'
     };
     const labels = {
+      before_education: 'Before Education',
       primary: 'Primary',
       middle: 'Middle School',
-      high_school: 'High School'
+      high_school: 'High School',
+      university: 'University',
+      other: 'Other'
     };
     return { color: colors[level] || 'bg-gray-100 text-gray-800 border-gray-200', label: labels[level] || level };
   };
@@ -248,8 +289,8 @@ const StudentsTab = () => {
     const csvData = filteredStudents.map(student => [
       student.studentCode,
       `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name,
-      student.email,
-      student.contact?.phone || student.phone,
+      student.email || '',
+      student.contact?.phone1 || student.contact?.phone2 || student.phone || '',
       getEducationLevelBadge(student.educationLevel).label,
       student.enrollmentStatus || 'Not Enrolled'
     ]);
@@ -288,9 +329,12 @@ const StudentsTab = () => {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
                 <option value="all">All Education Levels</option>
+                <option value="before_education">Before Education</option>
                 <option value="primary">Primary</option>
                 <option value="middle">Middle School</option>
                 <option value="high_school">High School</option>
+                <option value="university">University</option>
+                <option value="other">Other</option>
               </select>
 
               <select
@@ -496,21 +540,17 @@ const StudentsTab = () => {
                         <select
                           value={enrollmentData.selectedClass?._id || ''}
                           onChange={(e) => {
-                            // Mock class selection - in real app, fetch from API
-                            const mockClass = {
-                              _id: e.target.value,
-                              name: 'Math Support - Grade 5',
-                              price: 200,
-                              schedule: 'Monday, Wednesday 2:00 PM'
-                            };
-                            setEnrollmentData(prev => ({ ...prev, selectedClass: mockClass }));
+                            const chosen = availableClasses.find(c => c._id === e.target.value) || null;
+                            setEnrollmentData(prev => ({ ...prev, selectedClass: chosen }));
                           }}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         >
                           <option value="">Choose a class...</option>
-                          <option value="math_5">Math Support - Grade 5</option>
-                          <option value="science_6">Science Review - Grade 6</option>
-                          <option value="english_7">English Language - Grade 7</option>
+                          {availableClasses.map(c => (
+                            <option key={c._id} value={c._id}>
+                              {c.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       
@@ -548,10 +588,14 @@ const StudentsTab = () => {
                           <div className="space-y-2 text-sm text-gray-600">
                             <div>Class: {enrollmentData.selectedClass.name}</div>
                             <div>Schedule: {enrollmentData.selectedClass.schedule}</div>
-                            <div>Price per session: ${enrollmentData.selectedClass.price}</div>
-                            <div className="font-medium text-gray-900">
-                              Total: ${enrollmentData.selectedClass.price * enrollmentData.sessionsCount}
-                            </div>
+                            {typeof enrollmentData.selectedClass.price === 'number' && (
+                              <>
+                                <div>Price per session: ${enrollmentData.selectedClass.price}</div>
+                                <div className="font-medium text-gray-900">
+                                  Total: ${enrollmentData.selectedClass.price * enrollmentData.sessionsCount}
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
@@ -605,10 +649,9 @@ const StudentsTab = () => {
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Email Address *
+                          Email Address (optional)
                         </label>
                         <input
-                          required
                           type="email"
                           value={formData.email || ''}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -619,13 +662,23 @@ const StudentsTab = () => {
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Phone Number *
+                          Phone Number (optional)
                         </label>
                         <input
-                          required
                           value={formData.phone || ''}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           placeholder="Enter phone number"
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number 2 (optional)
+                        </label>
+                        <input
+                          value={formData.phone2 || ''}
+                          onChange={(e) => setFormData({ ...formData, phone2: e.target.value })}
+                          placeholder="Enter second phone number"
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         />
                       </div>
@@ -640,9 +693,12 @@ const StudentsTab = () => {
                           onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         >
+                          <option value="before_education">Before Education</option>
                           <option value="primary">Primary School</option>
                           <option value="middle">Middle School</option>
                           <option value="high_school">High School</option>
+                          <option value="university">University</option>
+                          <option value="other">Other</option>
                         </select>
                       </div>
                       

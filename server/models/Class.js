@@ -55,12 +55,13 @@ const classSchema = new mongoose.Schema({
     startTime: {
       type: String,
       required: [true, 'Start time is required'],
-      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time in HH:MM format']
+      // Enforce zero-padded HH:MM to ensure correct lexicographic ordering
+      match: [/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time in HH:MM format (00:00 - 23:59)']
     },
     endTime: {
       type: String,
       required: [true, 'End time is required'],
-      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time in HH:MM format']
+      match: [/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time in HH:MM format (00:00 - 23:59)']
     }
   },
   
@@ -123,11 +124,11 @@ const classSchema = new mongoose.Schema({
     default: 'active'
   },
   
-  // Current Enrollment
+  // Current Enrollment (reference unified User model with role=student)
   enrolledStudents: [{
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Student'
+      ref: 'User'
     },
     enrolledAt: {
       type: Date,
@@ -182,57 +183,34 @@ classSchema.virtual('progressPercentage').get(function() {
 classSchema.methods.hasConflict = async function() {
   const Class = mongoose.model('Class');
   
-  // Check room conflicts
+  // Check room conflicts (same school, same room, same day, overlapping time)
   const roomConflict = await Class.findOne({
     _id: { $ne: this._id },
+    schoolId: this.schoolId,
     roomId: this.roomId,
     status: { $in: ['active'] },
-    schedule: {
-      dayOfWeek: this.schedule.dayOfWeek,
-      $or: [
-        // New class starts during existing class
-        {
-          startTime: { $lte: this.schedule.startTime },
-          endTime: { $gt: this.schedule.startTime }
-        },
-        // New class ends during existing class
-        {
-          startTime: { $lt: this.schedule.endTime },
-          endTime: { $gte: this.schedule.endTime }
-        },
-        // New class completely contains existing class
-        {
-          startTime: { $gte: this.schedule.startTime },
-          endTime: { $lte: this.schedule.endTime }
-        }
-      ]
-    }
+    'schedule.dayOfWeek': this.schedule.dayOfWeek,
+    $or: [
+      { 'schedule.startTime': { $lte: this.schedule.startTime }, 'schedule.endTime': { $gt: this.schedule.startTime } },
+      { 'schedule.startTime': { $lt: this.schedule.endTime }, 'schedule.endTime': { $gte: this.schedule.endTime } },
+      { 'schedule.startTime': { $gte: this.schedule.startTime }, 'schedule.endTime': { $lte: this.schedule.endTime } }
+    ]
   });
   
   if (roomConflict) return { type: 'room', conflict: roomConflict };
   
-  // Check teacher conflicts
+  // Check teacher conflicts (same school, same teacher, same day, overlapping time)
   const teacherConflict = await Class.findOne({
     _id: { $ne: this._id },
+    schoolId: this.schoolId,
     teacherId: this.teacherId,
     status: { $in: ['active'] },
-    schedule: {
-      dayOfWeek: this.schedule.dayOfWeek,
-      $or: [
-        {
-          startTime: { $lte: this.schedule.startTime },
-          endTime: { $gt: this.schedule.startTime }
-        },
-        {
-          startTime: { $lt: this.schedule.endTime },
-          endTime: { $gte: this.schedule.endTime }
-        },
-        {
-          startTime: { $gte: this.schedule.startTime },
-          endTime: { $lte: this.schedule.endTime }
-        }
-      ]
-    }
+    'schedule.dayOfWeek': this.schedule.dayOfWeek,
+    $or: [
+      { 'schedule.startTime': { $lte: this.schedule.startTime }, 'schedule.endTime': { $gt: this.schedule.startTime } },
+      { 'schedule.startTime': { $lt: this.schedule.endTime }, 'schedule.endTime': { $gte: this.schedule.endTime } },
+      { 'schedule.startTime': { $gte: this.schedule.startTime }, 'schedule.endTime': { $lte: this.schedule.endTime } }
+    ]
   });
   
   if (teacherConflict) return { type: 'teacher', conflict: teacherConflict };
@@ -243,5 +221,9 @@ classSchema.methods.hasConflict = async function() {
 // Ensure virtual fields are serialized
 classSchema.set('toJSON', { virtuals: true });
 classSchema.set('toObject', { virtuals: true });
+
+// Helpful indexes for conflict queries
+classSchema.index({ schoolId: 1, 'schedule.dayOfWeek': 1, roomId: 1, status: 1 });
+classSchema.index({ schoolId: 1, 'schedule.dayOfWeek': 1, teacherId: 1, status: 1 });
 
 module.exports = mongoose.model('Class', classSchema);

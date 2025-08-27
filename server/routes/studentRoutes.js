@@ -11,7 +11,8 @@ const {
   getStudentPayments,
   updateEnrollmentCount,
   updateBalance,
-  searchStudents
+  searchStudents,
+  enrollStudent
 } = require('../controllers/studentController');
 const { protect, manager } = require('../middleware/authMiddleware');
 
@@ -37,6 +38,10 @@ router.route('/:id/enrollments')
 
 router.route('/:id/payments')
   .get(getStudentPayments);
+
+// Enroll a student into a class
+router.route('/:id/enroll')
+  .post(enrollStudent);
 
 router.route('/:id/enrollment-count')
   .patch(updateEnrollmentCount);

@@ -1,8 +1,21 @@
 const Equipment = require('../models/Equipment');
 
+function getUserSchoolId(user) {
+  if (!user) return undefined;
+  const s = user.school;
+  if (!s) return undefined;
+  if (typeof s === 'string') return s;
+  if (typeof s === 'object' && s !== null) {
+    if (s._id) return s._id.toString();
+  }
+  try { return s.toString(); } catch (e) { return undefined; }
+}
+
 function assertManagerAccess(req, resourceSchoolId) {
   if (req.user.role === 'admin') return true;
-  if (req.user.role === 'manager' && req.user.school?.toString() === resourceSchoolId.toString()) return true;
+  const userSchoolId = getUserSchoolId(req.user);
+  const resourceId = resourceSchoolId?.toString?.() ?? String(resourceSchoolId);
+  if (req.user.role === 'manager' && userSchoolId && resourceId && userSchoolId === resourceId) return true;
   return false;
 }
 
@@ -10,7 +23,7 @@ exports.listEquipment = async (req, res) => {
   try {
     const query = {};
     if (req.user.role === 'manager') {
-      query.schoolId = req.user.school;
+  query.schoolId = getUserSchoolId(req.user);
     } else if (req.user.role === 'admin' && req.query.schoolId) {
       query.schoolId = req.query.schoolId;
     }
@@ -36,7 +49,7 @@ exports.getEquipment = async (req, res) => {
 
 exports.createEquipment = async (req, res) => {
   try {
-    const schoolId = req.user.role === 'manager' ? req.user.school : (req.body.schoolId || req.query.schoolId);
+  const schoolId = req.user.role === 'manager' ? getUserSchoolId(req.user) : (req.body.schoolId || req.query.schoolId);
     if (!schoolId) return res.status(400).json({ message: 'schoolId is required' });
 
     const { majorType, itemName, quantity } = req.body;

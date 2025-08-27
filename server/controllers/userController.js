@@ -117,13 +117,18 @@ const registerUser = async (req, res) => {
 // @access  Public
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
 
-    // Find the user by their email
-    const user = await User.findOne({ email });
+    // Find the user by email or username (username preferred if provided)
+    let user = null;
+    if (username) {
+      user = await User.findOne({ username });
+    } else if (email) {
+      user = await User.findOne({ email });
+    }
 
     // Check if user exists AND if the provided password matches the hashed password in the DB
-    if (user && (await bcrypt.compare(password, user.password))) {
+  if (user && (await bcrypt.compare(password, user.password))) {
       // If they match, send back the user data and a new token
       res.status(200).json({
         _id: user._id,

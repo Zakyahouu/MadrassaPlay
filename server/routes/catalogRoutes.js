@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { protect, manager } = require('../middleware/authMiddleware');
+const { protect, manager, authorize } = require('../middleware/authMiddleware');
 const {
   getSchoolCatalog,
   updateSchoolCatalog,
@@ -23,53 +23,53 @@ const {
   deleteOtherActivity
 } = require('../controllers/catalogController');
 
-// All routes are protected and require manager role
+// All routes require authentication; write ops require manager
 router.use(protect);
-router.use(manager);
 
 // Main catalog routes
 router.route('/:schoolId')
-  .get(getSchoolCatalog)
-  .put(updateSchoolCatalog);
+  // Allow managers and teachers to read catalog; teachers cannot modify
+  .get(authorize('manager', 'teacher'), getSchoolCatalog)
+  .put(manager, updateSchoolCatalog);
 
 // Support Lessons routes
 router.route('/:schoolId/support-lessons')
-  .post(addSupportLesson);
+  .post(manager, addSupportLesson);
 
 router.route('/:schoolId/support-lessons/:lessonId')
-  .put(updateSupportLesson)
-  .delete(deleteSupportLesson);
+  .put(manager, updateSupportLesson)
+  .delete(manager, deleteSupportLesson);
 
 // Review Courses routes
 router.route('/:schoolId/review-courses')
-  .post(addReviewCourse);
+  .post(manager, addReviewCourse);
 
 router.route('/:schoolId/review-courses/:courseId')
-  .put(updateReviewCourse)
-  .delete(deleteReviewCourse);
+  .put(manager, updateReviewCourse)
+  .delete(manager, deleteReviewCourse);
 
 // Vocational Trainings routes
 router.route('/:schoolId/vocational-trainings')
-  .post(addVocationalTraining);
+  .post(manager, addVocationalTraining);
 
 router.route('/:schoolId/vocational-trainings/:trainingId')
-  .put(updateVocationalTraining)
-  .delete(deleteVocationalTraining);
+  .put(manager, updateVocationalTraining)
+  .delete(manager, deleteVocationalTraining);
 
 // Languages routes
 router.route('/:schoolId/languages')
-  .post(addLanguage);
+  .post(manager, addLanguage);
 
 router.route('/:schoolId/languages/:languageId')
-  .put(updateLanguage)
-  .delete(deleteLanguage);
+  .put(manager, updateLanguage)
+  .delete(manager, deleteLanguage);
 
 // Other Activities routes
 router.route('/:schoolId/other-activities')
-  .post(addOtherActivity);
+  .post(manager, addOtherActivity);
 
 router.route('/:schoolId/other-activities/:activityId')
-  .put(updateOtherActivity)
-  .delete(deleteOtherActivity);
+  .put(manager, updateOtherActivity)
+  .delete(manager, deleteOtherActivity);
 
 module.exports = router;

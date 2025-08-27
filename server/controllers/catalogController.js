@@ -3,16 +3,33 @@
 const SchoolCatalog = require('../models/SchoolCatalog');
 const School = require('../models/School');
 
+// Helper: normalize user.school to an id string whether it's populated (document) or ObjectId/string
+const getUserSchoolId = (user) => {
+  if (!user) return undefined;
+  const s = user.school;
+  if (!s) return undefined;
+  if (typeof s === 'string') return s;
+  if (typeof s === 'object' && s !== null) {
+    if (s._id) return s._id.toString();
+  }
+  try {
+    return s.toString();
+  } catch (e) {
+    return undefined;
+  }
+};
+
 // @desc    Get school catalog
 // @route   GET /api/catalog/:schoolId
 // @access  Private/Manager
 const getSchoolCatalog = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     
-    // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
-      return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
+  // Verify the user has access to this school
+  const userSchoolId = getUserSchoolId(req.user);
+    if ((req.user.role === 'manager' || req.user.role === 'teacher') && userSchoolId !== schoolId) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own school catalog.' });
     }
 
     let catalog = await SchoolCatalog.findOne({ schoolId }).populate('schoolId', 'name');
@@ -41,11 +58,11 @@ const getSchoolCatalog = async (req, res) => {
 // @access  Private/Manager
 const updateSchoolCatalog = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const updateData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -88,11 +105,11 @@ const updateSchoolCatalog = async (req, res) => {
 // @access  Private/Manager
 const addSupportLesson = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const lessonData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -120,11 +137,11 @@ const addSupportLesson = async (req, res) => {
 // @access  Private/Manager
 const updateSupportLesson = async (req, res) => {
   try {
-    const { schoolId, lessonId } = req.params;
+  const { schoolId, lessonId } = req.params;
     const lessonData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -158,10 +175,10 @@ const updateSupportLesson = async (req, res) => {
 // @access  Private/Manager
 const deleteSupportLesson = async (req, res) => {
   try {
-    const { schoolId, lessonId } = req.params;
+  const { schoolId, lessonId } = req.params;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -186,11 +203,11 @@ const deleteSupportLesson = async (req, res) => {
 // @access  Private/Manager
 const addReviewCourse = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const courseData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -218,11 +235,11 @@ const addReviewCourse = async (req, res) => {
 // @access  Private/Manager
 const updateReviewCourse = async (req, res) => {
   try {
-    const { schoolId, courseId } = req.params;
+  const { schoolId, courseId } = req.params;
     const courseData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -256,10 +273,10 @@ const updateReviewCourse = async (req, res) => {
 // @access  Private/Manager
 const deleteReviewCourse = async (req, res) => {
   try {
-    const { schoolId, courseId } = req.params;
+  const { schoolId, courseId } = req.params;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -284,11 +301,11 @@ const deleteReviewCourse = async (req, res) => {
 // @access  Private/Manager
 const addVocationalTraining = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const trainingData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -316,11 +333,11 @@ const addVocationalTraining = async (req, res) => {
 // @access  Private/Manager
 const updateVocationalTraining = async (req, res) => {
   try {
-    const { schoolId, trainingId } = req.params;
+  const { schoolId, trainingId } = req.params;
     const trainingData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -354,10 +371,10 @@ const updateVocationalTraining = async (req, res) => {
 // @access  Private/Manager
 const deleteVocationalTraining = async (req, res) => {
   try {
-    const { schoolId, trainingId } = req.params;
+  const { schoolId, trainingId } = req.params;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -382,11 +399,11 @@ const deleteVocationalTraining = async (req, res) => {
 // @access  Private/Manager
 const addLanguage = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const languageData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -414,11 +431,11 @@ const addLanguage = async (req, res) => {
 // @access  Private/Manager
 const updateLanguage = async (req, res) => {
   try {
-    const { schoolId, languageId } = req.params;
+  const { schoolId, languageId } = req.params;
     const languageData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -452,10 +469,10 @@ const updateLanguage = async (req, res) => {
 // @access  Private/Manager
 const deleteLanguage = async (req, res) => {
   try {
-    const { schoolId, languageId } = req.params;
+  const { schoolId, languageId } = req.params;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -480,11 +497,11 @@ const deleteLanguage = async (req, res) => {
 // @access  Private/Manager
 const addOtherActivity = async (req, res) => {
   try {
-    const { schoolId } = req.params;
+  const { schoolId } = req.params;
     const activityData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -512,11 +529,11 @@ const addOtherActivity = async (req, res) => {
 // @access  Private/Manager
 const updateOtherActivity = async (req, res) => {
   try {
-    const { schoolId, activityId } = req.params;
+  const { schoolId, activityId } = req.params;
     const activityData = req.body;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
@@ -550,10 +567,10 @@ const updateOtherActivity = async (req, res) => {
 // @access  Private/Manager
 const deleteOtherActivity = async (req, res) => {
   try {
-    const { schoolId, activityId } = req.params;
+  const { schoolId, activityId } = req.params;
     
     // Verify the user has access to this school
-    if (req.user.role === 'manager' && req.user.school?.toString() !== schoolId) {
+  if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
       return res.status(403).json({ message: 'Access denied. You can only manage your own school catalog.' });
     }
 
