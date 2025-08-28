@@ -533,5 +533,4 @@ module.exports = {
   getAvailableRooms,
   getCatalogItems,
   checkConflicts
-
 };
