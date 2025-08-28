@@ -892,6 +892,5 @@ const StudentsTab = () => {
 };
 
 export default StudentsTab;
-export default StudentsTab;
 
 
