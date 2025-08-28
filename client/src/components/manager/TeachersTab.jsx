@@ -285,16 +285,16 @@ const TeachersTab = () => {
                 />
               </div>
               
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="all">All Statuses</option>
-                <option value="employed">Employed</option>
-                <option value="freelance">Freelance</option>
-                <option value="retired">Retired</option>
-              </select>
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="employed">Employed</option>
+                  <option value="freelance">Freelance</option>
+                  <option value="retired">Retired</option>
+                </select>
             </div>
             
             <button 
@@ -342,9 +342,9 @@ const TeachersTab = () => {
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500">
-                            {Array.isArray(teacher.activities) && teacher.activities.length
+                          {Array.isArray(teacher.activities) && teacher.activities.length
                               ? `${teacher.activities.length} activities`
-                              : 'No activities'}
+                            : 'No activities'}
                           </span>
                         </div>
                       </div>
@@ -364,13 +364,13 @@ const TeachersTab = () => {
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Award className="w-3 h-3 text-amber-500" />
                           <span>{teacher.experience || 0} years experience</span>
-                        </div>
+                    </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Mail className="w-3 h-3 text-blue-500" />
                           <span className="truncate">{teacher.email}</span>
-                        </div>
                       </div>
                     </div>
+                        </div>
 
                     {/* Contact Info Group */}
                     {(teacher.contact?.phone1 || teacher.phone || teacher.contact?.phone2) && (
@@ -384,13 +384,13 @@ const TeachersTab = () => {
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <Phone className="w-3 h-3 text-green-500" />
                               <span>{teacher.contact?.phone1 || teacher.phone}</span>
-                            </div>
-                          )}
-                          {teacher.contact?.phone2 && (
+                      </div>
+                    )}
+                    {teacher.contact?.phone2 && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                               <Phone className="w-3 h-3 text-green-500" />
                               <span>{teacher.contact?.phone2}</span>
-                            </div>
+                        </div>
                           )}
                         </div>
                       </div>

@@ -10,7 +10,7 @@ const getStudents = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   
   // Check if manager has a school assigned
-  if (!schoolId) {
+    if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school to access students');
   }
@@ -102,7 +102,7 @@ const createStudent = asyncHandler(async (req, res) => {
   });
 
   const studentResponse = student.toObject();
-  delete studentResponse.password;
+    delete studentResponse.password;
 
   res.status(201).json({
     success: true,
@@ -282,27 +282,34 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
     throw new Error('Student not found');
   }
 
-  // For now, return mock data. In a real implementation, you would:
-  // 1. Have an Enrollment model
-  // 2. Query enrollments where studentId matches
-  // 3. Populate class and teacher information
+  // Get enrollments from the enrollment collection
+  const Enrollment = require('../models/Enrollment');
+  const enrollments = await Enrollment.find({ studentId: id, schoolId })
+    .populate('classId', 'name teacherId roomId schedules price')
+    .populate('classId.teacherId', 'firstName lastName')
+    .populate('classId.roomId', 'name')
+    .sort({ createdAt: -1 });
   
-  const mockEnrollments = [
-    {
-      _id: '1',
-      className: 'Math Support - Grade 5',
-      teacher: 'Ahmed Benali',
-      startDate: '2024-01-15',
-      sessionsCount: 10,
-      sessionsCompleted: 7,
-      totalAmount: 2000,
-      amountPaid: 2000,
-      status: 'active',
-      schedule: 'Monday, Wednesday 2:00 PM'
-    }
-  ];
+  // Format enrollments for frontend
+  const formattedEnrollments = enrollments.map(enrollment => ({
+    _id: enrollment._id,
+    className: enrollment.classId.name,
+    teacher: `${enrollment.classId.teacherId.firstName} ${enrollment.classId.teacherId.lastName}`,
+    startDate: enrollment.startDate,
+    sessionsCount: enrollment.totalSessions,
+    sessionsCompleted: enrollment.sessionsCompleted,
+    totalAmount: enrollment.totalAmount,
+    amountPaid: enrollment.amountPaid,
+    status: enrollment.status,
+    schedule: enrollment.classId.schedules.map(s => 
+      `${s.dayOfWeek.charAt(0).toUpperCase() + s.dayOfWeek.slice(1)} ${s.startTime}-${s.endTime}`
+    ).join(', '),
+    remainingSessions: enrollment.remainingSessions,
+    attendancePercentage: enrollment.attendancePercentage,
+    balance: enrollment.balance
+  }));
 
-  res.json(mockEnrollments);
+  res.json(formattedEnrollments);
 });
 
 // @desc    Get student payments

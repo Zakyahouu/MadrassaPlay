@@ -30,7 +30,7 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading
         ))
       ) : (
         stats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
+        <StatsCard key={index} {...stat} />
         ))
       )}
     </div>

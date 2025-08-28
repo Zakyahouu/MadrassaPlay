@@ -32,6 +32,7 @@ app.use('/api/reporting', require('./routes/reportingRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/employees', require('./routes/employeeRoutes'));
 app.use('/api/classes', require('./routes/classRoutes'));
+app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));

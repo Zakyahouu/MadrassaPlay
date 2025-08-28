@@ -45,8 +45,8 @@ const classSchema = new mongoose.Schema({
     required: [true, 'Room is required']
   },
   
-  // Schedule
-  schedule: {
+  // Schedule - Now supports multiple schedules
+  schedules: [{
     dayOfWeek: {
       type: String,
       enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
@@ -63,7 +63,7 @@ const classSchema = new mongoose.Schema({
       required: [true, 'End time is required'],
       match: [/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter a valid time in HH:MM format (00:00 - 23:59)']
     }
-  },
+  }],
   
   // Capacity and Enrollment
   capacity: {
@@ -99,7 +99,7 @@ const classSchema = new mongoose.Schema({
   
   teacherCut: {
     mode: {
-      type: String,
+    type: String,
       enum: ['percentage', 'fixed'],
       required: [true, 'Teacher cut mode is required']
     },
@@ -183,37 +183,38 @@ classSchema.virtual('progressPercentage').get(function() {
 classSchema.methods.hasConflict = async function() {
   const Class = mongoose.model('Class');
   
-  // Check room conflicts (same school, same room, same day, overlapping time)
-  const roomConflict = await Class.findOne({
-    _id: { $ne: this._id },
-    schoolId: this.schoolId,
-    roomId: this.roomId,
-    status: { $in: ['active'] },
-    'schedule.dayOfWeek': this.schedule.dayOfWeek,
-    $or: [
-      { 'schedule.startTime': { $lte: this.schedule.startTime }, 'schedule.endTime': { $gt: this.schedule.startTime } },
-      { 'schedule.startTime': { $lt: this.schedule.endTime }, 'schedule.endTime': { $gte: this.schedule.endTime } },
-      { 'schedule.startTime': { $gte: this.schedule.startTime }, 'schedule.endTime': { $lte: this.schedule.endTime } }
-    ]
-  });
-  
-  if (roomConflict) return { type: 'room', conflict: roomConflict };
-  
-  // Check teacher conflicts (same school, same teacher, same day, overlapping time)
-  const teacherConflict = await Class.findOne({
-    _id: { $ne: this._id },
-    schoolId: this.schoolId,
-    teacherId: this.teacherId,
-    status: { $in: ['active'] },
-    'schedule.dayOfWeek': this.schedule.dayOfWeek,
-    $or: [
-      { 'schedule.startTime': { $lte: this.schedule.startTime }, 'schedule.endTime': { $gt: this.schedule.startTime } },
-      { 'schedule.startTime': { $lt: this.schedule.endTime }, 'schedule.endTime': { $gte: this.schedule.endTime } },
-      { 'schedule.startTime': { $gte: this.schedule.startTime }, 'schedule.endTime': { $lte: this.schedule.endTime } }
-    ]
-  });
-  
-  if (teacherConflict) return { type: 'teacher', conflict: teacherConflict };
+  // Check each schedule for conflicts
+  for (const schedule of this.schedules) {
+    // Check room conflicts (same school, same room, same day, overlapping time)
+    const roomConflict = await Class.findOne({
+      _id: { $ne: this._id },
+      schoolId: this.schoolId,
+      roomId: this.roomId,
+      status: { $in: ['active'] },
+      $or: [
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $lte: schedule.startTime }, 'schedules.endTime': { $gt: schedule.startTime } },
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $lt: schedule.endTime }, 'schedules.endTime': { $gte: schedule.endTime } },
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $gte: schedule.startTime }, 'schedules.endTime': { $lte: schedule.endTime } }
+      ]
+    });
+    
+    if (roomConflict) return { type: 'room', conflict: roomConflict, schedule };
+    
+    // Check teacher conflicts (same school, same teacher, same day, overlapping time)
+    const teacherConflict = await Class.findOne({
+      _id: { $ne: this._id },
+      schoolId: this.schoolId,
+      teacherId: this.teacherId,
+      status: { $in: ['active'] },
+      $or: [
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $lte: schedule.startTime }, 'schedules.endTime': { $gt: schedule.startTime } },
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $lt: schedule.endTime }, 'schedules.endTime': { $gte: schedule.endTime } },
+        { 'schedules.dayOfWeek': schedule.dayOfWeek, 'schedules.startTime': { $gte: schedule.startTime }, 'schedules.endTime': { $lte: schedule.endTime } }
+      ]
+    });
+    
+    if (teacherConflict) return { type: 'teacher', conflict: teacherConflict, schedule };
+  }
   
   return null;
 };
@@ -223,7 +224,8 @@ classSchema.set('toJSON', { virtuals: true });
 classSchema.set('toObject', { virtuals: true });
 
 // Helpful indexes for conflict queries
-classSchema.index({ schoolId: 1, 'schedule.dayOfWeek': 1, roomId: 1, status: 1 });
-classSchema.index({ schoolId: 1, 'schedule.dayOfWeek': 1, teacherId: 1, status: 1 });
+classSchema.index({ schoolId: 1, 'schedules.dayOfWeek': 1, roomId: 1, status: 1 });
+classSchema.index({ schoolId: 1, 'schedules.dayOfWeek': 1, teacherId: 1, status: 1 });
 
 module.exports = mongoose.model('Class', classSchema);
+

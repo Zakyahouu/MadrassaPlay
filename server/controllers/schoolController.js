@@ -100,8 +100,8 @@ const createManagerForSchool = async (req, res) => {
 
     // Add manager to school's managers array
     try {
-      school.managers.push(manager._id);
-      await school.save();
+    school.managers.push(manager._id);
+    await school.save();
     } catch (error) {
       // If adding to school fails, delete the manager to prevent orphaned data
       await User.findByIdAndDelete(manager._id);

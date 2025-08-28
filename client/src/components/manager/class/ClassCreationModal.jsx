@@ -37,11 +37,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
     catalogItem: null,
     teacherId: '',
     roomId: '',
-    schedule: {
+    schedules: [{
       dayOfWeek: 'monday',
       startTime: '09:00',
       endTime: '10:00'
-    },
+    }],
     capacity: '',
     enrollmentPeriod: {
       startDate: '',
@@ -121,14 +121,20 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
     }
 
     if (currentStep === 3) {
-      if (!formData.schedule.startTime) {
-        errors.startTime = 'Start time is required';
-      }
-      if (!formData.schedule.endTime) {
-        errors.endTime = 'End time is required';
-      }
-      if (formData.schedule.startTime >= formData.schedule.endTime) {
-        errors.endTime = 'End time must be after start time';
+      if (!formData.schedules || formData.schedules.length === 0) {
+        errors.schedules = 'At least one schedule is required';
+      } else {
+        formData.schedules.forEach((schedule, index) => {
+          if (!schedule.startTime) {
+            errors[`schedule${index}StartTime`] = 'Start time is required';
+          }
+          if (!schedule.endTime) {
+            errors[`schedule${index}EndTime`] = 'End time is required';
+          }
+          if (schedule.startTime && schedule.endTime && schedule.startTime >= schedule.endTime) {
+            errors[`schedule${index}EndTime`] = 'End time must be after start time';
+          }
+        });
       }
     }
 
@@ -155,7 +161,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const checkConflicts = async () => {
-    if (!formData.teacherId || !formData.roomId || !formData.schedule.dayOfWeek) {
+    if (!formData.teacherId || !formData.roomId || formData.schedules.length === 0) {
       return;
     }
 
@@ -164,7 +170,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/check-conflicts`, {
-        schedule: formData.schedule,
+        schedules: formData.schedules,
         teacherId: formData.teacherId,
         roomId: formData.roomId
       }, config);
@@ -180,10 +186,10 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   useEffect(() => {
-    if (formData.teacherId && formData.roomId && formData.schedule.dayOfWeek) {
+    if (formData.teacherId && formData.roomId && formData.schedules.length > 0) {
       checkConflicts();
     }
-  }, [formData.teacherId, formData.roomId, formData.schedule]);
+  }, [formData.teacherId, formData.roomId, formData.schedules]);
 
   const handleCatalogItemSelect = (item) => {
     setFormData(prev => ({
@@ -207,6 +213,35 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
       capacity: selectedRoom ? selectedRoom.capacity.toString() : ''
     }));
     setValidationErrors(prev => ({ ...prev, roomId: null }));
+  };
+
+  const addSchedule = () => {
+    setFormData(prev => ({
+      ...prev,
+      schedules: [...prev.schedules, {
+        dayOfWeek: 'monday',
+        startTime: '09:00',
+        endTime: '10:00'
+      }]
+    }));
+  };
+
+  const removeSchedule = (index) => {
+    if (formData.schedules.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        schedules: prev.schedules.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateSchedule = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      schedules: prev.schedules.map((schedule, i) => 
+        i === index ? { ...schedule, [field]: value } : schedule
+      )
+    }));
   };
 
   const handleSubmit = async () => {
@@ -483,73 +518,99 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Step 3: Schedule */}
           {step === 3 && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Set Class Schedule
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Set Class Schedules
                 </h3>
+                <button
+                  type="button"
+                  onClick={addSchedule}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Add Schedule
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Day of Week */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Day of Week *
-                  </label>
-                  <select
-                    value={formData.schedule.dayOfWeek}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      schedule: { ...prev.schedule, dayOfWeek: e.target.value }
-                    }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  >
-                    <option value="monday">Monday</option>
-                    <option value="tuesday">Tuesday</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="thursday">Thursday</option>
-                    <option value="friday">Friday</option>
-                    <option value="saturday">Saturday</option>
-                    <option value="sunday">Sunday</option>
-                  </select>
+              {validationErrors.schedules && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-700 text-sm">{validationErrors.schedules}</p>
                 </div>
+              )}
 
-                {/* Start Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Time *
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.schedule.startTime}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      schedule: { ...prev.schedule, startTime: e.target.value }
-                    }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  />
-                  {validationErrors.startTime && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.startTime}</p>
-                  )}
-                </div>
+              <div className="space-y-6">
+                {formData.schedules.map((schedule, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-md font-medium text-gray-900">
+                        Schedule {index + 1}
+                      </h4>
+                      {formData.schedules.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSchedule(index)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
 
-                {/* End Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Time *
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.schedule.endTime}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      schedule: { ...prev.schedule, endTime: e.target.value }
-                    }))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  />
-                  {validationErrors.endTime && (
-                    <p className="text-red-600 text-sm mt-1">{validationErrors.endTime}</p>
-                  )}
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Day of Week */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Day of Week *
+                        </label>
+                        <select
+                          value={schedule.dayOfWeek}
+                          onChange={(e) => updateSchedule(index, 'dayOfWeek', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        >
+                          <option value="monday">Monday</option>
+                          <option value="tuesday">Tuesday</option>
+                          <option value="wednesday">Wednesday</option>
+                          <option value="thursday">Thursday</option>
+                          <option value="friday">Friday</option>
+                          <option value="saturday">Saturday</option>
+                          <option value="sunday">Sunday</option>
+                        </select>
+                      </div>
+
+                      {/* Start Time */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Start Time *
+                        </label>
+                        <input
+                          type="time"
+                          value={schedule.startTime}
+                          onChange={(e) => updateSchedule(index, 'startTime', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                        {validationErrors[`schedule${index}StartTime`] && (
+                          <p className="text-red-600 text-sm mt-1">{validationErrors[`schedule${index}StartTime`]}</p>
+                        )}
+                      </div>
+
+                      {/* End Time */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          End Time *
+                        </label>
+                        <input
+                          type="time"
+                          value={schedule.endTime}
+                          onChange={(e) => updateSchedule(index, 'endTime', e.target.value)}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        />
+                        {validationErrors[`schedule${index}EndTime`] && (
+                          <p className="text-red-600 text-sm mt-1">{validationErrors[`schedule${index}EndTime`]}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Conflict Warning */}

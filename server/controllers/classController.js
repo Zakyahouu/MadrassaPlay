@@ -61,7 +61,7 @@ const createClass = asyncHandler(async (req, res) => {
     catalogItem,
     teacherId,
     roomId,
-    schedule,
+    schedules,
     capacity,
     enrollmentPeriod,
     paymentCycle,
@@ -92,17 +92,25 @@ const createClass = asyncHandler(async (req, res) => {
     throw new Error('Room not found');
   }
   
-  // Validate time format
-  const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
-  if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
+  // Validate schedules
+  if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
     res.status(400);
-    throw new Error('Invalid time format. Use HH:MM format');
+    throw new Error('At least one schedule is required');
   }
+
+  const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
   
-  // Validate start time is before end time
-  if (schedule.startTime >= schedule.endTime) {
-    res.status(400);
-    throw new Error('Start time must be before end time');
+  for (const schedule of schedules) {
+    if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
+      res.status(400);
+      throw new Error('Invalid time format. Use HH:MM format');
+    }
+    
+    // Validate start time is before end time
+    if (schedule.startTime >= schedule.endTime) {
+      res.status(400);
+      throw new Error('Start time must be before end time');
+    }
   }
   
   // Validate capacity doesn't exceed room capacity (unless confirmed)
@@ -113,12 +121,12 @@ const createClass = asyncHandler(async (req, res) => {
   
   // Create class instance to check conflicts
   const newClass = new Class({
-    name,
+      name,
     schoolId,
     catalogItem,
     teacherId,
     roomId,
-    schedule,
+    schedules,
     capacity,
     enrollmentPeriod: {
       startDate: new Date(enrollmentPeriod.startDate),
@@ -134,12 +142,13 @@ const createClass = asyncHandler(async (req, res) => {
   // Check for scheduling conflicts
   const conflict = await newClass.hasConflict();
   if (conflict) {
+    const scheduleInfo = `${conflict.schedule.dayOfWeek} ${conflict.schedule.startTime}-${conflict.schedule.endTime}`;
     if (conflict.type === 'room') {
       res.status(409);
-      throw new Error(`Room is already booked during this time by class: ${conflict.conflict.name}`);
+      throw new Error(`Room is already booked during ${scheduleInfo} by class: ${conflict.conflict.name}`);
     } else if (conflict.type === 'teacher') {
       res.status(409);
-      throw new Error(`Teacher is already booked during this time by class: ${conflict.conflict.name}`);
+      throw new Error(`Teacher is already booked during ${scheduleInfo} by class: ${conflict.conflict.name}`);
     }
   }
   
@@ -175,7 +184,7 @@ const updateClass = asyncHandler(async (req, res) => {
     name,
     teacherId,
     roomId,
-    schedule,
+    schedules,
     capacity,
     enrollmentPeriod,
     paymentCycle,
@@ -206,20 +215,28 @@ const updateClass = asyncHandler(async (req, res) => {
     classItem.roomId = roomId;
   }
   
-  // Validate schedule if being updated
-  if (schedule) {
+  // Validate schedules if being updated
+  if (schedules) {
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      res.status(400);
+      throw new Error('At least one schedule is required');
+    }
+
     const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
-      res.status(400);
-      throw new Error('Invalid time format. Use HH:MM format');
+    
+    for (const schedule of schedules) {
+      if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
+        res.status(400);
+        throw new Error('Invalid time format. Use HH:MM format');
+      }
+      
+      if (schedule.startTime >= schedule.endTime) {
+        res.status(400);
+        throw new Error('Start time must be before end time');
+      }
     }
     
-    if (schedule.startTime >= schedule.endTime) {
-      res.status(400);
-      throw new Error('Start time must be before end time');
-    }
-    
-    classItem.schedule = schedule;
+    classItem.schedules = schedules;
   }
   
   // Update other fields
@@ -238,16 +255,17 @@ const updateClass = asyncHandler(async (req, res) => {
   if (description !== undefined) classItem.description = description;
   if (status !== undefined) classItem.status = status;
   
-  // Check for conflicts if schedule, teacher, or room changed
-  if (schedule || teacherId || roomId) {
+  // Check for conflicts if schedules, teacher, or room changed
+  if (schedules || teacherId || roomId) {
     const conflict = await classItem.hasConflict();
     if (conflict) {
+      const scheduleInfo = `${conflict.schedule.dayOfWeek} ${conflict.schedule.startTime}-${conflict.schedule.endTime}`;
       if (conflict.type === 'room') {
         res.status(409);
-        throw new Error(`Room is already booked during this time by class: ${conflict.conflict.name}`);
+        throw new Error(`Room is already booked during ${scheduleInfo} by class: ${conflict.conflict.name}`);
       } else if (conflict.type === 'teacher') {
         res.status(409);
-        throw new Error(`Teacher is already booked during this time by class: ${conflict.conflict.name}`);
+        throw new Error(`Teacher is already booked during ${scheduleInfo} by class: ${conflict.conflict.name}`);
       }
     }
   }
@@ -421,73 +439,82 @@ const getCatalogItems = asyncHandler(async (req, res) => {
 // @route   POST /api/classes/check-conflicts
 // @access  Private (Manager)
 const checkConflicts = asyncHandler(async (req, res) => {
-  const { schedule, teacherId, roomId, excludeClassId } = req.body;
+  const { schedules, teacherId, roomId, excludeClassId } = req.body;
   const { school: schoolId } = req.user;
   
   const Class = require('../models/Class');
   
-  // Check room conflicts
-  const roomConflict = await Class.findOne({
-    _id: { $ne: excludeClassId },
-    schoolId,
-    roomId,
-    status: { $in: ['active'] },
-    'schedule.dayOfWeek': schedule.dayOfWeek,
-    $or: [
-      {
-        'schedule.startTime': { $lte: schedule.startTime },
-        'schedule.endTime': { $gt: schedule.startTime }
-      },
-      {
-        'schedule.startTime': { $lt: schedule.endTime },
-        'schedule.endTime': { $gte: schedule.endTime }
-      },
-      {
-        'schedule.startTime': { $gte: schedule.startTime },
-        'schedule.endTime': { $lte: schedule.endTime }
-      }
-    ]
-  }).populate('teacherId', 'firstName lastName');
-  
-  if (roomConflict) {
-    return res.json({
-      hasConflict: true,
-      type: 'room',
-      message: `Room is already booked during this time by class: ${roomConflict.name} (Teacher: ${roomConflict.teacherId.firstName} ${roomConflict.teacherId.lastName})`,
-      conflict: roomConflict
-    });
-  }
-  
-  // Check teacher conflicts
-  const teacherConflict = await Class.findOne({
-    _id: { $ne: excludeClassId },
-    schoolId,
-    teacherId,
-    status: { $in: ['active'] },
-    'schedule.dayOfWeek': schedule.dayOfWeek,
-    $or: [
-      {
-        'schedule.startTime': { $lte: schedule.startTime },
-        'schedule.endTime': { $gt: schedule.startTime }
-      },
-      {
-        'schedule.startTime': { $lt: schedule.endTime },
-        'schedule.endTime': { $gte: schedule.endTime }
-      },
-      {
-        'schedule.startTime': { $gte: schedule.startTime },
-        'schedule.endTime': { $lte: schedule.endTime }
-      }
-    ]
-  }).populate('roomId', 'name');
-  
-  if (teacherConflict) {
-    return res.json({
-      hasConflict: true,
-      type: 'teacher',
-      message: `Teacher is already booked during this time by class: ${teacherConflict.name} (Room: ${teacherConflict.roomId.name})`,
-      conflict: teacherConflict
-    });
+  // Check each schedule for conflicts
+  for (const schedule of schedules) {
+    // Check room conflicts
+    const roomConflict = await Class.findOne({
+      _id: { $ne: excludeClassId },
+      schoolId,
+      roomId,
+      status: { $in: ['active'] },
+      $or: [
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $lte: schedule.startTime },
+          'schedules.endTime': { $gt: schedule.startTime }
+        },
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $lt: schedule.endTime },
+          'schedules.endTime': { $gte: schedule.endTime }
+        },
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $gte: schedule.startTime },
+          'schedules.endTime': { $lte: schedule.endTime }
+        }
+      ]
+    }).populate('teacherId', 'firstName lastName');
+    
+    if (roomConflict) {
+      return res.json({
+        hasConflict: true,
+        type: 'room',
+        message: `Room is already booked during ${schedule.dayOfWeek} ${schedule.startTime}-${schedule.endTime} by class: ${roomConflict.name} (Teacher: ${roomConflict.teacherId.firstName} ${roomConflict.teacherId.lastName})`,
+        conflict: roomConflict,
+        schedule
+      });
+    }
+    
+    // Check teacher conflicts
+    const teacherConflict = await Class.findOne({
+      _id: { $ne: excludeClassId },
+      schoolId,
+      teacherId,
+      status: { $in: ['active'] },
+      $or: [
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $lte: schedule.startTime },
+          'schedules.endTime': { $gt: schedule.startTime }
+        },
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $lt: schedule.endTime },
+          'schedules.endTime': { $gte: schedule.endTime }
+        },
+        {
+          'schedules.dayOfWeek': schedule.dayOfWeek,
+          'schedules.startTime': { $gte: schedule.startTime },
+          'schedules.endTime': { $lte: schedule.endTime }
+        }
+      ]
+    }).populate('roomId', 'name');
+    
+    if (teacherConflict) {
+      return res.json({
+        hasConflict: true,
+        type: 'teacher',
+        message: `Teacher is already booked during ${schedule.dayOfWeek} ${schedule.startTime}-${schedule.endTime} by class: ${teacherConflict.name} (Room: ${teacherConflict.roomId.name})`,
+        conflict: teacherConflict,
+        schedule
+      });
+    }
   }
   
   res.json({
@@ -506,4 +533,5 @@ module.exports = {
   getAvailableRooms,
   getCatalogItems,
   checkConflicts
+
 };

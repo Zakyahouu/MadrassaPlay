@@ -98,9 +98,9 @@ const registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         school: user.school,
-        xp: user.xp,
-        level: user.level,
-        totalPoints: user.totalPoints,
+  xp: user.xp,
+  level: user.level,
+  totalPoints: user.totalPoints,
         token: generateToken(user._id), // Generate and include the token
       });
     } else {
@@ -128,7 +128,7 @@ const loginUser = async (req, res) => {
     }
 
     // Check if user exists AND if the provided password matches the hashed password in the DB
-  if (user && (await bcrypt.compare(password, user.password))) {
+    if (user && (await bcrypt.compare(password, user.password))) {
       // If they match, send back the user data and a new token
       res.status(200).json({
         _id: user._id,
@@ -232,7 +232,7 @@ const updateUserProfile = async (req, res) => {
   username: updatedUser.username,
   contact: updatedUser.contact,
   activities: updatedUser.activities,
-  status: updatedUser.status,
+      status: updatedUser.status,
       rating: updatedUser.rating,
       token: generateToken(updatedUser._id),
     });
