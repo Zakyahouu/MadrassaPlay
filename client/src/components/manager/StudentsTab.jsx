@@ -142,17 +142,11 @@ const StudentsTab = () => {
     };
 
     const payload = {
-      studentId: enrollmentData.selectedStudent._id,
       classId: enrollmentData.selectedClass._id,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-      totalSessions: enrollmentData.sessionsCount,
-      totalAmount: enrollmentData.selectedClass.price * enrollmentData.sessionsCount,
-      notes: `Enrolled via immediate enrollment after student creation`
     };
 
     try {
-      await axios.post('/api/enrollments', payload, config);
+  await axios.post(`/api/students/${enrollmentData.selectedStudent._id}/enroll`, payload, config);
       alert('Student enrolled successfully!');
       closeModal();
       setShowEnrollmentStep(false);

@@ -182,7 +182,9 @@ const updateStudent = asyncHandler(async (req, res) => {
 // @route   POST /api/students/:id/enroll
 // @access  Private (Manager)
 const enrollStudent = asyncHandler(async (req, res) => {
-  const { school: schoolId } = req.user;
+  // Normalize school id in case req.user.school is populated
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+  const schoolIdStr = schoolId?.toString?.();
   const { id: studentId } = req.params;
   const { classId } = req.body;
 
@@ -191,7 +193,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
     throw new Error('classId is required');
   }
 
-  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  const student = await User.findOne({ _id: studentId, school: schoolIdStr, role: 'student' });
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -202,7 +204,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Class not found');
   }
-  if (klass.schoolId.toString() !== schoolId.toString()) {
+  if (klass.schoolId.toString() !== schoolIdStr) {
     res.status(403);
     throw new Error('Class does not belong to your school');
   }
@@ -215,7 +217,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
 
   // For catalog types that carry level/grade, verify compatibility with student.educationLevel
   if (['supportLessons', 'reviewCourses'].includes(klass.catalogItem?.type)) {
-    const catalog = await SchoolCatalog.findOne({ schoolId });
+    const catalog = await SchoolCatalog.findOne({ schoolId: schoolIdStr });
     if (catalog) {
       const items = klass.catalogItem.type === 'supportLessons' ? catalog.supportLessons : catalog.reviewCourses;
       const item = items.find(it => it._id?.toString() === klass.catalogItem.itemId.toString());
