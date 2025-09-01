@@ -435,6 +435,34 @@ const getCatalogItems = asyncHandler(async (req, res) => {
   res.json(catalogItems);
 });
 
+// @desc    Get classes for a specific teacher
+// @route   GET /api/classes/teacher
+// @access  Private (Teacher)
+const getClassesByTeacher = asyncHandler(async (req, res) => {
+  const { _id: teacherId, school: schoolId } = req.user;
+  
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Teacher must be assigned to a school to access classes');
+  }
+  
+  if (req.user.role !== 'teacher') {
+    res.status(403);
+    throw new Error('Only teachers can access this endpoint');
+  }
+  
+  const classes = await Class.find({ 
+    teacherId, 
+    schoolId,
+    status: { $in: ['active', 'enrolling'] }
+  })
+    .populate('roomId', 'name capacity')
+    .populate('catalogItem.itemId', 'name description')
+    .sort({ 'schedules.dayOfWeek': 1, 'schedules.startTime': 1 });
+  
+  res.json(classes);
+});
+
 // @desc    Check scheduling conflicts
 // @route   POST /api/classes/check-conflicts
 // @access  Private (Manager)
@@ -532,5 +560,6 @@ module.exports = {
   getAvailableTeachers,
   getAvailableRooms,
   getCatalogItems,
+  getClassesByTeacher,
   checkConflicts
 };

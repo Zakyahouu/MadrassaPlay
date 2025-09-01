@@ -609,9 +609,9 @@ const StudentsTab = () => {
                           ).join(', ')}</div>
                             {typeof enrollmentData.selectedClass.price === 'number' && (
                               <>
-                                <div>Price per session: ${enrollmentData.selectedClass.price}</div>
+                                <div>Price per session: {enrollmentData.selectedClass.price} DZD</div>
                                 <div className="font-medium text-gray-900">
-                                  Total: ${enrollmentData.selectedClass.price * enrollmentData.sessionsCount}
+                                  Total: {enrollmentData.selectedClass.price * enrollmentData.sessionsCount} DZD
                           </div>
                               </>
                             )}

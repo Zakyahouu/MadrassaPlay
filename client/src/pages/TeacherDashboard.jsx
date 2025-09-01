@@ -13,6 +13,7 @@ import TeacherStudents from '../components/teacher/TeacherStudents';
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
 import Reports from '../components/teacher/Reports';
+import Timetable from '../components/teacher/Timetable';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -39,6 +40,7 @@ const TeacherDashboard = () => {
     { id: 'create-game', name: 'Create Game' },
     { id: 'live-sessions', name: 'Live Sessions' },
     { id: 'assignments', name: 'Assignments' },
+    { id: 'timetable', name: 'Timetable' },
     { id: 'reports', name: 'Reports' },
     { id: 'students', name: 'My Students' },
     { id: 'calendar', name: 'Calendar' }
@@ -56,6 +58,8 @@ const TeacherDashboard = () => {
         return <TeacherLiveSessions />;
       case 'assignments':
         return <TeacherAssignments />;
+      case 'timetable':
+        return <Timetable />;
       case 'reports':
         return <div className="space-y-6">
           <div className="flex items-center justify-between">

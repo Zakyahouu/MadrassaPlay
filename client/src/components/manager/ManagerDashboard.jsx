@@ -15,6 +15,7 @@ import CatalogTab from './CatalogTab';
 import RoomsTab from './RoomsTab';
 import EquipmentTab from './EquipmentTab';
 import EmployeesTab from './EmployeesTab';
+import ManagerTimetable from './ManagerTimetable';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -136,6 +137,7 @@ export const ManagerDashboard = () => {
   const navigationItems = [
     { id: 'overview', name: 'Overview' },
     { id: 'classes', name: 'Classes' },
+    { id: 'timetable', name: 'Timetable' },
     { id: 'students', name: 'Students' },
     { id: 'teachers', name: 'All Teachers' },
     { id: 'employees', name: 'All Employees' },
@@ -151,6 +153,8 @@ export const ManagerDashboard = () => {
         return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
         return <ClassesTab />;
+      case 'timetable':
+        return <ManagerTimetable />;
       case 'students':
         return <StudentsTab />;
       case 'teachers':

@@ -22,7 +22,7 @@ const PaymentList = ({ payments }) => {
               <tr key={payment._id}>
                 <td className="py-2">{payment.student?.name}</td>
                 <td className="py-2">{payment.class?.name}</td>
-                <td className="py-2">{payment.amount}</td>
+                <td className="py-2">{payment.amount} DZD</td>
                 <td className="py-2">{new Date(payment.dueDate).toLocaleDateString()}</td>
                 <td className="py-2">{payment.status}</td>
                 <td className="py-2">{payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : '-'}</td>

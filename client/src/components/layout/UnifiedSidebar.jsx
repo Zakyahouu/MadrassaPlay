@@ -42,6 +42,7 @@ const UnifiedSidebar = ({
         return [
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'classes', name: 'Classes', icon: BookOpen },
+          { id: 'timetable', name: 'Timetable', icon: Calendar },
           { id: 'students', name: 'Students', icon: Users },
           { id: 'teachers', name: 'Teachers', icon: UserCheck },
           { id: 'employees', name: 'Staff', icon: Building2 },
@@ -57,6 +58,7 @@ const UnifiedSidebar = ({
           { id: 'create-game', name: 'Create Game', icon: Plus },
           { id: 'live-sessions', name: 'Live Sessions', icon: Play },
           { id: 'assignments', name: 'Assignments', icon: FileText },
+          { id: 'timetable', name: 'Timetable', icon: Calendar },
           { id: 'reports', name: 'Reports', icon: TrendingUp },
           { id: 'students', name: 'My Students', icon: Users },
           { id: 'calendar', name: 'Calendar', icon: Calendar }
