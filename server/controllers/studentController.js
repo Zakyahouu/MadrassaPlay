@@ -179,6 +179,7 @@ const updateStudent = asyncHandler(async (req, res) => {
 });
 
 // @desc    Enroll a student to a class (validates school, capacity, and level)
+//          Also creates an Enrollment document with a pricing snapshot for payments/attendance flows
 // @route   POST /api/students/:id/enroll
 // @access  Private (Manager)
 const enrollStudent = asyncHandler(async (req, res) => {
@@ -193,6 +194,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
     throw new Error('classId is required');
   }
 
+  
   const student = await User.findOne({ _id: studentId, school: schoolIdStr, role: 'student' });
   if (!student) {
     res.status(404);
@@ -210,64 +212,193 @@ const enrollStudent = asyncHandler(async (req, res) => {
   }
   // Capacity check
   const activeCount = (klass.enrolledStudents || []).filter(e => e.status === 'active').length;
+  
   if (activeCount >= klass.capacity) {
     res.status(409);
     throw new Error('Class is full');
   }
 
-  // For catalog types that carry level/grade, verify compatibility with student.educationLevel
-  if (['supportLessons', 'reviewCourses'].includes(klass.catalogItem?.type)) {
-    const catalog = await SchoolCatalog.findOne({ schoolId: schoolIdStr });
-    if (catalog) {
-      const items = klass.catalogItem.type === 'supportLessons' ? catalog.supportLessons : catalog.reviewCourses;
-      const item = items.find(it => it._id?.toString() === klass.catalogItem.itemId.toString());
-      if (item && student.educationLevel) {
-        if (['primary','middle','high_school'].includes(item.level) && student.educationLevel !== item.level) {
-          res.status(400);
-          throw new Error('Student education level does not match class level');
-        }
-      }
+  // Level matching intentionally not enforced: students can enroll in any class by design
+
+  // Prevent duplicate enrollment - more thorough check
+  // First check class roster (quick check)
+  const alreadyEnrolledInRoster = (klass.enrolledStudents || []).some(e => 
+    e.studentId?.toString() === student._id.toString() && e.status === 'active'
+  );
+  
+  if (alreadyEnrolledInRoster) {
+    
+    // Do not block here; rely on Enrollment collection for idempotency
+  }
+
+  // Build pricing snapshot robustly (support legacy fields)
+  let paymentModel = klass.paymentModel;
+  let sessionPrice = klass.sessionPrice;
+  let cyclePrice = klass.cyclePrice;
+  let cycleSize = klass.cycleSize;
+
+  if (!paymentModel) {
+    if (typeof klass.price === 'number' && typeof klass.paymentCycle === 'number') {
+      paymentModel = 'per_cycle';
+      cyclePrice = klass.price;
+      cycleSize = klass.paymentCycle;
+    } else {
+      res.status(400);
+      throw new Error('Class pricing not configured. Please update class pricing.');
+    }
+  }
+  if (paymentModel === 'per_session') {
+    if (typeof sessionPrice !== 'number') {
+      res.status(400);
+      throw new Error('Class per-session price missing. Please update class pricing.');
+    }
+  } else if (paymentModel === 'per_cycle') {
+    // allow fallback from legacy if missing
+    if (typeof cyclePrice !== 'number') cyclePrice = typeof klass.price === 'number' ? klass.price : undefined;
+    if (typeof cycleSize !== 'number') cycleSize = typeof klass.paymentCycle === 'number' ? klass.paymentCycle : undefined;
+    if (typeof cyclePrice !== 'number' || typeof cycleSize !== 'number') {
+      res.status(400);
+      throw new Error('Class cycle price/size missing. Please update class pricing.');
     }
   }
 
-  // Prevent duplicate active enrollment
-  const alreadyEnrolled = (klass.enrolledStudents || []).some(e => e.studentId?.toString() === student._id.toString() && e.status === 'active');
-  if (alreadyEnrolled) {
-    res.status(409);
-    throw new Error('Student already enrolled in this class');
+  // Create Enrollment document first, to avoid partial state on failures
+  const Enrollment = require('../models/Enrollment');
+  
+  // Check if enrollment already exists (idempotent behavior)
+  const existingEnrollment = await Enrollment.findOne({ 
+    studentId: student._id,
+    classId: klass._id
+  });
+  if (existingEnrollment) {
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Student already enrolled (idempotent)',
+      class: klass,
+      enrollmentId: existingEnrollment._id,
+      pricingSnapshot: existingEnrollment.pricingSnapshot || pricingSnapshot,
+      className: klass.name,
+    });
+  }
+  
+  
+  const pricingSnapshot = {
+    paymentModel,
+    sessionPrice: paymentModel === 'per_session' ? sessionPrice : undefined,
+    cycleSize: paymentModel === 'per_cycle' ? cycleSize : undefined,
+    cyclePrice: paymentModel === 'per_cycle' ? cyclePrice : undefined,
+  };
+  let legacyTotals = {};
+  if (paymentModel === 'per_cycle') {
+    legacyTotals = { totalSessions: cycleSize, totalAmount: cyclePrice, sessionsCompleted: 0, amountPaid: 0 };
+  } else if (paymentModel === 'per_session') {
+    legacyTotals = { totalSessions: 0, totalAmount: 0, sessionsCompleted: 0, amountPaid: 0 };
   }
 
-  klass.enrolledStudents.push({ studentId: student._id, status: 'active' });
-  await klass.save();
+  let enrollmentDoc;
+  try {
+    enrollmentDoc = await Enrollment.create({
+      schoolId: klass.schoolId,
+      studentId: student._id,
+      classId: klass._id,
+      status: 'active',
+      pricingSnapshot,
+      ...legacyTotals,
+    });
+    
+  } catch (err) {
+    // Handle common validation/duplicate errors gracefully
+    if (err?.code === 11000) {
+      
+      const dup = await Enrollment.findOne({ studentId: student._id, classId: klass._id });
+      if (dup) {
+        return res.status(200).json({
+          success: true,
+          message: 'Student already enrolled (idempotent)',
+          class: klass,
+          enrollmentId: dup._id,
+          pricingSnapshot: dup.pricingSnapshot || pricingSnapshot,
+          className: klass.name,
+        });
+      }
+      res.status(409);
+      throw new Error('Student already enrolled in this class');
+    }
+    
+    res.status(400);
+    throw new Error(err?.message || 'Failed to create enrollment');
+  }
 
-  // Update student counters
+  // Now update class roster and student counters
+  if (!alreadyEnrolledInRoster) {
+    klass.enrolledStudents.push({ studentId: student._id, status: 'active' });
+    await klass.save();
+  }
+  // Increment counters only on first-time enrollment
   student.enrollmentCount = (student.enrollmentCount || 0) + 1;
   student.enrollmentStatus = 'enrolled';
   await student.save();
 
-  res.status(200).json({ success: true, message: 'Student enrolled', class: klass });
+  res.status(201).json({
+    success: true,
+    message: 'Student enrolled',
+    class: klass,
+    enrollmentId: enrollmentDoc._id,
+    // Return pricing snapshot and class name to enable immediate checkout on the client
+    pricingSnapshot,
+    className: klass.name
+  });
 });
 
-// @desc    Delete student
+// @desc    Delete student (hard delete with cascade cleanup)
 // @route   DELETE /api/students/:id
 // @access  Private (Manager)
 const deleteStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+  const mongoose = require('mongoose');
+  if (!mongoose.isValidObjectId(id)) {
+    res.status(400);
+    throw new Error('Invalid student id');
+  }
+
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
-  
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
   }
 
+  // Load related models lazily to avoid circulars
+  const Enrollment = require('../models/Enrollment');
+  const Attendance = require('../models/Attendance');
+  const Payment = require('../models/Payment');
+  const Class = require('../models/Class');
+
+  // Find all enrollments for this student in this school
+  const enrollments = await Enrollment.find({ studentId: student._id, schoolId });
+  const enrollmentIds = enrollments.map(e => e._id);
+  const classIds = enrollments.map(e => e.classId);
+
+  // Cascade deletions in safe order
+  // 1) Attendance tied to these enrollments
+  if (enrollmentIds.length) {
+    await Attendance.deleteMany({ enrollmentId: { $in: enrollmentIds } });
+  }
+  // 2) Payments for this student (and/or enrollments)
+  await Payment.deleteMany({ schoolId, studentId: student._id });
+  // 3) Pull from class rosters
+  if (classIds.length) {
+    await Class.updateMany({ _id: { $in: classIds } }, { $pull: { enrolledStudents: { studentId: student._id } } });
+  }
+  // 4) Enrollments themselves
+  if (enrollmentIds.length) {
+    await Enrollment.deleteMany({ _id: { $in: enrollmentIds } });
+  }
+  // 5) Finally delete the student
   await student.deleteOne();
-  
-  res.json({
-    success: true,
-    message: 'Student deleted successfully'
-  });
+
+  res.json({ success: true, message: 'Student and related data deleted successfully' });
 });
 
 // @desc    Get student enrollments
@@ -295,6 +426,7 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
   // Format enrollments for frontend
   const formattedEnrollments = enrollments.map(enrollment => ({
     _id: enrollment._id,
+    classId: enrollment.classId?._id || enrollment.classId, 
     className: enrollment.classId.name,
     teacher: `${enrollment.classId.teacherId.firstName} ${enrollment.classId.teacherId.lastName}`,
     startDate: enrollment.startDate,

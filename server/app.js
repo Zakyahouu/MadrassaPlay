@@ -2,9 +2,14 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
+const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes } = require('./config/migrations');
 
-if (process.env.NODE_ENV !== 'test') {
-  connectDB();
+// Avoid auto-connecting when running under Jest (tests manage their own DB)
+if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
+  connectDB().then(async () => {
+    await ensureUserStudentCodePartialIndex();
+    await ensureAttendanceIndexes();
+  });
 }
 
 const app = express();
@@ -34,7 +39,18 @@ app.use('/api/employees', require('./routes/employeeRoutes'));
 app.use('/api/classes', require('./routes/classRoutes'));
 app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
+app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
+
+// Centralized error handler: respect res.statusCode set by controllers; default to 500
+// Ensures thrown errors with prior res.status(...) don't become generic 500s
+app.use((err, req, res, next) => {
+  const status = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
+  const message = err?.message || 'Server Error';
+  // Avoid leaking stack in production
+  const payload = process.env.NODE_ENV === 'production' ? { message } : { message, stack: err?.stack };
+  res.status(status).json(payload);
+});
 
 module.exports = app;

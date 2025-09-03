@@ -37,8 +37,7 @@ const schoolDeletionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Indexes for performance
-schoolDeletionSchema.index({ schoolId: 1 });
+// Indexes for performance (schoolId is already unique at field level)
 schoolDeletionSchema.index({ scheduledDeletionAt: 1 });
 schoolDeletionSchema.index({ status: 1 });
 

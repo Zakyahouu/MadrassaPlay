@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import formatDZ from '../../utils/currency';
 import { 
   User, Mail, Phone, MapPin, GraduationCap, QrCode, BookOpen, 
   CreditCard, Calendar, Clock, Star,
@@ -39,14 +40,14 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Fetch enrollments and payments for this student
+      // Fetch enrollments and payments for this student (unified payments endpoint)
       const [enrollmentsRes, paymentsRes] = await Promise.all([
         axios.get(`/api/students/${student._id}/enrollments`, config),
-        axios.get(`/api/students/${student._id}/payments`, config)
+        axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
       ]);
 
       setEnrollments(enrollmentsRes.data || []);
-      setPayments(paymentsRes.data || []);
+      setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
     } catch (error) {
       console.error('Error fetching student data:', error);
       // Use mock data for demo
@@ -481,7 +482,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              ${enrollment.totalAmount.toLocaleString()}
+                              {formatDZ(enrollment.totalAmount)}
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getEnrollmentStatusBadge(enrollment.status)}`}>
@@ -540,7 +541,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">{payment.description}</td>
                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              ${payment.amount.toLocaleString()}
+                              {formatDZ(payment.amount)}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 capitalize">{payment.method}</td>
                             <td className="px-6 py-4">

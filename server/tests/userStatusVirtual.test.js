@@ -4,7 +4,8 @@ const connectDB = require('../config/db');
 
 describe('User status virtual mapping', () => {
   beforeAll(async () => {
-    await connectDB();
+  process.env.NODE_ENV = 'test';
+  await connectDB();
   });
 
   it('returns teacherStatus via status virtual for teachers', async () => {

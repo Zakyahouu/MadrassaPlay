@@ -58,8 +58,8 @@ exports.createEquipment = async (req, res) => {
     }
     if (quantity < 0) return res.status(400).json({ message: 'quantity must be >= 0' });
 
-    // Initialize units with serials 1..quantity in Working Fine state
-    const units = Array.from({ length: quantity }, (_, i) => ({ serial: i + 1, state: 'Working Fine' }));
+  // Initialize units with serials 1..quantity in Working Fine state and default names
+  const units = Array.from({ length: quantity }, (_, i) => ({ serial: i + 1, name: `#${i + 1}`, state: 'Working Fine' }));
     const created = await Equipment.create({ schoolId, majorType, itemName, units });
     res.status(201).json(created);
   } catch (err) {
@@ -116,7 +116,7 @@ exports.adjustUnits = async (req, res) => {
 
     if (delta > 0) {
       const start = current + 1;
-      const newUnits = Array.from({ length: delta }, (_, i) => ({ serial: start + i, state: 'Working Fine' }));
+      const newUnits = Array.from({ length: delta }, (_, i) => ({ serial: start + i, name: `#${start + i}`, state: 'Working Fine' }));
       item.units = [...(item.units || []), ...newUnits];
     } else if (delta < 0) {
       // Remove units from the end (highest serials first)
@@ -145,6 +145,34 @@ exports.updateUnitState = async (req, res) => {
       return res.status(400).json({ message: 'Invalid state' });
     }
     unit.state = state;
+    await item.save();
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// PATCH /api/equipment/:id/units/:serial -> update fields for a single unit (name, state, notes)
+exports.updateUnit = async (req, res) => {
+  try {
+    const { serial } = req.params;
+    const { state, name, notes } = req.body;
+    const item = await Equipment.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    if (!assertManagerAccess(req, item.schoolId)) return res.status(403).json({ message: 'Not authorized' });
+
+    const unit = (item.units || []).find(u => u.serial === Number(serial));
+    if (!unit) return res.status(404).json({ message: 'Unit not found' });
+
+    if (state !== undefined) {
+      if (!['Working Fine', 'Broken', 'Under Maintenance'].includes(state)) {
+        return res.status(400).json({ message: 'Invalid state' });
+      }
+      unit.state = state;
+    }
+    if (name !== undefined) unit.name = String(name);
+    if (notes !== undefined) unit.notes = String(notes);
+
     await item.save();
     res.json(item);
   } catch (err) {

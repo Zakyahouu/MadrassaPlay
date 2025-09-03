@@ -4,18 +4,18 @@ const express = require('express');
 const router = express.Router();
 
 const { createPayment, getPayments, updatePayment, deletePayment } = require('../controllers/paymentController');
-const { protect, admin, staff } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Create a payment record
-router.post('/', protect, admin, createPayment);
+// Create a payment record (Manager/Staff only)
+router.post('/', protect, authorize('manager', 'staff'), createPayment);
 
-// Get all payments (optionally filter by student or class)
-router.get('/', protect, admin, getPayments);
+// Get all payments (optionally filter by student or class) (Manager/Staff only)
+router.get('/', protect, authorize('manager', 'staff'), getPayments);
 
-// Update a payment record
-router.put('/:id', protect, admin, updatePayment);
+// Update a payment record (Manager/Staff only)
+router.put('/:id', protect, authorize('manager', 'staff'), updatePayment);
 
-// Delete a payment record
-router.delete('/:id', protect, admin, deletePayment);
+// Delete a payment record (Manager/Staff only)
+router.delete('/:id', protect, authorize('manager', 'staff'), deletePayment);
 
 module.exports = router;

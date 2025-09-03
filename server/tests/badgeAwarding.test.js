@@ -18,7 +18,8 @@ describe('Template Badge Awarding', () => {
   let student, templateId, creation, auth, owner;
 
   beforeAll(async () => {
-    await connectDB();
+  process.env.NODE_ENV = 'test';
+  await connectDB();
   });
 
   beforeEach(async () => {

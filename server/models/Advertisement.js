@@ -41,7 +41,6 @@ const advertisementSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-advertisementSchema.index({ schoolId: 1 });
 advertisementSchema.index({ dateTime: 1 });
 advertisementSchema.index({ targetAudience: 1 });
 advertisementSchema.index({ location: 1 });

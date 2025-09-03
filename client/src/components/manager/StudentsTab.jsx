@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import StudentProfilePopup from './StudentProfilePopup';
+import PaymentModal from '../payments/PaymentModal';
+import formatDZ from '../../utils/currency';
 
 const API_BASE_URL = '/api/students';
 
@@ -34,13 +36,21 @@ const StudentsTab = () => {
   const [formData, setFormData] = useState({});
   const [showEnrollmentStep, setShowEnrollmentStep] = useState(false);
   const [enrollmentData, setEnrollmentData] = useState({
-    selectedClass: null,
-    paymentMethod: 'cash',
-    sessionsCount: 1
+    selectedStudent: null,
+    selectedClasses: [],
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showStudentProfile, setShowStudentProfile] = useState(false);
   const [availableClasses, setAvailableClasses] = useState([]);
+  const [postEnrollInfo, setPostEnrollInfo] = useState(null); // { enrollmentId, pricingSnapshot, className }
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  // Enrollment UI filters and dropdown state
+  const [classSearchTerm, setClassSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
+  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const [catalogItems, setCatalogItems] = useState([]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -128,10 +138,11 @@ const StudentsTab = () => {
   };
 
   const handleEnrollment = async () => {
-    if (!enrollmentData.selectedClass) {
-      alert('Please select a class to enroll in.');
+    if (!enrollmentData.selectedClasses || enrollmentData.selectedClasses.length === 0) {
+      alert('Please select at least one class to enroll in.');
       return;
     }
+    if (isEnrolling) return;
 
     const token = getAuthToken();
     const config = { 
@@ -140,26 +151,73 @@ const StudentsTab = () => {
         Authorization: `Bearer ${token}` 
       } 
     };
-
-    const payload = {
-      classId: enrollmentData.selectedClass._id,
-    };
-
+    
+    // First check if student is already enrolled in this class
     try {
-  await axios.post(`/api/students/${enrollmentData.selectedStudent._id}/enroll`, payload, config);
-      alert('Student enrolled successfully!');
-      closeModal();
-      setShowEnrollmentStep(false);
-      setEnrollmentData({
-        selectedClass: null,
-        paymentMethod: 'cash',
-        sessionsCount: 1
-      });
       
-      // Refresh student list
-      window.location.reload();
+      const { data: enrollments } = await axios.get(
+        `/api/students/${enrollmentData.selectedStudent._id}/enrollments`, 
+        config
+      );
+      const enrolledIds = Array.isArray(enrollments)
+        ? enrollments.map(e => e.classId?._id || e.classId)
+        : [];
+      
+      // Determine which classes to enroll
+      const toEnroll = (enrollmentData.selectedClasses || []).filter(c => !enrolledIds.includes(c._id));
+      const skipped = (enrollmentData.selectedClasses || []).filter(c => enrolledIds.includes(c._id));
+      if (toEnroll.length === 0) {
+        alert('All selected classes are already enrolled.');
+        return;
+      }
+
+      
+      setIsEnrolling(true);
+      const results = [];
+      for (const klass of toEnroll) {
+        try {
+          const payload = { classId: klass._id };
+          const { data } = await axios.post(`/api/students/${enrollmentData.selectedStudent._id}/enroll`, payload, config);
+          results.push({ ok: true, data, klass });
+        } catch (e) {
+          results.push({ ok: false, error: e, klass });
+        }
+      }
+      setIsEnrolling(false);
+
+      const successes = results.filter(r => r.ok);
+      const failures = results.filter(r => !r.ok);
+      const msg = [
+        successes.length ? `${successes.length} enrolled` : null,
+        skipped.length ? `${skipped.length} already enrolled` : null,
+        failures.length ? `${failures.length} failed` : null,
+      ].filter(Boolean).join(' · ');
+      alert(msg || 'No changes');
+
+      // Offer checkout only if exactly one enrollment was created
+      if (successes.length === 1) {
+        const s = successes[0];
+        setPostEnrollInfo({
+          enrollmentId: s.data?.enrollmentId,
+          pricingSnapshot: s.data?.pricingSnapshot,
+          className: s.data?.className,
+        });
+      } else {
+        setPostEnrollInfo(null);
+      }
+
+      // Update student list counters
+      const inc = successes.length;
+      if (inc > 0) {
+        setStudents(prev => prev.map(s => s._id === enrollmentData.selectedStudent._id ? {
+          ...s,
+          enrollmentCount: (s.enrollmentCount || 0) + inc,
+          enrollmentStatus: 'enrolled'
+        } : s));
+      }
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to enroll student.';
+      
+  const message = err.response?.data?.message || 'Failed to enroll student.';
       alert(`Error: ${message}`);
     }
   };
@@ -211,11 +269,9 @@ const StudentsTab = () => {
     setIsModalOpen(false);
     setModalContent({ type: '', data: null });
     setShowEnrollmentStep(false);
-    setEnrollmentData({
-      selectedClass: null,
-      paymentMethod: 'cash',
-      sessionsCount: 1,
-    });
+  setEnrollmentData({ selectedStudent: null, selectedClasses: [] });
+    setPostEnrollInfo(null);
+    setShowPaymentModal(false);
     setAvailableClasses([]);
   };
 
@@ -225,31 +281,67 @@ const StudentsTab = () => {
       try {
         const token = getAuthToken();
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const { data } = await axios.get('/api/classes', config);
-        // Filter by education level if class has level metadata
-        const studentLevel = enrollmentData.selectedStudent.educationLevel;
-        const filtered = Array.isArray(data)
-          ? data.filter(c => {
-              // If class has catalogItem.type with level in metadata, enforce match for supportLessons/reviewCourses
-              const item = c.catalogItem;
-              if (!item) return true;
-              if (['supportLessons', 'reviewCourses'].includes(item.type)) {
-                // Prefer server validation; client just lightly filter if level present
-                if (item.level && ['primary','middle','high_school'].includes(item.level)) {
-                  return item.level === studentLevel;
-                }
-              }
-              return true;
-            })
-          : [];
+        
+        // Fetch classes, existing enrollments, and catalog items in parallel
+        const [classesResponse, enrollmentsResponse, catalogResponse] = await Promise.all([
+          axios.get('/api/classes', config),
+          axios.get(`/api/students/${enrollmentData.selectedStudent._id}/enrollments`, config),
+          axios.get('/api/classes/catalog-items', config)
+        ]);
+        setCatalogItems(Array.isArray(catalogResponse.data) ? catalogResponse.data : []);
+        
+        // Get IDs of classes student is already enrolled in
+        const enrolledClassIds = enrollmentsResponse.data.map(enrollment => 
+          enrollment.classId._id || enrollment.classId
+        );
+        
+        // Filter out classes student is already enrolled in
+        const allClasses = Array.isArray(classesResponse.data) ? classesResponse.data : [];
+        const catMap = new Map((Array.isArray(catalogResponse.data) ? catalogResponse.data : []).map(ci => [String(ci._id), ci]));
+        let filtered = allClasses
+          .filter(c => !enrolledClassIds.includes(c._id))
+          .map(c => ({ ...c, _catalog: catMap.get(String(c.catalogItem?.itemId)) }));
+        
+        // Keep only not-enrolled; actual UI filters applied via memo below
+        
         setAvailableClasses(filtered);
       } catch (e) {
-        console.error('Failed to fetch classes', e);
+        
         setAvailableClasses([]);
       }
     };
     fetchClassesForEnrollment();
   }, [showEnrollmentStep, enrollmentData.selectedStudent]);
+
+  // Visible classes based on dropdown filters and search
+  const visibleClasses = useMemo(() => {
+    let list = Array.isArray(availableClasses) ? availableClasses : [];
+    if (categoryFilter !== 'all') {
+      list = list.filter(c => c.catalogItem?.type === categoryFilter);
+    }
+    if (categoryFilter === 'supportLessons' && levelFilter !== 'all') {
+      list = list.filter(c => (c._catalog?.level || '').toLowerCase() === levelFilter.toLowerCase());
+    }
+    if (classSearchTerm.trim()) {
+      const t = classSearchTerm.trim().toLowerCase();
+      list = list.filter(c => {
+        const teacherName = c.teacherId ? `${c.teacherId.firstName||''} ${c.teacherId.lastName||''}`.toLowerCase() : '';
+        const schedule = Array.isArray(c.schedules) ? c.schedules.map(s => `${s.dayOfWeek} ${s.startTime}-${s.endTime}`).join(' ') : '';
+        const priceTxt = c.paymentModel === 'per_session' && typeof c.sessionPrice === 'number'
+          ? `${c.sessionPrice}`
+          : (c.paymentModel === 'per_cycle' && typeof c.cyclePrice === 'number' ? `${c.cyclePrice}` : `${c.price||''}`);
+        const subject = c._catalog?.subject || c._catalog?.name || '';
+        return (
+          (c.name||'').toLowerCase().includes(t) ||
+          teacherName.includes(t) ||
+          schedule.toLowerCase().includes(t) ||
+          subject.toLowerCase().includes(t) ||
+          priceTxt.includes(t)
+        );
+      });
+    }
+    return list;
+  }, [availableClasses, categoryFilter, levelFilter, classSearchTerm]);
 
   const filteredStudents = useMemo(() => {
     let filtered = students;
@@ -272,7 +364,11 @@ const StudentsTab = () => {
     }
 
     if (classFilter !== 'all') {
-      filtered = filtered.filter(student => student.enrolledClass === classFilter);
+      if (classFilter === 'enrolled') {
+        filtered = filtered.filter(student => (student.enrollmentStatus === 'enrolled') || (student.enrollmentCount > 0));
+      } else if (classFilter === 'not_enrolled') {
+        filtered = filtered.filter(student => (student.enrollmentStatus === 'not_enrolled') || (!student.enrollmentCount || student.enrollmentCount === 0));
+      }
     }
 
     return filtered;
@@ -322,6 +418,17 @@ const StudentsTab = () => {
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <PaymentModal
+          open={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          enrollmentId={postEnrollInfo?.enrollmentId}
+          pricingSnapshot={postEnrollInfo?.pricingSnapshot}
+          className={postEnrollInfo?.className}
+          onSaved={() => {
+            setShowPaymentModal(false);
+            closeModal();
+          }}
+        />
         {/* Enhanced Header */}
         <div className="bg-white rounded-lg p-4 shadow-sm border">
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -451,11 +558,7 @@ const StudentsTab = () => {
                               <span className="text-sm text-gray-900">
                                 {student.enrollmentCount || 0} classes
                               </span>
-                              {student.balance && (
-                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                  Credit: {student.balance} sessions
-                                </span>
-                              )}
+                              {/* Removed legacy credit badge */}
                           </div>
                         </td>
                           <td className="px-4 py-3">
@@ -549,78 +652,142 @@ const StudentsTab = () => {
                       </p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Select Class
-                        </label>
-                        <select
-                          value={enrollmentData.selectedClass?._id || ''}
-                          onChange={(e) => {
-                            const chosen = availableClasses.find(c => c._id === e.target.value) || null;
-                            setEnrollmentData(prev => ({ ...prev, selectedClass: chosen }));
-                          }}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        >
-                          <option value="">Choose a class...</option>
-                          {availableClasses.map(c => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Classes</label>
+                        {/* Selected chips */}
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {(enrollmentData.selectedClasses || []).map(sel => (
+                            <span key={sel._id} className="inline-flex items-center gap-1 px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
+                              {sel.name}
+                              <button
+                                type="button"
+                                className="ml-1 rounded-full hover:bg-blue-200 px-1"
+                                onClick={() => setEnrollmentData(prev => ({
+                                  ...prev,
+                                  selectedClasses: (prev.selectedClasses||[]).filter(x => x._id !== sel._id)
+                                }))}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
                           ))}
-                        </select>
                         </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Payment Method
-                        </label>
-                        <select
-                          value={enrollmentData.paymentMethod}
-                          onChange={(e) => setEnrollmentData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        >
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="bank_transfer">Bank Transfer</option>
-                        </select>
+                        {/* Dropdown trigger */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setShowClassDropdown(s => !s)}
+                            className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-white hover:bg-gray-50"
+                          >
+                            <span className="text-sm text-gray-600">{showClassDropdown ? 'Hide' : 'Choose classes'}</span>
+                            <span className="text-xs text-gray-400">{(enrollmentData.selectedClasses||[]).length} selected</span>
+                          </button>
+                          {showClassDropdown && (
+                            <div className="absolute z-10 mt-2 w-full bg-white border rounded-md shadow-lg p-3">
+                              {/* Filters */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                <input
+                                  value={classSearchTerm}
+                                  onChange={(e)=>setClassSearchTerm(e.target.value)}
+                                  placeholder="Search by class, teacher, subject…"
+                                  className="px-3 py-2 border rounded-md text-sm"
+                                />
+                                <select className="px-3 py-2 border rounded-md text-sm" value={categoryFilter} onChange={(e)=>setCategoryFilter(e.target.value)}>
+                                  <option value="all">All categories</option>
+                                  <option value="supportLessons">Support Lessons</option>
+                                  <option value="reviewCourses">Review Courses</option>
+                                  <option value="vocationalTrainings">Vocational Trainings</option>
+                                  <option value="languages">Languages</option>
+                                  <option value="otherActivities">Other Activities</option>
+                                </select>
+                                {categoryFilter === 'supportLessons' && (
+                                  <select className="px-3 py-2 border rounded-md text-sm" value={levelFilter} onChange={(e)=>setLevelFilter(e.target.value)}>
+                                    <option value="all">All levels</option>
+                                    <option value="before_education">Before Education</option>
+                                    <option value="primary">Primary</option>
+                                    <option value="middle">Middle</option>
+                                    <option value="high_school">High School</option>
+                                    <option value="university">University</option>
+                                  </select>
+                                )}
+                              </div>
+                              {/* List */}
+                              <div className="max-h-72 overflow-auto divide-y">
+                                {visibleClasses.length === 0 ? (
+                                  <div className="text-sm text-gray-500 px-1 py-2">No classes match your filters</div>
+                                ) : visibleClasses.map(c => {
+                                  const checked = (enrollmentData.selectedClasses || []).some(sc => sc._id === c._id);
+                                  const teacherName = c.teacherId ? `${c.teacherId.firstName} ${c.teacherId.lastName}` : '—';
+                                  const schedule = Array.isArray(c.schedules) ? c.schedules.map(s => `${s.dayOfWeek.slice(0,1).toUpperCase()}${s.dayOfWeek.slice(1)} ${s.startTime}-${s.endTime}`).join(', ') : '';
+                                  const capacityTxt = typeof c.capacity === 'number' ? `${(c.enrolledStudents||[]).filter(e=>e.status==='active').length}/${c.capacity}` : '—';
+                                  const priceTxt = c.paymentModel === 'per_session' && typeof c.sessionPrice === 'number'
+                                    ? `${formatDZ(c.sessionPrice)} / session`
+                                    : (c.paymentModel === 'per_cycle' && typeof c.cyclePrice === 'number' && typeof c.cycleSize === 'number')
+                                      ? `${formatDZ(c.cyclePrice)} / ${c.cycleSize} sessions`
+                                      : (typeof c.price === 'number' && typeof c.paymentCycle === 'number' ? `${formatDZ(c.price)} / ${c.paymentCycle} sessions` : '—');
+                                  return (
+                                    <div key={c._id} className="flex items-start gap-3 py-2">
+                                      <input
+                                        type="checkbox"
+                                        className="mt-1"
+                                        checked={checked}
+                                        onChange={(e) => {
+                                          setEnrollmentData(prev => {
+                                            const arr = prev.selectedClasses || [];
+                                            return e.target.checked
+                                              ? { ...prev, selectedClasses: [...arr, c] }
+                                              : { ...prev, selectedClasses: arr.filter(x => x._id !== c._id) };
+                                          });
+                                        }}
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                          <div className="font-medium text-gray-900">{c.name}</div>
+                                          <div className="text-xs text-gray-600">{priceTxt}</div>
+                                        </div>
+                                        <div className="text-xs text-gray-600 mt-1">Teacher: {teacherName}</div>
+                                        {schedule ? (<div className="text-xs text-gray-500 mt-0.5">{schedule}</div>) : null}
+                                        <div className="text-xs text-gray-500 mt-0.5">Capacity: {capacityTxt}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex justify-end mt-2">
+                                <button type="button" className="text-sm px-3 py-1.5 border rounded-md" onClick={()=>setShowClassDropdown(false)}>Done</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Number of Sessions
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={enrollmentData.sessionsCount}
-                          onChange={(e) => setEnrollmentData(prev => ({ ...prev, sessionsCount: parseInt(e.target.value) }))}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        />
-                        </div>
-                      
-                      {enrollmentData.selectedClass && (
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-2">Enrollment Summary</h4>
-                          <div className="space-y-2 text-sm text-gray-600">
-                            <div>Class: {enrollmentData.selectedClass.name}</div>
-                            <div>Schedule: {enrollmentData.selectedClass.schedules?.map(s => 
-                            `${s.dayOfWeek.charAt(0).toUpperCase() + s.dayOfWeek.slice(1)} ${s.startTime}-${s.endTime}`
-                          ).join(', ')}</div>
-                            {typeof enrollmentData.selectedClass.price === 'number' && (
-                              <>
-                                <div>Price per session: ${enrollmentData.selectedClass.price}</div>
-                                <div className="font-medium text-gray-900">
-                                  Total: ${enrollmentData.selectedClass.price * enrollmentData.sessionsCount}
-                          </div>
-                              </>
-                            )}
-                        </div>
-                      </div>
-                      )}
                     </div>
                     
-                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                    <div className="flex flex-col gap-3 pt-6 border-t border-gray-200">
+                      {postEnrollInfo?.enrollmentId ? (
+                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                          <div className="text-green-800 text-sm">Enrollment created. You can proceed to checkout now or finish.</div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowPaymentModal(true);
+                              }}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                            >
+                              Go to Checkout
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeModal}
+                              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                            >
+                              Finish
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="flex items-center justify-end gap-3">
                       <button
                         type="button"
                         onClick={closeModal}
@@ -630,10 +797,52 @@ const StudentsTab = () => {
                       </button>
                       <button
                         onClick={handleEnrollment}
-                        disabled={!enrollmentData.selectedClass}
+                        disabled={!enrollmentData.selectedClasses?.length || !!postEnrollInfo?.enrollmentId || isEnrolling}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Complete Enrollment
+                        {isEnrolling ? 'Enrolling…' : 'Complete Enrollment'}
+                      </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : modalContent.type === 'delete' ? (
+                  <div className="space-y-6">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h3 className="font-medium text-red-900 mb-1">Delete Student</h3>
+                      <p className="text-red-800 text-sm">This action cannot be undone. Are you sure you want to delete this student?</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-gray-500">Name</div>
+                        <div className="font-medium text-gray-900">{modalContent?.data?.firstName} {modalContent?.data?.lastName}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Student Code</div>
+                        <div className="font-mono text-gray-900">{modalContent?.data?.studentCode || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Email</div>
+                        <div className="text-gray-900">{modalContent?.data?.email || '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Phone</div>
+                        <div className="text-gray-900">{modalContent?.data?.contact?.phone1 || modalContent?.data?.phone || '—'}</div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        Delete
                       </button>
                     </div>
                   </div>
@@ -814,6 +1023,10 @@ const StudentsTab = () => {
           onRefresh={() => {
             // Refresh student list when returning from profile
             window.location.reload();
+          }}
+          onEdit={(st)=>{
+            setShowStudentProfile(false);
+            if (st) openModal('edit', st);
           }}
         />
       </div>

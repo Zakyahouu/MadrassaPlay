@@ -1,7 +1,10 @@
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 const Enrollment = require('../models/Enrollment');
 const Class = require('../models/Class');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
+const Payment = require('../models/Payment');
 
 // @desc    Get all enrollments for a school
 // @route   GET /api/enrollments
@@ -19,12 +22,17 @@ const getEnrollments = asyncHandler(async (req, res) => {
   res.json(enrollments);
 });
 
-// @desc    Get enrollments for a specific student
+// @desc    Get enrollments for a specific student (manager/staff within school; student only self)
 // @route   GET /api/enrollments/student/:studentId
-// @access  Private (Manager)
+// @access  Private (Manager, Staff, Student [self])
 const getStudentEnrollments = asyncHandler(async (req, res) => {
   const { studentId } = req.params;
   const { school: schoolId } = req.user;
+  const role = req.user.role;
+  if (role === 'student' && req.user._id.toString() !== studentId) {
+    res.status(403);
+    throw new Error('Not authorized to view other students');
+  }
   
   // Verify student belongs to manager's school
   const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
@@ -245,49 +253,11 @@ const deleteEnrollment = asyncHandler(async (req, res) => {
   res.json({ message: 'Enrollment deleted successfully' });
 });
 
-// @desc    Record attendance for a session
-// @route   POST /api/enrollments/:id/attendance
-// @access  Private (Manager)
+// DEPRECATED: Inline attendance endpoint, please use /api/attendance/mark
+// Kept for backward compatibility, but now just responds with guidance
 const recordAttendance = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { sessionDate, status, notes } = req.body;
-  
-  const { school: schoolId } = req.user;
-  
-  if (!sessionDate || !status) {
-    res.status(400);
-    throw new Error('Session date and status are required');
-  }
-  
-  if (!['present', 'absent', 'late'].includes(status)) {
-    res.status(400);
-    throw new Error('Invalid attendance status');
-  }
-  
-  const enrollment = await Enrollment.findOne({ _id: id, schoolId });
-  if (!enrollment) {
-    res.status(404);
-    throw new Error('Enrollment not found');
-  }
-  
-  // Add attendance record
-  enrollment.attendanceHistory.push({
-    sessionDate: new Date(sessionDate),
-    status,
-    notes: notes?.trim()
-  });
-  
-  // Update session counts
-  enrollment.sessionsCompleted += 1;
-  if (status === 'present') {
-    enrollment.sessionsAttended += 1;
-  }
-  
-  await enrollment.save();
-  
-  res.json({
-    message: 'Attendance recorded successfully',
-    enrollment
+  res.status(410).json({
+    message: 'This endpoint is deprecated. Please use POST /api/attendance/mark with { enrollmentId, date, status }.'
   });
 });
 
@@ -307,7 +277,8 @@ const getAvailableClasses = asyncHandler(async (req, res) => {
   
   // Add enrollment count and availability info
   const classesWithAvailability = classes.map(classItem => {
-    const currentEnrollments = classItem.enrolledStudents.filter(e => e.status === 'active').length;
+    const list = Array.isArray(classItem.enrolledStudents) ? classItem.enrolledStudents : [];
+    const currentEnrollments = list.filter(e => e && e.status === 'active').length;
     const isAvailable = currentEnrollments < classItem.capacity;
     
     return {
@@ -321,6 +292,142 @@ const getAvailableClasses = asyncHandler(async (req, res) => {
   res.json(classesWithAvailability);
 });
 
+// Utils
+function toUtcDateOnly(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00.000Z');
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+// @desc    Get a single enrollment summary (attendance + payments derived)
+// @route   GET /api/enrollments/:id/summary
+// @access  Private (Manager)
+const getEnrollmentSummary = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const schoolId = (req.user.school?._id || req.user.school || '').toString();
+  const enrollment = await Enrollment.findOne({ _id: id, schoolId });
+  if (!enrollment) {
+    res.status(404);
+    throw new Error('Enrollment not found');
+  }
+  const klass = await Class.findById(enrollment.classId).select('absenceRule');
+  const counters = enrollment.sessionCounters || { attended: 0, absent: 0 };
+  const charged = counters.attended + (klass?.absenceRule ? counters.absent : 0);
+
+  // Payments aggregated
+  const paymentsAgg = await Payment.aggregate([
+    { $match: { schoolId: enrollment.schoolId, enrollmentId: enrollment._id } },
+    {
+      $group: {
+        _id: '$enrollmentId',
+        pay_sessions: { $sum: { $cond: [{ $eq: ['$kind', 'pay_sessions'] }, '$amount', 0] } },
+        pay_cycles: { $sum: { $cond: [{ $eq: ['$kind', 'pay_cycles'] }, '$amount', 0] } },
+        total: { $sum: '$amount' },
+      },
+    },
+  ]);
+  const p = paymentsAgg[0] || { pay_sessions: 0, pay_cycles: 0, total: 0 };
+  const snap = enrollment.pricingSnapshot || {};
+
+  // Derived coverage
+  let sessionsCovered = 0;
+  if (snap.paymentModel === 'per_session' && snap.sessionPrice > 0) {
+    sessionsCovered = Math.floor(p.pay_sessions / snap.sessionPrice);
+  } else if (snap.paymentModel === 'per_cycle' && snap.cyclePrice > 0 && snap.cycleSize > 0) {
+    const cyclesPaid = Math.floor(p.pay_cycles / snap.cyclePrice);
+    sessionsCovered = cyclesPaid * snap.cycleSize;
+  }
+  const owedSessions = Math.max(0, charged - sessionsCovered);
+  const owedAmount = snap.paymentModel === 'per_session' && snap.sessionPrice
+    ? owedSessions * snap.sessionPrice
+    : 0; // For per_cycle, show sessions owed; amount may be partial and handled in UI
+
+  res.json({
+    enrollmentId: enrollment._id,
+    pricingSnapshot: snap,
+    sessionCounters: counters,
+    attendanceTotalsDerived: { charged, present: counters.attended, absent: counters.absent },
+  paymentsTotalsDerived: p,
+    owedSummary: { owedSessions, owedAmount },
+  });
+});
+
+// Reusable builder: compute roster items for a class on a specific UTC date-only
+async function buildClassEnrollmentSummaries(schoolId, classId, dateOnly) {
+  const klass = await Class.findOne({ _id: classId, schoolId }).select('absenceRule schoolId');
+  if (!klass) {
+    const err = new Error('Class not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  const enrollments = await Enrollment.find({ classId, schoolId, status: 'active' })
+    .populate('studentId', 'firstName lastName studentCode');
+  const ids = enrollments.map(e => e._id);
+
+  const todays = await Attendance.find({ enrollmentId: { $in: ids }, date: dateOnly });
+  const attendanceMap = new Map(todays.map(a => [a.enrollmentId.toString(), a.status]));
+
+  // Aggregate payments by enrollment
+  const paymentsAgg = await Payment.aggregate([
+    { $match: { schoolId: klass.schoolId || new mongoose.Types.ObjectId(schoolId), enrollmentId: { $in: ids } } },
+    {
+      $group: {
+        _id: '$enrollmentId',
+        pay_sessions: { $sum: { $cond: [{ $eq: ['$kind', 'pay_sessions'] }, '$amount', 0] } },
+        pay_cycles: { $sum: { $cond: [{ $eq: ['$kind', 'pay_cycles'] }, '$amount', 0] } },
+      },
+    },
+  ]);
+  const payMap = new Map(paymentsAgg.map(x => [x._id.toString(), x]));
+
+  const items = enrollments.map(e => {
+    const counters = e.sessionCounters || { attended: 0, absent: 0 };
+    const charged = counters.attended + (klass.absenceRule ? counters.absent : 0);
+    const p = payMap.get(e._id.toString()) || { pay_sessions: 0, pay_cycles: 0 };
+    const snap = e.pricingSnapshot || {};
+    let sessionsCovered = 0;
+    if (snap.paymentModel === 'per_session' && snap.sessionPrice > 0) {
+      sessionsCovered = Math.floor(p.pay_sessions / snap.sessionPrice);
+    } else if (snap.paymentModel === 'per_cycle' && snap.cyclePrice > 0 && snap.cycleSize > 0) {
+      const cyclesPaid = Math.floor(p.pay_cycles / snap.cyclePrice);
+      sessionsCovered = cyclesPaid * snap.cycleSize;
+    }
+    const owedSessions = Math.max(0, charged - sessionsCovered);
+    return {
+      enrollmentId: e._id,
+      student: e.studentId,
+      todayStatus: attendanceMap.get(e._id.toString()) || null,
+      charged,
+      sessionCounters: { attended: counters.attended || 0, absent: counters.absent || 0 },
+      sessionsCovered,
+      owedSessions,
+      payments: p,
+      pricingSnapshot: {
+        paymentModel: snap.paymentModel,
+        sessionPrice: snap.sessionPrice,
+        cyclePrice: snap.cyclePrice,
+        cycleSize: snap.cycleSize,
+      },
+    };
+  });
+  return items;
+}
+
+// @desc    Get roster summaries for a class on a date
+// @route   GET /api/enrollments/class/:classId/summaries?date=YYYY-MM-DD
+// @access  Private (Manager)
+const getClassEnrollmentSummaries = asyncHandler(async (req, res) => {
+  const { classId } = req.params;
+  const { date } = req.query;
+  if (!date) {
+    res.status(400);
+    throw new Error('date is required');
+  }
+  const schoolId = (req.user.school?._id || req.user.school || '').toString();
+  const dateOnly = toUtcDateOnly(date);
+  const items = await buildClassEnrollmentSummaries(schoolId, classId, dateOnly);
+  res.json({ classId, date: dateOnly, items });
+});
+
 module.exports = {
   getEnrollments,
   getStudentEnrollments,
@@ -329,5 +436,8 @@ module.exports = {
   updateEnrollment,
   deleteEnrollment,
   recordAttendance,
-  getAvailableClasses
+  getAvailableClasses,
+  getEnrollmentSummary,
+  getClassEnrollmentSummaries,
+  buildClassEnrollmentSummaries,
 };

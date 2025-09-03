@@ -160,7 +160,7 @@ const schoolCatalogSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Indexes for performance
-schoolCatalogSchema.index({ schoolId: 1 });
+// Unique index for schoolId is already declared on the field via `unique: true`.
+// Avoid adding a duplicate single-field index.
 
 module.exports = mongoose.model('SchoolCatalog', schoolCatalogSchema);

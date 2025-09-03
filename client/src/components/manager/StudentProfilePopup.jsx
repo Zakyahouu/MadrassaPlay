@@ -6,6 +6,7 @@ import {
   AlertCircle, Clock as ClockIcon
 } from 'lucide-react';
 import axios from 'axios';
+import formatDZ from '../../utils/currency';
 
 const getAuthToken = () => {
   const userInfoString = localStorage.getItem('user');
@@ -19,13 +20,20 @@ const getAuthToken = () => {
   }
 };
 
-const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
+const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) => {
   const [enrollments, setEnrollments] = useState([]);
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  // Enrollment modal state
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [classQuery, setClassQuery] = useState('');
+  const [classType, setClassType] = useState('all');
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [isEnrollLoading, setIsEnrollLoading] = useState(false);
+  const [enrollError, setEnrollError] = useState('');
 
   useEffect(() => {
     if (isOpen && student?._id) {
@@ -33,20 +41,51 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
     }
   }, [isOpen, student?._id]);
 
+  // Load available classes when opening enrollment modal
+  useEffect(() => {
+    const loadAvailable = async () => {
+      if (!showEnrollModal) return;
+      setEnrollError('');
+      setIsEnrollLoading(true);
+      try {
+        const token = getAuthToken();
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        // Prefer enriched endpoint with availability info
+        const { data: classesData } = await axios.get('/api/enrollments/available-classes', config);
+        setAvailableClasses(Array.isArray(classesData) ? classesData : []);
+      } catch (e) {
+        // Fallback to /api/classes
+        try {
+          const token = getAuthToken();
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          const { data: classesData } = await axios.get('/api/classes', config);
+          setAvailableClasses(Array.isArray(classesData) ? classesData : []);
+        } catch (err) {
+          console.error('Failed to load classes for enrollment', err);
+          setEnrollError(err.response?.data?.message || 'Failed to load classes');
+          setAvailableClasses([]);
+        }
+      } finally {
+        setIsEnrollLoading(false);
+      }
+    };
+    loadAvailable();
+  }, [showEnrollModal]);
+
   const fetchStudentData = async () => {
     setIsLoading(true);
     const token = getAuthToken();
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Fetch enrollments and payments for this student
+      // Fetch enrollments and payments for this student (unified payments endpoint)
       const [enrollmentsRes, paymentsRes] = await Promise.all([
         axios.get(`/api/students/${student._id}/enrollments`, config),
-        axios.get(`/api/students/${student._id}/payments`, config)
+        axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
       ]);
 
       setEnrollments(enrollmentsRes.data || []);
-      setPayments(paymentsRes.data || []);
+      setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
     } catch (error) {
       console.error('Error fetching student data:', error);
       // Use mock data for demo
@@ -132,6 +171,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         {/* Header */}
@@ -153,7 +193,10 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            <button
+              onClick={() => onEdit?.(student)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
               <Edit className="w-4 h-4" />
               Edit Profile
             </button>
@@ -473,7 +516,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                  ${enrollment.totalAmount.toLocaleString()}
+                                  {formatDZ(enrollment.totalAmount)}
                                 </td>
                                 <td className="px-6 py-4">
                                   <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getEnrollmentStatusBadge(enrollment.status)}`}>
@@ -532,7 +575,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-900">{payment.description}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                  ${payment.amount.toLocaleString()}
+                                  {formatDZ(payment.amount)}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-900 capitalize">{payment.method}</td>
                                 <td className="px-6 py-4">
@@ -553,7 +596,142 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh }) => {
           </div>
         </div>
       </div>
-    </div>
+  </div>
+
+  {/* New Enrollment Modal */}
+    {showEnrollModal && (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-xl">
+          <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">New Enrollment</h3>
+            <button
+              onClick={() => { setShowEnrollModal(false); setSelectedClassId(''); setEnrollError(''); }}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-5">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-700">
+                Enroll {student?.firstName} {student?.lastName} into a class. Availability and pricing are shown below.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input
+                  value={classQuery}
+                  onChange={(e) => setClassQuery(e.target.value)}
+                  placeholder="Search by class name..."
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select
+                  value={classType}
+                  onChange={(e) => setClassType(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="all">All</option>
+                  <option value="supportLessons">Support Lessons</option>
+                  <option value="reviewCourses">Review Courses</option>
+                  <option value="vocationalTrainings">Vocational Trainings</option>
+                  <option value="languages">Languages</option>
+                  <option value="otherActivities">Other Activities</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="">Choose a class...</option>
+                {availableClasses
+                  .filter(c => (classType === 'all' ? true : c.catalogItem?.type === classType))
+                  .filter(c => (classQuery ? c.name?.toLowerCase().includes(classQuery.toLowerCase()) : true))
+                  .map(c => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {enrollError && (
+                <p className="mt-2 text-sm text-red-600">{enrollError}</p>
+              )}
+            </div>
+
+            {!!selectedClassId && (
+              (() => {
+                const c = availableClasses.find(x => x._id === selectedClassId);
+                if (!c) return null;
+                const priceInfo = c.paymentModel === 'per_cycle'
+                  ? `Price per cycle: ${formatDZ(c.cyclePrice)} (Cycle size: ${c.cycleSize} sessions)`
+                  : c.paymentModel === 'per_session'
+                    ? `Price per session: ${formatDZ(c.sessionPrice)}`
+                    : '';
+                const scheduleText = Array.isArray(c.schedules)
+                  ? c.schedules.map(s => `${s.dayOfWeek?.[0]?.toUpperCase()}${s.dayOfWeek?.slice(1)} ${s.startTime}-${s.endTime}`).join(', ')
+                  : '';
+                return (
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 space-y-1">
+                    <div>Teacher: {c.teacherId?.firstName} {c.teacherId?.lastName}</div>
+                    <div>Room: {c.roomId?.name}</div>
+                    <div>Schedule: {scheduleText}</div>
+                    <div className="font-medium">{priceInfo}</div>
+                    {typeof c.remainingSpots === 'number' && (
+                      <div>Remaining spots: {c.remainingSpots}</div>
+                    )}
+                  </div>
+                );
+              })()
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => { setShowEnrollModal(false); setSelectedClassId(''); setEnrollError(''); }}
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={!selectedClassId || isEnrollLoading}
+              onClick={async () => {
+                if (!selectedClassId) return;
+                setIsEnrollLoading(true);
+                setEnrollError('');
+                try {
+                  const token = getAuthToken();
+                  const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
+                  await axios.post(`/api/students/${student._id}/enroll`, { classId: selectedClassId }, config);
+                  // Refresh enrollments and close
+                  await fetchStudentData();
+                  setShowEnrollModal(false);
+                  setSelectedClassId('');
+                } catch (err) {
+                  setEnrollError(err.response?.data?.message || 'Failed to enroll student');
+                } finally {
+                  setIsEnrollLoading(false);
+                }
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEnrollLoading ? 'Enrolling...' : 'Enroll Student'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

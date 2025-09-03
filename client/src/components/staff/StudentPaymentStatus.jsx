@@ -10,15 +10,16 @@ const StudentPaymentStatus = ({ studentId }) => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
-        const response = await axios.get(`/api/payments?student=${studentId}`);
-        setPayments(response.data);
+        // Use unified API and normalized response shape { items }
+        const response = await axios.get('/api/payments', { params: { studentId, limit: 100 } });
+        setPayments(Array.isArray(response.data?.items) ? response.data.items : []);
       } catch (err) {
         setError('Failed to fetch payments.');
       } finally {
         setLoading(false);
       }
     };
-    fetchPayments();
+    if (studentId) fetchPayments();
   }, [studentId]);
 
   if (loading) return <div>Loading payment status...</div>;
@@ -26,12 +27,15 @@ const StudentPaymentStatus = ({ studentId }) => {
 
   return (
     <div className="p-4">
-      <h4 className="font-bold mb-2">Payment Status</h4>
-      <ul>
+      <h4 className="font-bold mb-2">Payments</h4>
+      <ul className="space-y-1 text-sm">
         {payments.length > 0 ? (
-          payments.map(payment => (
-            <li key={payment._id}>
-              Class: {payment.class?.name} | Status: {payment.status} | Due: {new Date(payment.dueDate).toLocaleDateString()} | Paid: {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : 'Not paid'}
+          payments.map((p) => (
+            <li key={p._id} className="flex items-center justify-between">
+              <span>
+                {new Date(p.createdAt).toLocaleDateString()} · {p.kind === 'pay_cycles' ? 'Cycles' : 'Sessions'}
+              </span>
+              <span className="font-medium">{Number(p.amount).toLocaleString()}</span>
             </li>
           ))
         ) : (

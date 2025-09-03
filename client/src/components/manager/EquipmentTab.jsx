@@ -47,7 +47,11 @@ const EquipmentTab = () => {
       const params = new URLSearchParams();
       if (filters.majorType) params.append('majorType', filters.majorType);
       const { data } = await axios.get(`/api/equipment?${params.toString()}`, authConfig());
-      setItems(data || []);
+      const normalized = (data || []).map(it => ({
+        ...it,
+        units: (it.units || []).map(u => ({ ...u, name: u.name || `#${u.serial}` }))
+      }));
+      setItems(normalized);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch equipment');
     } finally {
@@ -269,20 +273,18 @@ const EquipmentTab = () => {
                                 {getStateIcon(unit.state)}
                               </span>
                             ))}
-                            {(item.units || []).length > 3 && (
-                              <button
-                                onClick={() => setEquipmentPopup({ open: true, item })}
-                                className="
-                                  inline-flex items-center gap-1 px-2 py-1 
-                                  text-xs font-medium rounded-full
-                                  bg-blue-50 text-blue-700 border border-blue-200
-                                  hover:bg-blue-100 transition-colors duration-200
-                                "
-                              >
-                                <Eye className="w-3 h-3" />
-                                +{(item.units || []).length - 3} more
-                              </button>
-                            )}
+                            <button
+                              onClick={() => setEquipmentPopup({ open: true, item })}
+                              className="
+                                inline-flex items-center gap-1 px-2 py-1 
+                                text-xs font-medium rounded-full
+                                bg-blue-50 text-blue-700 border border-blue-200
+                                hover:bg-blue-100 transition-colors duration-200
+                              "
+                            >
+                              <Eye className="w-3 h-3" />
+                              View units{(item.units || []).length > 3 ? ` (+${(item.units || []).length - 3} more)` : ''}
+                            </button>
                     </div>
                   </td>
                         <td className="px-6 py-4 text-right">
@@ -354,6 +356,7 @@ const EquipmentTab = () => {
             onClose={() => setEquipmentPopup({ open: false, item: null })}
             onUpdated={(updated) => {
               setItems(prev => prev.map(i => i._id === updated._id ? updated : i));
+              setEquipmentPopup(prev => ({ ...prev, item: updated }));
             }}
           />
         )}
@@ -374,20 +377,43 @@ const EquipmentTab = () => {
 
 // Equipment Units Popup Component
 const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
-  const [editingUnit, setEditingUnit] = useState(null);
-  const [newState, setNewState] = useState('');
+  const [editingUnitId, setEditingUnitId] = useState(null);
+  const [nameDrafts, setNameDrafts] = useState({});
+  const [stateDrafts, setStateDrafts] = useState({});
+  const [notesDrafts, setNotesDrafts] = useState({});
 
-  const updateUnitState = async (unit, newState) => {
+  // Unified edit mode handlers
+  
+  const beginEdit = (unit) => {
+    setEditingUnitId(unit.serial);
+    setNameDrafts(prev => ({ ...prev, [unit.serial]: (unit.name ?? `#${unit.serial}`) }));
+    setStateDrafts(prev => ({ ...prev, [unit.serial]: unit.state }));
+    setNotesDrafts(prev => ({ ...prev, [unit.serial]: unit.notes ?? '' }));
+  };
+  
+  const cancelEdit = (unit) => {
+    setEditingUnitId(null);
+    setNameDrafts(prev => ({ ...prev, [unit.serial]: unit.name ?? '' }));
+    setStateDrafts(prev => ({ ...prev, [unit.serial]: unit.state }));
+    setNotesDrafts(prev => ({ ...prev, [unit.serial]: unit.notes ?? '' }));
+  };
+  
+  const saveUnit = async (unit) => {
     try {
+      const payload = {
+        name: nameDrafts[unit.serial] ?? unit.name ?? '',
+        state: stateDrafts[unit.serial] ?? unit.state,
+        notes: notesDrafts[unit.serial] ?? unit.notes ?? '',
+      };
       const { data } = await axios.patch(
-        `/api/equipment/${item._id}/units/${unit.serial}/state`, 
-        { state: newState }, 
+        `/api/equipment/${item._id}/units/${unit.serial}`,
+        payload,
         authConfig()
       );
       onUpdated(data);
-      setEditingUnit(null);
+      setEditingUnitId(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update unit state');
+      alert(err.response?.data?.message || 'Failed to update unit');
     }
   };
 
@@ -422,68 +448,94 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
                   hover:border-gray-300 transition-all duration-200
                 "
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold text-gray-900">#{unit.serial}</span>
-                    {getStateIcon(unit.state)}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="mt-1">
+                      <div className="text-xs text-gray-500">Name</div>
+                      {editingUnitId === unit.serial ? (
+                        <input
+                          className="mt-1 w-full p-2 border border-gray-300 rounded-lg text-sm"
+                          placeholder={unit.name ?? `#${unit.serial}`}
+                          value={nameDrafts[unit.serial] ?? unit.name ?? ''}
+                          onChange={(e) => setNameDrafts(prev => ({ ...prev, [unit.serial]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveUnit(unit); } if (e.key === 'Escape') { e.preventDefault(); cancelEdit(unit); } }}
+                          onFocus={(e) => e.target.select()}
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-700 inline-block px-2 py-1 rounded">
+                          {unit.name ? unit.name : `#${unit.serial}`}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setEditingUnit(editingUnit === unit.serial ? null : unit.serial)}
-                    className="
-                      p-1 text-gray-400 hover:text-green-600 
-                      hover:bg-green-50 rounded transition-all duration-200
-                    "
-                    title="Edit unit state"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  {editingUnitId === unit.serial ? null : (
+                    <button
+                      onClick={() => beginEdit(unit)}
+                      className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit unit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 <div className={`
                   px-3 py-2 rounded-lg text-sm font-medium
-                  ${getUnitStateStyle(unit.state)}
+                  ${getUnitStateStyle(editingUnitId === unit.serial ? (stateDrafts[unit.serial] ?? unit.state) : unit.state)}
                 `}>
-                  {unit.state}
-                </div>
-
-                {unit.notes && (
-                  <p className="text-sm text-gray-600 mt-2">{unit.notes}</p>
-                )}
-
-                {editingUnit === unit.serial && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Update State</label>
+                  {editingUnitId === unit.serial ? (
                     <select 
-                      value={newState || unit.state}
-                      onChange={(e) => setNewState(e.target.value)}
+                      value={stateDrafts[unit.serial] ?? unit.state}
+                      onChange={(e) => setStateDrafts(prev => ({ ...prev, [unit.serial]: e.target.value }))}
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                     >
                       <option value="Working Fine">Working Fine</option>
                       <option value="Broken">Broken</option>
                       <option value="Under Maintenance">Under Maintenance</option>
                     </select>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => updateUnitState(unit, newState || unit.state)}
-                        className="
-                          px-3 py-1 bg-green-600 text-white rounded text-sm
-                          hover:bg-green-700 transition-colors duration-200
-                        "
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingUnit(null)}
-                        className="
-                          px-3 py-1 border border-gray-300 text-gray-700 rounded text-sm
-                          hover:bg-gray-50 transition-colors duration-200
-                        "
-                      >
-                        Cancel
-                      </button>
+                  ) : (
+                    unit.state
+                  )}
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-xs text-gray-500">Notes</label>
+                  {editingUnitId === unit.serial ? (
+                    <div className="mt-1">
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                        rows={3}
+                        placeholder="Add notes for this unit"
+                        value={notesDrafts[unit.serial] ?? unit.notes ?? ''}
+                        onChange={(e) => setNotesDrafts(prev => ({ ...prev, [unit.serial]: e.target.value }))}
+                      />
                     </div>
+                  ) : (
+                    <div className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">
+                      {unit.notes && unit.notes.trim() ? unit.notes : <span className="italic text-gray-400">No notes</span>}
+                    </div>
+                  )}
+                </div>
+
+                {editingUnitId === unit.serial && (
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => saveUnit(unit)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      onClick={() => cancelEdit(unit)}
+                      className="px-3 py-1 border border-gray-300 text-gray-700 rounded text-sm"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 )}
+
+                {/* legacy state-only editor removed in favor of unified edit mode */}
               </div>
             ))}
           </div>

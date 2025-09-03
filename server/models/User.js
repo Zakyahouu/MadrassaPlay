@@ -114,10 +114,10 @@ const userSchema = new mongoose.Schema(
     },
     studentCode: {
       type: String,
-      unique: true,
-      sparse: true,
+      // uniqueness is enforced via a compound index (school + studentCode)
       uppercase: true,
       trim: true,
+      sparse: true,
       // Auto-generated if missing for students (see pre-validate)
     },
     enrollmentCount: { type: Number, default: 0 },
@@ -168,16 +168,27 @@ userSchema.statics.generateStudentCode = function () {
 };
 
 // -------- Hooks --------
-// Pre-validate: ensure studentCode exists for students
+// Pre-validate: ensure studentCode exists only for students
 userSchema.pre('validate', function (next) {
-  if (this.role === 'student' && !this.studentCode) {
-    this.studentCode = this.constructor.generateStudentCode();
+  if (this.role === 'student') {
+    if (!this.studentCode) {
+      this.studentCode = this.constructor.generateStudentCode();
+    }
+  } else {
+    // Remove the field entirely so it doesn't appear as null
+    if (this.studentCode !== undefined) {
+      try { delete this.studentCode; } catch (_) { this.studentCode = undefined; }
+    }
   }
   next();
 });
 
 // Pre-save: maintain legacy 'name' behavior and hash password
 userSchema.pre('save', async function (next) {
+  // Safety: ensure non-students never persist a studentCode value
+  if (this.role !== 'student' && this.studentCode !== undefined) {
+    try { delete this.studentCode; } catch (_) { this.studentCode = undefined; }
+  }
   // Maintain backward compatibility with 'name' field
   if (this.firstName && this.lastName && !this.name) {
     this.name = `${this.firstName} ${this.lastName}`;
@@ -213,5 +224,11 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.matchPassword = function (entered) {
   return bcrypt.compare(entered, this.password);
 };
+
+// Ensure unique studentCode per school (tenant) ONLY for students with a string code
+userSchema.index(
+  { school: 1, studentCode: 1 },
+  { unique: true, partialFilterExpression: { role: 'student', studentCode: { $type: 'string' } } }
+);
 
 module.exports = mongoose.model('User', userSchema);

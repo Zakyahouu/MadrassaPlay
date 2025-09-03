@@ -28,6 +28,6 @@ const roomSchema = new mongoose.Schema({
 
 // Compound index for school + room name uniqueness
 roomSchema.index({ schoolId: 1, name: 1 }, { unique: true });
-roomSchema.index({ schoolId: 1 });
+// Avoid redundant single-field index on schoolId; queries should leverage compound indexes.
 
 module.exports = mongoose.model('Room', roomSchema);

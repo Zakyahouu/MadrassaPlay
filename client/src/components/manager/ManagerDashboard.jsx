@@ -15,6 +15,7 @@ import CatalogTab from './CatalogTab';
 import RoomsTab from './RoomsTab';
 import EquipmentTab from './EquipmentTab';
 import EmployeesTab from './EmployeesTab';
+import AttendanceTab from './AttendanceTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -136,11 +137,12 @@ export const ManagerDashboard = () => {
   const navigationItems = [
     { id: 'overview', name: 'Overview' },
     { id: 'classes', name: 'Classes' },
+    { id: 'attendance', name: 'Attendance' },
     { id: 'students', name: 'Students' },
-    { id: 'teachers', name: 'All Teachers' },
-    { id: 'employees', name: 'All Employees' },
-  { id: 'rooms', name: 'Rooms' },
-  { id: 'equipment', name: 'Equipment' },
+    { id: 'teachers', name: 'Teachers' },
+    { id: 'employees', name: 'Staff' },
+    { id: 'rooms', name: 'Rooms' },
+    { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
     { id: 'reports', name: 'Reports' }
   ];
@@ -151,6 +153,8 @@ export const ManagerDashboard = () => {
         return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
         return <ClassesTab />;
+      case 'attendance':
+        return <AttendanceTab />;
       case 'students':
         return <StudentsTab />;
       case 'teachers':
