@@ -5,7 +5,8 @@ import {
   Search, 
   User,
   LogOut,
-  Settings
+  Settings,
+  Megaphone
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -14,7 +15,8 @@ const TopNav = ({
   setSidebarOpen, 
   activeTab, 
   navigationItems, 
-  logout 
+  logout,
+  onAdsClick
 }) => {
   const currentTab = navigationItems?.find(item => item.id === activeTab);
 
@@ -55,6 +57,17 @@ const TopNav = ({
               />
             </div>
           </div>
+
+          {/* Announcements */}
+          {onAdsClick && (
+            <button 
+              onClick={onAdsClick}
+              className="p-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors"
+              title="View Announcements"
+            >
+              <Megaphone className="w-5 h-5" />
+            </button>
+          )}
 
           {/* Notifications */}
           <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">

@@ -36,5 +36,6 @@ app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
+app.use('/api/advertisements', require('./routes/advertisementRoutes'));
 
 module.exports = app;
