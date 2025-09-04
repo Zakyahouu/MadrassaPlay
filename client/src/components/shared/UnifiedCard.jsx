@@ -9,10 +9,16 @@ const UnifiedCard = ({
   background = 'bg-white',
   rounded = 'rounded-lg',
   hover = 'hover:shadow-md hover:border-gray-300',
-  transition = 'transition-all duration-200'
+  transition = 'transition-all duration-200',
+  onClick,
+  ...rest
 }) => {
   return (
-    <div className={`${background} ${border} ${rounded} ${shadow} ${padding} ${hover} ${transition} ${className}`}>
+    <div 
+      onClick={onClick}
+      {...rest}
+      className={`${background} ${border} ${rounded} ${shadow} ${padding} ${hover} ${transition} ${className}`}
+    >
       {children}
     </div>
   );

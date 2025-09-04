@@ -106,7 +106,7 @@ export const ManagerDashboard = () => {
       description: 'View and manage class schedules',
       icon: Calendar,
       color: 'text-blue-600',
-      onClick: () => setActiveTab('schedule')
+      onClick: () => setActiveTab('timetable')
     },
     {
       title: 'Student Records',
@@ -127,7 +127,7 @@ export const ManagerDashboard = () => {
       description: 'Configure school settings',
       icon: Settings,
       color: 'text-gray-600',
-      onClick: () => setActiveTab('settings')
+      onClick: () => setActiveTab('catalog')
     },
   ];
 

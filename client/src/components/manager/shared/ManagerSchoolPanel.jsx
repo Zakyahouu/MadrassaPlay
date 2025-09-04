@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-const ManagerSchoolPanel = () => {
+const ManagerSchoolPanel = ({ setActiveTab }) => {
   const [students, setStudents] = useState('—');
   const [teachers, setTeachers] = useState('—');
 
@@ -35,7 +35,7 @@ const ManagerSchoolPanel = () => {
         <div className="text-gray-600">Total Students: <span className="font-medium text-gray-900">{students}</span></div>
         <div className="text-gray-600">Total Teachers: <span className="font-medium text-gray-900">{teachers}</span></div>
       </div>
-      <button className="mt-3 text-green-600 hover:text-green-700 text-sm font-medium">View Details →</button>
+      <button onClick={() => setActiveTab && setActiveTab('reports')} className="mt-3 text-green-600 hover:text-green-700 text-sm font-medium">View Details →</button>
     </div>
   );
 };

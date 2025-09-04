@@ -41,8 +41,8 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading
       <div className="lg:col-span-2 space-y-6">
         {/* Existing Panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ManagerClassPanel />
-          <ManagerSchoolPanel />
+          <ManagerClassPanel setActiveTab={setActiveTab} />
+          <ManagerSchoolPanel setActiveTab={setActiveTab} />
         </div>
 
         {/* Quick Actions */}

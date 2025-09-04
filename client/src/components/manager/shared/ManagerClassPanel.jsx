@@ -6,7 +6,7 @@ import {
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../../context/AuthContext';
 import axios from 'axios';
-const ManagerClassPanel = () => {
+const ManagerClassPanel = ({ setActiveTab }) => {
   const [top, setTop] = useState([]);
   const { user } = useContext(AuthContext);
 
@@ -40,7 +40,7 @@ const ManagerClassPanel = () => {
           );
         })}
       </div>
-      <button className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium">Manage Classes →</button>
+      <button onClick={() => setActiveTab && setActiveTab('classes')} className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium">Manage Classes →</button>
     </div>
   );
 };
