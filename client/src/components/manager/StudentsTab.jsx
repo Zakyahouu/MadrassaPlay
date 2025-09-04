@@ -673,6 +673,7 @@ const StudentsTab = () => {
                             </span>
                           ))}
                         </div>
+
                         {/* Dropdown trigger */}
                         <div className="relative">
                           <button
@@ -759,6 +760,7 @@ const StudentsTab = () => {
                               </div>
                             </div>
                           )}
+
                         </div>
                       </div>
                     </div>

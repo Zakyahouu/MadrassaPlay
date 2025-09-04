@@ -13,11 +13,14 @@ import TeacherStudents from '../components/teacher/TeacherStudents';
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
 import Reports from '../components/teacher/Reports';
+import Timetable from '../components/teacher/Timetable';
+import AdsPanel from '../components/shared/AdsPanel';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adsPanelOpen, setAdsPanelOpen] = useState(false);
   const [stats, setStats] = useState({
     totalGames: 24,
     totalStudents: 156,
@@ -39,6 +42,7 @@ const TeacherDashboard = () => {
     { id: 'create-game', name: 'Create Game' },
     { id: 'live-sessions', name: 'Live Sessions' },
     { id: 'assignments', name: 'Assignments' },
+    { id: 'timetable', name: 'Timetable' },
     { id: 'reports', name: 'Reports' },
     { id: 'students', name: 'My Students' },
     { id: 'calendar', name: 'Calendar' }
@@ -56,6 +60,8 @@ const TeacherDashboard = () => {
         return <TeacherLiveSessions />;
       case 'assignments':
         return <TeacherAssignments />;
+      case 'timetable':
+        return <Timetable />;
       case 'reports':
         return <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -107,6 +113,7 @@ const TeacherDashboard = () => {
           activeTab={activeTab}
           navigationItems={navigationItems}
           logout={logout}
+          onAdsClick={() => setAdsPanelOpen(true)}
         />
 
         <main className="p-6">
@@ -120,6 +127,15 @@ const TeacherDashboard = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Ads Panel */}
+      <AdsPanel
+        userRole="teacher"
+        schoolId={user?.school}
+        isOpen={adsPanelOpen}
+        onClose={() => setAdsPanelOpen(false)}
+        position="right"
+      />
     </div>
   );
 };

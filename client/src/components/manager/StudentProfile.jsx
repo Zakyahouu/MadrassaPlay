@@ -482,7 +482,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {formatDZ(enrollment.totalAmount)}
+                              {enrollment.totalAmount.toLocaleString()} DZD
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getEnrollmentStatusBadge(enrollment.status)}`}>
@@ -541,7 +541,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">{payment.description}</td>
                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              {formatDZ(payment.amount)}
+                              {payment.amount.toLocaleString()} DZD
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900 capitalize">{payment.method}</td>
                             <td className="px-6 py-4">

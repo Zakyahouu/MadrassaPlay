@@ -11,12 +11,16 @@ const {
   getAvailableTeachers,
   getAvailableRooms,
   getCatalogItems,
+  getClassesByTeacher,
   checkConflicts
 } = require('../controllers/classController');
-const { protect, manager } = require('../middleware/authMiddleware');
+const { protect, manager, teacher } = require('../middleware/authMiddleware');
 
 // All routes are protected and require manager role
 router.use(protect, manager);
+
+// Teacher-specific route (requires teacher role)
+router.get('/teacher', protect, teacher, getClassesByTeacher);
 
 // Helper routes for class creation - MUST come before /:id route
 router.get('/available-teachers', getAvailableTeachers);

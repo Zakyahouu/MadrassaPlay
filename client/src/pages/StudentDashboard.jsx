@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
+import AdsPanel from '../components/shared/AdsPanel';
 
 // Mock MyAssignments component with student-focused features
 const MyAssignments = () => {
@@ -154,6 +155,7 @@ const StudentDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adsPanelOpen, setAdsPanelOpen] = useState(false);
 
   const stats = [
     { title: 'Games Completed', value: '24', icon: Trophy, color: 'text-yellow-600', change: '+12%' },
@@ -322,6 +324,13 @@ const StudentDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setAdsPanelOpen(true)}
+                className="inline-flex items-center px-3 py-2 border border-indigo-300 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+              >
+                <Megaphone className="w-4 h-4 mr-2" />
+                Announcements
+              </button>
               <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
               <button
                 onClick={logout}
@@ -360,6 +369,15 @@ const StudentDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderTabContent()}
       </div>
+
+      {/* Ads Panel */}
+      <AdsPanel
+        userRole="student"
+        schoolId={user?.school}
+        isOpen={adsPanelOpen}
+        onClose={() => setAdsPanelOpen(false)}
+        position="right"
+      />
     </div>
   );
 };

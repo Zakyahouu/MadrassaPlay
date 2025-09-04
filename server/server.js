@@ -16,7 +16,7 @@ const gameResultRoutes = require('./routes/gameResultRoutes');
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://0.0.0.0:5173"],
     methods: ["GET", "POST"]
   }
 });
@@ -109,6 +109,8 @@ io.on('connection', (socket) => {
 
 // 6. START THE SERVER
 // ==============================================================================
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port: ${PORT}`);
+  console.log(`🌐 Network Access: http://0.0.0.0:${PORT}`);
+  console.log(`📱 Access from other devices using your computer's IP address`);
 });

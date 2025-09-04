@@ -42,6 +42,7 @@ app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
+app.use('/api/advertisements', require('./routes/advertisementRoutes'));
 
 // Centralized error handler: respect res.statusCode set by controllers; default to 500
 // Ensures thrown errors with prior res.status(...) don't become generic 500s

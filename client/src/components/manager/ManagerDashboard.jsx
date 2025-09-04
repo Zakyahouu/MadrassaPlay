@@ -16,6 +16,9 @@ import RoomsTab from './RoomsTab';
 import EquipmentTab from './EquipmentTab';
 import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
+import ManagerTimetable from './ManagerTimetable';
+import AdsTab from './AdsTab';
+import AdsPanel from '../shared/AdsPanel';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -29,6 +32,7 @@ export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adsPanelOpen, setAdsPanelOpen] = useState(false);
   const [stats, setStats] = useState([
     { title: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', change: 0 },
     { title: 'Active Teachers', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
@@ -141,9 +145,11 @@ export const ManagerDashboard = () => {
     { id: 'students', name: 'Students' },
     { id: 'teachers', name: 'Teachers' },
     { id: 'employees', name: 'Staff' },
+    { id: 'timetable', name: 'Timetable' },
     { id: 'rooms', name: 'Rooms' },
     { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
+    { id: 'ads', name: 'Advertisements' },
     { id: 'reports', name: 'Reports' }
   ];
 
@@ -155,6 +161,8 @@ export const ManagerDashboard = () => {
         return <ClassesTab />;
       case 'attendance':
         return <AttendanceTab />;
+      case 'timetable':
+        return <ManagerTimetable />;
       case 'students':
         return <StudentsTab />;
       case 'teachers':
@@ -167,6 +175,8 @@ export const ManagerDashboard = () => {
         return <RoomsTab />;
       case 'equipment':
         return <EquipmentTab />;
+      case 'ads':
+        return <AdsTab />;
       case 'reports':
         return <ReportsTab />;
   // legacy staff tab hidden
@@ -203,6 +213,7 @@ export const ManagerDashboard = () => {
           activeTab={activeTab}
           navigationItems={navigationItems}
           logout={logout}
+          onAdsClick={() => setAdsPanelOpen(true)}
         />
 
         <main className="p-6">
@@ -216,6 +227,15 @@ export const ManagerDashboard = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Ads Panel */}
+      <AdsPanel
+        userRole="manager"
+        schoolId={user?.school}
+        isOpen={adsPanelOpen}
+        onClose={() => setAdsPanelOpen(false)}
+        position="right"
+      />
     </div>
   );
 };

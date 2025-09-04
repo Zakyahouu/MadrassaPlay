@@ -36,6 +36,11 @@ const advertisementSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'draft'],
+    default: 'active',
+  },
 }, {
   timestamps: true,
 });

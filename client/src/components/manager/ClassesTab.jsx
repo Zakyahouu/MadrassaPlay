@@ -143,7 +143,7 @@ const ClassesTab = () => {
       classItem.capacity,
       classItem.currentEnrollmentCount || 0,
       classItem.status,
-      formatDZ(classItem.price, { noSymbol: true })
+      `${classItem.price} DZD`
     ]);
     
     const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
@@ -265,8 +265,9 @@ const ClassesTab = () => {
                     </div>
                   </div>
                               <div className="text-sm font-medium text-gray-900 mt-1">
-                                {formatDZ(classItem.price)} per cycle ({classItem.paymentCycle} session{classItem.paymentCycle > 1 ? 's' : ''})
-                              </div>
+
+                                ${classItem.price} DZD per {classItem.paymentCycle} session{classItem.paymentCycle > 1 ? 's' : ''}
+                      </div>
                     </div>
                       </div>
                         </td>
