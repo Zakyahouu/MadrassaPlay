@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   BarChart3, 
-  School, 
   TrendingUp,
   X,
   Plus,
@@ -76,32 +75,6 @@ const UnifiedSidebar = ({
     }
   };
 
-  const getRoleTitle = () => {
-    switch (role) {
-      case 'admin':
-        return 'MadrassaPlay Admin';
-      case 'manager':
-        return 'School Management';
-      case 'teacher':
-        return 'Teacher Hub';
-      default:
-        return 'MadrassaPlay';
-    }
-  };
-
-  const getRoleColor = () => {
-    switch (role) {
-      case 'admin':
-        return 'bg-blue-600';
-      case 'manager':
-        return 'bg-indigo-600';
-      case 'teacher':
-        return 'bg-purple-600';
-      default:
-        return 'bg-gray-600';
-    }
-  };
-
   const getActiveColor = () => {
     switch (role) {
       case 'admin':
@@ -132,23 +105,28 @@ const UnifiedSidebar = ({
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className={`flex items-center justify-between p-6 ${getRoleColor()} transition-all duration-300 ease-in-out`}>
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <School className="w-5 h-5 text-white" />
+
+
+          {/* User Info */}
+          <div className="p-4 border-b border-gray-200 transition-all duration-300 ease-in-out">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+                  isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                } ${isCollapsed ? 'w-0 overflow-hidden' : 'w-auto'}`}>
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role || 'User'}</p>
+                </div>
               </div>
-              <h1 className={`text-lg font-semibold text-white transition-all duration-300 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-              } ${isCollapsed ? 'w-0 overflow-hidden' : 'w-auto'}`}>
-                {getRoleTitle()}
-              </h1>
-            </div>
-            <div className="flex items-center space-x-2">
               {/* Desktop collapse toggle */}
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="hidden lg:flex p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all duration-200 ease-in-out transform hover:scale-105"
+                className={`hidden lg:flex p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105 ${
+                  isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               >
                 {isCollapsed ? (
@@ -160,25 +138,10 @@ const UnifiedSidebar = ({
               {/* Mobile close button */}
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1.5 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all duration-200 ease-in-out transform hover:scale-105"
+                className="lg:hidden p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105"
               >
                 <X className="w-5 h-5" />
               </button>
-            </div>
-          </div>
-
-          {/* User Info */}
-          <div className="p-4 border-b border-gray-200 transition-all duration-300 ease-in-out">
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-              } ${isCollapsed ? 'w-0 overflow-hidden' : 'w-auto'}`}>
-                <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role || 'User'}</p>
-              </div>
             </div>
           </div>
 
@@ -240,10 +203,10 @@ const UnifiedSidebar = ({
         <div className="fixed left-20 top-1/2 transform -translate-y-1/2 z-40 lg:block hidden">
           <button
             onClick={() => setIsCollapsed(false)}
-            className="p-2 bg-white border border-gray-200 rounded-r-lg shadow-lg hover:shadow-xl transition-all duration-200 ease-in-out transform hover:scale-105 hover:bg-gray-50"
+            className="p-3 bg-blue-600 hover:bg-blue-700 border-2 border-blue-500 rounded-r-lg shadow-xl hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:scale-110 text-white"
             title="Expand sidebar"
           >
-            <ChevronRight className="w-4 h-4 text-gray-600" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       )}
