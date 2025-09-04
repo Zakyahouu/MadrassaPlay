@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 const request = require('supertest');
 const app = require('../app');
 const connectDB = require('../config/db');
@@ -17,7 +18,7 @@ function tokenFor(user) {
 describe('TemplateBadge validation & progress listing', () => {
   let admin, adminAuth;
   let student, studentAuth;
-  beforeAll(async () => { await connectDB(); });
+  beforeAll(async () => { process.env.NODE_ENV = 'test'; await connectDB(); });
   beforeEach(async () => {
   admin = await User.create({ firstName: 'Admin', lastName: 'User', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
     adminAuth = `Bearer ${tokenFor(admin)}`;

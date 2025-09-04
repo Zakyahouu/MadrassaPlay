@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, BookOpen, User, Building2, Calendar, Clock, Users, 
   CreditCard, DollarSign, AlertTriangle, CheckCircle, Loader,
@@ -298,6 +298,27 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
     setValidationErrors({});
   };
 
+  // Step 1 UI state: filters and paging for catalog items
+  const [catalogType, setCatalogType] = useState('all'); // all | supportLessons | reviewCourses | vocationalTrainings | languages | otherActivities
+  const [levelFilter, setLevelFilter] = useState('all'); // all | primary | middle | high_school
+  const [searchCatalog, setSearchCatalog] = useState('');
+  const [showCount, setShowCount] = useState(18);
+
+  const filteredCatalogItems = useMemo(() => {
+    const q = (searchCatalog || '').toLowerCase();
+    return (catalogItems || [])
+      .filter(it => (catalogType === 'all' ? true : it.type === catalogType))
+      .filter(it => (levelFilter === 'all' ? true : (it.level ? it.level === levelFilter : false)))
+      .filter(it => {
+        if (!q) return true;
+        const hay = [it.name, it.subject, it.field, it.specialty, it.language, it.activityType, it.activityName, it.grade, it.level, it.stream]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      });
+  }, [catalogItems, catalogType, levelFilter, searchCatalog]);
+
   const getStepTitle = (stepNumber) => {
     const titles = {
       1: 'Select Catalog Item',
@@ -401,9 +422,43 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
                 </p>
               </div>
 
-              {/* Search and Filter */}
+              {/* Filters & Search */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <select
+                    value={catalogType}
+                    onChange={(e) => setCatalogType(e.target.value)}
+                    className="p-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="all">All types</option>
+                    <option value="supportLessons">Support Lessons</option>
+                    <option value="reviewCourses">Review Courses</option>
+                    <option value="vocationalTrainings">Vocational Trainings</option>
+                    <option value="languages">Languages</option>
+                    <option value="otherActivities">Other Activities</option>
+                  </select>
+                  <select
+                    value={levelFilter}
+                    onChange={(e) => setLevelFilter(e.target.value)}
+                    className="p-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="all">All levels</option>
+                    <option value="primary">Primary</option>
+                    <option value="middle">Middle</option>
+                    <option value="high_school">High School</option>
+                  </select>
+                  <input
+                    value={searchCatalog}
+                    onChange={(e) => setSearchCatalog(e.target.value)}
+                    placeholder="Search catalog..."
+                    className="p-2 border border-gray-300 rounded-md text-sm md:col-span-2"
+                  />
+                </div>
+              </div>
+
+              {/* Catalog Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {catalogItems.map((item) => (
+                {filteredCatalogItems.slice(0, showCount).map((item) => (
                   <div
                     key={`${item.type}-${item._id}`}
                     onClick={() => handleCatalogItemSelect(item)}
@@ -422,15 +477,53 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
                       )}
                     </div>
                     <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {item.level && `${item.level} - ${item.grade}`}
-                      {item.field && `${item.field} - ${item.specialty}`}
-                      {item.language && `${item.language}`}
-                      {item.activityType && `${item.activityType}`}
-                    </p>
+                    <div className="mt-2 space-y-1 text-sm text-gray-600">
+                      {item.level && (
+                        <div>
+                          <span className="font-medium text-gray-700">Level:</span> {item.level} {item.grade && `• Grade ${item.grade}`}
+                        </div>
+                      )}
+                      {item.stream && (
+                        <div>
+                          <span className="font-medium text-gray-700">Stream:</span> <span className="inline-block bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full text-xs">{item.stream}</span>
+                        </div>
+                      )}
+                      {item.subject && (
+                        <div>
+                          <span className="font-medium text-gray-700">Subject:</span> {item.subject}
+                        </div>
+                      )}
+                      {item.field && (
+                        <div>
+                          <span className="font-medium text-gray-700">Field:</span> {item.field} {item.specialty && `• ${item.specialty}`}
+                        </div>
+                      )}
+                      {item.language && (
+                        <div>
+                          <span className="font-medium text-gray-700">Language:</span> {item.language}
+                        </div>
+                      )}
+                      {item.activityType && (
+                        <div>
+                          <span className="font-medium text-gray-700">Activity:</span> {item.activityType}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Load more */}
+              {filteredCatalogItems.length > showCount && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={() => setShowCount(c => c + 18)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+                  >
+                    Show more ({filteredCatalogItems.length - showCount} more)
+                  </button>
+                </div>
+              )}
 
               {validationErrors.catalogItem && (
                 <p className="text-red-600 text-sm">{validationErrors.catalogItem}</p>
@@ -653,13 +746,13 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
                   )}
                 </div>
 
-                {/* Price */}
+        {/* Price */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price per Session *
+          Price per Cycle *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">DZ</span>
                     <input
                       type="number"
                       min="0"
@@ -675,10 +768,10 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
                   )}
                 </div>
 
-                {/* Payment Cycle */}
+        {/* Payment Cycle */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Cycle (Sessions) *
+          Cycle Size (sessions) *
                   </label>
                   <input
                     type="number"
@@ -727,7 +820,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess }) => {
                       placeholder={formData.teacherCut.mode === 'percentage' ? '20' : '0.00'}
                     />
                     <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                      {formData.teacherCut.mode === 'percentage' ? '%' : '$'}
+                      {formData.teacherCut.mode === 'percentage' ? '%' : 'DZ'}
                     </span>
                   </div>
                 </div>

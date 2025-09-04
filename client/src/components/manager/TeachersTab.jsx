@@ -144,10 +144,20 @@ const TeachersTab = () => {
       return;
     }
     const config = { headers: { Authorization: `Bearer ${token}` } };
+    // Client-side required validation
+    const required = ['firstName','lastName','email','username','phone1'];
+    const missing = required.filter((k) => !formData[k] || !String(formData[k]).trim());
+    if (modalContent.type === 'add' && (!formData.password || !String(formData.password).trim())) {
+      missing.push('password');
+    }
+    if (missing.length) {
+      alert(`Please fill the required fields: ${missing.join(', ')}`);
+      return;
+    }
     const payload = {
       firstName: formData.firstName?.trim(),
       lastName: formData.lastName?.trim(),
-      email: formData.email?.trim(),
+      email: formData.email?.trim().toLowerCase(),
       username: formData.username?.trim(),
       phone1: formData.phone1?.trim(),
       phone2: formData.phone2?.trim() || undefined,
@@ -173,7 +183,15 @@ const TeachersTab = () => {
       }
       closeModal();
     } catch (err) {
-      const message = err.response?.data?.message || 'An error occurred while saving the teacher.';
+      let message = err.response?.data?.message || 'An error occurred while saving the teacher.';
+      // Improve common error hints
+      if (/email/i.test(message) && /exists/i.test(message)) {
+        message = 'Email already exists. Please use a different email.';
+      } else if (/username/i.test(message) && /exists/i.test(message)) {
+        message = 'Username already exists. Please choose another.';
+      } else if (/Activity item not allowed/i.test(message)) {
+        message = 'One or more selected activities are no longer in the catalog. Refresh the catalog and try again.';
+      }
       alert(`Error: ${message}`);
       console.error(err);
     }

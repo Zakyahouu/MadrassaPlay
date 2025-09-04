@@ -85,15 +85,55 @@ const classSchema = new mongoose.Schema({
   },
   
   // Payment and Financial
-  paymentCycle: {
+  // New pricing model (preferred)
+  paymentModel: {
+    type: String,
+    enum: ['per_session', 'per_cycle'],
+    required: [true, 'paymentModel is required'],
+  },
+  sessionPrice: {
     type: Number,
-    required: [true, 'Payment cycle (sessions) is required'],
-    min: [1, 'Payment cycle must be at least 1 session']
+    min: [0, 'sessionPrice cannot be negative'],
+    validate: {
+      validator: function (v) {
+        if (this.paymentModel === 'per_session') return typeof v === 'number';
+        return true;
+      },
+      message: 'sessionPrice is required when paymentModel is per_session',
+    },
+  },
+  cycleSize: {
+    type: Number,
+    min: [1, 'cycleSize must be >= 1'],
+    validate: {
+      validator: function (v) {
+        if (this.paymentModel === 'per_cycle') return typeof v === 'number';
+        return true;
+      },
+      message: 'cycleSize is required when paymentModel is per_cycle',
+    },
+  },
+  cyclePrice: {
+    type: Number,
+    min: [0, 'cyclePrice cannot be negative'],
+    validate: {
+      validator: function (v) {
+        if (this.paymentModel === 'per_cycle') return typeof v === 'number';
+        return true;
+      },
+      message: 'cyclePrice is required when paymentModel is per_cycle',
+    },
   },
   
+  // Legacy fields (kept for migration/backward compatibility)
+  paymentCycle: {
+    type: Number,
+    required: false,
+    min: [1, 'Payment cycle must be at least 1 session']
+  },
   price: {
     type: Number,
-    required: [true, 'Price is required'],
+    required: false,
     min: [0, 'Price cannot be negative']
   },
   
@@ -164,7 +204,8 @@ const classSchema = new mongoose.Schema({
 
 // Virtual for current enrollment count
 classSchema.virtual('currentEnrollmentCount').get(function() {
-  return this.enrolledStudents.filter(student => student.status === 'active').length;
+  const list = Array.isArray(this.enrolledStudents) ? this.enrolledStudents : [];
+  return list.filter(student => student && student.status === 'active').length;
 });
 
 // Virtual for enrollment percentage

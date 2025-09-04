@@ -46,6 +46,7 @@ const UnifiedSidebar = ({
         return [
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'classes', name: 'Classes', icon: BookOpen },
+          { id: 'attendance', name: 'Attendance', icon: Calendar },
           { id: 'timetable', name: 'Timetable', icon: Calendar },
           { id: 'students', name: 'Students', icon: Users },
           { id: 'teachers', name: 'Teachers', icon: UserCheck },

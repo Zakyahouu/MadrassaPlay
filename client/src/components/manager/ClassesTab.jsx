@@ -5,7 +5,9 @@ import {
   CheckCircle, XCircle, ArrowRight, ChevronDown, ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
+import formatDZ from '../../utils/currency';
 import ClassCreationModal from './class/ClassCreationModal';
+import AttendanceRoster from './AttendanceRoster';
 
 const API_BASE_URL = '/api/classes';
 
@@ -29,6 +31,8 @@ const ClassesTab = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  // Enrollment selection now managed inside PaymentsPanel via roster
+  const [rosterDate, setRosterDate] = useState(() => new Date().toISOString().slice(0,10));
 
   useEffect(() => {
     fetchClasses();
@@ -130,7 +134,7 @@ const ClassesTab = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Class Name', 'Teacher', 'Room', 'Schedule', 'Capacity', 'Enrolled', 'Status', 'Price'];
+  const headers = ['Class Name', 'Teacher', 'Room', 'Schedule', 'Capacity', 'Enrolled', 'Status', 'Price (DZ)'];
     const csvData = filteredClasses.map(classItem => [
       classItem.name,
       `${classItem.teacherId?.firstName || ''} ${classItem.teacherId?.lastName || ''}`,
@@ -139,7 +143,7 @@ const ClassesTab = () => {
       classItem.capacity,
       classItem.currentEnrollmentCount || 0,
       classItem.status,
-              `${classItem.price} DZD`
+      `${classItem.price} DZD`
     ]);
     
     const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
@@ -261,6 +265,7 @@ const ClassesTab = () => {
                     </div>
                   </div>
                               <div className="text-sm font-medium text-gray-900 mt-1">
+
                                 ${classItem.price} DZD per {classItem.paymentCycle} session{classItem.paymentCycle > 1 ? 's' : ''}
                       </div>
                     </div>
@@ -314,10 +319,11 @@ const ClassesTab = () => {
                           <div className="flex items-center justify-end gap-1">
                     <button
                               onClick={() => setSelectedClass(classItem)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="View Details"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors border border-transparent hover:border-blue-200"
+                              title="Open Attendance Roster"
                     >
                       <Eye className="w-4 h-4" />
+                      <span className="text-sm">Attendance</span>
                     </button>
                     <button
                               onClick={() => console.log('Edit class:', classItem._id)}
@@ -377,6 +383,32 @@ const ClassesTab = () => {
               setIsCreateModalOpen(false);
             }}
           />
+        )}
+
+        {/* Simple side panel for class actions */}
+        {selectedClass && (
+          <div className="fixed inset-0 z-40">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setSelectedClass(null)} />
+            <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-xl p-4 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-lg font-semibold">{selectedClass.name}</div>
+                  <div className="text-sm text-gray-500">Manage attendance and payments</div>
+                </div>
+                <button onClick={() => setSelectedClass(null)} className="text-gray-600 hover:text-gray-800">Close</button>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold">Attendance Roster</h3>
+                    <input type="date" value={rosterDate} onChange={e=>setRosterDate(e.target.value)} className="border rounded px-2 py-1" />
+                  </div>
+                  <AttendanceRoster classId={selectedClass._id} date={rosterDate} />
+                </div>
+                {/* Payments panel removed per product decision; payments inline via roster and profile */}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

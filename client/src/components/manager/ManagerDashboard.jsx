@@ -15,6 +15,7 @@ import CatalogTab from './CatalogTab';
 import RoomsTab from './RoomsTab';
 import EquipmentTab from './EquipmentTab';
 import EmployeesTab from './EmployeesTab';
+import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
 import AdsPanel from '../shared/AdsPanel';
@@ -140,10 +141,11 @@ export const ManagerDashboard = () => {
   const navigationItems = [
     { id: 'overview', name: 'Overview' },
     { id: 'classes', name: 'Classes' },
-    { id: 'timetable', name: 'Timetable' },
+    { id: 'attendance', name: 'Attendance' },
     { id: 'students', name: 'Students' },
-    { id: 'teachers', name: 'All Teachers' },
-    { id: 'employees', name: 'All Employees' },
+    { id: 'teachers', name: 'Teachers' },
+    { id: 'employees', name: 'Staff' },
+    { id: 'timetable', name: 'Timetable' },
     { id: 'rooms', name: 'Rooms' },
     { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
@@ -157,6 +159,8 @@ export const ManagerDashboard = () => {
         return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
         return <ClassesTab />;
+      case 'attendance':
+        return <AttendanceTab />;
       case 'timetable':
         return <ManagerTimetable />;
       case 'students':

@@ -1,36 +1,82 @@
 const User = require('../models/User'); // Using the User model instead of a separate Teacher model
 const SchoolCatalog = require('../models/SchoolCatalog');
 
+function normalizeItem(type, item) {
+  // Strip _id and unknown props; sort arrays for stability
+  if (!item || typeof item !== 'object') return item;
+  const pick = (obj, keys) => keys.reduce((o, k) => {
+    if (obj[k] !== undefined && obj[k] !== null) o[k] = obj[k];
+    return o;
+  }, {});
+
+  switch (type) {
+    case 'supportLessons':
+    case 'reviewCourses': {
+      const base = pick(item, ['level', 'grade', 'subject', 'stream']);
+      if (!base.stream || base.level !== 'high_school') delete base.stream;
+      return base;
+    }
+    case 'languages': {
+      const base = pick(item, ['language', 'levels']);
+      if (Array.isArray(base.levels)) base.levels = [...base.levels].sort();
+      return base;
+    }
+    case 'vocationalTrainings': {
+      const base = pick(item, ['field', 'specialty', 'certificateType', 'gender']);
+      if (item.ageRange && (item.ageRange.min !== undefined || item.ageRange.max !== undefined)) {
+        base.ageRange = {};
+        if (item.ageRange.min !== undefined) base.ageRange.min = item.ageRange.min;
+        if (item.ageRange.max !== undefined) base.ageRange.max = item.ageRange.max;
+      }
+      return base;
+    }
+    case 'otherActivities': {
+      return pick(item, ['activityType', 'activityName']);
+    }
+    default:
+      return item;
+  }
+}
+
 async function validateActivitiesAgainstCatalog(schoolId, activities) {
-  if (!Array.isArray(activities) || activities.length === 0) return { ok: true };
+  if (!Array.isArray(activities) || activities.length === 0) return { ok: true, activities: [] };
   const catalog = await SchoolCatalog.findOne({ schoolId });
-  if (!catalog) return { ok: false, message: 'School catalog not found' };
+  if (!catalog) {
+    // No catalog yet: accept but drop activities
+    return { ok: true, activities: [] };
+  }
   const types = ['supportLessons','reviewCourses','vocationalTrainings','languages','otherActivities'];
   const allowedMap = {};
+  const idMap = {};
   for (const t of types) {
     const arr = Array.isArray(catalog[t]) ? catalog[t] : [];
-    allowedMap[t] = new Set(arr.map(x => JSON.stringify(x)));
+    idMap[t] = new Set(arr.map(x => x && x._id ? x._id.toString() : ''));
+    allowedMap[t] = new Set(arr.map(x => JSON.stringify(normalizeItem(t, x))));
   }
+  // Build filtered activities, removing disallowed entries
+  const filtered = [];
   for (const act of activities) {
-    if (!act || !act.type || !types.includes(act.type)) {
-      return { ok: false, message: `Invalid activity type: ${act?.type}` };
-    }
+    if (!act || !act.type || !types.includes(act.type)) continue;
     const items = Array.isArray(act.items) ? act.items : [];
+    const kept = [];
     for (const it of items) {
-      const key = JSON.stringify(it);
-      if (!allowedMap[act.type].has(key)) {
-        return { ok: false, message: `Activity item not allowed for type ${act.type}` };
-      }
+      if (it && it._id && idMap[act.type].has(it._id.toString())) { kept.push(it); continue; }
+      const key = JSON.stringify(normalizeItem(act.type, it));
+      if (allowedMap[act.type].has(key)) kept.push(it);
     }
+    if (kept.length) filtered.push({ type: act.type, items: kept });
   }
-  return { ok: true };
+  return { ok: true, activities: filtered };
 }
 
 // @desc    Get all teachers for the manager's school
 // @route   GET /api/teachers
 const getTeachersForSchool = async (req, res) => {
   try {
-    const schoolId = req.user.school;
+    const schoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
+    if (!schoolId) {
+      return res.status(400).json({ message: 'User is not associated with a school.' });
+    }
     if (!schoolId) {
       return res.status(400).json({ message: "User is not associated with a school." });
     }
@@ -66,24 +112,32 @@ const createTeacher = async (req, res) => {
       return res.status(400).json({ message: 'firstName, lastName, email, username, password, phone1 are required.' });
     }
 
-  const userExists = await User.findOne({ email });
-    if (userExists) {
+    // Normalize inputs
+    const normalizedEmail = email.toString().trim().toLowerCase();
+    const normalizedUsername = username.toString().trim();
+
+  // debug logs removed
+
+    // Check duplicates (email and username)
+    const emailExists = await User.findOne({ email: normalizedEmail });
+    if (emailExists) {
       return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+    const usernameExists = await User.findOne({ username: normalizedUsername });
+    if (usernameExists) {
+      return res.status(400).json({ message: 'Username already exists. Please choose another.' });
     }
 
   const normalizedStatus = (status || 'employed').toString().toLowerCase(); // employed | freelance | retired
 
     // Validate activities against school catalog
-    const valid = await validateActivitiesAgainstCatalog(schoolId, activities);
-    if (!valid.ok) {
-      return res.status(400).json({ message: valid.message || 'Invalid activities selection' });
-    }
+  const valid = await validateActivitiesAgainstCatalog(schoolId, activities);
 
     const teacherData = {
       firstName,
       lastName,
-      email,
-      username,
+  email: normalizedEmail,
+  username: normalizedUsername,
       password, // hashed via pre-save hook
       role: 'teacher',
       school: schoolId,
@@ -91,8 +145,10 @@ const createTeacher = async (req, res) => {
   teacherStatus: ['retired','employed','freelance'].includes(normalizedStatus) ? normalizedStatus : 'employed',
       contact: { phone1, phone2, address },
       banking: { ccp: banking.ccp, bankAccount: banking.bankAccount },
-      activities,
+  activities: valid.activities || [],
     };
+
+  // debug logs removed
 
     const newTeacher = new User(teacherData);
     const savedTeacher = await newTeacher.save();
@@ -100,7 +156,21 @@ const createTeacher = async (req, res) => {
     delete teacherResponse.password;
     res.status(201).json({ message: 'Teacher created successfully', teacher: teacherResponse });
   } catch (error) {
-    res.status(400).json({ message: 'Error creating teacher', error: error.message });
+    // Map common Mongoose errors to user-friendly messages
+    let message = 'Error creating teacher';
+    if (error && error.code === 11000) {
+      // Duplicate key error
+      const fields = Object.keys(error.keyPattern || {});
+      if (fields.includes('email')) message = 'User with this email already exists.';
+      else if (fields.includes('username')) message = 'Username already exists. Please choose another.';
+      else message = fields.length ? `Duplicate value for unique field(s): ${fields.join(', ')}` : 'Duplicate value for a unique field.';
+    } else if (error && error.name === 'ValidationError') {
+      const details = Object.values(error.errors || {}).map(e => e.message).filter(Boolean).join(', ');
+      if (details) message = details;
+    } else if (typeof error.message === 'string' && /Cast to ObjectId failed/i.test(error.message)) {
+      message = 'Invalid identifier provided.';
+    }
+    res.status(400).json({ message, error: error.message });
   }
 };
 
@@ -108,10 +178,10 @@ const createTeacher = async (req, res) => {
 // @route   GET /api/teachers/:id
 const getTeacherById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    
-    // Security check: ensure the user exists, is a teacher, and belongs to the manager's school
-    if (!user || user.role !== 'teacher' || user.school.toString() !== req.user.school.toString()) {
+  const user = await User.findById(req.params.id).select('-password');
+  const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
+  // Security check: ensure the user exists, is a teacher, and belongs to the manager's school
+  if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
       return res.status(404).json({ message: "Teacher not found in your school" });
     }
     res.status(200).json(user);
@@ -124,10 +194,10 @@ const getTeacherById = async (req, res) => {
 // @route   PUT /api/teachers/:id
 const updateTeacher = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
-        
+  const user = await User.findById(req.params.id);
+  const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
         // Security check: ensure user is a teacher in the manager's school
-        if (!user || user.role !== 'teacher' || user.school.toString() !== req.user.school.toString()) {
+  if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
             return res.status(404).json({ message: "Teacher not found in your school" });
         }
         
@@ -152,9 +222,7 @@ const updateTeacher = async (req, res) => {
             delete updateData.activities; // ignore invalid shape
           } else {
             const valid = await validateActivitiesAgainstCatalog(req.user.school, updateData.activities);
-            if (!valid.ok) {
-              return res.status(400).json({ message: valid.message || 'Invalid activities selection' });
-            }
+            updateData.activities = valid.activities || [];
           }
         }
 

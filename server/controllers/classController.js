@@ -64,8 +64,12 @@ const createClass = asyncHandler(async (req, res) => {
     schedules,
     capacity,
     enrollmentPeriod,
-    paymentCycle,
-    price,
+  paymentCycle,
+  price,
+  paymentModel: bodyPaymentModel,
+  sessionPrice: bodySessionPrice,
+  cycleSize: bodyCycleSize,
+  cyclePrice: bodyCyclePrice,
     teacherCut,
     absenceRule,
     description
@@ -119,6 +123,39 @@ const createClass = asyncHandler(async (req, res) => {
     throw new Error(`Capacity (${capacity}) exceeds room capacity (${room.capacity})`);
   }
   
+  // Derive pricing fields (support new model and legacy alias)
+  let paymentModel = bodyPaymentModel;
+  let sessionPrice = bodySessionPrice;
+  let cycleSize = bodyCycleSize;
+  let cyclePrice = bodyCyclePrice;
+
+  if (!paymentModel) {
+    // Map legacy fields to per_cycle by default
+    if (typeof price === 'number' && typeof paymentCycle === 'number') {
+      paymentModel = 'per_cycle';
+      cyclePrice = price;
+      cycleSize = paymentCycle;
+    }
+  }
+
+  // Basic validation for pricing
+  if (!paymentModel) {
+    res.status(400);
+    throw new Error('paymentModel is required (use per_cycle with price and paymentCycle or provide new pricing fields)');
+  }
+  if (paymentModel === 'per_cycle') {
+    if (typeof cyclePrice !== 'number' || typeof cycleSize !== 'number') {
+      res.status(400);
+      throw new Error('For per_cycle paymentModel, cyclePrice and cycleSize are required');
+    }
+  }
+  if (paymentModel === 'per_session') {
+    if (typeof sessionPrice !== 'number') {
+      res.status(400);
+      throw new Error('For per_session paymentModel, sessionPrice is required');
+    }
+  }
+
   // Create class instance to check conflicts
   const newClass = new Class({
       name,
@@ -132,6 +169,12 @@ const createClass = asyncHandler(async (req, res) => {
       startDate: new Date(enrollmentPeriod.startDate),
       endDate: new Date(enrollmentPeriod.endDate)
     },
+    // New pricing model fields
+    paymentModel,
+    sessionPrice,
+    cycleSize,
+    cyclePrice,
+    // keep legacy fields for backward compatibility/snapshots
     paymentCycle,
     price,
     teacherCut,
@@ -187,8 +230,12 @@ const updateClass = asyncHandler(async (req, res) => {
     schedules,
     capacity,
     enrollmentPeriod,
-    paymentCycle,
-    price,
+  paymentCycle,
+  price,
+  paymentModel: bodyPaymentModel,
+  sessionPrice: bodySessionPrice,
+  cycleSize: bodyCycleSize,
+  cyclePrice: bodyCyclePrice,
     teacherCut,
     absenceRule,
     description,
@@ -248,6 +295,39 @@ const updateClass = asyncHandler(async (req, res) => {
       endDate: new Date(enrollmentPeriod.endDate)
     };
   }
+    // Pricing updates: prefer new model, map legacy when provided
+    if (bodyPaymentModel) {
+      classItem.paymentModel = bodyPaymentModel;
+      if (bodyPaymentModel === 'per_session') {
+        if (typeof bodySessionPrice === 'number') classItem.sessionPrice = bodySessionPrice;
+        // clear cycle fields optionally
+        if (classItem.cyclePrice !== undefined) classItem.cyclePrice = classItem.cyclePrice; // no-op to preserve existing if any
+      } else if (bodyPaymentModel === 'per_cycle') {
+        if (typeof bodyCyclePrice === 'number') classItem.cyclePrice = bodyCyclePrice;
+        if (typeof bodyCycleSize === 'number') classItem.cycleSize = bodyCycleSize;
+        // clear session price optionally
+        if (classItem.sessionPrice !== undefined) classItem.sessionPrice = classItem.sessionPrice; // no-op
+      }
+    } else {
+      // Map legacy partial updates when present
+      if (typeof price === 'number') {
+        classItem.cyclePrice = price;
+        if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
+      }
+      if (typeof paymentCycle === 'number') {
+        classItem.cycleSize = paymentCycle;
+        if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
+      }
+      // Ensure existing docs missing new fields get populated from legacy
+      if (!classItem.paymentModel) {
+        if (typeof classItem.price === 'number' && typeof classItem.paymentCycle === 'number') {
+          classItem.paymentModel = 'per_cycle';
+          classItem.cyclePrice = classItem.price;
+          classItem.cycleSize = classItem.paymentCycle;
+        }
+      }
+    }
+
   if (paymentCycle !== undefined) classItem.paymentCycle = paymentCycle;
   if (price !== undefined) classItem.price = price;
   if (teacherCut !== undefined) classItem.teacherCut = teacherCut;

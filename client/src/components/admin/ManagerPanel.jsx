@@ -26,6 +26,8 @@ const ManagerPanel = ({ schoolId, schoolName, onClose }) => {
     phone2: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [editModal, setEditModal] = useState({ open: false, manager: null });
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '', username: '', contact: { phone1: '', phone2: '', address: '' }, password: '' });
 
   const loadManagers = async () => {
     if (!schoolId) return;
@@ -85,6 +87,44 @@ const ManagerPanel = ({ schoolId, schoolName, onClose }) => {
       await loadManagers();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete manager');
+    }
+  };
+
+  const openEdit = (manager) => {
+    // Start with an empty form; we'll use placeholders to show current values.
+    setEditForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      username: '',
+      contact: { phone1: '', phone2: '', address: '' },
+      password: ''
+    });
+    setEditModal({ open: true, manager });
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!editModal.manager) return;
+    try {
+      const payload = {};
+      if (editForm.firstName && editForm.firstName.trim()) payload.firstName = editForm.firstName.trim();
+      if (editForm.lastName && editForm.lastName.trim()) payload.lastName = editForm.lastName.trim();
+      if (editForm.email && editForm.email.trim()) payload.email = editForm.email.trim();
+      if (editForm.username && editForm.username.trim()) payload.username = editForm.username.trim();
+      const contact = {};
+      if (editForm.contact.phone1 && editForm.contact.phone1.trim()) contact.phone1 = editForm.contact.phone1.trim();
+      if (editForm.contact.phone2 && editForm.contact.phone2.trim()) contact.phone2 = editForm.contact.phone2.trim();
+      if (editForm.contact.address && editForm.contact.address.trim()) contact.address = editForm.contact.address.trim();
+      if (Object.keys(contact).length > 0) payload.contact = contact;
+      if (editForm.password && editForm.password.trim()) payload.password = editForm.password;
+      await axios.put(`/api/schools/${schoolId}/managers/${editModal.manager._id}`, payload, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      setEditModal({ open: false, manager: null });
+      await loadManagers();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update manager');
     }
   };
 
@@ -236,7 +276,7 @@ const ManagerPanel = ({ schoolId, schoolName, onClose }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
-                      onClick={() => {/* TODO: Add edit manager functionality */}}
+                      onClick={() => openEdit(manager)}
                       className="text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-md transition-colors flex items-center gap-1"
                       title="Edit Manager"
                     >
@@ -264,6 +304,80 @@ const ManagerPanel = ({ schoolId, schoolName, onClose }) => {
           </div>
         )}
       </div>
+      {editModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md relative">
+            <button
+              onClick={() => setEditModal({ open: false, manager: null })}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              title="Close"
+            >
+              <CloseIcon />
+            </button>
+            <form onSubmit={saveEdit} className="space-y-4">
+              <h4 className="text-lg font-semibold">Edit Manager</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder={`First Name${editModal.manager?.firstName ? ` (${editModal.manager.firstName})` : ''}`}
+                  value={editForm.firstName}
+                  onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                />
+                <input
+                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder={`Last Name${editModal.manager?.lastName ? ` (${editModal.manager.lastName})` : ''}`}
+                  value={editForm.lastName}
+                  onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                />
+              </div>
+              <input
+                className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                placeholder={`Email${editModal.manager?.email ? ` (${editModal.manager.email})` : ''}`}
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+              <input
+                className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                placeholder={`Username${editModal.manager?.username ? ` (${editModal.manager.username})` : ''}`}
+                value={editForm.username}
+                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder={`Phone 1${editModal.manager?.contact?.phone1 ? ` (${editModal.manager.contact.phone1})` : ''}`}
+                  value={editForm.contact.phone1}
+                  onChange={(e) => setEditForm({ ...editForm, contact: { ...editForm.contact, phone1: e.target.value } })}
+                />
+                <input
+                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                  placeholder={`Phone 2${editModal.manager?.contact?.phone2 ? ` (${editModal.manager.contact.phone2})` : ''}`}
+                  value={editForm.contact.phone2}
+                  onChange={(e) => setEditForm({ ...editForm, contact: { ...editForm.contact, phone2: e.target.value } })}
+                />
+              </div>
+              <input
+                className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                placeholder={`Address${editModal.manager?.contact?.address ? ` (${editModal.manager.contact.address})` : ''}`}
+                value={editForm.contact.address}
+                onChange={(e) => setEditForm({ ...editForm, contact: { ...editForm.contact, address: e.target.value } })}
+              />
+              <input
+                className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                placeholder="New Password (optional)"
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+              />
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={() => setEditModal({ open: false, manager: null })} className="px-4 py-2 rounded bg-gray-200 text-gray-800">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

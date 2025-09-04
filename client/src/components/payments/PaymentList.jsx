@@ -1,5 +1,6 @@
 // PaymentList.jsx
 import React from 'react';
+import formatDZ from '../../utils/currency';
 
 const PaymentList = ({ payments }) => {
   return (

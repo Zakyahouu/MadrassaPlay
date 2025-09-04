@@ -53,7 +53,18 @@ const CatalogTab = () => {
     try {
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
+      // Support bulk adds: if data is an array, post sequentially then refetch once
+      if (Array.isArray(data)) {
+        for (const d of data) {
+          await axios.post(`/api/catalog/${user.school}/${type}`, d, config);
+        }
+        const refreshed = await axios.get(`/api/catalog/${user.school}`, config);
+        setCatalog(refreshed.data);
+        setModal({ type: null, data: null, isOpen: false });
+        return;
+      }
+
       const response = await axios.post(`/api/catalog/${user.school}/${type}`, data, config);
       setCatalog(response.data);
       setModal({ type: null, data: null, isOpen: false });
@@ -101,17 +112,8 @@ const CatalogTab = () => {
     });
   };
 
-  // Helper function to format subject display
-  const formatSubjectDisplay = (subject) => {
-    if (!subject) return '';
-    
-    const subjects = subject.split(',').map(s => s.trim());
-    if (subjects.length <= 3) {
-      return subjects.join(', ');
-    }
-    
-    return `${subjects.slice(0, 2).join(', ')} +${subjects.length - 2} more`;
-  };
+  // Convert item.subject to array for chip UI
+  const subjectArray = (subject) => (subject ? subject.split(',').map(s => s.trim()).filter(Boolean) : []);
 
   // Helper function to get level display
   const getLevelDisplay = (level) => {
@@ -154,8 +156,8 @@ const CatalogTab = () => {
 
     switch (activeSection) {
       case 'support-lessons':
-        const supportLessons = filterItems(catalog.supportLessons || []);
-        const groupedSupportLessons = groupItemsByLevel(supportLessons);
+  const supportLessons = filterItems(catalog.supportLessons || []);
+  const groupedSupportLessons = groupItemsByLevel(supportLessons);
         
         return (
           <div className="space-y-6">
@@ -190,55 +192,48 @@ const CatalogTab = () => {
                         {levelItems.length} {levelItems.length === 1 ? 'item' : 'items'}
                       </span>
                     </div>
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 ml-4">
-                      {levelItems.map((lesson, index) => (
-                        <UnifiedCard key={lesson._id || index} className="p-4 hover:shadow-lg transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <BookOpen className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                <h4 className="font-semibold text-gray-900 truncate">
-                                  {formatSubjectDisplay(lesson.subject)}
-                                </h4>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                    {getGradeDisplay(lesson.grade, lesson.level)}
-                                  </span>
-                                  {lesson.stream && (
-                                    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                                      {lesson.stream}
-                                    </span>
-                                  )}
-                                </div>
-                                {lesson.subject && lesson.subject.split(',').length > 3 && (
-                                  <p className="text-xs text-gray-500 mt-2">
-                                    {lesson.subject.split(',').length} subjects total
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex gap-1 ml-2">
+                    {/* Group by grade + stream for dense display */}
+                    {Object.entries(
+                      levelItems.reduce((acc, item) => {
+                        const key = `${item.grade}|${item.stream||''}`;
+                        acc[key] = acc[key] || { grade: item.grade, stream: item.stream, items: [] };
+                        acc[key].items.push(item);
+                        return acc;
+                      }, {})
+                    ).sort((a,b) => a[1].grade - b[1].grade).map(([key, group]) => (
+                      <div key={key} className="ml-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            {getGradeDisplay(group.grade, level)}
+                          </span>
+                          {group.stream && (
+                            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">{group.stream}</span>
+                          )}
+                          <span className="text-xs text-gray-500">{group.items.length} items</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {group.items.map((it) => (
+                            <div key={it._id} className="flex items-center gap-1 px-2 py-1 bg-white border rounded-full shadow-sm">
+                              <span className="text-xs text-gray-800">{subjectArray(it.subject)[0] || it.subject}</span>
                               <button
-                                onClick={() => setModal({ type: 'support-lessons', data: lesson, isOpen: true })}
-                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                onClick={() => setModal({ type: 'support-lessons', data: it, isOpen: true })}
+                                className="p-0.5 text-gray-400 hover:text-blue-600"
                                 title="Edit"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={() => handleDeleteItem('support-lessons', lesson._id)}
-                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                onClick={() => handleDeleteItem('support-lessons', it._id)}
+                                className="p-0.5 text-gray-400 hover:text-red-600"
                                 title="Delete"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
-                          </div>
-                        </UnifiedCard>
-                      ))}
-                    </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 );
               })}
@@ -247,8 +242,8 @@ const CatalogTab = () => {
         );
 
       case 'review-courses':
-        const reviewCourses = filterItems(catalog.reviewCourses || []);
-        const groupedReviewCourses = groupItemsByLevel(reviewCourses);
+  const reviewCourses = filterItems(catalog.reviewCourses || []);
+  const groupedReviewCourses = groupItemsByLevel(reviewCourses);
         
         return (
           <div className="space-y-6">
@@ -283,55 +278,47 @@ const CatalogTab = () => {
                         {levelItems.length} {levelItems.length === 1 ? 'item' : 'items'}
                       </span>
                     </div>
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 ml-4">
-                      {levelItems.map((course, index) => (
-                        <UnifiedCard key={course._id || index} className="p-4 hover:shadow-lg transition-shadow">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <GraduationCap className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                                <h4 className="font-semibold text-gray-900 truncate">
-                                  {formatSubjectDisplay(course.subject)}
-                                </h4>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                                    {getGradeDisplay(course.grade, course.level)}
-                                  </span>
-                                  {course.stream && (
-                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                      {course.stream}
-                                    </span>
-                                  )}
-                                </div>
-                                {course.subject && course.subject.split(',').length > 3 && (
-                                  <p className="text-xs text-gray-500 mt-2">
-                                    {course.subject.split(',').length} subjects total
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex gap-1 ml-2">
+                    {Object.entries(
+                      levelItems.reduce((acc, item) => {
+                        const key = `${item.grade}|${item.stream||''}`;
+                        acc[key] = acc[key] || { grade: item.grade, stream: item.stream, items: [] };
+                        acc[key].items.push(item);
+                        return acc;
+                      }, {})
+                    ).sort((a,b) => a[1].grade - b[1].grade).map(([key, group]) => (
+                      <div key={key} className="ml-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                            {getGradeDisplay(group.grade, level)}
+                          </span>
+                          {group.stream && (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.stream}</span>
+                          )}
+                          <span className="text-xs text-gray-500">{group.items.length} items</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {group.items.map((it) => (
+                            <div key={it._id} className="flex items-center gap-1 px-2 py-1 bg-white border rounded-full shadow-sm">
+                              <span className="text-xs text-gray-800">{subjectArray(it.subject)[0] || it.subject}</span>
                               <button
-                                onClick={() => setModal({ type: 'review-courses', data: course, isOpen: true })}
-                                className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                onClick={() => setModal({ type: 'review-courses', data: it, isOpen: true })}
+                                className="p-0.5 text-gray-400 hover:text-purple-600"
                                 title="Edit"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={() => handleDeleteItem('review-courses', course._id)}
-                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                onClick={() => handleDeleteItem('review-courses', it._id)}
+                                className="p-0.5 text-gray-400 hover:text-red-600"
                                 title="Delete"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
-                          </div>
-                        </UnifiedCard>
-                      ))}
-                    </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 );
               })}
@@ -503,9 +490,9 @@ const CatalogTab = () => {
 
     switch (modal.type) {
       case 'support-lessons':
-        return <SupportLessonForm {...modalProps} />;
+        return <SupportLessonForm {...modalProps} catalog={catalog} />;
       case 'review-courses':
-        return <ReviewCourseForm {...modalProps} />;
+        return <ReviewCourseForm {...modalProps} catalog={catalog} />;
       case 'vocational-trainings':
         return <VocationalTrainingForm {...modalProps} />;
       case 'languages':

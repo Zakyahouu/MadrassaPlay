@@ -15,11 +15,10 @@ const connectDB = async () => {
     // This is the core of the connection. mongoose.connect() attempts to connect
     // to the MongoDB database using the connection string provided.
     // process.env.MONGO_URI is how we will access our secret connection string.
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      // These are standard options to prevent console warnings.
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    if (!process.env.MONGO_URI) {
+      throw new Error('MONGO_URI is not set. Please define it in your environment.');
+    }
+    const conn = await mongoose.connect(process.env.MONGO_URI);
 
     // If the connection is successful, we log a message to the console.
     // conn.connection.host will show the database host we are connected to.
