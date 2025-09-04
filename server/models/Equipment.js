@@ -24,6 +24,7 @@ const equipmentSchema = new mongoose.Schema(
 		units: [
 			{
 				serial: { type: Number, required: true },
+				name: { type: String, trim: true },
 				state: { type: String, enum: ['Working Fine', 'Broken', 'Under Maintenance'], default: 'Working Fine' },
 				notes: { type: String, trim: true }
 			}

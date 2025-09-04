@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight, GraduationCap, Plus, Check } from 'lucide-react';
 
-const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
+const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     level: '',
@@ -95,7 +95,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
         ];
       } else if (grade === 2 || grade === 3) {
         switch (stream) {
-          case 'experimental_sciences':
+          case 'experimental sciences':
             return [
               'رياضيات',
               'علوم طبيعية',
@@ -118,7 +118,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
               'تاريخ وجغرافيا',
               'تربية إسلامية'
             ];
-          case 'technical_math':
+          case 'technical math':
             return [
               'رياضيات',
               'فيزياء',
@@ -130,7 +130,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
               'تاريخ وجغرافيا',
               'تربية إسلامية'
             ];
-          case 'management_economics':
+          case 'management & economics':
             return [
               'رياضيات',
               'اقتصاد ومحاسبة',
@@ -142,7 +142,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
               'تاريخ وجغرافيا',
               'تربية إسلامية'
             ];
-          case 'literature_philosophy':
+          case 'literature & philosophy':
             return [
               'لغة عربية',
               'فلسفة',
@@ -151,7 +151,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
               'لغة إنجليزية',
               'تربية إسلامية'
             ];
-          case 'foreign_languages':
+          case 'foreign languages':
             return [
               'لغة عربية',
               'فلسفة',
@@ -174,22 +174,22 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
   const getStreamOptions = () => {
     return [
       { 
-        value: 'common_core_science', 
+        value: 'common core science and technology', 
         label: 'Common Core Science and Technology (جذع مشترك علوم وتكنولوجيا)',
         years: [1]
       },
       { 
-        value: 'common_core_arts', 
+        value: 'common core literature and languages', 
         label: 'Common Core Arts (جذع مشترك اداب)',
         years: [1]
       },
       { 
-        value: 'experimental_sciences', 
+        value: 'experimental sciences', 
         label: 'Experimental Sciences',
         years: [2, 3]
       },
       { 
-        value: 'technical_math', 
+        value: 'technical math', 
         label: 'Technical Math',
         years: [2, 3]
       },
@@ -199,17 +199,17 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
         years: [2, 3]
       },
       { 
-        value: 'management_economics', 
+        value: 'management & economics', 
         label: 'Management & Economics',
         years: [2, 3]
       },
       { 
-        value: 'foreign_languages', 
+        value: 'foreign languages', 
         label: 'Foreign Languages',
         years: [2, 3]
       },
       { 
-        value: 'literature_philosophy', 
+        value: 'literature & philosophy', 
         label: 'Literature & Philosophy',
         years: [2, 3]
       }
@@ -283,35 +283,78 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
     }
   };
 
+  const buildSubmitItems = () => {
+    const items = [];
+    for (const grade of formData.selectedGrades) {
+      const subjects = formData.gradeSubjects[grade] || [];
+      for (let i = 0; i < subjects.length; i++) {
+        const submitData = {
+          level: formData.level,
+          grade,
+          subject: subjects[i]
+        };
+        if (formData.level === 'high_school' && formData.stream) {
+          submitData.stream = formData.stream;
+        }
+        items.push(submitData);
+      }
+    }
+    return items;
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
     setLoading(true);
     try {
-      // Create one course per grade with all selected subjects
-      const submitPromises = formData.selectedGrades.map(grade => {
+      if (data) {
+        const grade = formData.selectedGrades[0];
+        const subjects = formData.gradeSubjects[grade] || [];
         const submitData = {
           level: formData.level,
-          grade: grade,
-          subject: formData.gradeSubjects[grade].join(', ') // Join selected subjects with commas
+          grade,
+          subject: subjects.join(', '),
         };
-        
-        // Add stream if high school
         if (formData.level === 'high_school' && formData.stream) {
           submitData.stream = formData.stream;
         }
-
-        return onSubmit(submitData);
-      });
-
-      await Promise.all(submitPromises);
+        await onSubmit(submitData);
+      } else {
+        const items = buildSubmitItems();
+        await onSubmit(items);
+      }
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('Failed to save course. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Dedup against existing catalog reviewCourses
+  const existingReviewKeys = useMemo(() => {
+    const set = new Set();
+    if (!catalog || !Array.isArray(catalog.reviewCourses)) return set;
+    catalog.reviewCourses.forEach((item) => {
+      const level = (item.level || '').trim();
+      const grade = item.grade;
+      const stream = (item.stream || '').trim();
+      const subjects = (item.subject || '').split(',').map(s => s.trim()).filter(Boolean);
+      subjects.forEach((subj) => {
+        const key = `${level}|${grade}|${stream}|${subj}`.toLowerCase();
+        if (data && item._id && data._id && item._id.toString() === data._id.toString()) return;
+        set.add(key);
+      });
+    });
+    return set;
+  }, [catalog, data]);
+
+  const isSubjectAlreadyExists = (grade, subject) => {
+    const level = formData.level;
+    const stream = formData.level === 'high_school' ? (formData.stream || '') : '';
+    const key = `${level}|${grade}|${stream}|${subject}`.toLowerCase();
+    return existingReviewKeys.has(key);
   };
 
   // Handle input changes
@@ -646,17 +689,20 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data }) => {
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {subjectOptions.map((subject) => (
-                            <div key={subject} className="flex items-center gap-2">
+                          {subjectOptions.map((subject) => {
+                            const disabled = !data && isSubjectAlreadyExists(grade, subject);
+                            return (
+                            <div key={subject} className={`flex items-center gap-2 ${disabled ? 'opacity-50' : ''}`}>
                               <input
                                 type="checkbox"
                                 checked={selectedSubjects.includes(subject)}
-                                onChange={() => handleSubjectToggle(grade, subject)}
+                                onChange={() => !disabled && handleSubjectToggle(grade, subject)}
+                                disabled={disabled}
                                 className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                               />
                               <span className="text-sm text-gray-700">{subject}</span>
                             </div>
-                          ))}
+                          );})}
                         </div>
                         {selectedSubjects.length > 0 && (
                           <p className="mt-2 text-xs text-purple-600">

@@ -1,6 +1,7 @@
 // ClassPaymentStatus.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import formatDZ from '../../utils/currency';
 
 const ClassPaymentStatus = ({ classId }) => {
   const [payments, setPayments] = useState([]);
@@ -11,7 +12,7 @@ const ClassPaymentStatus = ({ classId }) => {
     const fetchPayments = async () => {
       try {
         const response = await axios.get(`/api/payments?class=${classId}`);
-        setPayments(response.data);
+        setPayments(response.data.items || []);
       } catch (err) {
         setError('Failed to fetch payments.');
       } finally {
@@ -31,7 +32,7 @@ const ClassPaymentStatus = ({ classId }) => {
         {payments.length > 0 ? (
           payments.map(payment => (
             <li key={payment._id}>
-              Student: {payment.student?.name} | Status: {payment.status} | Due: {new Date(payment.dueDate).toLocaleDateString()} | Paid: {payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : 'Not paid'}
+              Student: {payment.studentId?.firstName} {payment.studentId?.lastName} | Kind: {payment.kind} | Amount: {formatDZ(payment.amount)}
             </li>
           ))
         ) : (

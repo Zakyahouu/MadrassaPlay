@@ -31,6 +31,14 @@ const Profile = () => {
   const { user, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  // Payments/Profile extras
+  const [enrollments, setEnrollments] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loadingFinance, setLoadingFinance] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ enrollmentId: '', units: 1, amount: '', kind: 'pay_sessions', note: '' });
+  // Credit removed entirely
+  const [savingPayment, setSavingPayment] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -58,12 +66,50 @@ const Profile = () => {
     });
   }, [user]);
 
+  // Utility: DZ currency formatting (local, to avoid new imports)
+  const fmtDZ = (n) => new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(Number(n || 0));
+
+  // Load enrollments for this user. Payments are fetched only for manager/staff (server RBAC).
+  useEffect(() => {
+    const load = async () => {
+      if (!user?._id) return;
+      setLoadingFinance(true);
+      try {
+        // Get raw enrollments with pricingSnapshot and counters if available
+        const enrPromise = axios.get(`/api/enrollments/student/${user._id}`);
+        const payPromise = canManageFinance
+          ? axios.get('/api/payments', { params: { studentId: user._id, limit: 200 } })
+          : Promise.resolve({ data: { items: [] } });
+        const [enrRes, payRes] = await Promise.all([enrPromise, payPromise]);
+        setEnrollments(Array.isArray(enrRes.data) ? enrRes.data : []);
+        setPayments(Array.isArray(payRes.data?.items) ? payRes.data.items : []);
+      } catch (e) {
+        console.error('Failed loading enrollments/payments:', e);
+      } finally {
+        setLoadingFinance(false);
+      }
+    };
+    load();
+  }, [user?._id, user?.role]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    // Support nested fields using dot-notation, e.g. "contact.phone1"
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent] || {}),
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSave = async () => {
@@ -81,6 +127,86 @@ const Profile = () => {
       alert('Error saving profile. Please try again.');
     }
   };
+
+  const canManageFinance = ['manager', 'staff'].includes(user?.role);
+
+  const deriveRemainingSessions = (enr) => {
+    const completed = typeof enr.sessionsCompleted === 'number' ? enr.sessionsCompleted : (typeof enr.totalSessions === 'number' ? enr.totalSessions : 0);
+    const attended = typeof enr.sessionsAttended === 'number' ? enr.sessionsAttended : 0;
+    const remaining = Math.max(0, completed - attended);
+    return remaining;
+  };
+
+  const lastPaymentForEnrollment = (enrollmentId) => {
+    const found = payments.find(p => p.enrollmentId === enrollmentId || p.enrollmentId?._id === enrollmentId || p.enrollmentId?.toString?.() === enrollmentId?.toString?.());
+    return found || null;
+  };
+
+  const onOpenAddPayment = (enr) => {
+    const model = enr?.pricingSnapshot?.paymentModel;
+    const defaultKind = model === 'per_cycle' ? 'pay_cycles' : 'pay_sessions';
+    setPaymentForm({
+      enrollmentId: enr?._id || '',
+      units: 1,
+      amount: '',
+      kind: defaultKind,
+      note: ''
+    });
+    setShowPaymentModal(true);
+  };
+
+  const computeSuggestedAmount = (form) => {
+    const enr = enrollments.find(e => (e._id === form.enrollmentId));
+    if (!enr) return '';
+    const snap = enr.pricingSnapshot || {};
+    if (form.kind === 'pay_sessions' && typeof snap.sessionPrice === 'number') {
+      return (Number(form.units || 0) * Number(snap.sessionPrice || 0)) || '';
+    }
+    if (form.kind === 'pay_cycles' && typeof snap.cyclePrice === 'number') {
+      return (Number(form.units || 0) * Number(snap.cyclePrice || 0)) || '';
+    }
+    // If per-session price missing, derive from cycle
+    if (form.kind === 'pay_sessions' && !(typeof snap.sessionPrice === 'number') && snap.cyclePrice > 0 && snap.cycleSize > 0) {
+      const per = snap.cyclePrice / snap.cycleSize;
+      return Math.round(Number(form.units || 0) * per) || '';
+    }
+    return '';
+  };
+
+  const handleCreatePayment = async (e) => {
+    e?.preventDefault?.();
+    if (!paymentForm.enrollmentId) return;
+    try {
+      setSavingPayment(true);
+  // Amount is fixed: always use the derived suggested amount
+  const amt = Number(computeSuggestedAmount(paymentForm) || 0);
+      if (!amt || amt <= 0) {
+        alert('Please enter a valid amount.');
+        setSavingPayment(false);
+        return;
+      }
+      const idempotencyKey = (crypto?.randomUUID && crypto.randomUUID()) || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const body = {
+        enrollmentId: paymentForm.enrollmentId,
+        amount: Math.round(amt),
+        kind: paymentForm.kind,
+        note: paymentForm.note?.trim() || undefined,
+        idempotencyKey
+      };
+      await axios.post('/api/payments', body);
+      setShowPaymentModal(false);
+      // refresh payments
+      const payRes = await axios.get('/api/payments', { params: { studentId: user._id, limit: 200 } });
+      setPayments(Array.isArray(payRes.data?.items) ? payRes.data.items : []);
+    } catch (err) {
+      console.error('Create payment failed', err);
+      alert(err?.response?.data?.message || 'Failed to create payment');
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
+  // (credit removed)
 
   const handleCancel = () => {
     setFormData({
@@ -108,6 +234,22 @@ const Profile = () => {
       'staff': 'Staff'
     };
     return roleNames[role] || role;
+  };
+
+  // Attendance history per enrollment (on-demand)
+  const [historyOpenId, setHistoryOpenId] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyMap, setHistoryMap] = useState({}); // enrollmentId -> list
+  const loadEnrollmentHistory = async (enrollmentId) => {
+    try {
+      setHistoryLoading(true);
+      const res = await axios.get(`/api/attendance/history`, { params: { enrollmentId } });
+      setHistoryMap(m => ({ ...m, [enrollmentId]: res.data?.items || [] }));
+    } catch (e) {
+      console.error('Failed history', e);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const getRoleColor = (role) => {
@@ -438,15 +580,15 @@ const Profile = () => {
                     Phone Number
                   </label>
                   {isEditing ? (
-                                         <input
-                       type="tel"
-                       name="phone"
-                       value={formData.phone}
-                       onChange={handleInputChange}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                     />
+                    <input
+                      type="tel"
+                      name="contact.phone1"
+                      value={formData.contact?.phone1 || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
                   ) : (
-                    <p className="text-gray-900">{user.phone || 'Not provided'}</p>
+                    <p className="text-gray-900">{user?.contact?.phone1 || user?.phone || 'Not provided'}</p>
                   )}
                 </div>
               </div>
@@ -482,9 +624,199 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Enrollments & Balances (visible for students themselves, and managers/staff) */}
+            {(['student','manager','staff'].includes(user?.role)) && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Enrollments & Balances</h3>
+                {loadingFinance ? (
+                  <p className="text-gray-500">Loading...</p>
+                ) : (
+                  <div className="space-y-3">
+                    {enrollments.length === 0 ? (
+                      <p className="text-gray-500">No enrollments found.</p>
+                    ) : enrollments.map((enr) => {
+                      const remaining = deriveRemainingSessions(enr);
+                      const overdue = remaining <= 0;
+                      const lastPay = payments.find(p => (p.enrollmentId === enr._id) || (p.enrollmentId?._id === enr._id));
+                      const snap = enr.pricingSnapshot || {};
+                      const cycleInfo = snap.paymentModel === 'per_cycle' && snap.cycleSize ? ` (~${Math.floor(remaining / (snap.cycleSize || 1))} cycles)` : '';
+                      return (
+                        <div key={enr._id} className="p-3 border rounded-md bg-white">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-gray-900">{enr.classId?.name || enr.className || 'Class'}</p>
+                            <div className="text-sm text-gray-600 flex flex-wrap gap-3 mt-1">
+                              <span>Remaining: <span className="font-semibold text-gray-900">{remaining}</span>{cycleInfo}</span>
+                              <span>
+                                Status: <span className={`font-semibold ${enr.status === 'active' ? 'text-green-700' : 'text-gray-700'}`}>{enr.status || 'active'}</span>
+                              </span>
+                              {/* credit removed */}
+                              {lastPay && (
+                                <span>Last payment: <span className="font-semibold text-gray-900">{fmtDZ(lastPay.amount)}</span> on {new Date(lastPay.createdAt || lastPay.created_at || Date.now()).toLocaleDateString()}</span>
+                              )}
+                              {overdue && <span className="text-red-600 font-semibold">Overdue</span>}
+                            </div>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between">
+                            <button onClick={async ()=>{ const open = historyOpenId===enr._id ? null : enr._id; setHistoryOpenId(open); if (open) await loadEnrollmentHistory(enr._id); }} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">
+                              {historyOpenId===enr._id ? 'Hide' : 'Show'} Attendance History
+                            </button>
+                            {canManageFinance && (
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => onOpenAddPayment(enr)} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">Add Payment</button>
+                              </div>
+                            )}
+                          </div>
+                          {historyOpenId===enr._id && (
+                            <div className="mt-3 border-t pt-3">
+                              {historyLoading ? (
+                                <p className="text-sm text-gray-500">Loading history…</p>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {(historyMap[enr._id] || []).map(h => (
+                                        <tr key={h._id}>
+                                          <td className="px-3 py-2 text-sm text-gray-900">{new Date(h.date).toLocaleDateString()}</td>
+                                          <td className="px-3 py-2 text-sm">
+                                            <span className={`px-2 py-0.5 rounded-full border text-xs ${h.status==='present' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{h.status}</span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                      {!(historyMap[enr._id]||[]).length && (
+                                        <tr><td className="px-3 py-2 text-sm text-gray-500" colSpan={2}>No attendance yet.</td></tr>
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+    {/* Payments History (manager/staff only; server RBAC restricts /api/payments) */}
+    {(['manager','staff'].includes(user?.role)) && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Payments</h3>
+      {canManageFinance && enrollments.length > 0 && (
+                    <button onClick={() => onOpenAddPayment(enrollments[0])} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">Add Payment</button>
+                  )}
+                </div>
+                {loadingFinance ? (
+                  <p className="text-gray-500">Loading...</p>
+                ) : payments.length === 0 ? (
+                  <p className="text-gray-500">No payments yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kind</th>
+                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {payments.map((p) => (
+                          <tr key={p._id}>
+                            <td className="px-3 py-2 text-sm text-gray-900">{new Date(p.createdAt || p.created_at || Date.now()).toLocaleDateString()}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{p.classId?.name || '-'}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{p.kind}</td>
+                            <td className="px-3 py-2 text-sm text-gray-900 text-right">{fmtDZ(p.amount)}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{p.method || 'cash'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </UnifiedCard>
       </div>
+
+      {/* Add Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 p-4">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-semibold text-gray-900">Add Payment</h4>
+              <button onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreatePayment} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={paymentForm.enrollmentId}
+                  onChange={(e) => setPaymentForm(f => ({ ...f, enrollmentId: e.target.value }))}
+                  required
+                >
+                  <option value="">Select enrollment…</option>
+                  {enrollments.map(e => (
+                    <option key={e._id} value={e._id}>{e.classId?.name || e.className || 'Class'} ({e.status})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Kind</label>
+                  <select
+                    className="w-full px-3 py-2 border rounded-md"
+                    value={paymentForm.kind}
+                    onChange={(e) => setPaymentForm(f => ({ ...f, kind: e.target.value }))}
+                  >
+                    <option value="pay_sessions">Pay Sessions</option>
+                    <option value="pay_cycles">Pay Cycles</option>
+                    {/* only sessions or cycles */}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Units</label>
+                  <input type="number" min="1" className="w-full px-3 py-2 border rounded-md" value={paymentForm.units}
+                    onChange={(e) => setPaymentForm(f => ({ ...f, units: Math.max(1, parseInt(e.target.value || '1', 10)) }))} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (DZ)</label>
+                <input type="number" min="0" className="w-full px-3 py-2 border rounded-md" value={computeSuggestedAmount(paymentForm) || ''} readOnly />
+                {computeSuggestedAmount(paymentForm) && (
+                  <p className="text-xs text-gray-500 mt-1">Suggested: {fmtDZ(computeSuggestedAmount(paymentForm))}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                <input type="text" className="w-full px-3 py-2 border rounded-md" value={paymentForm.note}
+                  onChange={(e) => setPaymentForm(f => ({ ...f, note: e.target.value }))} />
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowPaymentModal(false)} className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={savingPayment} className="px-3 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">{savingPayment ? 'Saving…' : 'Save Payment'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+  {/* credit UI removed */}
     </div>
   );
 };

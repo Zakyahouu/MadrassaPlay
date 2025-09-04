@@ -2,61 +2,40 @@
 
 const mongoose = require('mongoose');
 
-const attendanceSchema = new mongoose.Schema({
-  enrollmentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Enrollment',
-    required: true,
-  },
-  sessionDate: {
-    type: Date,
-    required: true,
-  },
-  startTime: {
-    type: String,
-    required: true,
-    match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, // HH:mm format
-  },
-  status: {
-    type: String,
-    enum: ['present', 'absent'],
-    required: true,
-  },
-  charged: {
-    type: Boolean,
-    default: false,
-  },
-  recordedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  voided: {
-    type: Boolean,
-    default: false,
-  },
-  voidReason: {
-    type: String,
-    required: function() {
-      return this.voided === true;
+// Helper to normalize a Date or YYYY-MM-DD string to UTC date-only (00:00:00Z)
+function toUtcDateOnly(value) {
+  if (!value) return value;
+  const d = typeof value === 'string' ? new Date(value + 'T00:00:00.000Z') : new Date(value);
+  // Force to start of day UTC
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+const attendanceSchema = new mongoose.Schema(
+  {
+    schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
+    studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true },
+    // UTC date-only (00:00:00Z)
+    date: {
+      type: Date,
+      required: true,
+      set: toUtcDateOnly,
     },
+    status: {
+      type: String,
+      enum: ['present', 'absent'],
+      required: true,
+    },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now },
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  timestamps: true,
-});
+  { timestamps: false }
+);
 
-// Indexes for performance
-attendanceSchema.index({ sessionDate: 1 });
-attendanceSchema.index({ enrollmentId: 1 });
-attendanceSchema.index({ status: 1 });
-attendanceSchema.index({ charged: 1 });
-attendanceSchema.index({ voided: 1 });
-
-// Compound index for unique session per enrollment
-attendanceSchema.index({ enrollmentId: 1, sessionDate: 1, startTime: 1 }, { unique: true });
+// Indexes for scale
+attendanceSchema.index({ enrollmentId: 1, date: 1 }, { unique: true });
+attendanceSchema.index({ schoolId: 1, classId: 1, date: 1 });
+attendanceSchema.index({ schoolId: 1, studentId: 1, date: -1 });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

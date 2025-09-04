@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import formatDZ from '../../utils/currency';
 import { 
   User, Mail, Phone, MapPin, GraduationCap, QrCode, BookOpen, 
   CreditCard, Calendar, Clock, Star,
@@ -39,14 +40,14 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Fetch enrollments and payments for this student
+      // Fetch enrollments and payments for this student (unified payments endpoint)
       const [enrollmentsRes, paymentsRes] = await Promise.all([
         axios.get(`/api/students/${student._id}/enrollments`, config),
-        axios.get(`/api/students/${student._id}/payments`, config)
+        axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
       ]);
 
       setEnrollments(enrollmentsRes.data || []);
-      setPayments(paymentsRes.data || []);
+      setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
     } catch (error) {
       console.error('Error fetching student data:', error);
       // Use mock data for demo

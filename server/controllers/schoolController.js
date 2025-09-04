@@ -4,15 +4,31 @@
 const updateManagerForSchool = async (req, res) => {
   try {
     const { schoolId, managerId } = req.params;
-    const { name, email, password } = req.body;
+    const { name, firstName, lastName, email, username, password, contact } = req.body;
 
     const manager = await User.findOne({ _id: managerId, role: 'manager', school: schoolId });
     if (!manager) {
       return res.status(404).json({ message: 'Manager not found for this school.' });
     }
 
-    if (name) manager.name = name;
-    if (email) manager.email = email;
+    // Identity fields (support legacy 'name' and new first/last)
+    if (name !== undefined) manager.name = name;
+    if (firstName !== undefined) manager.firstName = firstName;
+    if (lastName !== undefined) manager.lastName = lastName;
+    if (email !== undefined) manager.email = email;
+    if (username !== undefined) manager.username = username;
+
+    // Contact fields (nested)
+    if (contact && typeof contact === 'object') {
+      const current = manager.contact?.toObject?.() || manager.contact || {};
+      manager.contact = {
+        ...current,
+        ...(contact.phone1 !== undefined ? { phone1: contact.phone1 } : {}),
+        ...(contact.phone2 !== undefined ? { phone2: contact.phone2 } : {}),
+        ...(contact.address !== undefined ? { address: contact.address } : {}),
+      };
+    }
+
     if (password) {
       manager.password = await bcrypt.hash(password, 10);
     }
@@ -264,7 +280,8 @@ const deleteSchool = async (req, res) => {
 // @access  Private/Admin
 const getSchoolById = async (req, res) => {
   try {
-    const school = await School.findById(req.params.id).populate('managers', 'name email');
+    const school = await School.findById(req.params.id)
+      .populate('managers', 'firstName lastName name email username contact');
     if (!school) {
       return res.status(404).json({ message: 'School not found.' });
     }

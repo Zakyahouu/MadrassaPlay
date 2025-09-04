@@ -17,5 +17,6 @@ router.route('/:id')
 // Units management
 router.post('/:id/units', ctrl.adjustUnits); // body: { delta: +N | -N }
 router.patch('/:id/units/:serial/state', ctrl.updateUnitState); // body: { state }
+router.patch('/:id/units/:serial', ctrl.updateUnit); // body: { name?, state?, notes? }
 
 module.exports = router;

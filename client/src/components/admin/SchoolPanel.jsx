@@ -17,6 +17,8 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [form, setForm] = useState({ name: '', email: '', password: '' });
+    const [editModal, setEditModal] = useState({ open: false, manager: null });
+    const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '', username: '', contact: { phone1: '', phone2: '', address: '' }, password: '' });
 
         const load = async () => {
         if (!schoolId) return;
@@ -64,6 +66,44 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
         }
     };
 
+        const openEdit = (m) => {
+            setEditForm({
+                firstName: '',
+                lastName: '',
+                email: '',
+                username: '',
+                contact: { phone1: '', phone2: '', address: '' },
+                password: ''
+            });
+            setEditModal({ open: true, manager: m });
+        };
+
+        const saveEdit = async (e) => {
+            e.preventDefault();
+            try {
+                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                const payload = {};
+                if (editForm.firstName && editForm.firstName.trim()) payload.firstName = editForm.firstName.trim();
+                if (editForm.lastName && editForm.lastName.trim()) payload.lastName = editForm.lastName.trim();
+                if (editForm.email && editForm.email.trim()) payload.email = editForm.email.trim();
+                if (editForm.username && editForm.username.trim()) payload.username = editForm.username.trim();
+                const contact = {};
+                if (editForm.contact.phone1 && editForm.contact.phone1.trim()) contact.phone1 = editForm.contact.phone1.trim();
+                if (editForm.contact.phone2 && editForm.contact.phone2.trim()) contact.phone2 = editForm.contact.phone2.trim();
+                if (editForm.contact.address && editForm.contact.address.trim()) contact.address = editForm.contact.address.trim();
+                if (Object.keys(contact).length) payload.contact = contact;
+                if (editForm.password && editForm.password.trim()) payload.password = editForm.password;
+                await axios.put(`/api/schools/${schoolId}/managers/${editModal.manager._id}`,
+                    payload,
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+                setEditModal({ open: false, manager: null });
+                await load();
+            } catch (err) {
+                alert(err.response?.data?.message || 'Failed to update manager');
+            }
+        };
+
     if (isLoading) return <div className="text-center p-4">Loading managers...</div>;
     if (error) return <div className="text-center p-4 text-red-600">{error}</div>;
 
@@ -73,7 +113,7 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
                 <input className="border p-2 rounded" placeholder="Name" value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} required />
                 <input className="border p-2 rounded" placeholder="Email" type="email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} required />
                 <input className="border p-2 rounded" placeholder="Password" type="password" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} required />
-            <button type="submit" className="bg-blue-600 text-white rounded px-3 py-2">Add Manager</button>
+                <button type="submit" className="bg-blue-600 text-white rounded px-3 py-2">Add Manager</button>
             </form>
             <div className="space-y-3">
                 {managers.length > 0 ? managers.map(m => (
@@ -82,12 +122,40 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
                             <p className="font-semibold text-gray-800">{m.name}</p>
                             <p className="text-sm text-gray-500">{m.email}</p>
                         </div>
-                        <button onClick={()=>deleteManager(m._id)} className="text-red-600 hover:bg-red-50 px-3 py-1 rounded">Delete</button>
+                        <div className="flex items-center gap-2">
+                            <button onClick={()=>openEdit(m)} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded">Edit</button>
+                            <button onClick={()=>deleteManager(m._id)} className="text-red-600 hover:bg-red-50 px-3 py-1 rounded">Delete</button>
+                        </div>
                     </div>
                 )) : (
                     <p className="text-center text-gray-500 p-4">No managers found for {schoolName}.</p>
                 )}
             </div>
+
+            {/* Edit Manager Modal */}
+            {editModal.open && (
+                <Modal onClose={() => setEditModal({ open: false, manager: null })}>
+                    <form onSubmit={saveEdit} className="space-y-4">
+                        <h4 className="text-lg font-semibold">Edit Manager</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input className="border p-2 rounded w-full" placeholder={`First Name${editModal.manager?.firstName ? ` (${editModal.manager.firstName})` : ''}`} value={editForm.firstName} onChange={(e)=>setEditForm({...editForm, firstName: e.target.value})} />
+                            <input className="border p-2 rounded w-full" placeholder={`Last Name${editModal.manager?.lastName ? ` (${editModal.manager.lastName})` : ''}`} value={editForm.lastName} onChange={(e)=>setEditForm({...editForm, lastName: e.target.value})} />
+                        </div>
+                        <input className="border p-2 rounded w-full" placeholder={`Email${editModal.manager?.email ? ` (${editModal.manager.email})` : ''}`} type="email" value={editForm.email} onChange={(e)=>setEditForm({...editForm, email: e.target.value})} />
+                        <input className="border p-2 rounded w-full" placeholder={`Username${editModal.manager?.username ? ` (${editModal.manager.username})` : ''}`} value={editForm.username} onChange={(e)=>setEditForm({...editForm, username: e.target.value})} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input className="border p-2 rounded w-full" placeholder={`Phone 1${editModal.manager?.contact?.phone1 ? ` (${editModal.manager.contact.phone1})` : ''}`} value={editForm.contact.phone1} onChange={(e)=>setEditForm({...editForm, contact: { ...editForm.contact, phone1: e.target.value }})} />
+                            <input className="border p-2 rounded w-full" placeholder={`Phone 2${editModal.manager?.contact?.phone2 ? ` (${editModal.manager.contact.phone2})` : ''}`} value={editForm.contact.phone2} onChange={(e)=>setEditForm({...editForm, contact: { ...editForm.contact, phone2: e.target.value }})} />
+                        </div>
+                        <input className="border p-2 rounded w-full" placeholder={`Address${editModal.manager?.contact?.address ? ` (${editModal.manager.contact.address})` : ''}`} value={editForm.contact.address} onChange={(e)=>setEditForm({...editForm, contact: { ...editForm.contact, address: e.target.value }})} />
+                        <input className="border p-2 rounded w-full" placeholder="New Password (optional)" type="password" value={editForm.password} onChange={(e)=>setEditForm({...editForm, password: e.target.value})} />
+                        <div className="flex gap-2 justify-end">
+                            <button type="button" onClick={()=>setEditModal({ open: false, manager: null })} className="px-4 py-2 rounded bg-gray-200 text-gray-800">Cancel</button>
+                            <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
         </div>
     );
 };
@@ -102,24 +170,25 @@ const SchoolPanel = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [modal, setModal] = useState({ type: null, data: null }); // Manages all modals
 
+    const fetchSchools = async () => {
+        try {
+            setError(null);
+            setLoading(true);
+            const token = JSON.parse(localStorage.getItem('user'))?.token;
+            const { data } = await axios.get('/api/schools', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSchools(data || []);
+        } catch (err) {
+            setError('Failed to fetch schools. Please try again later.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Fetch initial school data from the API on component mount
     useEffect(() => {
-        const fetchSchools = async () => {
-            try {
-                setError(null);
-                setLoading(true);
-                const token = JSON.parse(localStorage.getItem('user'))?.token;
-                const { data } = await axios.get('/api/schools', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setSchools(data || []);
-            } catch (err) {
-                setError('Failed to fetch schools. Please try again later.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchSchools();
     }, []);
 
@@ -148,11 +217,8 @@ const SchoolPanel = () => {
                 const response = await axios.put(`/api/schools/${formData._id}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                
                 setSchools(prev => prev.map(s => s._id === formData._id ? response.data : s));
-                
-                // Refresh the school list to ensure we have the latest data
-                fetchSchools();
+                await fetchSchools();
             } else {
                 const response = await axios.post('/api/schools', payload, {
                     headers: { Authorization: `Bearer ${token}` }

@@ -6,7 +6,6 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-const connectDB = require('./config/db');
 const path = require('path');
 const app = require('./app');
 const gameResultRoutes = require('./routes/gameResultRoutes');
@@ -14,7 +13,6 @@ const gameResultRoutes = require('./routes/gameResultRoutes');
 
 // 2. INITIALIZE THE APP & SERVER
 // ==============================================================================
-connectDB();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -28,7 +26,8 @@ const PORT = process.env.PORT || 5000;
 
 // 3. MIDDLEWARE
 // ==============================================================================
-app.use(express.json());
+// Define liveGames BEFORE any middleware references it
+const liveGames = {};
 
 // --- NEW: Middleware to attach io and liveGames to each request ---
 // This makes them accessible in our controllers.
@@ -37,9 +36,6 @@ app.use((req, res, next) => {
   req.liveGames = liveGames;
   next();
 });
-
-// Serve static game engines from /public/engines
-app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
 
 // Serve React app static files in production
 if (process.env.NODE_ENV === 'production') {
@@ -60,8 +56,6 @@ app.use('/api/results', gameResultRoutes);
 
 // 5. SOCKET.IO CONNECTION HANDLING
 // ==============================================================================
-const liveGames = {};
-
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 

@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 const request = require('supertest');
 const app = require('../app');
 const jwt = require('jsonwebtoken');
@@ -12,7 +13,7 @@ function tokenFor(user) {
 
 describe('Badge Icon Upload Validation', () => {
   let admin, auth;
-  beforeAll(async () => { await connectDB(); });
+  beforeAll(async () => { process.env.NODE_ENV = 'test'; await connectDB(); });
   beforeEach(async () => {
     admin = await User.create({ firstName: 'Admin', lastName: 'User', email: `admin${Date.now()}@ex.com`, password: 'pass123', role: 'admin' });
     auth = `Bearer ${tokenFor(admin)}`;
