@@ -51,6 +51,17 @@ const StudentsTab = () => {
   const [levelFilter, setLevelFilter] = useState('all');
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const [catalogItems, setCatalogItems] = useState([]);
+  // Delete modal state
+  const [deleteEnrollments, setDeleteEnrollments] = useState([]);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [unenrollingId, setUnenrollingId] = useState('');
+  
+  // Additional state for class selection in enrollment
+  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const [classSearchTerm, setClassSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -231,13 +242,25 @@ const StudentsTab = () => {
       alert('Student deleted successfully.');
       closeModal();
     } catch (err) {
-      alert(err.response?.data?.message || "An error occurred.");
+      const status = err.response?.status;
+      const data = err.response?.data || {};
+      if (status === 409) {
+        const names = Array.isArray(data.blockingClasses) ? data.blockingClasses.map(c => c.name).join(', ') : '';
+        alert((data.message || 'Cannot delete student while enrolled.') + (names ? `\nBlocking classes: ${names}` : ''));
+      } else {
+        alert(data.message || "An error occurred.");
+      }
     }
   };
 
   const openModal = (type, student = null) => {
     setModalContent({ type, data: student });
     setShowEnrollmentStep(false);
+  // Reset delete modal state
+  setDeleteEnrollments([]);
+  setDeleteError('');
+  setDeleteLoading(false);
+  setUnenrollingId('');
     setFormData(student ? {
       firstName: student.firstName || student.name?.split(' ')[0] || '',
       lastName: student.lastName || student.name?.split(' ').slice(1).join(' ') || '',
@@ -262,8 +285,53 @@ const StudentsTab = () => {
     });
     setIsModalOpen(true);
 
-    // If opening add or edit and will show enrollment later, prefetch classes once when needed
+    // If opening delete, load enrollments for guard-aware UI
+    if (type === 'delete' && student?._id) {
+      (async () => {
+        try {
+          setDeleteLoading(true);
+          const token = getAuthToken();
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          const { data } = await axios.get(`/api/students/${student._id}/enrollments`, config);
+          setDeleteEnrollments(Array.isArray(data) ? data : []);
+        } catch (e) {
+          setDeleteError(e.response?.data?.message || 'Failed to load enrollments');
+          setDeleteEnrollments([]);
+        } finally {
+          setDeleteLoading(false);
+        }
+      })();
+    }
   };
+
+  // Add the visibleClasses computation
+  const visibleClasses = useMemo(() => {
+    if (!showEnrollmentStep || !Array.isArray(availableClasses)) return [];
+    
+    let filtered = availableClasses;
+    
+    // Filter by search term
+    if (classSearchTerm) {
+      const term = classSearchTerm.toLowerCase();
+      filtered = filtered.filter(c => 
+        c.name?.toLowerCase().includes(term) ||
+        (c.teacherId && `${c.teacherId.firstName} ${c.teacherId.lastName}`.toLowerCase().includes(term)) ||
+        c.subject?.toLowerCase().includes(term)
+      );
+    }
+    
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(c => c.catalogItem?.type === categoryFilter);
+    }
+    
+    // Filter by level (only for supportLessons)
+    if (categoryFilter === 'supportLessons' && levelFilter !== 'all') {
+      filtered = filtered.filter(c => c.catalogItem?.level === levelFilter);
+    }
+    
+    return filtered;
+  }, [availableClasses, classSearchTerm, categoryFilter, levelFilter, showEnrollmentStep]);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -273,6 +341,10 @@ const StudentsTab = () => {
     setPostEnrollInfo(null);
     setShowPaymentModal(false);
     setAvailableClasses([]);
+    setShowClassDropdown(false);
+    setClassSearchTerm('');
+    setCategoryFilter('all');
+    setLevelFilter('all');
   };
 
   useEffect(() => {
@@ -646,7 +718,7 @@ const StudentsTab = () => {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h3 className="font-medium text-blue-900 mb-2">
                         Enroll {enrollmentData.selectedStudent?.firstName} {enrollmentData.selectedStudent?.lastName}
-                        </h3>
+                      </h3>
                       <p className="text-blue-700 text-sm">
                         Student created successfully! You can now enroll them in classes.
                       </p>
@@ -672,99 +744,115 @@ const StudentsTab = () => {
                               </button>
                             </span>
                           ))}
-                        </div>
-
-                        {/* Dropdown trigger */}
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setShowClassDropdown(s => !s)}
-                            className="w-full flex items-center justify-between px-3 py-2 border rounded-md bg-white hover:bg-gray-50"
-                          >
-                            <span className="text-sm text-gray-600">{showClassDropdown ? 'Hide' : 'Choose classes'}</span>
-                            <span className="text-xs text-gray-400">{(enrollmentData.selectedClasses||[]).length} selected</span>
-                          </button>
-                          {showClassDropdown && (
-                            <div className="absolute z-10 mt-2 w-full bg-white border rounded-md shadow-lg p-3">
-                              {/* Filters */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-                                <input
-                                  value={classSearchTerm}
-                                  onChange={(e)=>setClassSearchTerm(e.target.value)}
-                                  placeholder="Search by class, teacher, subject…"
-                                  className="px-3 py-2 border rounded-md text-sm"
-                                />
-                                <select className="px-3 py-2 border rounded-md text-sm" value={categoryFilter} onChange={(e)=>setCategoryFilter(e.target.value)}>
-                                  <option value="all">All categories</option>
-                                  <option value="supportLessons">Support Lessons</option>
-                                  <option value="reviewCourses">Review Courses</option>
-                                  <option value="vocationalTrainings">Vocational Trainings</option>
-                                  <option value="languages">Languages</option>
-                                  <option value="otherActivities">Other Activities</option>
-                                </select>
-                                {categoryFilter === 'supportLessons' && (
-                                  <select className="px-3 py-2 border rounded-md text-sm" value={levelFilter} onChange={(e)=>setLevelFilter(e.target.value)}>
-                                    <option value="all">All levels</option>
-                                    <option value="before_education">Before Education</option>
-                                    <option value="primary">Primary</option>
-                                    <option value="middle">Middle</option>
-                                    <option value="high_school">High School</option>
-                                    <option value="university">University</option>
-                                  </select>
-                                )}
-                              </div>
-                              {/* List */}
-                              <div className="max-h-72 overflow-auto divide-y">
-                                {visibleClasses.length === 0 ? (
-                                  <div className="text-sm text-gray-500 px-1 py-2">No classes match your filters</div>
-                                ) : visibleClasses.map(c => {
-                                  const checked = (enrollmentData.selectedClasses || []).some(sc => sc._id === c._id);
-                                  const teacherName = c.teacherId ? `${c.teacherId.firstName} ${c.teacherId.lastName}` : '—';
-                                  const schedule = Array.isArray(c.schedules) ? c.schedules.map(s => `${s.dayOfWeek.slice(0,1).toUpperCase()}${s.dayOfWeek.slice(1)} ${s.startTime}-${s.endTime}`).join(', ') : '';
-                                  const capacityTxt = typeof c.capacity === 'number' ? `${(c.enrolledStudents||[]).filter(e=>e.status==='active').length}/${c.capacity}` : '—';
-                                  const priceTxt = c.paymentModel === 'per_session' && typeof c.sessionPrice === 'number'
-                                    ? `${formatDZ(c.sessionPrice)} / session`
-                                    : (c.paymentModel === 'per_cycle' && typeof c.cyclePrice === 'number' && typeof c.cycleSize === 'number')
-                                      ? `${formatDZ(c.cyclePrice)} / ${c.cycleSize} sessions`
-                                      : (typeof c.price === 'number' && typeof c.paymentCycle === 'number' ? `${formatDZ(c.price)} / ${c.paymentCycle} sessions` : '—');
-                                  return (
-                                    <div key={c._id} className="flex items-start gap-3 py-2">
-                                      <input
-                                        type="checkbox"
-                                        className="mt-1"
-                                        checked={checked}
-                                        onChange={(e) => {
-                                          setEnrollmentData(prev => {
-                                            const arr = prev.selectedClasses || [];
-                                            return e.target.checked
-                                              ? { ...prev, selectedClasses: [...arr, c] }
-                                              : { ...prev, selectedClasses: arr.filter(x => x._id !== c._id) };
-                                          });
-                                        }}
-                                      />
-                                      <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                          <div className="font-medium text-gray-900">{c.name}</div>
-                                          <div className="text-xs text-gray-600">{priceTxt}</div>
-                                        </div>
-                                        <div className="text-xs text-gray-600 mt-1">Teacher: {teacherName}</div>
-                                        {schedule ? (<div className="text-xs text-gray-500 mt-0.5">{schedule}</div>) : null}
-                                        <div className="text-xs text-gray-500 mt-0.5">Capacity: {capacityTxt}</div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              <div className="flex justify-end mt-2">
-                                <button type="button" className="text-sm px-3 py-1.5 border rounded-md" onClick={()=>setShowClassDropdown(false)}>Done</button>
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
                       </div>
                     </div>
                     
+                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                      >
+                        Skip for Now
+                      </button>
+                      <button
+                        onClick={handleEnrollment}
+                        disabled={!enrollmentData.selectedClass}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Complete Enrollment
+                      </button>
+                    </div>
+                  </div>
+                ) : modalContent.type === 'delete' ? (
+                  <div className="space-y-6">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-red-800 mb-1">Delete Student</h3>
+                      <p className="text-red-700 text-sm">
+                        You are about to permanently delete{' '}
+                        <span className="font-medium text-red-900">{`${modalContent.data?.firstName || ''} ${modalContent.data?.lastName || ''}`.trim() || modalContent.data?.name}</span>{' '}
+                        (code: {modalContent.data?.studentCode}). This action cannot be undone.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-gray-700">Enrollments</h4>
+                      {deleteLoading ? (
+                        <div className="flex items-center gap-2 text-gray-600 text-sm">
+                          <Loader className="animate-spin w-4 h-4" /> Loading enrollments...
+                        </div>
+                      ) : deleteError ? (
+                        <div className="text-sm text-red-600">{deleteError}</div>
+                      ) : (
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                          {deleteEnrollments.length === 0 ? (
+                            <div className="p-4 text-sm text-green-700 bg-green-50">No active enrollments. You can safely delete this student.</div>
+                          ) : (
+                            <div className="divide-y divide-gray-100">
+                              {deleteEnrollments.map((enr) => (
+                                <div key={enr._id} className="flex items-center justify-between p-3">
+                                  <div className="min-w-0">
+                                    <div className="text-sm font-medium text-gray-900 truncate">{enr.className}</div>
+                                    <div className="text-xs text-gray-500 truncate">Teacher: {enr.teacher}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      disabled={unenrollingId === enr._id}
+                                      onClick={async () => {
+                                        try {
+                                          setUnenrollingId(enr._id);
+                                          const token = getAuthToken();
+                                          const config = { headers: { Authorization: `Bearer ${token}` } };
+                                          await axios.delete(`/api/enrollments/${enr._id}`, config);
+                                          setDeleteEnrollments((prev) => prev.filter((e) => e._id !== enr._id));
+                                          // Also update local students list enrollmentCount for immediate feedback
+                                          setStudents((prev) => prev.map((s) => s._id === modalContent.data?._id ? { ...s, enrollmentCount: Math.max(0, (s.enrollmentCount || 1) - 1) } : s));
+                                        } catch (e) {
+                                          alert(e.response?.data?.message || 'Failed to unenroll');
+                                        } finally {
+                                          setUnenrollingId('');
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded disabled:opacity-50"
+                                    >
+                                      {unenrollingId === enr._id ? 'Unenrolling...' : 'Unenroll'}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                              {deleteEnrollments.length > 1 && (
+                                <div className="p-3">
+                                  <button
+                                    disabled={unenrollingId === 'ALL'}
+                                    onClick={async () => {
+                                      const token = getAuthToken();
+                                      const config = { headers: { Authorization: `Bearer ${token}` } };
+                                      try {
+                                        setUnenrollingId('ALL');
+                                        // Sequentially unenroll to keep server load simple
+                                        for (const enr of deleteEnrollments) {
+                                          // eslint-disable-next-line no-await-in-loop
+                                          await axios.delete(`/api/enrollments/${enr._id}`, config);
+                                        }
+                                        setDeleteEnrollments([]);
+                                        setStudents((prev) => prev.map((s) => s._id === modalContent.data?._id ? { ...s, enrollmentCount: 0 } : s));
+                                      } catch (e) {
+                                        alert(e.response?.data?.message || 'Failed to unenroll all');
+                                      } finally {
+                                        setUnenrollingId('');
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 text-sm text-red-700 bg-red-100 hover:bg-red-200 rounded"
+                                  >
+                                    {unenrollingId === 'ALL' ? 'Unenrolling all...' : 'Unenroll All'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                    </div>
+
                     <div className="flex flex-col gap-3 pt-6 border-t border-gray-200">
                       {postEnrollInfo?.enrollmentId ? (
                         <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
@@ -795,7 +883,7 @@ const StudentsTab = () => {
                         onClick={closeModal}
                         className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                       >
-                        Skip for Now
+                        Cancel
                       </button>
                       <button
                         onClick={handleEnrollment}

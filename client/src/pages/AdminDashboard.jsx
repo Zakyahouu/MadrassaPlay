@@ -11,6 +11,7 @@ import SchoolManager from '../components/admin/SchoolManager';
 import GameTemplateManager from '../components/admin/GameTemplateManager';
 import Analytics from '../components/admin/Analytics';
 import AdminTestGames from '../components/admin/AdminTestGames';
+import AdminTemplateGames from '../components/admin/AdminTemplateGames';
 import BadgeManager from '../components/admin/BadgeManager';
 import Overview from '../components/admin/Overview';
 
@@ -53,6 +54,7 @@ const AdminDashboard = () => {
     { id: 'overview', name: 'Overview' },
     { id: 'schools', name: 'Schools' },
     { id: 'games', name: 'Games' },
+    { id: 'template-games', name: 'Games by Template' },
     { id: 'templates', name: 'Game Templates' },
     { id: 'badges', name: 'Badges' },
     { id: 'analytics', name: 'Analytics' }
@@ -66,6 +68,8 @@ const AdminDashboard = () => {
         return <SchoolManager />;
       case 'games':
         return <AdminTestGames />;
+      case 'template-games':
+        return <AdminTemplateGames />;
       case 'templates':
         return <GameTemplateManager />;
       case 'badges':

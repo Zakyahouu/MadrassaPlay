@@ -38,6 +38,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [selectedClassId, setSelectedClassId] = useState('');
   const [isEnrollLoading, setIsEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     if (isOpen && student?._id) {
@@ -119,6 +120,19 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const unenroll = async (enrollmentId) => {
+    if (!enrollmentId) return;
+    setActionError('');
+    try {
+      const token = getAuthToken();
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.delete(`/api/enrollments/${enrollmentId}`, config);
+      await fetchStudentData();
+    } catch (err) {
+      setActionError(err.response?.data?.message || 'Failed to unenroll student');
     }
   };
 
@@ -512,6 +526,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                               </th>
+                              <th className="px-6 py-3"></th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -547,11 +562,22 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                     {enrollment.status}
                                   </span>
                                 </td>
+                                <td className="px-6 py-4 text-right">
+                                  <button
+                                    onClick={() => unenroll(enrollment._id)}
+                                    className="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded"
+                                  >
+                                    Unenroll
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
+                      {actionError && (
+                        <div className="p-3 text-sm text-red-700 bg-red-50 border-t border-red-100">{actionError}</div>
+                      )}
                     </div>
                   </div>
                 )}

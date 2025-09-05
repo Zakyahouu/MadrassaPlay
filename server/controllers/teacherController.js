@@ -97,7 +97,7 @@ const getTeachersForSchool = async (req, res) => {
 // @route   POST /api/teachers
 const createTeacher = async (req, res) => {
   try {
-    const schoolId = req.user.school;
+    const schoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
     const {
       firstName, lastName,
       phone1, phone2, email, address,
@@ -221,7 +221,7 @@ const updateTeacher = async (req, res) => {
           if (!Array.isArray(updateData.activities)) {
             delete updateData.activities; // ignore invalid shape
           } else {
-            const valid = await validateActivitiesAgainstCatalog(req.user.school, updateData.activities);
+            const valid = await validateActivitiesAgainstCatalog(managerSchoolId, updateData.activities);
             updateData.activities = valid.activities || [];
           }
         }
@@ -239,22 +239,34 @@ const updateTeacher = async (req, res) => {
 };
 
 // @desc    Delete a teacher (ensuring they are in the manager's school)
+//          Guard: cannot delete if assigned to any classes
 // @route   DELETE /api/teachers/:id
 const deleteTeacher = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id);
-
-        // Security check: ensure user is a teacher in the manager's school
-        if (!user || user.role !== 'teacher' || user.school.toString() !== req.user.school.toString()) {
-            return res.status(404).json({ message: "Teacher not found in your school" });
-        }
-        
-        await User.findByIdAndDelete(req.params.id);
-
-        res.status(200).json({ message: "Teacher deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ message: "Error deleting teacher", error: error.message });
+  try {
+    const user = await User.findById(req.params.id);
+    const managerSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
+    if (!user || user.role !== 'teacher' || user.school.toString() !== managerSchoolId) {
+      return res.status(404).json({ message: "Teacher not found in your school" });
     }
+
+    // Guard: check if teacher is currently assigned to any classes
+    const Class = require('../models/Class');
+    const assignedClasses = await Class.find({ teacherId: user._id, schoolId: managerSchoolId })
+      .select('_id name')
+      .lean();
+    if (Array.isArray(assignedClasses) && assignedClasses.length > 0) {
+      return res.status(409).json({
+        message: 'Cannot delete teacher while assigned to classes. Reassign or update those classes first.',
+        blockingClasses: assignedClasses,
+        count: assignedClasses.length,
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Teacher deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting teacher", error: error.message });
+  }
 };
 
 module.exports = {

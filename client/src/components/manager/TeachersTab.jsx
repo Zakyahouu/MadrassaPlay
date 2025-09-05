@@ -206,8 +206,13 @@ const TeachersTab = () => {
       alert('Teacher deleted successfully.');
       closeModal();
     } catch (err) {
-      const message = err.response?.data?.message || 
-        "An error occurred while deleting the teacher.";
+      const status = err.response?.status;
+      const data = err.response?.data || {};
+      let message = data.message || 'An error occurred while deleting the teacher.';
+      if (status === 409) {
+        const names = Array.isArray(data.blockingClasses) ? data.blockingClasses.map(c => c.name).join(', ') : '';
+        message += names ? `\nAssigned classes: ${names}` : '';
+      }
       alert(`Error: ${message}`);
       console.error(err);
     }

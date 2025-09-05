@@ -43,15 +43,21 @@ const MyAssignments = () => {
                 Due by: {new Date(assignment.endDate).toLocaleDateString()}
               </p>
               <div className="mt-4">
-                {/* NEW: The button is now a Link.
-                  It navigates to the Play Game page, using the ID of the first game
-                  in the assignment's gameCreations array.
-                */}
-                <Link to={`/teacher/play-game/${assignment.gameCreations[0]}`}>
-                  <button className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                    Start Assignment
+                {/* Link to the student play route; pass assignmentId via state for result attribution */}
+                {assignment.gameCreations && assignment.gameCreations.length > 0 ? (
+                  <Link 
+                    to={`/student/play-game/${assignment.gameCreations[0]}`}
+                    state={{ assignmentId: assignment._id }}
+                  >
+                    <button className="px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                      Start Assignment
+                    </button>
+                  </Link>
+                ) : (
+                  <button className="px-4 py-2 font-semibold text-white bg-gray-400 rounded-md cursor-not-allowed" disabled>
+                    No Game Assigned
                   </button>
-                </Link>
+                )}
               </div>
             </div>
           ))

@@ -94,8 +94,12 @@ const createGameCreation = asyncHandler(async (req, res) => {
 // @route   GET /api/creations
 // @access  Private/Teacher or Admin
 const getMyGameCreations = asyncHandler(async (req, res) => {
-  const creations = await GameCreation.find({ owner: req.user._id })
-    .populate('template', 'name status') // Add 'status' to the populated fields
+  const filter = { owner: req.user._id };
+  if (req.query.template) {
+    filter.template = req.query.template;
+  }
+  const creations = await GameCreation.find(filter)
+    .populate('template', 'name status')
     .sort({ createdAt: -1 });
   res.json(creations);
 });

@@ -30,6 +30,7 @@ const ClassesTab = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   // Enrollment selection now managed inside PaymentsPanel via roster
   const [rosterDate, setRosterDate] = useState(() => new Date().toISOString().slice(0,10));
@@ -196,7 +197,10 @@ const ClassesTab = () => {
                 Export CSV
               </button>
             <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  setEditingClass(null);
+                  setIsCreateModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -326,7 +330,10 @@ const ClassesTab = () => {
                       <span className="text-sm">Attendance</span>
                     </button>
                     <button
-                              onClick={() => console.log('Edit class:', classItem._id)}
+                              onClick={() => {
+                                setEditingClass(classItem);
+                                setIsCreateModalOpen(true);
+                              }}
                               className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                               title="Edit Class"
                     >
@@ -362,7 +369,10 @@ const ClassesTab = () => {
                 </p>
                 {!searchTerm && (
                   <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={() => {
+                      setEditingClass(null);
+                      setIsCreateModalOpen(true);
+                    }}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Create First Class
@@ -373,14 +383,26 @@ const ClassesTab = () => {
                   </div>
                 )}
 
-        {/* Class Creation Modal */}
+        {/* Class Creation/Edit Modal */}
         {isCreateModalOpen && (
           <ClassCreationModal
             isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={(newClass) => {
-              setClasses([newClass, ...classes]);
+            editMode={!!editingClass}
+            classData={editingClass}
+            onClose={() => {
               setIsCreateModalOpen(false);
+              setEditingClass(null);
+            }}
+            onSuccess={(updatedClass) => {
+              if (editingClass) {
+                // Update existing class in list
+                setClasses(classes.map(c => c._id === updatedClass._id ? updatedClass : c));
+              } else {
+                // Add new class to list
+                setClasses([updatedClass, ...classes]);
+              }
+              setIsCreateModalOpen(false);
+              setEditingClass(null);
             }}
           />
         )}
