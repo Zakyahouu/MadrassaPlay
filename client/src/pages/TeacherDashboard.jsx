@@ -14,7 +14,7 @@ import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
 import Reports from '../components/teacher/Reports';
 import Timetable from '../components/teacher/Timetable';
-import AdsPanel from '../components/shared/AdsPanel';
+import AdsBar from '../components/shared/AdsBar';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -113,8 +113,12 @@ const TeacherDashboard = () => {
           activeTab={activeTab}
           navigationItems={navigationItems}
           logout={logout}
-          onAdsClick={() => setAdsPanelOpen(true)}
         />
+
+        {/* Announcements Bar (overview only) */}
+        {activeTab === 'overview' && (
+          <AdsBar userRole="teacher" schoolId={user?.school} />
+        )}
 
         <main className="p-6">
           {renderContent()}
@@ -128,14 +132,7 @@ const TeacherDashboard = () => {
         />
       )}
 
-      {/* Ads Panel */}
-      <AdsPanel
-        userRole="teacher"
-        schoolId={user?.school}
-        isOpen={adsPanelOpen}
-        onClose={() => setAdsPanelOpen(false)}
-        position="right"
-      />
+      {/* Removed side panel */}
     </div>
   );
 };

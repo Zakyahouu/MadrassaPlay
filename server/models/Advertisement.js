@@ -32,6 +32,11 @@ const advertisementSchema = new mongoose.Schema({
     enum: ['dashboard', 'banner', 'notification', 'other'],
     required: true,
   },
+  // Optional banner image (served from /uploads)
+  bannerImageUrl: {
+    type: String,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

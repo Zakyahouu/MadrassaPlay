@@ -18,11 +18,12 @@ import {
   Gamepad2,
   Timer,
   CheckCircle,
+  Megaphone,
   Lock
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
-import AdsPanel from '../components/shared/AdsPanel';
+import AdsBar from '../components/shared/AdsBar';
 
 // Mock MyAssignments component with student-focused features
 const MyAssignments = () => {
@@ -156,6 +157,20 @@ const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adsPanelOpen, setAdsPanelOpen] = useState(false);
+
+  // Debug logs to verify AdsBar wiring and user context
+  useEffect(() => {
+    console.log('[StudentDashboard] mounted');
+  }, []);
+
+  useEffect(() => {
+    console.log('[StudentDashboard] user context', user);
+    console.log('[StudentDashboard] schoolId for AdsBar', user?.school);
+  }, [user]);
+
+  useEffect(() => {
+    console.log('[StudentDashboard] activeTab changed ->', activeTab);
+  }, [activeTab]);
 
   const stats = [
     { title: 'Games Completed', value: '24', icon: Trophy, color: 'text-yellow-600', change: '+12%' },
@@ -344,6 +359,14 @@ const StudentDashboard = () => {
         </div>
       </div>
 
+      {/* Announcements Bar (overview only) */}
+      {activeTab === 'overview' && (() => {
+        const role = 'student';
+        const schoolId = user?.school;
+        console.log('[StudentDashboard] Rendering AdsBar with', { role, schoolId });
+        return <AdsBar userRole={role} schoolId={schoolId} />;
+      })()}
+
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -370,14 +393,7 @@ const StudentDashboard = () => {
         {renderTabContent()}
       </div>
 
-      {/* Ads Panel */}
-      <AdsPanel
-        userRole="student"
-        schoolId={user?.school}
-        isOpen={adsPanelOpen}
-        onClose={() => setAdsPanelOpen(false)}
-        position="right"
-      />
+      {/* Removed side panel */}
     </div>
   );
 };

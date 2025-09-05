@@ -58,16 +58,7 @@ const TopNav = ({
             </div>
           </div>
 
-          {/* Announcements */}
-          {onAdsClick && (
-            <button 
-              onClick={onAdsClick}
-              className="p-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors"
-              title="View Announcements"
-            >
-              <Megaphone className="w-5 h-5" />
-            </button>
-          )}
+          {/* Announcements trigger removed - AdsBar is rendered below TopNav */}
 
           {/* Notifications */}
           <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">

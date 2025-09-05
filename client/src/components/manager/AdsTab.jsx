@@ -19,6 +19,7 @@ const AdsTab = () => {
     targetAudience: 'both',
     location: 'dashboard'
   });
+  const [bannerFile, setBannerFile] = useState(null);
 
   useEffect(() => {
     fetchAds();
@@ -89,11 +90,25 @@ const AdsTab = () => {
         // Update existing ad
         const response = await axios.put(`/api/advertisements/${editingAd._id}`, formData, config);
         setAds(ads.map(ad => ad._id === editingAd._id ? response.data : ad));
+        // Upload banner if selected
+        if (bannerFile) {
+          const fd = new FormData();
+          fd.append('banner', bannerFile);
+          await axios.post(`/api/advertisements/${editingAd._id}/banner`, fd, { headers: { Authorization: `Bearer ${token}` } });
+        }
+        await fetchAds();
         alert('Advertisement updated successfully!');
       } else {
         // Create new ad
         const response = await axios.post('/api/advertisements', formData, config);
-        setAds([response.data, ...ads]);
+        const created = response.data;
+        // Upload banner if selected
+        if (bannerFile) {
+          const fd = new FormData();
+          fd.append('banner', bannerFile);
+          await axios.post(`/api/advertisements/${created._id}/banner`, fd, { headers: { Authorization: `Bearer ${token}` } });
+        }
+        await fetchAds();
         alert('Advertisement created successfully!');
       }
       
@@ -131,6 +146,7 @@ const AdsTab = () => {
         targetAudience: ad.targetAudience,
         location: ad.location
       });
+      setBannerFile(null);
     } else {
       setEditingAd(null);
       setFormData({
@@ -140,6 +156,7 @@ const AdsTab = () => {
         targetAudience: 'both',
         location: 'dashboard'
       });
+      setBannerFile(null);
     }
     setIsCreateModalOpen(true);
   };
@@ -426,6 +443,20 @@ const AdsTab = () => {
                           <option value="other">Other</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Banner Image (optional, for banner location) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Banner Image (JPG/PNG/WEBP)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Recommended: 1200x300px. Max 10MB.</p>
                     </div>
                   </div>
                 </form>

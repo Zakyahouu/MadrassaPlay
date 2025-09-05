@@ -18,7 +18,7 @@ import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
-import AdsPanel from '../shared/AdsPanel';
+import AdsBar from '../shared/AdsBar';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -213,8 +213,12 @@ export const ManagerDashboard = () => {
           activeTab={activeTab}
           navigationItems={navigationItems}
           logout={logout}
-          onAdsClick={() => setAdsPanelOpen(true)}
         />
+
+        {/* Announcements Bar (overview only) */}
+        {activeTab === 'overview' && (
+          <AdsBar userRole="manager" schoolId={user?.school} />
+        )}
 
         <main className="p-6">
           {renderTabContent()}
@@ -228,14 +232,7 @@ export const ManagerDashboard = () => {
         />
       )}
 
-      {/* Ads Panel */}
-      <AdsPanel
-        userRole="manager"
-        schoolId={user?.school}
-        isOpen={adsPanelOpen}
-        onClose={() => setAdsPanelOpen(false)}
-        position="right"
-      />
+      {/* Removed side panel */}
     </div>
   );
 };
