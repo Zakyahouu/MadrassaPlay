@@ -63,7 +63,7 @@ const AdminDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <Overview stats={stats} loading={loading} />;
+        return <Overview stats={stats} loading={loading} onNavigate={(tab) => setActiveTab(tab)} />;
       case 'schools':
         return <SchoolManager />;
       case 'games':

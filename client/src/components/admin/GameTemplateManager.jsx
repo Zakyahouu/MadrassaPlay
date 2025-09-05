@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import TemplateUploader from './TemplateUploader';
 import TemplateMetaEditor from './TemplateMetaEditor';
 import { TemplateContext } from '../../context/TemplateContext';
+import StatusMessage from '../shared/StatusMessage';
 
 const GameTemplateManager = () => {
   const [error, setError] = useState('');
@@ -12,10 +13,7 @@ const GameTemplateManager = () => {
 
   const fetchTemplates = async () => {
     try {
-      const token = JSON.parse(localStorage.getItem('user')).token;
-      const { data } = await axios.get('/api/templates', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await axios.get('/api/templates');
       setTemplates(data);
     } catch (err) {
       setError('Failed to fetch templates');
@@ -24,38 +22,31 @@ const GameTemplateManager = () => {
 
   useEffect(() => { fetchTemplates(); }, []);
 
+  const [pendingStatusId, setPendingStatusId] = useState(null);
   const handlePublishToggle = async (templateId, newStatus) => {
     if (!confirm(`${newStatus === 'published' ? 'Publish' : 'Unpublish'} this template?`)) return;
-    
+    setPendingStatusId(templateId);
     try {
-      const token = JSON.parse(localStorage.getItem('user')).token;
-      await axios.put(`/api/templates/${templateId}/status`, 
-        { status: newStatus }, 
-        { headers: { Authorization: `Bearer ${token}` }}
-      );
+      await axios.put(`/api/templates/${templateId}/status`, { status: newStatus });
       fetchTemplates();
       triggerTemplateUpdate();
     } catch (err) {
       setError(`Failed to ${newStatus} template`);
+    } finally {
+      setPendingStatusId(null);
     }
   };
 
+  const [success, setSuccess] = useState('');
   const handleDelete = async (templateId) => {
     if (!confirm('Permanently delete this template?')) return;
-    
     try {
-      const token = JSON.parse(localStorage.getItem('user')).token;
-      await axios.delete(`/api/templates/${templateId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/api/templates/${templateId}`);
       fetchTemplates();
+      setSuccess('Template deleted successfully');
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to delete template';
       setError(msg);
-      // If published, guide the user
-      if (/Cannot delete a published template/i.test(msg)) {
-        alert('This template is published and cannot be deleted. Unpublish or deprecate it first.');
-      }
     }
   };
 
@@ -70,9 +61,10 @@ const GameTemplateManager = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 rounded">
-          <p className="text-red-700">{error}</p>
-        </div>
+        <StatusMessage variant="error" message={error} onClose={() => setError('')} />
+      )}
+      {success && (
+        <StatusMessage variant="success" message={success} onClose={() => setSuccess('')} />
       )}
       
       <div className="space-y-3 mb-8">
@@ -104,22 +96,26 @@ const GameTemplateManager = () => {
                   
                   <button 
                     onClick={() => handlePublishToggle(template._id, template.status === 'draft' ? 'published' : 'draft')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                       template.status === 'draft'
                         ? 'bg-green-500 hover:bg-green-600 text-white'
                         : 'bg-yellow-500 hover:bg-yellow-600 text-white'
                     }`}
+                    aria-label={`${template.status === 'draft' ? 'Publish' : 'Unpublish'} template ${template.name}`}
+                    disabled={pendingStatusId === template._id}
                   >
-                    {template.status === 'draft' ? 'Publish' : 'Unpublish'}
+                    {pendingStatusId === template._id ? 'Working...' : (template.status === 'draft' ? 'Publish' : 'Unpublish')}
                   </button>
                   
                   <button
                     onClick={() => setEditing(template)}
-                    className="px-3 py-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
+                    aria-label={`Edit template ${template.name}`}
+                    className="px-3 py-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >✏️</button>
                   <button 
                     onClick={() => handleDelete(template._id)}
-                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    aria-label={`Delete template ${template.name}`}
+                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                   >🗑️</button>
                 </div>
               </div>

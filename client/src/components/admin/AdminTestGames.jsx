@@ -4,6 +4,9 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { TemplateContext } from '../../context/TemplateContext';
 import { Joystick,Trash } from 'lucide-react';
+import LoadingState from '../shared/LoadingState';
+import EmptyState from '../shared/EmptyState';
+import StatusMessage from '../shared/StatusMessage';
 const AdminTestGames = () => {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,10 +16,7 @@ const AdminTestGames = () => {
   useEffect(() => {
     const fetchCreations = async () => {
       try {
-        const token = JSON.parse(localStorage.getItem('user')).token;
-        const response = await axios.get('/api/creations', { 
-          headers: { Authorization: `Bearer ${token}` } 
-        });
+        const response = await axios.get('/api/creations');
         setCreations(response.data);
       } catch (err) {
         setError('Failed to fetch test games');
@@ -30,27 +30,15 @@ const AdminTestGames = () => {
   const handleDelete = async (id) => {
     if (!confirm('Delete this test game?')) return;
     try {
-      const token = JSON.parse(localStorage.getItem('user')).token;
-      await axios.delete(`/api/creations/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`/api/creations/${id}`);
       setCreations(prev => prev.filter(c => c._id !== id));
     } catch (err) {
       setError('Failed to delete game');
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full"></div>
-    </div>
-  );
-
-  if (error) return (
-    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
-      <p className="text-red-700">{error}</p>
-    </div>
-  );
+  if (loading) return <LoadingState message="Loading test games..." />;
+  if (error) return <StatusMessage variant="error" message={error} onClose={() => setError(null)} />;
 
   return (
     <div className="mb-8">
@@ -92,7 +80,8 @@ const AdminTestGames = () => {
                   </Link>
                   <button
                     onClick={() => handleDelete(creation._id)}
-                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    aria-label={`Delete game ${creation.name}`}
+                    className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <Trash className="w-5 h-5" />
                   </button>
@@ -102,11 +91,11 @@ const AdminTestGames = () => {
           })}
         </div>
       ) : (
-        <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-indigo-50 rounded-2xl">
-          <div className="text-6xl mb-4"><Joystick /></div>
-          <p className="text-gray-600 mb-4">No test games yet</p>
-          <p className="text-sm text-gray-500">Create games from templates to start testing!</p>
-        </div>
+        <EmptyState
+          icon={<Joystick className="w-12 h-12 text-indigo-500" />}
+          title="No test games yet"
+          message="Create games from templates to start testing!"
+        />
       )}
     </div>
   );

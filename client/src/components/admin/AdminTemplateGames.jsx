@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { RefreshCcw, Play, Trash2, Filter, Gamepad2, Loader2 } from 'lucide-react';
+import LoadingState from '../shared/LoadingState';
+import EmptyState from '../shared/EmptyState';
+import StatusMessage from '../shared/StatusMessage';
 
 /* AdminTemplateGames
    Purpose: Dedicated admin view to browse all game creations grouped by template,
@@ -15,6 +18,7 @@ const AdminTemplateGames = () => {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [loadingGames, setLoadingGames] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
   const [templateId, setTemplateId] = useState('');
   const [search, setSearch] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -64,7 +68,7 @@ const AdminTemplateGames = () => {
       await axios.delete(`/api/creations/${id}`);
       setGames(prev => prev.filter(g => g._id !== id));
     } catch (e) {
-      setError(e.response?.data?.message || 'Delete failed');
+  setError(e.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -114,9 +118,8 @@ const AdminTemplateGames = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded text-sm text-red-700">{error}</div>
-      )}
+  {error && <StatusMessage variant="error" message={error} onClose={() => setError(null)} />}
+  {success && <StatusMessage variant="success" message={success} onClose={() => setSuccess('')} />}
 
       {/* Template Meta Summary */}
       {templateId && currentTemplate && (
@@ -140,19 +143,16 @@ const AdminTemplateGames = () => {
           <div className="text-sm text-gray-500 py-12 text-center">Select a template to view its games.</div>
         )}
         {templateId && loadingGames && (
-          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
-            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading games…
-          </div>
+          <LoadingState message="Loading games..." />
         )}
         {templateId && !loadingGames && filteredGames.length === 0 && (
-          <div className="py-12 text-center text-gray-500 text-sm">
-            No games created yet for this template.
-            <div className="mt-4">
-              <Link to={`/teacher/create-game/${templateId}`} className="inline-flex">
-                <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">Create First Game</button>
-              </Link>
-            </div>
-          </div>
+          <EmptyState
+            icon="🎮"
+            title="No games yet"
+            message="Create the first game instance from this template."
+            actionLabel="Create First Game"
+            onAction={() => window.location.assign(`/teacher/create-game/${templateId}`)}
+          />
         )}
         {templateId && !loadingGames && filteredGames.length > 0 && (
           <div className="space-y-3">
@@ -169,14 +169,15 @@ const AdminTemplateGames = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link to={`/admin/play-game/${g._id}`} state={{ templateId }}>
-                      <button className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm">
+                      <button className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label={`Play game ${g.name}`}>
                         <Play className="w-4 h-4" /> Play
                       </button>
                     </Link>
                     <button
                       onClick={() => handleDelete(g._id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                       title="Delete game"
+                      aria-label={`Delete game ${g.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
