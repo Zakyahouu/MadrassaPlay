@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
 import Barcode from 'react-barcode';
+import QRCode from 'react-qr-code';
 
 const getAuthToken = () => {
   const userInfoString = localStorage.getItem('user');
@@ -29,6 +30,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   // Enrollment modal state
   const [availableClasses, setAvailableClasses] = useState([]);
   const [classQuery, setClassQuery] = useState('');
@@ -105,7 +107,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
           schedule: 'Monday, Wednesday 2:00 PM'
         }
       ]);
-      setPayments([
+      setPayments ([
         {
           _id: '1',
           amount: 2000,
@@ -205,6 +207,13 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
             >
               <QrCode className="w-4 h-4" />
               Barcode Card
+            </button>
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors font-medium"
+            >
+              <QrCode className="w-4 h-4" />
+              QR Code
             </button>
             <button
               onClick={() => onEdit?.(student)}
@@ -784,6 +793,39 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
           <div className="mt-6 flex gap-3">
             <button onClick={handlePrint} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Print</button>
             <button onClick={() => setShowBarcodeModal(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* QR Code Card Modal */}
+  {showQrModal && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl w-full max-w-xl overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Student QR Code Card</h3>
+          <button onClick={() => setShowQrModal(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 flex flex-col items-center">
+          {/* Print-ready card area */}
+          <div className="border border-gray-300 rounded-lg p-4 bg-white" style={{ width: '8.5cm' }}>
+            <div className="text-center mb-3">
+              <div className="text-sm text-gray-500">Student ID Card</div>
+              <div className="text-base font-semibold text-gray-900">
+                {`${student?.firstName || ''} ${student?.lastName || ''}`.trim() || student?.name}
+              </div>
+              <div className="text-xs text-gray-500 font-mono">Code: {student?.studentCode}</div>
+            </div>
+            <div className="flex items-center justify-center mt-2">
+              <QRCode value={String(student?.studentCode || '')} size={128} />
+            </div>
+          </div>
+          <div className="mt-6 flex gap-3">
+            <button onClick={handlePrint} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">Print</button>
+            <button onClick={() => setShowQrModal(false)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">Close</button>
           </div>
         </div>
       </div>
