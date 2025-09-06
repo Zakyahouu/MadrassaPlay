@@ -187,12 +187,7 @@ const getAdvertisementsForUser = asyncHandler(async (req, res) => {
 
   // Get current date for filtering active advertisements
   const now = new Date();
-  console.log('[ads] getAdvertisementsForUser request', {
-    userId: req.user?._id?.toString?.(),
-    schoolId: schoolId?.toString?.(),
-    role,
-    now: now.toISOString()
-  });
+
 
   // Include banners regardless of schedule; other ads must be active by time
   const advertisements = await Advertisement.find({
@@ -215,11 +210,6 @@ const getAdvertisementsForUser = asyncHandler(async (req, res) => {
   })
     .sort({ dateTime: -1 })
     .limit(10); // Limit to 10 most recent ads
-  console.log('[ads] getAdvertisementsForUser response', {
-    count: advertisements.length,
-    ids: advertisements.map(a => a._id?.toString?.()),
-    bannerCount: advertisements.filter(a => !!a.bannerImageUrl).length
-  });
   res.json(advertisements);
 });
 

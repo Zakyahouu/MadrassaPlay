@@ -146,7 +146,7 @@ const mark = asyncHandler(async (req, res) => {
     // Keep a consistent shape even if roster build fails for any reason
     items = [];
   }
-  res.status(existing ? 200 : 201).json({ success: true, classId: enrollment.classId, date: dateOnly, items, attendance, countersDelta });
+  res.status(prev ? 200 : 201).json({ success: true, classId: enrollment.classId, date: dateOnly, items, attendance, countersDelta });
 });
 
 // POST /api/attendance/undo
