@@ -7,6 +7,7 @@ import {
   Plus,
   Settings,
   BookOpen,
+  School,
   Trophy,
   Users,
   Calendar,
