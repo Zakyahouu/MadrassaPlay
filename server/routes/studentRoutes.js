@@ -12,7 +12,8 @@ const {
   updateEnrollmentCount,
   updateBalance,
   searchStudents,
-  enrollStudent
+  enrollStudent,
+  scanByCode
 } = require('../controllers/studentController');
 const { protect, manager } = require('../middleware/authMiddleware');
 
@@ -26,6 +27,10 @@ router.route('/')
 
 router.route('/search')
   .get(searchStudents);
+
+// Scan by student code for quick lookup
+router.route('/scan/:studentCode')
+  .get(scanByCode);
 
 router.route('/:id')
   .get(getStudent)

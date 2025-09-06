@@ -158,7 +158,10 @@ export const ManagerDashboard = () => {
       case 'overview':
         return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
-        return <ClassesTab />;
+        return <ClassesTab onNavigateToAttendance={(classId)=>{ setActiveTab('attendance'); setTimeout(()=>{
+          const ev = new CustomEvent('attendance:setSelectedClass', { detail: { classId } });
+          window.dispatchEvent(ev);
+        }, 0); }} />;
       case 'attendance':
         return <AttendanceTab />;
       case 'timetable':

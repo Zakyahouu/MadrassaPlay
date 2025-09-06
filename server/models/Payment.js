@@ -16,6 +16,13 @@ const paymentSchema = new mongoose.Schema(
     },
     method: { type: String, enum: ['cash'], default: 'cash', required: true },
     note: { type: String, trim: true },
+    // New evidence fields for debt tracking and units
+    unitType: { type: String, enum: ['session', 'cycle'], default: undefined },
+    units: { type: Number, min: 0 },
+    expectedPrice: { type: Number, min: 0 },
+    taken: { type: Number, min: 0 },
+    // debtDelta = expectedPrice - taken; >0 student owes school, <0 school owes student
+    debtDelta: { type: Number, default: 0 },
     idempotencyKey: { type: String, trim: true, sparse: true },
     createdAt: { type: Date, default: Date.now },
   },

@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
+const StudentFinancial = require('../models/StudentFinancial');
 
 // @desc    Create a cash payment record (aligned with new schema)
 // @route   POST /api/payments
@@ -9,7 +10,7 @@ const Payment = require('../models/Payment');
 const Enrollment = require('../models/Enrollment');
 const createPayment = async (req, res) => {
   try {
-    const { enrollmentId, amount, kind, note, idempotencyKey } = req.body || {};
+    const { enrollmentId, amount, kind, note, idempotencyKey, unitType, units, expectedPrice, taken, debtDelta } = req.body || {};
     if (!enrollmentId || !amount || !kind) {
       return res.status(400).json({ message: 'enrollmentId, amount, and kind are required.' });
     }
@@ -38,18 +39,57 @@ const createPayment = async (req, res) => {
       if (dup) return res.status(200).json(dup);
     }
 
+    // Create payment first (audit log)
+    const parsedAmount = parseInt(amount, 10);
     const payment = await Payment.create({
       schoolId,
       classId: enrollment.classId,
       studentId: enrollment.studentId,
       enrollmentId,
-      amount: parseInt(amount, 10),
+      amount: parsedAmount,
       kind,
       method: 'cash',
       note,
+      unitType,
+      units,
+      expectedPrice,
+      taken: typeof taken === 'number' ? taken : parsedAmount,
+      debtDelta: typeof debtDelta === 'number' ? debtDelta : (typeof expectedPrice === 'number' ? (expectedPrice - parsedAmount) : 0),
       idempotencyKey,
     });
-    res.status(201).json(payment);
+
+    // Adjust enrollment balance automatically
+    // Convert payment into session credits based on pricingSnapshot
+    const snap = enrollment.pricingSnapshot || {};
+    let sessionsAdded = 0;
+    if (snap.paymentModel === 'per_session') {
+      if (typeof snap.sessionPrice === 'number' && snap.sessionPrice > 0) {
+        sessionsAdded = parsedAmount / snap.sessionPrice;
+      }
+    } else if (snap.paymentModel === 'per_cycle') {
+      if (typeof snap.cyclePrice === 'number' && snap.cyclePrice > 0 && typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
+        sessionsAdded = (parsedAmount / snap.cyclePrice) * snap.cycleSize;
+      }
+    }
+
+    // Allow fractional sessions to represent partial payments; store as Number
+    if (Number.isFinite(sessionsAdded) && sessionsAdded !== 0) {
+      await Enrollment.updateOne(
+        { _id: enrollmentId },
+        { $inc: { balance: sessionsAdded } }
+      );
+    }
+
+    // Update per-student aggregate
+    if (typeof payment.debtDelta === 'number' && payment.debtDelta !== 0) {
+      await StudentFinancial.updateOne(
+        { schoolId, studentId: enrollment.studentId },
+        { $inc: { debt: payment.debtDelta } },
+        { upsert: true }
+      );
+    }
+
+    res.status(201).json({ payment, balanceDelta: sessionsAdded });
   } catch (error) {
     console.error('createPayment error:', {
       message: error.message,
