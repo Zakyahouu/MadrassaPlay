@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game title", "required": true },
+    "totalPuzzles": { "type": "number", "label": "Number of puzzles", "default": 10, "min": 1, "max": 100 },
+    "numbersPerPuzzle": { "type": "number", "label": "Numbers per puzzle", "default": 6, "min": 3, "max": 12 },
+    "minNumber": { "type": "number", "label": "Min number", "default": 1 },
+    "maxNumber": { "type": "number", "label": "Max number", "default": 9 },
+    "allowReuse": { "type": "boolean", "label": "Allow using a number multiple times", "default": false }
+  },
+  "content": {
+    "label": "Optional custom puzzles (overrides generator)",
+    "minItems": 0,
+    "itemSchema": {
+      "target": { "type": "number", "label": "Target" },
+      "numbers": { "type": "numberArray", "label": "Numbers in the bank", "minItems": 3, "maxItems": 12 }
+    }
+  }
+}

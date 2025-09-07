@@ -43,6 +43,7 @@ const UnifiedSidebar = ({
           { id: 'games', name: 'Games', icon: Play },
           { id: 'template-games', name: 'Games by Template', icon: Gamepad2 },
           { id: 'templates', name: 'Game Templates', icon: Plus },
+          { id: 'template-guide', name: 'Template Guide', icon: BookOpen },
           { id: 'badges', name: 'Badges', icon: Award },
           { id: 'analytics', name: 'Analytics', icon: TrendingUp }
         ];

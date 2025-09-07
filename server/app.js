@@ -18,6 +18,8 @@ app.use(express.json());
 app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
 // Serve uploaded media (icons/content assets)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve badge icons
+app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
 // Serve school documents
 app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
 

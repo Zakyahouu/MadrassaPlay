@@ -13,6 +13,7 @@ import Analytics from '../components/admin/Analytics';
 import AdminTestGames from '../components/admin/AdminTestGames';
 import AdminTemplateGames from '../components/admin/AdminTemplateGames';
 import BadgeManager from '../components/admin/BadgeManager';
+import TemplateGuide from '../components/admin/TemplateGuide';
 import Overview from '../components/admin/Overview';
 
 const AdminDashboard = () => {
@@ -56,6 +57,7 @@ const AdminDashboard = () => {
     { id: 'games', name: 'Games' },
     { id: 'template-games', name: 'Games by Template' },
     { id: 'templates', name: 'Game Templates' },
+  { id: 'template-guide', name: 'Template Guide' },
     { id: 'badges', name: 'Badges' },
     { id: 'analytics', name: 'Analytics' }
   ];
@@ -72,6 +74,8 @@ const AdminDashboard = () => {
         return <AdminTemplateGames />;
       case 'templates':
         return <GameTemplateManager />;
+      case 'template-guide':
+        return <TemplateGuide />;
       case 'badges':
         return <BadgeManager />;
       case 'analytics':

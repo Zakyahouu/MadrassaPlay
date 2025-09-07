@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game title", "required": true },
+    "language": { "type": "text", "label": "Language hint (e.g., English/Arabic)", "required": false },
+    "punctuation": { "type": "boolean", "label": "Include punctuation", "default": false },
+    "allowLowercase": { "type": "boolean", "label": "Normalize to lowercase", "default": true }
+  },
+  "content": {
+    "label": "Sentences",
+    "minItems": 1,
+    "itemSchema": {
+      "sentence": { "type": "text", "label": "Target sentence", "required": true },
+      "distractors": { "type": "stringArray", "label": "Optional extra words", "minItems": 0, "maxItems": 6 }
+    }
+  }
+}

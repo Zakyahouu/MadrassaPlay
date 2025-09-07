@@ -1,0 +1,27 @@
+# MadrassaPlay V2 — Deferred items only (not in current release)
+
+This file lists good ideas we will NOT implement now, reserved for the next version.
+
+## Admin (Templates)
+- Deprecate lifecycle state for templates (hide from new creations but keep existing playable).
+- Preflight validation UI on template upload (manifest/schema/engine entry checks before sending to server).
+- Default settings UI (edit `defaultConfigOverrides` per template) to pre-fill Create form values.
+- Template icon file upload control in Template Meta (call `/:id/media?usage=icon` from the UI).
+- Per-template storage dashboard: creations count, results count, total storage under `/uploads/templates/<templateId>`.
+- "Clean Draft Uploads" action to remove `/creations/draft` files older than X days.
+- Asset policy UI: configure allowed MIME types per template and optional max image size hint (server remains authoritative).
+- Audit log of admin actions (upload, publish, delete, deprecate, meta changes).
+- Role-based restrictions per template (e.g., some templates admin-only).
+
+## Badges (Template Awards)
+- Show usage stats: number of users awarded, per-tier distribution.
+- Quick presets and reordering UX refinements beyond threshold auto-sort.
+
+## Engines & Storage
+- Engine versioning/migration guidance: display engineVersion in admin and warn when creations use older engine versions.
+- Per-template `assets.allowedMimeTypes` (UI + enforcement on upload routes).
+- Storage quotas and warnings per template or globally (soft limits with admin override).
+
+## Maintenance & Ops
+- Background job to purge orphaned uploads not referenced by any creation.
+- Health page to validate static routes (/engines, /uploads, /badge-icons) and write permissions.

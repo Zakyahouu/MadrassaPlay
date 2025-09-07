@@ -38,4 +38,19 @@ router.delete('/:id', protect, admin, deleteTemplateBadge);
 router.post('/:id/recalculate', protect, admin, recalculateTemplateBadge);
 router.post('/icon/upload', protect, admin, upload.single('icon'), uploadBadgeIcon);
 
+// Admin: hard delete badge system for a template (by template id) including earned records
+router.delete('/template/:templateId', protect, admin, async (req, res) => {
+  try {
+    const TemplateBadge = require('../models/TemplateBadge');
+    const EarnedTemplateBadge = require('../models/EarnedTemplateBadge');
+    const badge = await TemplateBadge.findOne({ template: req.params.templateId }).select('_id');
+    if (!badge) return res.status(404).json({ message: 'No badge found for template' });
+    await EarnedTemplateBadge.deleteMany({ templateBadge: badge._id });
+    await TemplateBadge.deleteOne({ _id: badge._id });
+    res.json({ message: 'Template badge system deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
 module.exports = router;

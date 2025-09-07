@@ -1,0 +1,13 @@
+{
+  "watch": [
+    "./**/*.js",
+    "!public/engines/**",
+    "!public/uploads/**"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "public/engines/*",
+    "public/uploads/*",
+    "node_modules/*"
+  ]
+}

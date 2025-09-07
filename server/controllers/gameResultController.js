@@ -3,6 +3,7 @@
 const GameResult = require('../models/GameResult');
 const Assignment = require('../models/Assignment');
 const User = require('../models/User');
+const GameCreation = require('../models/GameCreation');
 // Legacy global badge system removed
 const { evaluateTemplateBadgeForResult } = require('./templateBadgeController');
 
@@ -11,14 +12,27 @@ const { evaluateTemplateBadgeForResult } = require('./templateBadgeController');
 // @access  Private/Student
 const submitGameResult = async (req, res) => {
   try {
-  const { gameCreationId, score, totalPossibleScore, assignmentId } = req.body;
-    const studentId = req.user._id;
+  const { gameCreationId, score, totalPossibleScore, assignmentId, isTest: isTestFromClient } = req.body;
+  const studentId = req.user._id;
 
     if (!gameCreationId || score === undefined || totalPossibleScore === undefined) {
       return res.status(400).json({ message: 'Missing required result data.' });
     }
 
-    let assignment;
+  // Load creation to read policy/xp snapshot
+  const creation = await GameCreation.findById(gameCreationId).populate('template');
+  if (!creation) return res.status(404).json({ message: 'Game creation not found.' });
+
+  // If this is a teacher/admin test run, don't persist or require assignment.
+  if ((req.user.role && req.user.role !== 'student') || isTestFromClient) {
+    return res.status(201).json({
+      message: 'Test run received (not recorded).',
+      counted: false,
+      isTest: true,
+    });
+  }
+
+  let assignment;
     if (assignmentId) {
       assignment = await Assignment.findOne({ _id: assignmentId, gameCreations: gameCreationId });
     } else {
@@ -52,7 +66,23 @@ const submitGameResult = async (req, res) => {
       return res.status(400).json({ message: 'Attempt limit reached for this assignment.' });
     }
 
-    const attemptNumber = previousAttempts.length + 1;
+  const attemptNumber = previousAttempts.length + 1;
+
+  // Determine counted based on creation policy (first_only) and if a prior counted exists
+  const hasCounted = previousAttempts.some(r => r.counted);
+  const firstOnly = (creation.attemptPolicy || 'first_only') === 'first_only';
+  const counted = firstOnly ? !hasCounted : true;
+
+  // Determine if this is a test run (teacher/admin/hotspot) - trusted over client flag
+  const isTest = (req.user.role !== 'student') || !!isTestFromClient;
+
+    // XP policy
+    let xpAwarded = 0;
+    if (!isTest && counted) {
+      // assignment mode: honor creation.xp.assignment
+      const xpConf = creation.xp?.assignment || { enabled: true, amount: 0, firstAttemptOnly: true };
+      if (xpConf.enabled) xpAwarded = Number(xpConf.amount || 0);
+    }
 
     const gameResult = await GameResult.create({
       student: studentId,
@@ -61,16 +91,19 @@ const submitGameResult = async (req, res) => {
       score,
       totalPossibleScore,
       attemptNumber,
+      counted,
+      isTest,
+      xpAwarded,
     });
 
     // --- Update student's XP and points ---
-    const percentage = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
-    const xpEarned = Math.max(5, Math.min(percentage, 100)); // 5-100 XP per game
-    const pointsEarned = score; // raw score as points
+  const percentage = totalPossibleScore > 0 ? Math.round((score / totalPossibleScore) * 100) : 0;
+  const pointsEarned = score; // raw score as points
 
     const user = await User.findById(studentId);
     if (user) {
-      user.xp = (user.xp || 0) + xpEarned;
+      // Only add xpAwarded, not percentage-based anymore
+      user.xp = (user.xp || 0) + (xpAwarded || 0);
       user.totalPoints = (user.totalPoints || 0) + pointsEarned;
 
       // Simple level-up: every 500 XP -> +1 level
@@ -80,16 +113,20 @@ const submitGameResult = async (req, res) => {
     }
 
   // New per-template tiered badge evaluation
-  evaluateTemplateBadgeForResult({ userId: studentId, gameCreationId, percentage });
+    if (!isTest && counted) {
+      evaluateTemplateBadgeForResult({ userId: studentId, gameCreationId, percentage });
+    }
 
     res.status(201).json({ 
       message: 'Result submitted successfully!', 
       result: gameResult,
-      xpEarned,
+  xpAwarded,
       pointsEarned,
   percentage,
   attemptNumber,
   attemptsRemaining: Math.max(0, attemptLimit - attemptNumber),
+  counted,
+  isTest,
     });
 
   } catch (error) {

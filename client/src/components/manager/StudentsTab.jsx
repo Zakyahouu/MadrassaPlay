@@ -57,11 +57,7 @@ const StudentsTab = () => {
   const [deleteError, setDeleteError] = useState('');
   const [unenrollingId, setUnenrollingId] = useState('');
   
-  // Additional state for class selection in enrollment
-  const [showClassDropdown, setShowClassDropdown] = useState(false);
-  const [classSearchTerm, setClassSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [levelFilter, setLevelFilter] = useState('all');
+  // Additional state for class selection in enrollment (already defined above)
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -304,34 +300,7 @@ const StudentsTab = () => {
     }
   };
 
-  // Add the visibleClasses computation
-  const visibleClasses = useMemo(() => {
-    if (!showEnrollmentStep || !Array.isArray(availableClasses)) return [];
-    
-    let filtered = availableClasses;
-    
-    // Filter by search term
-    if (classSearchTerm) {
-      const term = classSearchTerm.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.name?.toLowerCase().includes(term) ||
-        (c.teacherId && `${c.teacherId.firstName} ${c.teacherId.lastName}`.toLowerCase().includes(term)) ||
-        c.subject?.toLowerCase().includes(term)
-      );
-    }
-    
-    // Filter by category
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(c => c.catalogItem?.type === categoryFilter);
-    }
-    
-    // Filter by level (only for supportLessons)
-    if (categoryFilter === 'supportLessons' && levelFilter !== 'all') {
-      filtered = filtered.filter(c => c.catalogItem?.level === levelFilter);
-    }
-    
-    return filtered;
-  }, [availableClasses, classSearchTerm, categoryFilter, levelFilter, showEnrollmentStep]);
+  // visibleClasses computation is defined later with enriched filters
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -723,11 +692,9 @@ const StudentsTab = () => {
                         Student created successfully! You can now enroll them in classes.
                       </p>
                     </div>
-                    
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Select Classes</label>
-                        {/* Selected chips */}
                         <div className="flex flex-wrap gap-2 mb-2">
                           {(enrollmentData.selectedClasses || []).map(sel => (
                             <span key={sel._id} className="inline-flex items-center gap-1 px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-800">
@@ -744,9 +711,9 @@ const StudentsTab = () => {
                               </button>
                             </span>
                           ))}
+                        </div>
                       </div>
                     </div>
-                    
                     <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                       <button
                         type="button"
@@ -757,7 +724,7 @@ const StudentsTab = () => {
                       </button>
                       <button
                         onClick={handleEnrollment}
-                        disabled={!enrollmentData.selectedClass}
+                        disabled={!enrollmentData.selectedClasses?.length}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Complete Enrollment
@@ -774,7 +741,6 @@ const StudentsTab = () => {
                         (code: {modalContent.data?.studentCode}). This action cannot be undone.
                       </p>
                     </div>
-
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-gray-700">Enrollments</h4>
                       {deleteLoading ? (
@@ -805,7 +771,6 @@ const StudentsTab = () => {
                                           const config = { headers: { Authorization: `Bearer ${token}` } };
                                           await axios.delete(`/api/enrollments/${enr._id}`, config);
                                           setDeleteEnrollments((prev) => prev.filter((e) => e._id !== enr._id));
-                                          // Also update local students list enrollmentCount for immediate feedback
                                           setStudents((prev) => prev.map((s) => s._id === modalContent.data?._id ? { ...s, enrollmentCount: Math.max(0, (s.enrollmentCount || 1) - 1) } : s));
                                         } catch (e) {
                                           alert(e.response?.data?.message || 'Failed to unenroll');
@@ -829,7 +794,6 @@ const StudentsTab = () => {
                                       const config = { headers: { Authorization: `Bearer ${token}` } };
                                       try {
                                         setUnenrollingId('ALL');
-                                        // Sequentially unenroll to keep server load simple
                                         for (const enr of deleteEnrollments) {
                                           // eslint-disable-next-line no-await-in-loop
                                           await axios.delete(`/api/enrollments/${enr._id}`, config);
@@ -851,73 +815,7 @@ const StudentsTab = () => {
                             </div>
                           )}
                         </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 pt-6 border-t border-gray-200">
-                      {postEnrollInfo?.enrollmentId ? (
-                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
-                          <div className="text-green-800 text-sm">Enrollment created. You can proceed to checkout now or finish.</div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowPaymentModal(true);
-                              }}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                            >
-                              Go to Checkout
-                            </button>
-                            <button
-                              type="button"
-                              onClick={closeModal}
-                              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                            >
-                              Finish
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-                      <div className="flex items-center justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleEnrollment}
-                        disabled={!enrollmentData.selectedClasses?.length || !!postEnrollInfo?.enrollmentId || isEnrolling}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isEnrolling ? 'Enrolling…' : 'Complete Enrollment'}
-                      </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : modalContent.type === 'delete' ? (
-                  <div className="space-y-6">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h3 className="font-medium text-red-900 mb-1">Delete Student</h3>
-                      <p className="text-red-800 text-sm">This action cannot be undone. Are you sure you want to delete this student?</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="text-gray-500">Name</div>
-                        <div className="font-medium text-gray-900">{modalContent?.data?.firstName} {modalContent?.data?.lastName}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500">Student Code</div>
-                        <div className="font-mono text-gray-900">{modalContent?.data?.studentCode || '—'}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500">Email</div>
-                        <div className="text-gray-900">{modalContent?.data?.email || '—'}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-500">Phone</div>
-                        <div className="text-gray-900">{modalContent?.data?.contact?.phone1 || modalContent?.data?.phone || '—'}</div>
-                      </div>
+                      )}
                     </div>
                     <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                       <button

@@ -1,36 +1,40 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multiple Choice Quiz</title>
-    <link rel="stylesheet" href="./style.css" />
-  </head>
-  <body>
-    <div id="game-root">
-      <header class="game-header">
-        <h1 id="game-title">Quiz</h1>
-        <div class="meta">
-          <span id="question-counter">Question 0 / 0</span>
-          <span id="score-display">Score: 0</span>
-        </div>
-      </header>
-
-      <main>
-        <section id="game-container" class="card hidden">
-          <div class="question" id="question-text">Loading...</div>
-          <div class="options" id="options-container"></div>
-        </section>
-
-        <section id="results-screen" class="card hidden">
-          <h2>Results</h2>
-          <p>Your score:</p>
-          <div id="final-score" class="final-score">0 / 0</div>
-          <button id="restart-button" class="btn">Restart</button>
-        </section>
-      </main>
-    </div>
-
-    <script src="./game.js"></script>
-  </body>
-  </html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Quiz</title>
+	<link rel="stylesheet" href="style.css" />
+	<style>body{background:#f8fafc;color:#0f172a;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}</style>
+	<script>
+		// prevent default context menu and zoom shortcuts inside iframe
+		window.addEventListener('contextmenu', e=> e.preventDefault());
+	</script>
+	<script defer src="game.js"></script>
+	<link rel="preload" as="script" href="game.js" />
+</head>
+<body>
+	<div class="container">
+		<div id="ready" class="screen">
+			<div class="logo">📝 Quiz</div>
+			<button id="enterBtn" class="btn">Start</button>
+		</div>
+		<div id="countdown" class="screen hidden"><div class="count">3</div></div>
+		<div id="play" class="screen hidden">
+			<div class="hud">
+				<span id="qIdx"></span>
+				<span id="timer"></span>
+				<span id="score"></span>
+			</div>
+			<div id="question" class="question"></div>
+			<div id="options" class="options"></div>
+			<div id="explain" class="explain"></div>
+			<div class="actions"><button id="nextBtn" class="btn" disabled>Next</button></div>
+		</div>
+		<div id="done" class="screen hidden">
+			<div class="logo">✅ Finished</div>
+			<div id="summary"></div>
+		</div>
+	</div>
+</body>
+</html>

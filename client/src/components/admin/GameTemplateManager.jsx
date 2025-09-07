@@ -39,7 +39,7 @@ const GameTemplateManager = () => {
 
   const [success, setSuccess] = useState('');
   const handleDelete = async (templateId) => {
-    if (!confirm('Permanently delete this template?')) return;
+    if (!confirm('Permanently delete this template? This will also remove its game creations, results, engine files, uploaded assets, and its badge system (including earned badges).')) return;
     try {
       await axios.delete(`/api/templates/${templateId}`);
       fetchTemplates();

@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game title", "required": true },
+    "mode": { "type": "select", "label": "Mode", "options": ["timed", "fixed_count"], "default": "timed" },
+    "durationSec": { "type": "number", "label": "Duration (seconds) for timed mode", "default": 60, "min": 10, "max": 600 },
+    "totalQuestions": { "type": "number", "label": "Total questions for fixed count mode", "default": 20, "min": 5, "max": 200 },
+    "min": { "type": "number", "label": "Min number", "default": 0 },
+    "max": { "type": "number", "label": "Max number", "default": 12 },
+    "allowNegative": { "type": "boolean", "label": "Allow negative intermediate results (for subtraction)", "default": false },
+    "ops": {
+      "type": "object",
+      "label": "Operations",
+      "properties": {
+        "+": { "type": "boolean", "label": "Addition", "default": true },
+        "-": { "type": "boolean", "label": "Subtraction", "default": true },
+        "×": { "type": "boolean", "label": "Multiplication", "default": true },
+        "÷": { "type": "boolean", "label": "Division (no remainders)", "default": false }
+      }
+    }
+  },
+  "content": {
+    "label": "Optional custom questions (overrides generator)",
+    "minItems": 0,
+    "itemSchema": {
+      "a": { "type": "number", "label": "A" },
+      "op": { "type": "text", "label": "Operator one of + - × ÷" },
+      "b": { "type": "number", "label": "B" }
+    }
+  }
+}

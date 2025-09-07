@@ -1,20 +1,12 @@
 {
   "name": "Multiple Choice Quiz",
-  "displayName": "Multiple Choice Quiz",
-  "version": "1.0.0",
-  "description": "A simple multiple-choice quiz engine that supports manual question entry.",
+  "version": "1.0.1",
+  "description": "Answer multiple choice questions. Supports timers and shuffling.",
+  "gameType": "quiz",
   "engineEntry": "index.html",
-  "platformIntegration": {
-    "initMessage": "INIT_GAME",
-    "completionMessage": "GAME_COMPLETE",
-    "expects": {
-      "config": "object",
-      "questions": "array"
-    },
-    "payloadSchemaVersion": 1
+  "xp": {
+    "assignment": { "enabled": true, "amount": 50, "firstAttemptOnly": true },
+    "online": { "enabled": false, "amount": 0 }
   },
-  "gamification": {
-    "scoring": "1 point per correct answer",
-    "supportsPartialCredit": false
-  }
+  "attemptPolicy": "first_only"
 }

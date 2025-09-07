@@ -1,0 +1,12 @@
+{
+  "name": "Target Sum",
+  "version": "1.0.0",
+  "description": "Select numbers that add up to the target.",
+  "gameType": "target-sum",
+  "engineEntry": "index.html",
+  "xp": {
+    "assignment": { "enabled": true, "amount": 45, "firstAttemptOnly": true },
+    "online": { "enabled": false, "amount": 0 }
+  },
+  "attemptPolicy": "first_only"
+}

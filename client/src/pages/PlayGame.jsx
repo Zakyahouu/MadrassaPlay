@@ -35,6 +35,8 @@ const PlayGame = () => {
     if (event.data?.type === 'GAME_COMPLETE') {
         try {
       const payload = { ...event.data.payload };
+  // Normalize identifiers expected by backend
+  if (!payload.gameCreationId && gameCreation?._id) payload.gameCreationId = gameCreation._id;
       if (assignmentId && !payload.assignmentId) payload.assignmentId = assignmentId;
       await axios.post('/api/results', payload);
           console.log('Result saved successfully');
@@ -57,6 +59,8 @@ const PlayGame = () => {
         ...gameCreation,
         questions: gameCreation.content,
         assignmentId,
+  mode: (user?.role === 'student') ? 'student' : (user?.role === 'teacher' ? 'teacher' : 'admin'),
+  isTest: user?.role !== 'student',
       };
       iframeRef.current.contentWindow.postMessage(
         { type: 'INIT_GAME', payload },
@@ -152,10 +156,10 @@ const PlayGame = () => {
       {/* Game Container */}
       <main className="flex-1 bg-gray-100 p-4">
         <div className="h-full bg-black rounded-lg overflow-hidden shadow-sm">
-          {gameCreation?.template?.enginePath ? (
+      { (gameCreation?.enginePath || gameCreation?.template?.enginePath) ? (
             <iframe
               ref={iframeRef}
-              src={`${gameCreation.template.enginePath}/index.html`}
+        src={`${(gameCreation.enginePath || gameCreation.template.enginePath)}/index.html`}
               title="Game Engine"
               className="w-full h-full border-0"
               onLoad={handleIframeLoad}
