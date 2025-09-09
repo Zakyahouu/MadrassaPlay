@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
+const StudentFinancial = require('../models/StudentFinancial');
 
 // @desc    Create a cash payment record (aligned with new schema)
 // @route   POST /api/payments
@@ -9,7 +10,7 @@ const Payment = require('../models/Payment');
 const Enrollment = require('../models/Enrollment');
 const createPayment = async (req, res) => {
   try {
-    const { enrollmentId, amount, kind, note, idempotencyKey } = req.body || {};
+    const { enrollmentId, amount, kind, note, idempotencyKey, unitType, units, expectedPrice, taken, debtDelta } = req.body || {};
     if (!enrollmentId || !amount || !kind) {
       return res.status(400).json({ message: 'enrollmentId, amount, and kind are required.' });
     }
@@ -33,23 +34,83 @@ const createPayment = async (req, res) => {
       return res.status(404).json({ message: 'Enrollment not found.' });
     }
 
-    if (idempotencyKey) {
-      const dup = await Payment.findOne({ enrollmentId, idempotencyKey });
+    // Normalize idempotency key: ignore empty/null to avoid unique index conflicts on (enrollmentId, idempotencyKey)
+    const normalizedIdem = typeof idempotencyKey === 'string' && idempotencyKey.trim().length > 0
+      ? idempotencyKey.trim()
+      : undefined;
+    if (normalizedIdem) {
+      const dup = await Payment.findOne({ enrollmentId, idempotencyKey: normalizedIdem });
       if (dup) return res.status(200).json(dup);
     }
 
-    const payment = await Payment.create({
+    // Create payment first (audit log)
+    const parsedAmount = Number(amount);
+    const parsedExpected = Number(expectedPrice);
+    const paid = typeof taken === 'number' ? taken : parsedAmount;
+    const paymentPayload = {
       schoolId,
       classId: enrollment.classId,
       studentId: enrollment.studentId,
       enrollmentId,
-      amount: parseInt(amount, 10),
+      // amount represents the expected price for the units purchased
+      amount: parsedAmount,
       kind,
       method: 'cash',
       note,
-      idempotencyKey,
-    });
-    res.status(201).json(payment);
+      unitType,
+      units,
+      expectedPrice: Number.isFinite(parsedExpected) ? parsedExpected : parsedAmount,
+      taken: Number.isFinite(paid) ? paid : 0,
+      // Align with UI: debt = taken - price
+      debtDelta: typeof debtDelta === 'number' ? debtDelta : (Number.isFinite(paid) && Number.isFinite(parsedExpected) ? (paid - parsedExpected) : 0),
+    };
+    if (normalizedIdem) paymentPayload.idempotencyKey = normalizedIdem;
+    const payment = await Payment.create(paymentPayload);
+
+    // Adjust enrollment balance automatically
+    // Prefer unit-based credit; fallback to money-based if units not provided
+    const snap = enrollment.pricingSnapshot || {};
+    let sessionsAdded = 0;
+    if (typeof units === 'number' && units > 0) {
+      if (unitType === 'session') {
+        sessionsAdded = units;
+      } else if (unitType === 'cycle') {
+        if (typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
+          sessionsAdded = units * snap.cycleSize;
+        }
+      }
+    }
+    // Fallback: infer sessions from amount actually paid
+    if (sessionsAdded === 0) {
+      if (snap.paymentModel === 'per_session') {
+        if (typeof snap.sessionPrice === 'number' && snap.sessionPrice > 0) {
+          sessionsAdded = (Number.isFinite(paid) ? paid : parsedAmount) / snap.sessionPrice;
+        }
+      } else if (snap.paymentModel === 'per_cycle') {
+        if (typeof snap.cyclePrice === 'number' && snap.cyclePrice > 0 && typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
+          sessionsAdded = ((Number.isFinite(paid) ? paid : parsedAmount) / snap.cyclePrice) * snap.cycleSize;
+        }
+      }
+    }
+
+    // Allow fractional sessions to represent partial payments; store as Number
+    if (Number.isFinite(sessionsAdded) && sessionsAdded !== 0) {
+      await Enrollment.updateOne(
+        { _id: enrollmentId },
+        { $inc: { balance: sessionsAdded } }
+      );
+    }
+
+    // Update per-student aggregate
+    if (typeof payment.debtDelta === 'number' && payment.debtDelta !== 0) {
+      await StudentFinancial.updateOne(
+        { schoolId, studentId: enrollment.studentId },
+        { $inc: { debt: payment.debtDelta } },
+        { upsert: true }
+      );
+    }
+
+    res.status(201).json({ payment, balanceDelta: sessionsAdded });
   } catch (error) {
     console.error('createPayment error:', {
       message: error.message,

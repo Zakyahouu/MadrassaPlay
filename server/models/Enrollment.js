@@ -29,7 +29,14 @@ const enrollmentSchema = new mongoose.Schema(
     },
 
 
+    // Balance of consumable sessions for this enrollment.
+    // For per_session classes: number of sessions prepaid (can be fractional/negative)
+    // For per_cycle classes: cycles are converted to sessions using cycleSize.
+    // This is the SOURCE OF TRUTH for attendance consumption.
+    balance: { type: Number, default: 0 },
+
     // Legacy fields kept for migration/backward compatibility (not used in new logic)
+    // DEPRECATED: do not build new features on these fields.
     startDate: { type: Date, required: false },
     endDate: { type: Date, required: false },
     totalSessions: { type: Number, required: false },
@@ -46,6 +53,10 @@ const enrollmentSchema = new mongoose.Schema(
 // Indexes optimized for common queries
 enrollmentSchema.index({ schoolId: 1, classId: 1, status: 1 });
 enrollmentSchema.index({ schoolId: 1, studentId: 1, status: 1 });
-enrollmentSchema.index({ studentId: 1, classId: 1 }, { unique: true });
+// Unique active enrollment per (studentId, classId). Allows historical re-enrollments when not active.
+enrollmentSchema.index(
+  { studentId: 1, classId: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: 'active' } }
+);
 
 module.exports = mongoose.model('Enrollment', enrollmentSchema);

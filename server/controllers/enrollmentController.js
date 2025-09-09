@@ -422,6 +422,7 @@ async function buildClassEnrollmentSummaries(schoolId, classId, dateOnly) {
       enrollmentId: e._id,
       student: e.studentId,
       todayStatus: attendanceMap.get(e._id.toString()) || null,
+      balance: e.balance,
       charged,
       sessionCounters: { attended: counters.attended || 0, absent: counters.absent || 0 },
       sessionsCovered,

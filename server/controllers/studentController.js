@@ -2,6 +2,7 @@ const User = require('../models/User');
 const ClassModel = require('../models/Class');
 const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
+const Enrollment = require('../models/Enrollment');
 
 // @desc    Get all students for a school (manager only)
 // @route   GET /api/students
@@ -610,3 +611,40 @@ module.exports = {
   searchStudents,
   enrollStudent
 };
+
+// ========== Scan endpoint (exported below for router wiring) ==========
+// @desc    Resolve student by studentCode and return active enrollments with balances
+// @route   GET /api/students/scan/:studentCode
+// @access  Private (Manager/Staff)
+module.exports.scanByCode = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  const { studentCode } = req.params || {};
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('User is not assigned to a school');
+  }
+  if (!studentCode) {
+    res.status(400);
+    throw new Error('studentCode is required');
+  }
+
+  const student = await User.findOne({ school: schoolId, role: 'student', studentCode: studentCode.toUpperCase() })
+    .select('firstName lastName studentCode');
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const enrollments = await Enrollment.find({ schoolId, studentId: student._id, status: 'active' })
+    .populate('classId', 'name schedules')
+    .lean();
+  const items = enrollments.map(e => ({
+    enrollmentId: e._id,
+    class: e.classId,
+    pricingSnapshot: e.pricingSnapshot,
+    balance: e.balance,
+    sessionCounters: e.sessionCounters,
+  }));
+
+  res.json({ student, enrollments: items });
+});

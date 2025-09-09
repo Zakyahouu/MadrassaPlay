@@ -21,28 +21,56 @@ const ManagerTimetable = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [filterTeacher, setFilterTeacher] = useState('all');
+  const [filterRoom, setFilterRoom] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [teachers, setTeachers] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [filterCategory, setFilterCategory] = useState('all'); // New state for dropdown filter category
 
-  // Generate time slots from 8 AM to 8 PM in 2-hour intervals
-  const timeSlots = [
-    { start: '08:00', end: '10:00', label: '8:00 AM - 10:00 AM', period: 'Morning' },
-    { start: '10:00', end: '12:00', label: '10:00 AM - 12:00 PM', period: 'Morning' },
-    { start: '12:00', end: '14:00', label: '12:00 PM - 2:00 PM', period: 'Afternoon' },
-    { start: '14:00', end: '16:00', label: '2:00 PM - 4:00 PM', period: 'Afternoon' },
-    { start: '16:00', end: '18:00', label: '4:00 PM - 6:00 PM', period: 'Evening' },
-    { start: '18:00', end: '20:00', label: '6:00 PM - 8:00 PM', period: 'Evening' }
-  ];
+  // Generate 1-hour time slots from 8 AM to 8 PM
+  const formatTimeLabel = (time) => {
+    const [hStr, m] = time.split(':');
+    let h = parseInt(hStr, 10);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const displayH = ((h % 12) || 12).toString();
+    return `${displayH}:${m} ${suffix}`;
+  };
 
-  // Days of the week (Saturday to Friday as per your requirement)
+  const getPeriod = (start) => {
+    const hour = parseInt(start.split(':')[0], 10);
+    if (hour < 12) return 'Morning';
+    if (hour < 16) return 'Afternoon';
+    return 'Evening';
+  };
+
+  const generateHourlyTimeSlots = (start = '08:00', end = '20:00') => {
+    const s = parseInt(start.split(':')[0], 10);
+    const e = parseInt(end.split(':')[0], 10);
+    const slots = [];
+    for (let h = s; h < e; h++) {
+      const startStr = `${String(h).padStart(2, '0')}:00`;
+      const endStr = `${String(h + 1).padStart(2, '0')}:00`;
+      slots.push({
+        start: startStr,
+        end: endStr,
+        label: `${formatTimeLabel(startStr)} - ${formatTimeLabel(endStr)}`,
+        period: getPeriod(startStr)
+      });
+    }
+    return slots;
+  };
+
+  const timeSlots = generateHourlyTimeSlots('08:00', '20:00');
+
+  // Days of the week starting from Friday
   const daysOfWeek = [
+    { key: 'friday', name: 'Friday', short: 'Fri', color: 'bg-pink-50 border-pink-200' },
     { key: 'saturday', name: 'Saturday', short: 'Sat', color: 'bg-blue-50 border-blue-200' },
     { key: 'sunday', name: 'Sunday', short: 'Sun', color: 'bg-green-50 border-green-200' },
     { key: 'monday', name: 'Monday', short: 'Mon', color: 'bg-purple-50 border-purple-200' },
     { key: 'tuesday', name: 'Tuesday', short: 'Tue', color: 'bg-orange-50 border-orange-200' },
     { key: 'wednesday', name: 'Wednesday', short: 'Wed', color: 'bg-red-50 border-red-200' },
-    { key: 'thursday', name: 'Thursday', short: 'Thu', color: 'bg-indigo-50 border-indigo-200' },
-    { key: 'friday', name: 'Friday', short: 'Fri', color: 'bg-pink-50 border-pink-200' }
+    { key: 'thursday', name: 'Thursday', short: 'Thu', color: 'bg-indigo-50 border-indigo-200' }
   ];
 
   // Class type colors
@@ -60,6 +88,7 @@ const ManagerTimetable = () => {
   useEffect(() => {
     fetchClasses();
     fetchTeachers();
+    fetchRooms();
   }, []);
 
   const fetchClasses = async () => {
@@ -87,6 +116,24 @@ const ManagerTimetable = () => {
     }
   };
 
+  const fetchRooms = async () => {
+    try {
+      const response = await axios.get('/api/rooms');
+      setRooms(response.data || []);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+      // Mock room data for demonstration
+      setRooms([
+        { _id: 'room1', name: 'Room 101' },
+        { _id: 'room2', name: 'Room 102' },
+        { _id: 'room3', name: 'Lab 201' },
+        { _id: 'room4', name: 'Computer Lab' },
+        { _id: 'room5', name: 'Art Studio' },
+        { _id: 'room6', name: 'Room 103' }
+      ]);
+    }
+  };
+
   // Mock data for demonstration
   const mockClasses = [
     {
@@ -94,7 +141,7 @@ const ManagerTimetable = () => {
       name: 'Advanced Mathematics',
       catalogItem: { type: 'reviewCourses' },
       teacherId: { _id: 'teacher1', firstName: 'Ahmed', lastName: 'Hassan' },
-      roomId: { name: 'Room 101', capacity: 25 },
+      roomId: { _id: 'room1', name: 'Room 101', capacity: 25 },
       capacity: 25,
       status: 'active',
       schedules: [
@@ -108,7 +155,7 @@ const ManagerTimetable = () => {
       name: 'English Literature',
       catalogItem: { type: 'languages' },
       teacherId: { _id: 'teacher2', firstName: 'Fatima', lastName: 'Ali' },
-      roomId: { name: 'Room 102', capacity: 20 },
+      roomId: { _id: 'room2', name: 'Room 102', capacity: 20 },
       capacity: 20,
       status: 'active',
       schedules: [
@@ -122,7 +169,7 @@ const ManagerTimetable = () => {
       name: 'Science Lab',
       catalogItem: { type: 'supportLessons' },
       teacherId: { _id: 'teacher3', firstName: 'Omar', lastName: 'Khalil' },
-      roomId: { name: 'Lab 201', capacity: 15 },
+      roomId: { _id: 'room3', name: 'Lab 201', capacity: 15 },
       capacity: 15,
       status: 'active',
       schedules: [
@@ -135,7 +182,7 @@ const ManagerTimetable = () => {
       name: 'Computer Programming',
       catalogItem: { type: 'vocationalTrainings' },
       teacherId: { _id: 'teacher4', firstName: 'Layla', lastName: 'Mohammed' },
-      roomId: { name: 'Computer Lab', capacity: 18 },
+      roomId: { _id: 'room4', name: 'Computer Lab', capacity: 18 },
       capacity: 18,
       status: 'active',
       schedules: [
@@ -148,7 +195,7 @@ const ManagerTimetable = () => {
       name: 'Art & Creativity',
       catalogItem: { type: 'otherActivities' },
       teacherId: { _id: 'teacher5', firstName: 'Youssef', lastName: 'Ibrahim' },
-      roomId: { name: 'Art Studio', capacity: 12 },
+      roomId: { _id: 'room5', name: 'Art Studio', capacity: 12 },
       capacity: 12,
       status: 'active',
       schedules: [
@@ -160,7 +207,7 @@ const ManagerTimetable = () => {
       name: 'Physics Fundamentals',
       catalogItem: { type: 'reviewCourses' },
       teacherId: { _id: 'teacher6', firstName: 'Nour', lastName: 'El-Din' },
-      roomId: { name: 'Room 103', capacity: 22 },
+      roomId: { _id: 'room6', name: 'Room 103', capacity: 22 },
       capacity: 22,
       status: 'active',
       schedules: [
@@ -171,16 +218,26 @@ const ManagerTimetable = () => {
   ];
 
   const getClassesForTimeSlot = (day, timeSlot) => {
-    return classes.filter(cls => {
-      return cls.schedules.some(schedule => {
-        const scheduleStart = schedule.startTime;
-        const scheduleEnd = schedule.endTime;
-        const slotStart = timeSlot.start;
-        const slotEnd = timeSlot.end;
-        
-        return schedule.dayOfWeek === day.key && 
-               scheduleStart === slotStart && 
-               scheduleEnd === slotEnd;
+    const normalizeTime = (t) => {
+      if (!t || typeof t !== 'string') return t;
+      const m = t.match(/^([0-9]{1,2}):([0-9]{2})$/);
+      if (!m) return t;
+      const h = m[1].padStart(2, '0');
+      return `${h}:${m[2]}`;
+    };
+
+    const overlaps = (aStart, aEnd, bStart, bEnd) => {
+      const sA = normalizeTime(aStart);
+      const eA = normalizeTime(aEnd);
+      const sB = normalizeTime(bStart);
+      const eB = normalizeTime(bEnd);
+      return sA < eB && eA > sB;
+    };
+
+    return filteredClasses.filter(cls => {
+      return (cls.schedules || []).some(schedule => {
+        const scheduleDay = (schedule.dayOfWeek || '').toLowerCase();
+        return scheduleDay === day.key && overlaps(schedule.startTime, schedule.endTime, timeSlot.start, timeSlot.end);
       });
     });
   };
@@ -199,12 +256,24 @@ const ManagerTimetable = () => {
   const filteredClasses = classes.filter(cls => {
     const matchesType = filterType === 'all' || cls.catalogItem?.type === filterType;
     const matchesTeacher = filterTeacher === 'all' || cls.teacherId?._id === filterTeacher;
-    const matchesSearch = !searchTerm || 
-      cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${cls.teacherId?.firstName} ${cls.teacherId?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cls.roomId?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRoom = filterRoom === 'all' || cls.roomId?._id === filterRoom;
     
-    return matchesType && matchesTeacher && matchesSearch;
+    // Apply category-specific filtering based on filterCategory
+    let matchesCategory = true;
+    if (filterCategory === 'name' && searchTerm) {
+      matchesCategory = cls.name.toLowerCase().includes(searchTerm.toLowerCase());
+    } else if (filterCategory === 'teacher' && searchTerm) {
+      matchesCategory = `${cls.teacherId?.firstName} ${cls.teacherId?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    } else if (filterCategory === 'room' && searchTerm) {
+      matchesCategory = cls.roomId?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    } else if (filterCategory === 'all' && searchTerm) {
+      matchesCategory = 
+        cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${cls.teacherId?.firstName} ${cls.teacherId?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cls.roomId?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    
+    return matchesType && matchesTeacher && matchesRoom && matchesCategory;
   });
 
   if (loading) {
@@ -226,33 +295,56 @@ const ManagerTimetable = () => {
         </div>
         
         <div className="flex items-center space-x-3">
+          {/* Filter Category Dropdown */}
+          <div className="relative">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="all">All</option>
+              <option value="name">Name (Class)</option>
+              <option value="teacher">Teacher</option>
+              <option value="room">Room</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <Filter className="w-4 h-4 text-gray-400" />
+            </div>
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search classes, teachers, rooms..."
+              placeholder={
+                filterCategory === 'all' ? "Search classes, teachers, rooms..." :
+                filterCategory === 'name' ? "Search by class name..." :
+                filterCategory === 'teacher' ? "Search by teacher name..." :
+                filterCategory === 'room' ? "Search by room name..." :
+                "Search..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
 
-          {/* Filter Button */}
+          {/* Advanced Filters Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Filter className="w-4 h-4" />
-            <span>Filters</span>
+            <span>Advanced</span>
           </button>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Advanced Filters */}
       {showFilters && (
         <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Class Type:</label>
               <select
@@ -280,6 +372,22 @@ const ManagerTimetable = () => {
                 {teachers.map(teacher => (
                   <option key={teacher._id} value={teacher._id}>
                     {teacher.firstName} {teacher.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Room:</label>
+              <select
+                value={filterRoom}
+                onChange={(e) => setFilterRoom(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="all">All Rooms</option>
+                {rooms.map(room => (
+                  <option key={room._id} value={room._id}>
+                    {room.name}
                   </option>
                 ))}
               </select>
@@ -330,32 +438,37 @@ const ManagerTimetable = () => {
                       onClick={() => handleSessionClick(day, timeSlot, classesInSlot)}
                       className="w-full p-3 bg-white border-2 border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 text-left group cursor-pointer"
                     >
-                      {classesInSlot.map((cls, index) => (
-                        <div key={cls._id} className="space-y-2 mb-3 last:mb-0">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-indigo-900 truncate font-semibold">
-                              {cls.name}
-                            </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-indigo-900 truncate font-semibold">
+                            {classesInSlot[0].name}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            {classesInSlot.length > 1 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                +{classesInSlot.length - 1} more
+                              </span>
+                            )}
                             <Info className="w-4 h-4 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2 text-xs text-indigo-600">
-                              <Users className="w-3 h-3" />
-                              <span className="truncate">{cls.teacherId?.firstName} {cls.teacherId?.lastName}</span>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2 text-xs text-indigo-500">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">{cls.roomId?.name || 'Room TBD'}</span>
-                            </div>
-                            
-                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${getClassTypeColor(cls.catalogItem?.type)}`}>
-                              {cls.catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
-                            </span>
-                          </div>
                         </div>
-                      ))}
+
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 text-xs text-indigo-600">
+                            <Users className="w-3 h-3" />
+                            <span className="truncate">{classesInSlot[0].teacherId?.firstName} {classesInSlot[0].teacherId?.lastName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-xs text-indigo-500">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate">{classesInSlot[0].roomId?.name || 'Room TBD'}</span>
+                          </div>
+
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full ${getClassTypeColor(classesInSlot[0].catalogItem?.type)}`}>
+                            {classesInSlot[0].catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   ) : (
                     <div className="w-full h-full min-h-[100px] flex items-center justify-center">

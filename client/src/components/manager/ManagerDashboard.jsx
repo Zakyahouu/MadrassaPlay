@@ -18,7 +18,6 @@ import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
-import AdsBar from '../shared/AdsBar';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -32,7 +31,7 @@ export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [adsPanelOpen, setAdsPanelOpen] = useState(false);
+  
   const [stats, setStats] = useState([
     { title: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', change: 0 },
     { title: 'Active Teachers', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
@@ -158,7 +157,10 @@ export const ManagerDashboard = () => {
       case 'overview':
         return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
-        return <ClassesTab />;
+        return <ClassesTab onNavigateToAttendance={(classId)=>{ setActiveTab('attendance'); setTimeout(()=>{
+          const ev = new CustomEvent('attendance:setSelectedClass', { detail: { classId } });
+          window.dispatchEvent(ev);
+        }, 0); }} />;
       case 'attendance':
         return <AttendanceTab />;
       case 'timetable':
@@ -215,10 +217,7 @@ export const ManagerDashboard = () => {
           logout={logout}
         />
 
-        {/* Announcements Bar (overview only) */}
-        {activeTab === 'overview' && (
-          <AdsBar userRole="manager" schoolId={user?.school} />
-        )}
+        {/* Ads bar removed for managers */}
 
         <main className="p-6">
           {renderTabContent()}

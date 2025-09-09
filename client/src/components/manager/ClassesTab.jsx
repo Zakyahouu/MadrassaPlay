@@ -7,6 +7,7 @@ import {
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
 import ClassCreationModal from './class/ClassCreationModal';
+import ClassEditModal from './class/ClassEditModal';
 import AttendanceRoster from './AttendanceRoster';
 
 const API_BASE_URL = '/api/classes';
@@ -23,7 +24,7 @@ const getAuthToken = () => {
   }
 };
 
-const ClassesTab = () => {
+const ClassesTab = ({ onNavigateToAttendance }) => {
   const [classes, setClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,6 +33,7 @@ const ClassesTab = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [editClassId, setEditClassId] = useState('');
   // Enrollment selection now managed inside PaymentsPanel via roster
   const [rosterDate, setRosterDate] = useState(() => new Date().toISOString().slice(0,10));
 
@@ -322,7 +324,13 @@ const ClassesTab = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
                     <button
-                              onClick={() => setSelectedClass(classItem)}
+                              onClick={() => {
+                                if (typeof onNavigateToAttendance === 'function') {
+                                  onNavigateToAttendance(classItem._id);
+                                } else {
+                                  setSelectedClass(classItem);
+                                }
+                              }}
                               className="inline-flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors border border-transparent hover:border-blue-200"
                               title="Open Attendance Roster"
                     >
@@ -330,10 +338,7 @@ const ClassesTab = () => {
                       <span className="text-sm">Attendance</span>
                     </button>
                     <button
-                              onClick={() => {
-                                setEditingClass(classItem);
-                                setIsCreateModalOpen(true);
-                              }}
+                              onClick={() => setEditClassId(classItem._id)}
                               className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
                               title="Edit Class"
                     >
@@ -431,6 +436,18 @@ const ClassesTab = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Class Modal */}
+        {editClassId && (
+          <ClassEditModal
+            isOpen={!!editClassId}
+            classId={editClassId}
+            onClose={() => setEditClassId('')}
+            onSuccess={(updated)=>{
+              setClasses(prev=>prev.map(c=>c._id===updated._id? updated : c));
+            }}
+          />
         )}
       </div>
     </div>

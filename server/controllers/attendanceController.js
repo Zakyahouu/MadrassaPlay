@@ -136,6 +136,19 @@ const mark = asyncHandler(async (req, res) => {
     await Enrollment.updateOne({ _id: enrollmentId }, update);
   }
 
+  // Consume balance on 'present' and refund on change/undo logic here
+  // Compute balance delta: present => -1 session, absent => 0
+  let balanceDelta = 0;
+  if (!prev) {
+    if (status === 'present') balanceDelta = -1;
+  } else if (prev.status !== status) {
+    if (prev.status === 'present' && status === 'absent') balanceDelta = +1; // refund
+    if (prev.status === 'absent' && status === 'present') balanceDelta = -1; // consume
+  }
+  if (balanceDelta !== 0) {
+    await Enrollment.updateOne({ _id: enrollmentId }, { $inc: { balance: balanceDelta } });
+  }
+
   const attendance = attendanceUpserted;
   // Return fresh roster for this class and date so client doesn't need a separate GET
   let items = [];
@@ -146,7 +159,7 @@ const mark = asyncHandler(async (req, res) => {
     // Keep a consistent shape even if roster build fails for any reason
     items = [];
   }
-  res.status(prev ? 200 : 201).json({ success: true, classId: enrollment.classId, date: dateOnly, items, attendance, countersDelta });
+  res.status(prev ? 200 : 201).json({ success: true, classId: enrollment.classId, date: dateOnly, items, attendance, countersDelta, balanceDelta });
 });
 
 // POST /api/attendance/undo
@@ -177,6 +190,10 @@ const undo = asyncHandler(async (req, res) => {
   await Attendance.deleteOne({ _id: existing._id });
   const inc = {};
   inc[existing.status === 'present' ? 'sessionCounters.attended' : 'sessionCounters.absent'] = -1;
+  // Also refund balance if present was undone
+  if (existing.status === 'present') {
+    inc['balance'] = (inc['balance'] || 0) + 1;
+  }
   await Enrollment.updateOne({ _id: enrollmentId }, { $inc: inc });
   // Return fresh roster for this class and date
   let items = [];
