@@ -230,27 +230,53 @@ const updateEnrollment = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const deleteEnrollment = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { school: schoolId } = req.user;
-  
-  const enrollment = await Enrollment.findOne({ _id: id, schoolId });
-  if (!enrollment) {
-    res.status(404);
-    throw new Error('Enrollment not found');
+  // Robustly normalize school id to a string ObjectId
+  const schoolRaw = req.user?.school;
+  const schoolId = (schoolRaw && schoolRaw._id) ? schoolRaw._id : schoolRaw;
+  const schoolIdStr = typeof schoolId === 'string' ? schoolId : (schoolId && schoolId.toString ? schoolId.toString() : '');
+
+  if (!schoolIdStr) {
+    res.status(400);
+    throw new Error('Missing school context');
   }
-  
-  // Remove student from class enrolledStudents array
-  await Class.findByIdAndUpdate(enrollment.classId, {
-    $pull: { enrolledStudents: { studentId: enrollment.studentId } }
-  });
-  
-  // Update student enrollment count
-  await User.findByIdAndUpdate(enrollment.studentId, {
-    $inc: { enrollmentCount: -1 }
-  });
-  
-  await enrollment.remove();
-  
-  res.json({ message: 'Enrollment deleted successfully' });
+
+  try {
+    const enrollment = await Enrollment.findOne({ _id: id, schoolId: schoolIdStr });
+    if (!enrollment) {
+      res.status(404);
+      throw new Error('Enrollment not found');
+    }
+
+  // Delete attendance and payments tied to this enrollment to free space
+  await Attendance.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id });
+  await Payment.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id });
+
+    // Remove student from class enrolledStudents array
+    await Class.findByIdAndUpdate(enrollment.classId, {
+      $pull: { enrolledStudents: { studentId: enrollment.studentId } }
+    });
+
+    // Update student enrollment count and status
+    const student = await User.findByIdAndUpdate(enrollment.studentId, {
+      $inc: { enrollmentCount: -1 }
+    }, { new: true });
+    if (student && (student.enrollmentCount || 0) <= 0) {
+      student.enrollmentStatus = 'not_enrolled';
+      await student.save();
+    }
+
+    await enrollment.deleteOne();
+    res.json({ message: 'Enrollment deleted successfully' });
+  } catch (err) {
+    // Map common errors to friendly responses
+    const msg = typeof err?.message === 'string' ? err.message : 'Failed to delete enrollment';
+    if (/Cast to ObjectId failed|CastError/i.test(msg)) {
+      return res.status(400).json({ message: 'Invalid enrollment id' });
+    }
+    if (!res.headersSent) {
+      return res.status(res.statusCode && res.statusCode !== 200 ? res.statusCode : 500).json({ message: msg });
+    }
+  }
 });
 
 // DEPRECATED: Inline attendance endpoint, please use /api/attendance/mark

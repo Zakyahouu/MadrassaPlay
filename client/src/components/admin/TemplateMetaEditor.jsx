@@ -10,7 +10,15 @@ const TemplateMetaEditor = ({ template, onClose, onSaved }) => {
     iconUrl: template.iconUrl || '',
     isFeatured: !!template.isFeatured,
     deprecated: !!template.deprecated,
-    defaultConfigOverrides: template.defaultConfigOverrides ? JSON.stringify(template.defaultConfigOverrides, null, 2) : ''
+    defaultConfigOverrides: template.defaultConfigOverrides ? JSON.stringify(template.defaultConfigOverrides, null, 2) : '',
+    attemptPolicy: template.manifest?.attemptPolicy || 'first_only',
+    xpAssignmentEnabled: template.manifest?.xp?.assignment?.enabled ?? true,
+    xpAssignmentAmount: template.manifest?.xp?.assignment?.amount ?? 0,
+    xpAssignmentFirstOnly: template.manifest?.xp?.assignment?.firstAttemptOnly ?? true,
+    xpOnlineEnabled: template.manifest?.xp?.online?.enabled ?? false,
+    xpOnlineAmount: template.manifest?.xp?.online?.amount ?? 0,
+  assetsMaxImagesPerCreation: template.manifest?.assets?.maxImagesPerCreation ?? 0,
+  limitsMaxCreationsPerTeacher: template.manifest?.limits?.maxCreationsPerTeacher ?? 0,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +38,22 @@ const TemplateMetaEditor = ({ template, onClose, onSaved }) => {
         iconUrl: form.iconUrl || undefined,
         isFeatured: form.isFeatured,
         deprecated: form.deprecated,
+        attemptPolicy: form.attemptPolicy,
+        xp: {
+          assignment: {
+            enabled: !!form.xpAssignmentEnabled,
+            amount: Number(form.xpAssignmentAmount || 0),
+            firstAttemptOnly: !!form.xpAssignmentFirstOnly,
+          },
+          online: {
+            enabled: !!form.xpOnlineEnabled,
+            amount: Number(form.xpOnlineAmount || 0),
+          }
+        }
       };
+  // Include limits/assets edits (flat -> manifest)
+  payload.limitsMaxCreationsPerTeacher = Number(form.limitsMaxCreationsPerTeacher || 0);
+  payload.assetsMaxImagesPerCreation = Number(form.assetsMaxImagesPerCreation || 0);
       if (form.defaultConfigOverrides.trim()) {
         try {
           payload.defaultConfigOverrides = JSON.parse(form.defaultConfigOverrides);
@@ -86,6 +109,53 @@ const TemplateMetaEditor = ({ template, onClose, onSaved }) => {
               <input type="checkbox" checked={form.deprecated} onChange={e=>updateField('deprecated', e.target.checked)} /> Deprecated
             </label>
           </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <h4 className="text-sm font-semibold">Attempt Policy</h4>
+            <select className="w-full border rounded px-3 py-2" value={form.attemptPolicy} onChange={e=>updateField('attemptPolicy', e.target.value)}>
+              <option value="first_only">First attempt only</option>
+              <option value="all">All attempts counted</option>
+            </select>
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <h4 className="text-sm font-semibold">XP (Assignment)</h4>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.xpAssignmentEnabled} onChange={e=>updateField('xpAssignmentEnabled', e.target.checked)} /> Enabled
+              </label>
+              <input type="number" className="w-32 border rounded px-3 py-2" value={form.xpAssignmentAmount} onChange={e=>updateField('xpAssignmentAmount', e.target.value)} />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.xpAssignmentFirstOnly} onChange={e=>updateField('xpAssignmentFirstOnly', e.target.checked)} /> First attempt only
+              </label>
+            </div>
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <h4 className="text-sm font-semibold">XP (Online)</h4>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={form.xpOnlineEnabled} onChange={e=>updateField('xpOnlineEnabled', e.target.checked)} /> Enabled
+              </label>
+              <input type="number" className="w-32 border rounded px-3 py-2" value={form.xpOnlineAmount} onChange={e=>updateField('xpOnlineAmount', e.target.value)} />
+            </div>
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <h4 className="text-sm font-semibold">Limits</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm mb-1">Max creations per teacher (0 = unlimited)</label>
+                <input type="number" className="w-full border rounded px-3 py-2" value={form.limitsMaxCreationsPerTeacher} onChange={e=>updateField('limitsMaxCreationsPerTeacher', e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Max images per creation (0 = no limit)</label>
+                <input type="number" className="w-full border rounded px-3 py-2" value={form.assetsMaxImagesPerCreation} onChange={e=>updateField('assetsMaxImagesPerCreation', e.target.value)} />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">Per-image size is fixed at 10MB.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Default Config Overrides (JSON)</label>
             <textarea

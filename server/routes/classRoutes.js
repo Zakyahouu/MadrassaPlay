@@ -12,15 +12,25 @@ const {
   getAvailableRooms,
   getCatalogItems,
   getClassesByTeacher,
-  checkConflicts
+  checkConflicts,
+  getClassStudents,
+  getClassesForStudent
 } = require('../controllers/classController');
 const { protect, manager, teacher } = require('../middleware/authMiddleware');
 
-// All routes are protected and require manager role
-router.use(protect, manager);
+// Protect all routes
+router.use(protect);
 
-// Teacher-specific route (requires teacher role)
-router.get('/teacher', protect, teacher, getClassesByTeacher);
+// Teacher-specific route (requires teacher role) - must be defined before manager-only guard
+router.get('/teacher', teacher, getClassesByTeacher);
+// Student-specific classes route
+router.get('/my', getClassesForStudent);
+
+// Students of class (teacher) - place BEFORE manager-only guard so teachers can access
+router.get('/:id/students', teacher, getClassStudents);
+
+// All other routes require manager role
+router.use(manager);
 
 // Helper routes for class creation - MUST come before /:id route
 router.get('/available-teachers', getAvailableTeachers);

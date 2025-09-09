@@ -19,137 +19,13 @@ import {
   Timer,
   CheckCircle,
   Megaphone,
-  Lock
+  Lock,
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
 import AdsBar from '../components/shared/AdsBar';
-
-// Mock MyAssignments component with student-focused features
-const MyAssignments = () => {
-  const assignments = [
-    { 
-      id: 1, 
-      title: 'Math Quest: Fractions Adventure', 
-      subject: 'Mathematics',
-      teacher: 'Ms. Rodriguez',
-      dueDate: 'Tomorrow',
-      difficulty: 'Medium',
-      estimatedTime: '15 min',
-      progress: 60,
-      status: 'in-progress',
-      points: 150,
-      color: 'text-purple-600'
-    },
-    { 
-      id: 2, 
-      title: 'Science Lab: Chemical Reactions', 
-      subject: 'Science',
-      teacher: 'Mr. Johnson',
-      dueDate: '3 days',
-      difficulty: 'Hard',
-      estimatedTime: '25 min',
-      progress: 0,
-      status: 'new',
-      points: 200,
-      color: 'text-blue-600'
-    },
-    { 
-      id: 3, 
-      title: 'History Timeline Challenge', 
-      subject: 'History',
-      teacher: 'Mrs. Davis',
-      dueDate: 'Completed',
-      difficulty: 'Easy',
-      estimatedTime: '10 min',
-      progress: 100,
-      status: 'completed',
-      points: 120,
-      color: 'text-green-600'
-    }
-  ];
-
-  return (
-    <div className="space-y-4">
-      {assignments.map((assignment) => (
-        <UnifiedCard key={assignment.id} className="group">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-                <BookOpen className={`w-6 h-6 ${assignment.color}`} />
-              </div>
-              
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 mb-1">{assignment.title}</h3>
-                <p className="text-sm text-gray-500 mb-2">{assignment.subject} • {assignment.teacher}</p>
-                
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {assignment.estimatedTime}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full border ${
-                    assignment.difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' :
-                    assignment.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                    'bg-red-50 text-red-700 border-red-200'
-                  }`}>
-                    {assignment.difficulty}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-500" />
-                    {assignment.points} pts
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-900 mb-1">
-                {assignment.dueDate}
-              </div>
-              <div className="text-xs text-gray-500">
-                {assignment.status === 'completed' ? 'Completed' : 
-                 assignment.status === 'in-progress' ? 'In Progress' : 'New'}
-              </div>
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="mb-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
-              <span>{assignment.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  assignment.progress === 100 ? 'bg-green-500' :
-                  assignment.progress > 50 ? 'bg-blue-500' : 'bg-yellow-500'
-                }`}
-                style={{ width: `${assignment.progress}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          {/* Action Button */}
-          <div className="flex justify-end">
-            {assignment.status === 'completed' ? (
-              <div className="flex items-center text-green-600 text-sm">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Completed
-              </div>
-            ) : (
-              <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                <Play className="w-4 h-4 mr-2" />
-                {assignment.status === 'in-progress' ? 'Continue' : 'Start'}
-              </button>
-            )}
-          </div>
-        </UnifiedCard>
-      ))}
-    </div>
-  );
-};
+import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
+import StudentResources from '../components/student/StudentResources';
 
 // Main Student Dashboard Component
 const StudentDashboard = () => {
@@ -289,7 +165,7 @@ const StudentDashboard = () => {
           </div>
         );
       case 'assignments':
-        return <MyAssignments />;
+        return <StudentAssignmentsPanel />;
       case 'games':
         return (
           <div className="text-center py-12">
@@ -311,6 +187,8 @@ const StudentDashboard = () => {
             <p className="text-gray-600">Compare your performance with classmates</p>
           </div>
         );
+      case 'resources':
+        return <StudentResources />;
       default:
         return (
           <div className="text-center py-12">
@@ -326,7 +204,8 @@ const StudentDashboard = () => {
     { id: 'assignments', name: 'My Assignments' },
     { id: 'games', name: 'Games' },
     { id: 'progress', name: 'Progress' },
-    { id: 'leaderboard', name: 'Leaderboard' }
+  { id: 'leaderboard', name: 'Leaderboard' },
+  { id: 'resources', name: 'Resources' }
   ];
 
   return (

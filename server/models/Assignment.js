@@ -30,6 +30,11 @@ const assignmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // Optional teacher-provided instructions/description for students
+    description: {
+      type: String,
+      default: ''
+    },
     // The date the assignment becomes available to students
     startDate: {
       type: Date,
@@ -46,12 +51,17 @@ const assignmentSchema = new mongoose.Schema(
         default: 1,
         min: 1,
     },
-    // The status of the assignment
-    status: {
-        type: String,
-        enum: ['upcoming', 'active', 'closed'],
-        default: 'upcoming',
-    }
+  // The status of the assignment
+  status: {
+    type: String,
+    enum: ['upcoming', 'active', 'canceled', 'completed'],
+    default: 'upcoming',
+  },
+  // Cancellation metadata
+  canceledAt: { type: Date },
+  // Completion metadata
+  completedAt: { type: Date },
+  completedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   {
     timestamps: true,
@@ -67,15 +77,27 @@ assignmentSchema.index({ teacher: 1, createdAt: -1 });
 function computeStatus(start, end) {
   const now = new Date();
   if (now < new Date(start)) return 'upcoming';
-  if (now > new Date(end)) return 'closed';
+  if (now > new Date(end)) return 'completed';
   return 'active';
 }
 
 assignmentSchema.pre('save', function(next) {
-  if (this.startDate && this.endDate) {
+  // Do not override manual statuses
+  if (this.startDate && this.endDate && this.status !== 'canceled' && this.status !== 'completed') {
     this.status = computeStatus(this.startDate, this.endDate);
   }
   next();
 });
+
+// Keep status consistent on updates that don't go through save() (e.g., findOneAndUpdate)
+assignmentSchema.pre('validate', function(next) {
+  if (this.startDate && this.endDate && this.status !== 'canceled' && this.status !== 'completed') {
+    this.status = computeStatus(this.startDate, this.endDate);
+  }
+  next();
+});
+
+// Helpful index if we later want scheduled jobs based on endDate
+assignmentSchema.index({ endDate: 1 });
 
 module.exports = mongoose.model('Assignment', assignmentSchema);

@@ -41,6 +41,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [selectedClassId, setSelectedClassId] = useState('');
   const [isEnrollLoading, setIsEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     if (isOpen && student?._id) {
@@ -127,6 +128,20 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+
+  const unenroll = async (enrollmentId) => {
+    if (!enrollmentId) return;
+    setActionError('');
+    try {
+      const token = getAuthToken();
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.delete(`/api/enrollments/${enrollmentId}`, config);
+      await fetchStudentData();
+    } catch (err) {
+      setActionError(err.response?.data?.message || 'Failed to unenroll student');
     }
   };
 
@@ -525,7 +540,6 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                         Enroll
                       </button>
                     </div>
-
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {enrollments.filter(e => e.status === 'active').map((enrollment) => {
                         const schedules = enrollment.classId?.schedules || [];
@@ -607,7 +621,6 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                     </span>
                               </button>
                                   </div>
-
                             <div className="mt-3 text-xs text-gray-600">
                               {snap.paymentModel === 'per_session' && typeof snap.sessionPrice === 'number' && (
                                 <span>Per session: {formatDZ(snap.sessionPrice)}</span>

@@ -11,7 +11,9 @@ import SchoolManager from '../components/admin/SchoolManager';
 import GameTemplateManager from '../components/admin/GameTemplateManager';
 import Analytics from '../components/admin/Analytics';
 import AdminTestGames from '../components/admin/AdminTestGames';
+import AdminTemplateGames from '../components/admin/AdminTemplateGames';
 import BadgeManager from '../components/admin/BadgeManager';
+import TemplateGuide from '../components/admin/TemplateGuide';
 import Overview from '../components/admin/Overview';
 
 const AdminDashboard = () => {
@@ -53,7 +55,9 @@ const AdminDashboard = () => {
     { id: 'overview', name: 'Overview' },
     { id: 'schools', name: 'Schools' },
     { id: 'games', name: 'Games' },
+    { id: 'template-games', name: 'Games by Template' },
     { id: 'templates', name: 'Game Templates' },
+  { id: 'template-guide', name: 'Template Guide' },
     { id: 'badges', name: 'Badges' },
     { id: 'analytics', name: 'Analytics' }
   ];
@@ -61,13 +65,17 @@ const AdminDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <Overview stats={stats} loading={loading} />;
+        return <Overview stats={stats} loading={loading} onNavigate={(tab) => setActiveTab(tab)} />;
       case 'schools':
         return <SchoolManager />;
       case 'games':
         return <AdminTestGames />;
+      case 'template-games':
+        return <AdminTemplateGames />;
       case 'templates':
         return <GameTemplateManager />;
+      case 'template-guide':
+        return <TemplateGuide />;
       case 'badges':
         return <BadgeManager />;
       case 'analytics':

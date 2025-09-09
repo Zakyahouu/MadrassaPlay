@@ -1,0 +1,31 @@
+{
+	"settings": {
+		"title": { "type": "text", "label": "Quiz title", "required": true },
+		"shuffleChoices": { "type": "boolean", "label": "Shuffle choices for each question", "default": true },
+		"timePerQuestion": {
+			"type": "select",
+			"label": "Time limit per question",
+			"options": ["0 - No timer", "10 - 10s", "20 - 20s", "30 - 30s"],
+			"default": "0 - No timer"
+		},
+		"showExplanations": { "type": "boolean", "label": "Show explanation after answer (if provided)", "default": true }
+	},
+	"content": {
+		"label": "Questions",
+		"minItems": 1,
+		"itemSchema": {
+			"question": { "type": "text", "label": "Question", "required": true },
+			"optionA": { "type": "text", "label": "Option A", "required": true },
+			"optionB": { "type": "text", "label": "Option B", "required": true },
+			"optionC": { "type": "text", "label": "Option C (optional)" },
+			"optionD": { "type": "text", "label": "Option D (optional)" },
+			"correct": {
+				"type": "select",
+				"label": "Correct option",
+				"options": ["A","B","C","D"],
+				"default": "A"
+			},
+			"explanation": { "type": "text", "label": "Explanation (shown if enabled)", "required": false }
+		}
+	}
+}

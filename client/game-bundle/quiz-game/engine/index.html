@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Quiz</title>
+	<link rel="stylesheet" href="style.css" />
+	<style>body{background:#f8fafc;color:#0f172a;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}</style>
+	<script>
+		// prevent default context menu and zoom shortcuts inside iframe
+		window.addEventListener('contextmenu', e=> e.preventDefault());
+	</script>
+	<script defer src="game.js"></script>
+	<link rel="preload" as="script" href="game.js" />
+</head>
+<body>
+	<div class="container">
+		<div id="ready" class="screen">
+			<div class="logo">📝 Quiz</div>
+			<button id="enterBtn" class="btn">Start</button>
+		</div>
+		<div id="countdown" class="screen hidden"><div class="count">3</div></div>
+		<div id="play" class="screen hidden">
+			<div class="hud">
+				<span id="qIdx"></span>
+				<span id="timer"></span>
+				<span id="score"></span>
+			</div>
+			<div id="question" class="question"></div>
+			<div id="options" class="options"></div>
+			<div id="explain" class="explain"></div>
+			<div class="actions"><button id="nextBtn" class="btn" disabled>Next</button></div>
+		</div>
+		<div id="done" class="screen hidden">
+			<div class="logo">✅ Finished</div>
+			<div id="summary"></div>
+		</div>
+	</div>
+</body>
+</html>

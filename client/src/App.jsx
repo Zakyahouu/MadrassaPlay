@@ -146,15 +146,7 @@ function App() {
           }
         />
 
-        {/* Add this new route for admin game testing */}
-        <Route
-          path="/admin/play-game/:creationId"
-          element={
-            <ProtectedRoute>
-              <PlayGame />
-            </ProtectedRoute>
-          }
-        />
+  {/* (deduplicated) admin play route already declared above */}
 
         {/* Profile Route - Unified for all roles */}
         <Route

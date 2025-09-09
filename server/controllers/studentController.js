@@ -17,8 +17,25 @@ const getStudents = asyncHandler(async (req, res) => {
   }
   
   const students = await User.find({ school: schoolId, role: 'student' }).select('-password');
+
+  // Derive accurate active enrollment counts from Enrollment collection
+  const mongoose = require('mongoose');
+  const Enrollment = require('../models/Enrollment');
+  const studentIds = students.map((s) => s._id);
+  const counts = await Enrollment.aggregate([
+    { $match: { schoolId: new mongoose.Types.ObjectId(schoolId), studentId: { $in: studentIds }, status: 'active' } },
+    { $group: { _id: '$studentId', c: { $sum: 1 } } },
+  ]);
+  const countMap = new Map(counts.map((x) => [x._id.toString(), x.c]));
+  const result = students.map((s) => {
+    const obj = s.toObject();
+    const c = countMap.get(s._id.toString()) || 0;
+    obj.enrollmentCount = c;
+    obj.enrollmentStatus = c > 0 ? 'enrolled' : 'not_enrolled';
+    return obj;
+  });
   
-  res.json(students);
+  res.json(result);
 });
 
 // @desc    Get single student
@@ -34,8 +51,24 @@ const getStudent = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Student not found');
   }
-  
-  res.json(student);
+
+  // Attach accurate active enrollment count
+  try {
+    const mongoose = require('mongoose');
+    const Enrollment = require('../models/Enrollment');
+    const counts = await Enrollment.aggregate([
+      { $match: { schoolId: new mongoose.Types.ObjectId(schoolId), studentId: new mongoose.Types.ObjectId(id), status: 'active' } },
+      { $group: { _id: '$studentId', c: { $sum: 1 } } },
+    ]);
+    const c = counts?.[0]?.c || 0;
+    const obj = student.toObject();
+    obj.enrollmentCount = c;
+    obj.enrollmentStatus = c > 0 ? 'enrolled' : 'not_enrolled';
+    return res.json(obj);
+  } catch (_) {
+    // Fallback to original doc if aggregation fails
+    return res.json(student);
+  }
 });
 
 // @desc    Create new student
@@ -352,7 +385,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete student (hard delete with cascade cleanup)
+// @desc    Delete student (guard: cannot delete while enrolled)
 // @route   DELETE /api/students/:id
 // @access  Private (Manager)
 const deleteStudent = asyncHandler(async (req, res) => {
@@ -370,36 +403,31 @@ const deleteStudent = asyncHandler(async (req, res) => {
     throw new Error('Student not found');
   }
 
-  // Load related models lazily to avoid circulars
+  // Guard: prevent deletion if the student has enrollments in this school
   const Enrollment = require('../models/Enrollment');
+  const Class = require('../models/Class');
+  const enrollments = await Enrollment.find({ studentId: student._id, schoolId }).select('_id classId').lean();
+  if (Array.isArray(enrollments) && enrollments.length > 0) {
+    // Populate class names to help the UI
+    const classIds = enrollments.map(e => e.classId);
+    const classes = await Class.find({ _id: { $in: classIds } }).select('_id name').lean();
+    return res.status(409).json({
+      message: 'Cannot delete student while enrolled in classes. Please unenroll the student first.',
+      blockingEnrollments: enrollments,
+      blockingClasses: classes,
+      count: enrollments.length,
+    });
+  }
+
+  // No enrollments: cleanup any residual attendance/payments for this student, then delete student
   const Attendance = require('../models/Attendance');
   const Payment = require('../models/Payment');
-  const Class = require('../models/Class');
-
-  // Find all enrollments for this student in this school
-  const enrollments = await Enrollment.find({ studentId: student._id, schoolId });
-  const enrollmentIds = enrollments.map(e => e._id);
-  const classIds = enrollments.map(e => e.classId);
-
-  // Cascade deletions in safe order
-  // 1) Attendance tied to these enrollments
-  if (enrollmentIds.length) {
-    await Attendance.deleteMany({ enrollmentId: { $in: enrollmentIds } });
-  }
-  // 2) Payments for this student (and/or enrollments)
+  await Attendance.deleteMany({ schoolId, studentId: student._id });
   await Payment.deleteMany({ schoolId, studentId: student._id });
-  // 3) Pull from class rosters
-  if (classIds.length) {
-    await Class.updateMany({ _id: { $in: classIds } }, { $pull: { enrolledStudents: { studentId: student._id } } });
-  }
-  // 4) Enrollments themselves
-  if (enrollmentIds.length) {
-    await Enrollment.deleteMany({ _id: { $in: enrollmentIds } });
-  }
-  // 5) Finally delete the student
-  await student.deleteOne();
 
-  res.json({ success: true, message: 'Student and related data deleted successfully' });
+  // Finally delete the student record
+  await student.deleteOne();
+  res.json({ success: true, message: 'Student deleted successfully' });
 });
 
 // @desc    Get student enrollments

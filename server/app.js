@@ -2,13 +2,26 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
+
+const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes } = require('./config/migrations');
+// Load optional services guarded by env flags
+const enableDeletionCron = process.env.ENABLE_SCHOOL_DELETION_CRON === 'true';
+if (enableDeletionCron) {
+  // Lazy-require to avoid any side effects when disabled
+  try { require('./services/schoolDeletionService'); } catch (e) { /* ignore */ }
+}
+
 const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes, ensurePaymentsIdempotencyIndex } = require('./config/migrations');
+
 
 // Avoid auto-connecting when running under Jest (tests manage their own DB)
 if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
   connectDB().then(async () => {
     await ensureUserStudentCodePartialIndex();
     await ensureAttendanceIndexes();
+    if (process.env.BACKUP_ON_START === 'true') {
+      try { await require('./scripts/autoBackup')(); } catch (e) { /* ignore */ }
+    }
     await ensurePaymentsIdempotencyIndex();
   });
 }
@@ -19,6 +32,8 @@ app.use(express.json());
 app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
 // Serve uploaded media (icons/content assets)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve badge icons
+app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
 // Serve school documents
 app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
 
@@ -37,6 +52,8 @@ app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
 app.use('/api/reporting', require('./routes/reportingRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/employees', require('./routes/employeeRoutes'));
+// Important: mount resource routes before generic class routes to avoid guard conflicts
+app.use('/api/classes', require('./routes/classResourceRoutes'));
 app.use('/api/classes', require('./routes/classRoutes'));
 app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));

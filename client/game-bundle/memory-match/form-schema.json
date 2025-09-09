@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game title", "required": true },
+    "grid": { "type": "select", "label": "Grid size", "options": ["2x2","2x3","3x4","4x4"], "default": "3x4" },
+    "pairSource": { "type": "select", "label": "Pairs source", "options": ["theme","customImages"], "default": "theme" },
+    "theme": { "type": "select", "label": "Theme (if source = theme)", "options": ["numbers","letters","shapes"], "default": "numbers" }
+  },
+  "content": {
+    "label": "Custom image pairs (used if source = customImages)",
+    "minItems": 0,
+    "itemSchema": {
+      "imageA": { "type": "image", "label": "Card A image", "accept": ["image/webp","image/jpeg","image/png"], "maxSizeMB": 10 },
+      "imageB": { "type": "image", "label": "Card B image", "accept": ["image/webp","image/jpeg","image/png"], "maxSizeMB": 10 }
+    }
+  }
+}

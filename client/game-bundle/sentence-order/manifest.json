@@ -1,0 +1,12 @@
+{
+  "name": "Sentence Order",
+  "version": "1.0.0",
+  "description": "Rearrange shuffled words to form a correct sentence.",
+  "gameType": "sentence-order",
+  "engineEntry": "index.html",
+  "xp": {
+    "assignment": { "enabled": true, "amount": 40, "firstAttemptOnly": true },
+    "online": { "enabled": false, "amount": 0 }
+  },
+  "attemptPolicy": "first_only"
+}

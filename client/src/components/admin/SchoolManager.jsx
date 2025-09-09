@@ -3,6 +3,7 @@ import axios from 'axios';
 import ManagerPanel from './ManagerPanel';
 import SchoolDocuments from './SchoolDocuments';
 import SchoolCreationWizard from './SchoolCreationWizard';
+import StatusMessage from '../shared/StatusMessage';
 
 // --- SVG ICONS ---
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
@@ -425,7 +426,7 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
       await onSave(school._id, newStatus, additionalData);
     } catch (error) {
       console.error('Status update error:', error);
-      alert('Failed to update status: ' + (error.message || 'Unknown error'));
+      pushMessage('error', 'Failed to update status: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -621,6 +622,13 @@ const SchoolManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modal, setModal] = useState({ type: null, data: null });
+  const [messages, setMessages] = useState([]); // { id, variant, text }
+
+  const pushMessage = (variant, text) => {
+    const id = Date.now() + Math.random();
+    setMessages(prev => [...prev, { id, variant, text }]);
+    setTimeout(() => setMessages(prev => prev.filter(m => m.id !== id)), 6000);
+  };
 
   // Fetch schools data
   useEffect(() => {
@@ -691,7 +699,7 @@ const SchoolManager = () => {
       setModal({ type: null, data: null });
     } catch (err) {
       console.error("Save operation failed:", err);
-      alert(err.response?.data?.message || 'Operation failed. Please try again.');
+      pushMessage('error', err.response?.data?.message || 'Operation failed. Please try again.');
     }
   };
 
@@ -714,7 +722,7 @@ const SchoolManager = () => {
       await fetchSchools();
     } catch (err) {
       console.error("Status update failed:", err);
-      alert(err.response?.data?.message || 'Failed to update status. Please try again.');
+      pushMessage('error', err.response?.data?.message || 'Failed to update status. Please try again.');
     }
   };
 
@@ -728,7 +736,7 @@ const SchoolManager = () => {
       setModal({ type: null, data: null });
     } catch (err) {
       console.error("Delete operation failed:", err);
-      alert(err.response?.data?.message || 'Failed to delete school. Please try again.');
+      pushMessage('error', err.response?.data?.message || 'Failed to delete school. Please try again.');
     }
   };
 
@@ -760,6 +768,13 @@ const SchoolManager = () => {
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg">
+      {messages.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {messages.map(m => (
+            <StatusMessage key={m.id} variant={m.variant} message={m.text} onClose={() => setMessages(prev => prev.filter(x => x.id !== m.id))} />
+          ))}
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
@@ -889,6 +904,13 @@ const SchoolManager = () => {
           onSchoolCreated={fetchSchools}
         />
       )}
+
+      {/* Status Messages */}
+      <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm">
+        {messages.map(msg => (
+          <StatusMessage key={msg.id} variant={msg.variant} text={msg.text} />
+        ))}
+      </div>
     </div>
   );
 };

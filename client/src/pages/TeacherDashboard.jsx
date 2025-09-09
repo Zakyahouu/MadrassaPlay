@@ -10,9 +10,9 @@ import TeacherOverview from '../components/teacher/TeacherOverview';
 import TeacherLiveSessions from '../components/teacher/TeacherLiveSessions';
 import TeacherAssignments from '../components/teacher/TeacherAssignments';
 import TeacherStudents from '../components/teacher/TeacherStudents';
+import TeacherResources from '../components/teacher/TeacherResources';
 import MyCreations from '../components/teacher/MyCreations';
 import TemplateSelector from '../components/teacher/TemplateSelector';
-import Reports from '../components/teacher/Reports';
 import Timetable from '../components/teacher/Timetable';
 import AdsBar from '../components/shared/AdsBar';
 
@@ -42,9 +42,10 @@ const TeacherDashboard = () => {
     { id: 'create-game', name: 'Create Game' },
     { id: 'live-sessions', name: 'Live Sessions' },
     { id: 'assignments', name: 'Assignments' },
+  { id: 'resources', name: 'Resources' },
     { id: 'timetable', name: 'Timetable' },
-    { id: 'reports', name: 'Reports' },
-    { id: 'students', name: 'My Students' },
+  // Reports removed; entry points now inside Assignments and My Classes
+  { id: 'students', name: 'My Classes' },
     { id: 'calendar', name: 'Calendar' }
   ];
 
@@ -60,18 +61,10 @@ const TeacherDashboard = () => {
         return <TeacherLiveSessions />;
       case 'assignments':
         return <TeacherAssignments />;
+      case 'resources':
+        return <TeacherResources />;
       case 'timetable':
         return <Timetable />;
-      case 'reports':
-        return <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-              <p className="text-gray-600">View assignment performance and analytics</p>
-            </div>
-          </div>
-          <Reports />
-        </div>;
       case 'students':
         return <TeacherStudents />;
       case 'calendar':

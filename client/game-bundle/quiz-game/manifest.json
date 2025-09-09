@@ -1,0 +1,12 @@
+{
+  "name": "Multiple Choice Quiz",
+  "version": "1.0.1",
+  "description": "Answer multiple choice questions. Supports timers and shuffling.",
+  "gameType": "quiz",
+  "engineEntry": "index.html",
+  "xp": {
+    "assignment": { "enabled": true, "amount": 50, "firstAttemptOnly": true },
+    "online": { "enabled": false, "amount": 0 }
+  },
+  "attemptPolicy": "first_only"
+}

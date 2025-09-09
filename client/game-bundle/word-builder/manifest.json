@@ -1,0 +1,12 @@
+{
+  "name": "Word Builder",
+  "version": "1.0.0",
+  "description": "Unscramble letters to form the word.",
+  "gameType": "word-builder",
+  "engineEntry": "index.html",
+  "xp": {
+    "assignment": { "enabled": true, "amount": 35, "firstAttemptOnly": true },
+    "online": { "enabled": false, "amount": 0 }
+  },
+  "attemptPolicy": "first_only"
+}

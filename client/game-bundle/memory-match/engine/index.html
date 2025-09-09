@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Match</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="ready" class="screen">
+      <div class="logo">🧠 Memory Match</div>
+      <button id="enterBtn" class="btn">Enter</button>
+    </div>
+    <div id="countdown" class="screen hidden"><div class="count">3</div></div>
+    <div id="play" class="screen hidden">
+      <div class="hud"><span id="moves"></span><span id="pairs"></span></div>
+      <div id="grid" class="grid"></div>
+    </div>
+    <div id="done" class="screen hidden">
+      <div class="logo">✅ Finished</div>
+      <div id="summary"></div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

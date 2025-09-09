@@ -35,6 +35,7 @@ router.route('/:id')
   .put(protect, admin, updateSchool)
   .delete(protect, admin, deleteSchool);
 
+
 // Custom middleware to allow admin or manager to access GET /api/schools/:id
 function adminOrManager(req, res, next) {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'manager')) {

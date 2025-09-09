@@ -2,7 +2,7 @@ import { Users, School, Plus, TrendingUp, Settings } from 'lucide-react';
 import UnifiedCard from '../shared/UnifiedCard';
 import UnifiedStatsCard from '../shared/UnifiedStatsCard';
 
-const Overview = ({ stats, loading }) => {
+const Overview = ({ stats, loading, onNavigate }) => {
   const statCards = [
     { 
       title: 'Total Users', 
@@ -111,12 +111,14 @@ const Overview = ({ stats, loading }) => {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => {
+      {quickActions.map((action, index) => {
             const IconComponent = action.icon;
             return (
               <button 
                 key={index}
-                className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-left group"
+        onClick={() => onNavigate && onNavigate(action.action)}
+        className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-left group focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label={action.title}
               >
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">

@@ -3,16 +3,14 @@ const asyncHandler = require('express-async-handler');
 const GameCreation = require('../models/GameCreation');
 const GameTemplate = require('../models/GameTemplate');
 const Assignment = require('../models/Assignment');
+const Class = require('../models/Class');
 
 // @desc    Create a new game creation
 // @route   POST /api/creations
 // @access  Private/Teacher or Admin
 const createGameCreation = asyncHandler(async (req, res) => {
-  const { template: templateId, config, content } = req.body;
+  const { template: templateId, config, content, levelLabel, levelId } = req.body;
 
-  // --- THIS IS THE FIX ---
-  // We extract the data and map it to the correct field names required by the model.
-  const name = config?.title; // The model expects 'name', which comes from the form's 'title' setting.
   const owner = req.user._id; // The model expects 'owner', which is the logged-in user's ID.
 
   if (!templateId || !config) {
@@ -20,18 +18,29 @@ const createGameCreation = asyncHandler(async (req, res) => {
     throw new Error('Missing template or config.');
   }
 
-  // Allow name fallback if not explicitly provided
-  let finalName = name;
-  if (!finalName) {
-    // fallback to template name plus timestamp
-    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
-    finalName = `Game - ${template?.name || templateId}-${ts}`;
-  }
-
+  // Load template first (needed for fallback name and policy/xp snapshot)
   const template = await GameTemplate.findById(templateId);
+  // Enforce max creations per teacher per template (manifest.limits.maxCreationsPerTeacher)
+  const maxCreations = Number(template.manifest?.limits?.maxCreationsPerTeacher || 0);
+  if (maxCreations > 0) {
+    const count = await GameCreation.countDocuments({ owner, template: templateId });
+    if (count >= maxCreations) {
+      res.status(400);
+      throw new Error(`Creation limit reached for this template (${maxCreations}).`);
+    }
+  }
   if (!template) {
     res.status(404);
     throw new Error('Game template not found');
+  }
+
+  // Extract optional title from config
+  const name = config?.title;
+  // Allow name fallback if not explicitly provided
+  let finalName = name;
+  if (!finalName) {
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    finalName = `Game - ${template.name}-${ts}`;
   }
   
   // Data processing for numbers (from our previous fix)
@@ -72,16 +81,119 @@ const createGameCreation = asyncHandler(async (req, res) => {
     });
   }
 
+  // Enforce max images per creation (manifest.assets.maxImagesPerCreation) if content includes image fields
+  const maxImagesPerCreation = Number(template.manifest?.assets?.maxImagesPerCreation || 0);
+  if (maxImagesPerCreation > 0 && Array.isArray(processedContent)) {
+    const imageFieldTypes = new Set(['image','imageArray']);
+    const itemSchema = template.formSchema?.content?.itemSchema || {};
+    let imageCount = 0;
+    processedContent.forEach(item => {
+      Object.entries(itemSchema).forEach(([key, schema]) => {
+        if (imageFieldTypes.has(schema.type)) {
+          const val = item[key];
+          if (!val) return;
+          if (schema.type === 'image') imageCount += 1;
+          else if (schema.type === 'imageArray' && Array.isArray(val)) imageCount += val.length;
+        }
+      });
+    });
+    if (imageCount > maxImagesPerCreation) {
+      res.status(400);
+      throw new Error(`Too many images for this creation (max ${maxImagesPerCreation}).`);
+    }
+  }
+
+  // Snapshot engine path/version and policy/xp from manifest if available
+  const manifest = template.manifest || {};
+  const attemptPolicy = manifest.attemptPolicy || 'first_only';
+  const manifestXp = manifest.xp || {};
+  const xpSnapshot = {
+    assignment: {
+      enabled: !!manifestXp?.assignment?.enabled,
+      amount: Number(manifestXp?.assignment?.amount || 0),
+      firstAttemptOnly: manifestXp?.assignment?.firstAttemptOnly !== false, // default true
+    },
+    online: {
+      enabled: !!manifestXp?.online?.enabled,
+      amount: Number(manifestXp?.online?.amount || 0),
+    }
+  };
+
   const gameCreation = await GameCreation.create({
-  name: finalName,
+    name: finalName,
     owner,
     config: processedConfig,
     content: processedContent,
     template: templateId,
-    // Note: The 'teacher' field from the model is now named 'owner'
+    enginePath: template.enginePath,
+    engineVersion: manifest.version || undefined,
+    attemptPolicy,
+  levelLabel: levelLabel || undefined,
+  levelId: levelId || undefined,
+    xp: xpSnapshot,
   });
 
   if (gameCreation) {
+    // Post-process: move any images uploaded under 'creations/draft' into a per-creation folder and fix URLs
+    try {
+      const path = require('path');
+      const fs = require('fs');
+      const baseUploads = path.join(__dirname, '..', 'public', 'uploads', 'templates', String(templateId), 'creations');
+      const draftPrefix = `/uploads/templates/${templateId}/creations/draft/`;
+      const finalPrefix = `/uploads/templates/${templateId}/creations/${gameCreation._id}/`;
+      const itemSchema = template.formSchema?.content?.itemSchema || {};
+      const imageFieldTypes = new Set(['image','imageArray']);
+      let changed = false;
+      const newContent = (Array.isArray(processedContent) ? JSON.parse(JSON.stringify(processedContent)) : []);
+      for (let i = 0; i < newContent.length; i++) {
+        const item = newContent[i];
+        for (const [key, schema] of Object.entries(itemSchema)) {
+          if (!imageFieldTypes.has(schema.type)) continue;
+          if (schema.type === 'image') {
+            const url = item[key];
+            if (typeof url === 'string' && url.startsWith(draftPrefix)) {
+              const filename = url.substring(draftPrefix.length);
+              const src = path.join(baseUploads, 'draft', filename);
+              const destDir = path.join(baseUploads, String(gameCreation._id));
+              const dest = path.join(destDir, filename);
+              if (fs.existsSync(src)) {
+                if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+                fs.renameSync(src, dest);
+                item[key] = finalPrefix + filename;
+                changed = true;
+              }
+            }
+          } else if (schema.type === 'imageArray') {
+            const arr = Array.isArray(item[key]) ? item[key] : [];
+            const updated = [];
+            for (const url of arr) {
+              if (typeof url === 'string' && url.startsWith(draftPrefix)) {
+                const filename = url.substring(draftPrefix.length);
+                const src = path.join(baseUploads, 'draft', filename);
+                const destDir = path.join(baseUploads, String(gameCreation._id));
+                const dest = path.join(destDir, filename);
+                if (fs.existsSync(src)) {
+                  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+                  fs.renameSync(src, dest);
+                  updated.push(finalPrefix + filename);
+                  changed = true;
+                } else {
+                  updated.push(url);
+                }
+              } else {
+                updated.push(url);
+              }
+            }
+            item[key] = updated;
+          }
+        }
+      }
+      if (changed) {
+        gameCreation.content = newContent;
+        await gameCreation.save();
+      }
+    } catch (_) {}
+
     res.status(201).json(gameCreation);
   } else {
     res.status(400);
@@ -94,8 +206,14 @@ const createGameCreation = asyncHandler(async (req, res) => {
 // @route   GET /api/creations
 // @access  Private/Teacher or Admin
 const getMyGameCreations = asyncHandler(async (req, res) => {
-  const creations = await GameCreation.find({ owner: req.user._id })
-    .populate('template', 'name status') // Add 'status' to the populated fields
+  const filter = { owner: req.user._id };
+  if (req.query.template) {
+    filter.template = req.query.template;
+  }
+
+  // Return creations with persisted levelLabel
+  const creations = await GameCreation.find(filter)
+    .populate('template', 'name status')
     .sort({ createdAt: -1 });
   res.json(creations);
 });
@@ -151,6 +269,19 @@ const deleteGameCreation = asyncHandler(async (req, res) => {
   if (gameCreation.owner.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error('User not authorized to delete this game');
+  }
+  // Also delete associated results and uploaded assets under /public/uploads/templates/<templateId>/creations/<creationId>
+  const GameResult = require('../models/GameResult');
+  await GameResult.deleteMany({ gameCreation: gameCreation._id });
+  try {
+    const path = require('path');
+    const fs = require('fs');
+    const baseDir = path.join(__dirname, '..', 'public', 'uploads', 'templates', String(gameCreation.template), 'creations', String(gameCreation._id));
+    if (fs.existsSync(baseDir)) {
+      fs.rmSync(baseDir, { recursive: true, force: true });
+    }
+  } catch (e) {
+    // non-fatal cleanup
   }
   await gameCreation.deleteOne();
   res.json({ message: 'Game creation removed' });

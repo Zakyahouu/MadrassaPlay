@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arithmetic Sprint</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="ready" class="screen">
+      <div class="logo">➗ Arithmetic Sprint</div>
+      <button id="enterBtn" class="btn">Enter</button>
+    </div>
+    <div id="countdown" class="screen hidden"><div class="count">3</div></div>
+    <div id="play" class="screen hidden">
+      <div class="hud"><span id="timer"></span><span id="progress"></span><span id="score"></span></div>
+      <div id="question" class="question"></div>
+      <form id="answerForm" class="answer"><input id="answer" type="number" inputmode="numeric" autocomplete="off" /><button class="btn" type="submit">OK</button></form>
+    </div>
+    <div id="done" class="screen hidden">
+      <div class="logo">✅ Finished</div>
+      <div id="summary"></div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,12 +1,13 @@
 // CreateGame.jsx - Enhanced with creative minimal design
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const CreateGame = () => {
     const { templateId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useContext(AuthContext);
 
     const [template, setTemplate] = useState(null);
@@ -17,6 +18,7 @@ const CreateGame = () => {
     const [settingsData, setSettingsData] = useState({});
     const [contentItems, setContentItems] = useState([{}]);
     const [autoMode, setAutoMode] = useState(false);
+    
 
     useEffect(() => {
         const fetchTemplate = async () => {
@@ -57,6 +59,8 @@ const CreateGame = () => {
         };
         fetchTemplate();
     }, [templateId, user.token]);
+
+    
 
     const handleSettingsChange = (field, value) => {
         setSettingsData(prev => ({ ...prev, [field]: value }));
@@ -104,6 +108,7 @@ const CreateGame = () => {
             template: templateId,
             config: { ...settingsData, autoGenerate: autoMode },
             content: filteredContent,
+            levelLabel: location.state?.levelLabel,
         };
 
         try {
@@ -213,8 +218,8 @@ const CreateGame = () => {
                                             </div>
                                         );
                                     }
-                                    // Enum: choose UI based on multiplicity
-                                    if (field.type === 'enum') {
+                                    // Select/Enum: choose UI based on multiplicity
+                                    if (field.type === 'enum' || field.type === 'select') {
                                         const isMultiple = Array.isArray(field.default) || field.multiple === true;
                                         const currentVal = settingsData[key] ?? (isMultiple ? [] : '');
                                         if (isMultiple) {
@@ -259,16 +264,36 @@ const CreateGame = () => {
                                             </div>
                                         );
                                     }
+                                    // Boolean as checkbox (general case)
+                                    if (field.type === 'boolean') {
+                                        return (
+                                            <div key={key} className="flex items-center gap-3">
+                                                <input
+                                                    id={`settings-${key}`}
+                                                    type="checkbox"
+                                                    checked={!!settingsData[key]}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.checked)}
+                                                    className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                                />
+                                                <label htmlFor={`settings-${key}`} className="text-sm font-medium text-gray-700">
+                                                    {field.label}
+                                                </label>
+                                            </div>
+                                        );
+                                    }
+                                    // Numbers with min/max
                                     return (
                                         <div key={key} className="group">
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 {field.label}
                                             </label>
                                             <input
-                                                type={field.type === 'text' ? 'text' : field.type}
+                                                type={field.type === 'number' ? 'number' : 'text'}
                                                 value={settingsData[key] ?? ''}
                                                 onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                 required={field.required}
+                                                min={field.min !== undefined ? field.min : undefined}
+                                                max={field.max !== undefined ? field.max : undefined}
                                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 placeholder={`Enter ${field.label.toLowerCase()}`}
                                             />
@@ -326,12 +351,12 @@ const CreateGame = () => {
 
                                         {/* Item Fields */}
                                         <div className="grid gap-4 md:grid-cols-2 p-4 bg-gray-50 rounded-xl">
-                                            {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
+                        {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
                                                 <div key={key}>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         {field.label}
                                                     </label>
-                                                    {field.type === 'enum' && Array.isArray(field.options) ? (
+                            {(field.type === 'enum' || field.type === 'select') && Array.isArray(field.options) ? (
                                                         <select
                                                             value={item[key] || ''}
                                                             onChange={(e) => {
@@ -364,9 +389,89 @@ const CreateGame = () => {
                                                                 <option key={opt} value={opt}>{opt}</option>
                                                             ))}
                                                         </select>
+                                                    ) : field.type === 'image' ? (
+                                                        <div className="space-y-2">
+                                                            {item[key] && (
+                                                                <img src={item[key]} alt="preview" className="w-24 h-24 object-cover rounded" />
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                accept={(field.accept || ['image/webp','image/png','image/jpeg']).join(',')}
+                                                                onChange={async (e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (!file) return;
+                                                                    if (file.size > (10 * 1024 * 1024)) {
+                                                                        return setError('Image exceeds 10MB limit.');
+                                                                    }
+                                                                    try {
+                                                                        const fd = new FormData();
+                                                                        fd.append('file', file);
+                                                                        fd.append('usage', 'content');
+                                                                        fd.append('creationId', 'draft');
+                                                                        const { data } = await axios.post(`/api/templates/${templateId}/media`, fd, {
+                                                                            headers: { Authorization: `Bearer ${user.token}` }
+                                                                        });
+                                                                        handleContentChange(index, key, data.url);
+                                                                    } catch (err) {
+                                                                        setError(err.response?.data?.message || 'Upload failed');
+                                                                    }
+                                                                }}
+                                                                className="block"
+                                                            />
+                                                        </div>
+                                                    ) : field.type === 'imageArray' ? (
+                                                        <div className="space-y-2">
+                                                            <div className="flex gap-2 flex-wrap">
+                                                                {(Array.isArray(item[key]) ? item[key] : []).map((url, i2) => (
+                                                                    <div key={i2} className="relative">
+                                                                        <img src={url} alt="preview" className="w-20 h-20 object-cover rounded" />
+                                                                        <button type="button" className="absolute -top-2 -right-2 bg-white text-red-600 rounded-full shadow p-1" onClick={() => {
+                                                                            const arr = Array.isArray(item[key]) ? [...item[key]] : [];
+                                                                            arr.splice(i2,1);
+                                                                            handleContentChange(index, key, arr);
+                                                                        }}>×</button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <input
+                                                                type="file"
+                                                                multiple
+                                                                accept={(field.accept || ['image/webp','image/png','image/jpeg']).join(',')}
+                                                                onChange={async (e) => {
+                                                                    const files = Array.from(e.target.files || []);
+                                                                    if (!files.length) return;
+                                                                    const existing = Array.isArray(item[key]) ? item[key] : [];
+                                                                    try {
+                                                                        const uploads = [];
+                                                                        for (const f of files) {
+                                                                            if (f.size > (10 * 1024 * 1024)) throw new Error('One of images exceeds 10MB limit.');
+                                                                            const fd = new FormData();
+                                                                            fd.append('file', f);
+                                                                            fd.append('usage', 'content');
+                                                                            fd.append('creationId', 'draft');
+                                                                            const { data } = await axios.post(`/api/templates/${templateId}/media`, fd, {
+                                                                                headers: { Authorization: `Bearer ${user.token}` }
+                                                                            });
+                                                                            uploads.push(data.url);
+                                                                        }
+                                                                        handleContentChange(index, key, existing.concat(uploads));
+                                                                    } catch (err) {
+                                                                        setError(err.message || err.response?.data?.message || 'Upload failed');
+                                                                    }
+                                                                }}
+                                                                className="block"
+                                                            />
+                                                        </div>
+                                                    ) : field.type === 'boolean' ? (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!item[key]}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.checked)}
+                                                            className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                                        />
                                                     ) : (
                                                         <input
-                                                            type={field.type}
+                                                            type={field.type === 'number' ? 'number' : 'text'}
                                                             value={item[key] || ''}
                                                             onChange={(e) => {
                                                                 let value = e.target.value;
@@ -391,6 +496,8 @@ const CreateGame = () => {
                                                                     handleContentChange(index, 'correctAnswer', updated.correctAnswer);
                                                                 }
                                                             }}
+                                                            min={field.min !== undefined ? field.min : undefined}
+                                                            max={field.max !== undefined ? field.max : undefined}
                                                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
                                                             placeholder={`Enter ${field.label.toLowerCase()}`}
                                                         />

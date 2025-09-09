@@ -31,6 +31,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [editClassId, setEditClassId] = useState('');
   // Enrollment selection now managed inside PaymentsPanel via roster
@@ -198,7 +199,10 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                 Export CSV
               </button>
             <button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={() => {
+                  setEditingClass(null);
+                  setIsCreateModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -370,7 +374,10 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                 </p>
                 {!searchTerm && (
                   <button
-                    onClick={() => setIsCreateModalOpen(true)}
+                    onClick={() => {
+                      setEditingClass(null);
+                      setIsCreateModalOpen(true);
+                    }}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Create First Class
@@ -381,14 +388,26 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                   </div>
                 )}
 
-        {/* Class Creation Modal */}
+        {/* Class Creation/Edit Modal */}
         {isCreateModalOpen && (
           <ClassCreationModal
             isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-            onSuccess={(newClass) => {
-              setClasses([newClass, ...classes]);
+            editMode={!!editingClass}
+            classData={editingClass}
+            onClose={() => {
               setIsCreateModalOpen(false);
+              setEditingClass(null);
+            }}
+            onSuccess={(updatedClass) => {
+              if (editingClass) {
+                // Update existing class in list
+                setClasses(classes.map(c => c._id === updatedClass._id ? updatedClass : c));
+              } else {
+                // Add new class to list
+                setClasses([updatedClass, ...classes]);
+              }
+              setIsCreateModalOpen(false);
+              setEditingClass(null);
             }}
           />
         )}

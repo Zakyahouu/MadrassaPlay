@@ -32,6 +32,7 @@ export default function BadgeManager() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [deletingBadge, setDeletingBadge] = useState(false);
   const [message, setMessage] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -155,6 +156,24 @@ export default function BadgeManager() {
       setMessage({ type: 'error', text: e.response?.data?.message || 'Recalc failed.' });
     } finally {
       setRecalculating(false);
+    }
+  };
+
+  const deleteBadgeSystem = async () => {
+    if (!isEditing || !selectedTemplateId) return;
+    if (!confirm('Delete the entire badge system for this template? This removes the definition and all earned records.')) return;
+    setDeletingBadge(true);
+    setMessage(null);
+    try {
+      await axios.delete(`/api/template-badges/template/${selectedTemplateId}`);
+      setMessage({ type: 'success', text: 'Badge system deleted.' });
+      await loadAllBadges();
+      // Close modal after a short delay
+      setTimeout(()=>{ setIsModalOpen(false); }, 600);
+    } catch (e) {
+      setMessage({ type: 'error', text: e.response?.data?.message || 'Delete failed.' });
+    } finally {
+      setDeletingBadge(false);
     }
   };
 
@@ -370,7 +389,10 @@ export default function BadgeManager() {
             <div className="px-5 py-4 border-t flex flex-wrap items-center gap-3 justify-between bg-gray-50 rounded-b-xl">
               <div className="flex items-center gap-2">
                 {isEditing && (
-                  <button type="button" disabled={recalculating} onClick={recalc} className="px-3 py-2 bg-amber-500 text-white rounded-md text-sm disabled:opacity-50">{recalculating ? 'Recalculating…' : 'Recalculate Awards'}</button>
+                  <>
+                    <button type="button" disabled={recalculating} onClick={recalc} className="px-3 py-2 bg-amber-500 text-white rounded-md text-sm disabled:opacity-50">{recalculating ? 'Recalculating…' : 'Recalculate Awards'}</button>
+                    <button type="button" disabled={deletingBadge} onClick={deleteBadgeSystem} className="px-3 py-2 bg-red-600 text-white rounded-md text-sm disabled:opacity-50">{deletingBadge ? 'Deleting…' : 'Delete Badge System'}</button>
+                  </>
                 )}
               </div>
               <div className="flex items-center gap-2 ml-auto">

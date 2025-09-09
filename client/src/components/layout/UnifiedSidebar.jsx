@@ -7,6 +7,7 @@ import {
   Plus,
   Settings,
   BookOpen,
+  School,
   Trophy,
   Users,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Bell,
   Package,
   Megaphone,
+  Gamepad2,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -38,7 +40,10 @@ const UnifiedSidebar = ({
         return [
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'schools', name: 'Schools', icon: School },
+          { id: 'games', name: 'Games', icon: Play },
+          { id: 'template-games', name: 'Games by Template', icon: Gamepad2 },
           { id: 'templates', name: 'Game Templates', icon: Plus },
+          { id: 'template-guide', name: 'Template Guide', icon: BookOpen },
           { id: 'badges', name: 'Badges', icon: Award },
           { id: 'analytics', name: 'Analytics', icon: TrendingUp }
         ];
@@ -64,9 +69,9 @@ const UnifiedSidebar = ({
           { id: 'create-game', name: 'Create Game', icon: Plus },
           { id: 'live-sessions', name: 'Live Sessions', icon: Play },
           { id: 'assignments', name: 'Assignments', icon: FileText },
+          { id: 'resources', name: 'Resources', icon: FileText },
           { id: 'timetable', name: 'Timetable', icon: Calendar },
-          { id: 'reports', name: 'Reports', icon: TrendingUp },
-          { id: 'students', name: 'My Students', icon: Users },
+          { id: 'students', name: 'My Classes', icon: Users },
           { id: 'calendar', name: 'Calendar', icon: Calendar }
         ];
       default:

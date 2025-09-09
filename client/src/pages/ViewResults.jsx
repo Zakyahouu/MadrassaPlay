@@ -8,13 +8,21 @@ const ViewResults = () => {
   const { user } = useContext(AuthContext);
   const { gameCreationId } = useParams();
   const [results, setResults] = useState([]);
+  const [classId, setClassId] = useState('');
+  const [classes, setClasses] = useState([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchResults = async () => {
+  const fetchResults = async () => {
       try {
-        const response = await axios.get(`/api/results/${gameCreationId}`);
+    const params = {};
+    if (classId) params.classId = classId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await axios.get(`/api/results/${gameCreationId}`, { params });
         setResults(response.data);
       } catch (err) {
         setError('Failed to load game results.');
@@ -23,8 +31,20 @@ const ViewResults = () => {
       }
     };
 
-    fetchResults();
-  }, [gameCreationId]);
+  fetchResults();
+  }, [gameCreationId, classId, startDate, endDate]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await axios.get('/api/classes/teacher');
+        if (!mounted) return;
+        setClasses(res.data || []);
+      } catch (_) {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const getDashboardPath = () => {
     switch (user.role) {
@@ -55,6 +75,27 @@ const ViewResults = () => {
       </header>
 
       <div className="bg-white p-6 rounded-lg shadow">
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-3 mb-4">
+          <select value={classId} onChange={(e)=>setClassId(e.target.value)} className="px-3 py-2 border rounded bg-white">
+            <option value="">All classes</option>
+            {classes.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-2 border rounded"
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-2 border rounded"
+          />
+        </div>
         {results.length > 0 ? (
           <table className="w-full text-left">
             <thead>

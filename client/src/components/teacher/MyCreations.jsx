@@ -2,16 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import AssignmentCreate from './AssignmentCreate';
 
 const MyCreations = () => {
   const [creations, setCreations] = useState([]);
+  const [query, setQuery] = useState('');
+  const [templateFilter, setTemplateFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [assignCreationId, setAssignCreationId] = useState(null);
+  const [availableLevels, setAvailableLevels] = useState([]);
 
   useEffect(() => {
     const fetchCreations = async () => {
       try {
-        const { data } = await axios.get('/api/creations');
+  const { data } = await axios.get('/api/creations');
         setCreations(data);
       } catch (err) {
         setError('Failed to fetch your games');
@@ -21,6 +27,12 @@ const MyCreations = () => {
     };
     fetchCreations();
   }, []);
+
+  // Build level options from creations’ own labels
+  useEffect(() => {
+    const labels = Array.from(new Set(creations.map(c => c.levelLabel || 'Any')));
+    setAvailableLevels(labels);
+  }, [creations]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-12">
@@ -69,10 +81,48 @@ const MyCreations = () => {
         </span>
       </div>
 
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name…"
+          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
+        <select
+          value={templateFilter}
+          onChange={(e) => setTemplateFilter(e.target.value)}
+          className="px-3 py-2 border rounded-lg bg-white"
+        >
+          <option value="all">All templates</option>
+          {Array.from(new Map(creations.map(c => [c.template?._id || 'na', c.template?.name || 'Unknown']))).map(([id, name]) => (
+            <option key={id} value={id}>{name}</option>
+          ))}
+        </select>
+        <select
+          value={levelFilter}
+          onChange={(e) => setLevelFilter(e.target.value)}
+          className="px-3 py-2 border rounded-lg bg-white"
+        >
+          <option value="all">All levels</option>
+          {availableLevels.map(l => (
+            <option key={l} value={l}>{l}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Games Grid */}
       {creations.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {creations.map((creation) => (
+      {creations
+            .filter(c => {
+              const matchesText = c.name.toLowerCase().includes(query.trim().toLowerCase());
+              const matchesTemplate = templateFilter === 'all' || (c.template && (c.template._id === templateFilter));
+              const label = c.levelLabel || 'Any';
+              const matchesLevel = levelFilter === 'all' ? true : (label === levelFilter);
+              return matchesText && matchesTemplate && matchesLevel;
+            })
+            .map((creation) => (
             <div 
               key={creation._id} 
               className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all duration-300"
@@ -97,6 +147,13 @@ const MyCreations = () => {
                 </div>
               </div>
 
+              {/* Level badge (if present later) */}
+        {(creation.levelLabel || 'Any') && (
+                <div className="mb-3">
+          <span className="inline-block text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">{creation.levelLabel || 'Any'}</span>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="grid gap-2">
                 {actionButtons.map((button, index) => (
@@ -113,7 +170,23 @@ const MyCreations = () => {
                     </button>
                   </Link>
                 ))}
+                <button onClick={()=>setAssignCreationId(creation._id)} className="w-full px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-fuchsia-600 text-white hover:from-purple-600 hover:to-fuchsia-700 transition">
+                  Assign to students
+                </button>
               </div>
+
+              {/* Inline Assign Modal */}
+              {assignCreationId === creation._id && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                  <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Assign “{creation.name}”</h3>
+                      <button onClick={()=>setAssignCreationId(null)} className="text-gray-500 hover:text-gray-800">✕</button>
+                    </div>
+                    <AssignmentCreate initialSelectedCreations={[creation._id]} />
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

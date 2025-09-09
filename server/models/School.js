@@ -50,7 +50,7 @@ const schoolSchema = new mongoose.Schema(
     },
     subscriptionExpiresAt: {
       type: Date
-    }
+  }
     // We can add more details about the school later if needed,
     // like address, contact info, etc.
   },

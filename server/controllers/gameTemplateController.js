@@ -30,8 +30,25 @@ const uploadGameTemplate = asyncHandler(async (req, res) => {
     return;
   }
 
-  const manifest = JSON.parse(manifestEntry.getData().toString('utf8'));
-  const formSchema = JSON.parse(schemaEntry.getData().toString('utf8'));
+  // Parse manifest and schema with safeguards so bad JSON returns a 400, not a 500
+  let manifest, formSchema;
+  try {
+    manifest = JSON.parse(manifestEntry.getData().toString('utf8'));
+  } catch (e) {
+    return res.status(400).json({ message: `Invalid manifest.json: ${e.message}` });
+  }
+  try {
+    formSchema = JSON.parse(schemaEntry.getData().toString('utf8'));
+  } catch (e) {
+    return res.status(400).json({ message: `Invalid form-schema.json: ${e.message}` });
+  }
+  // Validate required manifest fields early
+  if (!manifest.name || typeof manifest.name !== 'string') {
+    return res.status(400).json({ message: 'manifest.name is required' });
+  }
+  if (!manifest.description || typeof manifest.description !== 'string') {
+    return res.status(400).json({ message: 'manifest.description is required' });
+  }
   
   // --- THIS IS THE FIX ---
   // 1. Check if a template with this name already exists BEFORE doing anything else.
@@ -42,6 +59,12 @@ const uploadGameTemplate = asyncHandler(async (req, res) => {
   }
   // --- END OF FIX ---
 
+
+  // Normalize manifest additions (backward compatible)
+  if (!manifest.attemptPolicy) manifest.attemptPolicy = 'first_only';
+  if (!manifest.xp) manifest.xp = {};
+  if (!manifest.xp.assignment) manifest.xp.assignment = { enabled: true, amount: 0, firstAttemptOnly: true };
+  if (!manifest.xp.online) manifest.xp.online = { enabled: false, amount: 0 };
 
   const templateSlug = slugify(manifest.name);
   const uniqueDirName = `${templateSlug}-${Date.now()}`;
@@ -135,6 +158,30 @@ const deleteTemplate = asyncHandler(async (req, res) => {
         fs.rmSync(fullEnginePath, { recursive: true, force: true });
       }
     }
+    // Cascade: delete game creations and their results for this template
+    const GameCreation = require('../models/GameCreation');
+    const GameResult = require('../models/GameResult');
+  const TemplateBadge = require('../models/TemplateBadge');
+  const EarnedTemplateBadge = require('../models/EarnedTemplateBadge');
+    const creations = await GameCreation.find({ template: template._id }).select('_id');
+    const creationIds = creations.map(c=>c._id);
+    if (creationIds.length){
+      await GameResult.deleteMany({ gameCreation: { $in: creationIds } });
+      await GameCreation.deleteMany({ _id: { $in: creationIds } });
+    }
+    // Remove badge system for this template (definition + earned)
+    const badge = await TemplateBadge.findOne({ template: template._id }).select('_id');
+    if (badge) {
+      await EarnedTemplateBadge.deleteMany({ templateBadge: badge._id });
+      await TemplateBadge.deleteOne({ _id: badge._id });
+    }
+    // Remove uploaded assets under uploads/templates/<templateId>
+    try {
+      const uploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'templates', template._id.toString());
+      if (fs.existsSync(uploadsDir)) {
+        fs.rmSync(uploadsDir, { recursive: true, force: true });
+      }
+    } catch (_) {}
     await template.deleteOne();
     res.json({ message: 'Template removed' });
   } else {
@@ -145,7 +192,7 @@ const deleteTemplate = asyncHandler(async (req, res) => {
 
 // PATCH: update editable meta fields (admin only)
 const updateTemplateMeta = asyncHandler(async (req, res) => {
-  const editable = ['displayName','description','tags','category','iconUrl','isFeatured','deprecated','defaultConfigOverrides','status'];
+  const editable = ['displayName','description','tags','category','iconUrl','isFeatured','deprecated','defaultConfigOverrides','status','attemptPolicy','xp','limitsMaxCreationsPerTeacher','assetsMaxImagesPerCreation'];
   const bodyKeys = Object.keys(req.body || {});
   const illegal = bodyKeys.filter(k => !editable.includes(k));
   if (illegal.length) {
@@ -167,6 +214,38 @@ const updateTemplateMeta = asyncHandler(async (req, res) => {
     if (bad.length) {
       return res.status(400).json({ message: 'Invalid override keys', invalid: bad });
     }
+  }
+  // Normalize xp/attemptPolicy if provided
+  if (req.body.attemptPolicy && !['first_only','all'].includes(req.body.attemptPolicy)) {
+    return res.status(400).json({ message: 'Invalid attemptPolicy' });
+  }
+  if (req.body.xp) {
+    const xp = req.body.xp;
+    // shallow validation
+    if (xp.assignment) {
+      xp.assignment.enabled = !!xp.assignment.enabled;
+      xp.assignment.amount = Number(xp.assignment.amount || 0);
+      xp.assignment.firstAttemptOnly = xp.assignment.firstAttemptOnly !== false;
+    }
+    if (xp.online) {
+      xp.online.enabled = !!xp.online.enabled;
+      xp.online.amount = Number(xp.online.amount || 0);
+    }
+    req.body.xp = xp;
+  }
+  // Merge flat limits/assets into manifest snapshot
+  if (req.body.limitsMaxCreationsPerTeacher !== undefined) {
+    const v = Number(req.body.limitsMaxCreationsPerTeacher || 0);
+    template.manifest = template.manifest || {};
+    template.manifest.limits = template.manifest.limits || {};
+    template.manifest.limits.maxCreationsPerTeacher = v;
+  }
+  if (req.body.assetsMaxImagesPerCreation !== undefined) {
+    const v = Number(req.body.assetsMaxImagesPerCreation || 0);
+    template.manifest = template.manifest || {};
+    template.manifest.assets = template.manifest.assets || {};
+    template.manifest.assets.maxImagesPerCreation = v;
+    // Hard-coded 10MB rule lives in route multer limit; we keep allowed types stable here if desired later
   }
   // Apply overrides
   bodyKeys.forEach(k => { template[k] = req.body[k]; });

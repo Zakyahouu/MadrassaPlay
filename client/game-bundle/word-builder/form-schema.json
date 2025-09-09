@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "title": { "type": "text", "label": "Game title", "required": true },
+    "allowLowercase": { "type": "boolean", "label": "Ignore letter case", "default": true },
+    "showHint": { "type": "boolean", "label": "Show hint if available", "default": false }
+  },
+  "content": {
+    "label": "Words",
+    "minItems": 1,
+    "itemSchema": {
+      "word": { "type": "text", "label": "Word", "required": true },
+      "hint": { "type": "text", "label": "Optional hint", "required": false }
+    }
+  }
+}
