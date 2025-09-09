@@ -56,10 +56,16 @@ const PaymentModal = ({
     try {
       const payload = {
         enrollmentId,
-        amount: Number(taken || 0),
+        // amount should reflect the expected price (unit price * quantity)
+        amount: Number(expectedPrice || 0),
         method,
         note,
         kind: unitType === 'cycle' ? 'pay_cycles' : 'pay_sessions',
+        // pass explicit fields for backend calculations
+        unitType,
+        units: Number(quantity || 0),
+        expectedPrice: Number(expectedPrice || 0),
+        taken: Number(taken || 0),
       };
       try {
         const tokenStr = localStorage.getItem('user');

@@ -24,25 +24,50 @@ const ManagerTimetable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [teachers, setTeachers] = useState([]);
 
-  // Generate time slots from 8 AM to 8 PM in 2-hour intervals
-  const timeSlots = [
-    { start: '08:00', end: '10:00', label: '8:00 AM - 10:00 AM', period: 'Morning' },
-    { start: '10:00', end: '12:00', label: '10:00 AM - 12:00 PM', period: 'Morning' },
-    { start: '12:00', end: '14:00', label: '12:00 PM - 2:00 PM', period: 'Afternoon' },
-    { start: '14:00', end: '16:00', label: '2:00 PM - 4:00 PM', period: 'Afternoon' },
-    { start: '16:00', end: '18:00', label: '4:00 PM - 6:00 PM', period: 'Evening' },
-    { start: '18:00', end: '20:00', label: '6:00 PM - 8:00 PM', period: 'Evening' }
-  ];
+  // Generate 1-hour time slots from 8 AM to 8 PM
+  const formatTimeLabel = (time) => {
+    const [hStr, m] = time.split(':');
+    let h = parseInt(hStr, 10);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const displayH = ((h % 12) || 12).toString();
+    return `${displayH}:${m} ${suffix}`;
+  };
 
-  // Days of the week (Saturday to Friday as per your requirement)
+  const getPeriod = (start) => {
+    const hour = parseInt(start.split(':')[0], 10);
+    if (hour < 12) return 'Morning';
+    if (hour < 16) return 'Afternoon';
+    return 'Evening';
+  };
+
+  const generateHourlyTimeSlots = (start = '08:00', end = '20:00') => {
+    const s = parseInt(start.split(':')[0], 10);
+    const e = parseInt(end.split(':')[0], 10);
+    const slots = [];
+    for (let h = s; h < e; h++) {
+      const startStr = `${String(h).padStart(2, '0')}:00`;
+      const endStr = `${String(h + 1).padStart(2, '0')}:00`;
+      slots.push({
+        start: startStr,
+        end: endStr,
+        label: `${formatTimeLabel(startStr)} - ${formatTimeLabel(endStr)}`,
+        period: getPeriod(startStr)
+      });
+    }
+    return slots;
+  };
+
+  const timeSlots = generateHourlyTimeSlots('08:00', '20:00');
+
+  // Days of the week starting from Friday
   const daysOfWeek = [
+    { key: 'friday', name: 'Friday', short: 'Fri', color: 'bg-pink-50 border-pink-200' },
     { key: 'saturday', name: 'Saturday', short: 'Sat', color: 'bg-blue-50 border-blue-200' },
     { key: 'sunday', name: 'Sunday', short: 'Sun', color: 'bg-green-50 border-green-200' },
     { key: 'monday', name: 'Monday', short: 'Mon', color: 'bg-purple-50 border-purple-200' },
     { key: 'tuesday', name: 'Tuesday', short: 'Tue', color: 'bg-orange-50 border-orange-200' },
     { key: 'wednesday', name: 'Wednesday', short: 'Wed', color: 'bg-red-50 border-red-200' },
-    { key: 'thursday', name: 'Thursday', short: 'Thu', color: 'bg-indigo-50 border-indigo-200' },
-    { key: 'friday', name: 'Friday', short: 'Fri', color: 'bg-pink-50 border-pink-200' }
+    { key: 'thursday', name: 'Thursday', short: 'Thu', color: 'bg-indigo-50 border-indigo-200' }
   ];
 
   // Class type colors
@@ -171,16 +196,26 @@ const ManagerTimetable = () => {
   ];
 
   const getClassesForTimeSlot = (day, timeSlot) => {
-    return classes.filter(cls => {
-      return cls.schedules.some(schedule => {
-        const scheduleStart = schedule.startTime;
-        const scheduleEnd = schedule.endTime;
-        const slotStart = timeSlot.start;
-        const slotEnd = timeSlot.end;
-        
-        return schedule.dayOfWeek === day.key && 
-               scheduleStart === slotStart && 
-               scheduleEnd === slotEnd;
+    const normalizeTime = (t) => {
+      if (!t || typeof t !== 'string') return t;
+      const m = t.match(/^([0-9]{1,2}):([0-9]{2})$/);
+      if (!m) return t;
+      const h = m[1].padStart(2, '0');
+      return `${h}:${m[2]}`;
+    };
+
+    const overlaps = (aStart, aEnd, bStart, bEnd) => {
+      const sA = normalizeTime(aStart);
+      const eA = normalizeTime(aEnd);
+      const sB = normalizeTime(bStart);
+      const eB = normalizeTime(bEnd);
+      return sA < eB && eA > sB;
+    };
+
+    return filteredClasses.filter(cls => {
+      return (cls.schedules || []).some(schedule => {
+        const scheduleDay = (schedule.dayOfWeek || '').toLowerCase();
+        return scheduleDay === day.key && overlaps(schedule.startTime, schedule.endTime, timeSlot.start, timeSlot.end);
       });
     });
   };
@@ -330,32 +365,37 @@ const ManagerTimetable = () => {
                       onClick={() => handleSessionClick(day, timeSlot, classesInSlot)}
                       className="w-full p-3 bg-white border-2 border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 text-left group cursor-pointer"
                     >
-                      {classesInSlot.map((cls, index) => (
-                        <div key={cls._id} className="space-y-2 mb-3 last:mb-0">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-indigo-900 truncate font-semibold">
-                              {cls.name}
-                            </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-indigo-900 truncate font-semibold">
+                            {classesInSlot[0].name}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            {classesInSlot.length > 1 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                +{classesInSlot.length - 1} more
+                              </span>
+                            )}
                             <Info className="w-4 h-4 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2 text-xs text-indigo-600">
-                              <Users className="w-3 h-3" />
-                              <span className="truncate">{cls.teacherId?.firstName} {cls.teacherId?.lastName}</span>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2 text-xs text-indigo-500">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">{cls.roomId?.name || 'Room TBD'}</span>
-                            </div>
-                            
-                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${getClassTypeColor(cls.catalogItem?.type)}`}>
-                              {cls.catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
-                            </span>
-                          </div>
                         </div>
-                      ))}
+
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2 text-xs text-indigo-600">
+                            <Users className="w-3 h-3" />
+                            <span className="truncate">{classesInSlot[0].teacherId?.firstName} {classesInSlot[0].teacherId?.lastName}</span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 text-xs text-indigo-500">
+                            <MapPin className="w-3 h-3" />
+                            <span className="truncate">{classesInSlot[0].roomId?.name || 'Room TBD'}</span>
+                          </div>
+
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full ${getClassTypeColor(classesInSlot[0].catalogItem?.type)}`}>
+                            {classesInSlot[0].catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
+                          </span>
+                        </div>
+                      </div>
                     </button>
                   ) : (
                     <div className="w-full h-full min-h-[100px] flex items-center justify-center">

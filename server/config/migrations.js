@@ -81,3 +81,38 @@ async function ensureAttendanceIndexes() {
 }
 
 module.exports.ensureAttendanceIndexes = ensureAttendanceIndexes;
+
+// Ensure partial unique index for payments idempotency (idempotencyKey present only)
+async function ensurePaymentsIdempotencyIndex() {
+  try {
+    const col = mongoose.connection.collection('payments');
+    const indexes = await col.indexes();
+    const desiredName = 'enrollmentId_1_idempotencyKey_1';
+    const existing = indexes.find((i) => i.name === desiredName);
+    // If existing index is not partial on idempotencyKey string type, drop it first
+    if (existing && !(existing.partialFilterExpression && existing.partialFilterExpression.idempotencyKey && existing.partialFilterExpression.idempotencyKey.$type === 'string')) {
+      try {
+        await col.dropIndex(desiredName);
+        console.log('[migrations] Dropped legacy payments idempotency index');
+      } catch (e) {
+        console.warn('[migrations] Failed to drop legacy payments idempotency index:', e.message);
+      }
+    }
+    // Ensure correct partial unique index exists
+    try {
+      await col.createIndex(
+        { enrollmentId: 1, idempotencyKey: 1 },
+        { unique: true, name: desiredName, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+      );
+      console.log('[migrations] Ensured partial unique index on payments { enrollmentId, idempotencyKey }');
+    } catch (e) {
+      if (!/already exists/i.test(e.message)) {
+        console.warn('[migrations] createIndex (payments idempotency) warning:', e.message);
+      }
+    }
+  } catch (err) {
+    console.warn('[migrations] ensurePaymentsIdempotencyIndex skipped:', err.message);
+  }
+}
+
+module.exports.ensurePaymentsIdempotencyIndex = ensurePaymentsIdempotencyIndex;

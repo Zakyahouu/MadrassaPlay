@@ -27,6 +27,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [enrollments, setEnrollments] = useState([]);
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalDebt, setTotalDebt] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -90,8 +91,13 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
         axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
       ]);
 
-      setEnrollments(Array.isArray(enrollmentsRes.data) ? enrollmentsRes.data : []);
-      setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
+      const enrollList = Array.isArray(enrollmentsRes.data) ? enrollmentsRes.data : [];
+      const paymentList = Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : [];
+      setEnrollments(enrollList);
+      setPayments(paymentList);
+      // Compute aggregate debt from payments
+      const debtSum = paymentList.reduce((sum, p) => sum + (typeof p.debtDelta === 'number' ? p.debtDelta : 0), 0);
+      setTotalDebt(debtSum);
     } catch (error) {
       console.error('Error fetching student data:', error);
       // Use mock data for demo
@@ -479,22 +485,8 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
 
                     {/* Statistics */}
                     <div className="space-y-6">
-                      {/* Balance Card */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-green-900">Session Balance</h3>
-                          <CheckCircle className="w-6 h-6 text-green-600" />
-                        </div>
-                        <div className="text-3xl font-bold text-green-900 mb-2">
-                          {(() => {
-                            const v = Number(calculateBalance());
-                            return Number.isFinite(v) ? String(Math.round(v)) : '0';
-                          })()}
-                        </div>
-                        <p className="text-sm text-green-700">Available Sessions</p>
-                      </div>
-
-                      {/* Active Enrollments */}
+                      {/* Active Enrollments */
+                      }
                       <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-semibold text-purple-900">Active Classes</h3>
@@ -504,6 +496,18 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                           {enrollments.filter(e => e.status === 'active').length}
                         </div>
                         <p className="text-sm text-purple-700">Currently Enrolled</p>
+                      </div>
+
+                      {/* Total Debt */}
+                      <div className="bg-rose-50 border border-rose-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-rose-900">Total Debt</h3>
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-white text-rose-700 border border-rose-200">{totalDebt >= 0 ? 'Owed' : 'Credit'}</span>
+                        </div>
+                        <div className="text-3xl font-bold text-rose-900 mb-1">
+                          {formatDZ(Math.abs(totalDebt))}
+                        </div>
+                        <p className="text-sm text-rose-700">{totalDebt >= 0 ? 'Student owes school' : 'School owes student'}</p>
                       </div>
                     </div>
                   </div>
@@ -629,18 +633,8 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
 
                 {activeTab === 'payments' && (
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center">
                       <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
-                      <button
-                        onClick={() => {
-                          const firstActive = (enrollments || []).find(e => e.status === 'active');
-                          if (firstActive) { setSelectedEnrollment(firstActive); setShowPaymentModal(true); }
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                      >
-                        <CreditCard className="w-4 h-4" />
-                        Record Payment
-                      </button>
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -662,7 +656,16 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                 <td className="px-6 py-4 text-sm text-gray-900 capitalize">{p.kind}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{typeof p.amount === 'number' ? formatDZ(p.amount) : ''}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900 capitalize">{p.method}</td>
-                                <td className="px-6 py-4 text-sm text-gray-900">{p.note || ''}</td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  <div className="flex items-center gap-2">
+                                    <span>{p.note || ''}</span>
+                                    {typeof p.debtDelta === 'number' && p.debtDelta !== 0 && (
+                                      <span className={`px-2 py-0.5 text-xs rounded-full border ${p.debtDelta > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                                        {p.debtDelta > 0 ? `(+${formatDZ(p.debtDelta)})` : `(-${formatDZ(Math.abs(p.debtDelta))})`}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
                               </tr>
                             ))}
                           </tbody>

@@ -2,13 +2,14 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
-const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes } = require('./config/migrations');
+const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes, ensurePaymentsIdempotencyIndex } = require('./config/migrations');
 
 // Avoid auto-connecting when running under Jest (tests manage their own DB)
 if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
   connectDB().then(async () => {
     await ensureUserStudentCodePartialIndex();
     await ensureAttendanceIndexes();
+    await ensurePaymentsIdempotencyIndex();
   });
 }
 

@@ -34,41 +34,62 @@ const createPayment = async (req, res) => {
       return res.status(404).json({ message: 'Enrollment not found.' });
     }
 
-    if (idempotencyKey) {
-      const dup = await Payment.findOne({ enrollmentId, idempotencyKey });
+    // Normalize idempotency key: ignore empty/null to avoid unique index conflicts on (enrollmentId, idempotencyKey)
+    const normalizedIdem = typeof idempotencyKey === 'string' && idempotencyKey.trim().length > 0
+      ? idempotencyKey.trim()
+      : undefined;
+    if (normalizedIdem) {
+      const dup = await Payment.findOne({ enrollmentId, idempotencyKey: normalizedIdem });
       if (dup) return res.status(200).json(dup);
     }
 
     // Create payment first (audit log)
-    const parsedAmount = parseInt(amount, 10);
-    const payment = await Payment.create({
+    const parsedAmount = Number(amount);
+    const parsedExpected = Number(expectedPrice);
+    const paid = typeof taken === 'number' ? taken : parsedAmount;
+    const paymentPayload = {
       schoolId,
       classId: enrollment.classId,
       studentId: enrollment.studentId,
       enrollmentId,
+      // amount represents the expected price for the units purchased
       amount: parsedAmount,
       kind,
       method: 'cash',
       note,
       unitType,
       units,
-      expectedPrice,
-      taken: typeof taken === 'number' ? taken : parsedAmount,
-      debtDelta: typeof debtDelta === 'number' ? debtDelta : (typeof expectedPrice === 'number' ? (expectedPrice - parsedAmount) : 0),
-      idempotencyKey,
-    });
+      expectedPrice: Number.isFinite(parsedExpected) ? parsedExpected : parsedAmount,
+      taken: Number.isFinite(paid) ? paid : 0,
+      // Align with UI: debt = taken - price
+      debtDelta: typeof debtDelta === 'number' ? debtDelta : (Number.isFinite(paid) && Number.isFinite(parsedExpected) ? (paid - parsedExpected) : 0),
+    };
+    if (normalizedIdem) paymentPayload.idempotencyKey = normalizedIdem;
+    const payment = await Payment.create(paymentPayload);
 
     // Adjust enrollment balance automatically
-    // Convert payment into session credits based on pricingSnapshot
+    // Prefer unit-based credit; fallback to money-based if units not provided
     const snap = enrollment.pricingSnapshot || {};
     let sessionsAdded = 0;
-    if (snap.paymentModel === 'per_session') {
-      if (typeof snap.sessionPrice === 'number' && snap.sessionPrice > 0) {
-        sessionsAdded = parsedAmount / snap.sessionPrice;
+    if (typeof units === 'number' && units > 0) {
+      if (unitType === 'session') {
+        sessionsAdded = units;
+      } else if (unitType === 'cycle') {
+        if (typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
+          sessionsAdded = units * snap.cycleSize;
+        }
       }
-    } else if (snap.paymentModel === 'per_cycle') {
-      if (typeof snap.cyclePrice === 'number' && snap.cyclePrice > 0 && typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
-        sessionsAdded = (parsedAmount / snap.cyclePrice) * snap.cycleSize;
+    }
+    // Fallback: infer sessions from amount actually paid
+    if (sessionsAdded === 0) {
+      if (snap.paymentModel === 'per_session') {
+        if (typeof snap.sessionPrice === 'number' && snap.sessionPrice > 0) {
+          sessionsAdded = (Number.isFinite(paid) ? paid : parsedAmount) / snap.sessionPrice;
+        }
+      } else if (snap.paymentModel === 'per_cycle') {
+        if (typeof snap.cyclePrice === 'number' && snap.cyclePrice > 0 && typeof snap.cycleSize === 'number' && snap.cycleSize > 0) {
+          sessionsAdded = ((Number.isFinite(paid) ? paid : parsedAmount) / snap.cyclePrice) * snap.cycleSize;
+        }
       }
     }
 
