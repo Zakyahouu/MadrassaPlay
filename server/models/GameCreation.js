@@ -37,6 +37,10 @@ const gameCreationSchema = new mongoose.Schema(
     engineVersion: { type: String },
     // Policy snapshot for attempts and xp (derived from template manifest at creation)
     attemptPolicy: { type: String, enum: ['first_only', 'all'], default: 'first_only' },
+  // Optional tag for teacher-chosen level label (e.g., "Level X" or "Arabic B1" or "Any")
+  levelLabel: { type: String },
+  // Legacy (unused) optional tag for school-defined level kept for backward compatibility
+  levelId: { type: mongoose.Schema.Types.ObjectId },
     xp: {
       assignment: {
         enabled: { type: Boolean, default: true },

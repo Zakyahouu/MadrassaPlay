@@ -1,12 +1,13 @@
 // CreateGame.jsx - Enhanced with creative minimal design
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
 const CreateGame = () => {
     const { templateId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useContext(AuthContext);
 
     const [template, setTemplate] = useState(null);
@@ -17,6 +18,7 @@ const CreateGame = () => {
     const [settingsData, setSettingsData] = useState({});
     const [contentItems, setContentItems] = useState([{}]);
     const [autoMode, setAutoMode] = useState(false);
+    
 
     useEffect(() => {
         const fetchTemplate = async () => {
@@ -57,6 +59,8 @@ const CreateGame = () => {
         };
         fetchTemplate();
     }, [templateId, user.token]);
+
+    
 
     const handleSettingsChange = (field, value) => {
         setSettingsData(prev => ({ ...prev, [field]: value }));
@@ -104,6 +108,7 @@ const CreateGame = () => {
             template: templateId,
             config: { ...settingsData, autoGenerate: autoMode },
             content: filteredContent,
+            levelLabel: location.state?.levelLabel,
         };
 
         try {

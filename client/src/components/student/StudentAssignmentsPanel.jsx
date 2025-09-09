@@ -22,6 +22,7 @@ export default function StudentAssignmentsPanel() {
   const [breakdownData, setBreakdownData] = useState(null);
   const [loadingBreakdown, setLoadingBreakdown] = useState(false);
   const [breakdownError, setBreakdownError] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
@@ -29,13 +30,16 @@ export default function StudentAssignmentsPanel() {
       const params = { page, limit };
       if (classFilter !== 'all') params.classId = classFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
-      const [assignRes, classRes] = await Promise.all([
-        axios.get('/api/assignments/my-assignments/detailed', { params }),
-        axios.get('/api/classes/my').catch(()=>({ data: [] }))
-      ]);
-      setItems(assignRes.data.items || []);
+      const assignRes = await axios.get('/api/assignments/my-assignments/detailed', { params });
+      const items = assignRes.data.items || [];
+      setItems(items);
       setTotal(assignRes.data.total || 0);
-      setClasses(classRes.data || []);
+      // Build class options from assignments (no extra API call)
+      const inferred = new Map();
+      items.forEach(a => {
+        (a.classIds || []).forEach(id => inferred.set(id, { _id: id, name: 'Class' }));
+      });
+      setClasses(Array.from(inferred.values()));
     } catch (e) {
       setError('Failed to load assignments');
     } finally {
@@ -49,6 +53,15 @@ export default function StudentAssignmentsPanel() {
   useEffect(() => {
     const handler = () => setRefreshToken(t => t + 1);
     window.addEventListener('assignmentProgressRefresh', handler);
+    const onSaved = (e) => {
+      const d = e.detail || {};
+      setToast({
+        message: `Result saved${d.counted===false ? ' (not counted)': ''}. XP +${d.xpAwarded || 0}. Attempts left: ${d.attemptsRemaining ?? '?'}`,
+        ts: Date.now()
+      });
+      setTimeout(()=>setToast(null), 4000);
+    };
+    window.addEventListener('assignmentResultSaved', onSaved);
     return () => window.removeEventListener('assignmentProgressRefresh', handler);
   }, []);
 
@@ -58,7 +71,17 @@ export default function StudentAssignmentsPanel() {
     setLoadingBreakdown(true); setBreakdownError(null); setBreakdownData(null); setBreakdownOpen(true);
     try {
       const res = await axios.get(`/api/assignments/${assignmentId}/breakdown`);
-      setBreakdownData(res.data);
+      const data = res.data;
+      // Fetch possible badges per template for preview
+      const templateIds = [...new Set((data.games||[]).map(g=>g.templateId).filter(Boolean))];
+      let badgesByTemplate = {};
+      if (templateIds.length) {
+        const results = await Promise.allSettled(templateIds.map(tid => axios.get(`/api/template-badges?template=${tid}`)));
+        results.forEach((r, idx) => {
+          if (r.status === 'fulfilled') badgesByTemplate[templateIds[idx]] = r.value.data || [];
+        });
+      }
+      setBreakdownData({ ...data, badgesByTemplate });
     } catch (e) {
       setBreakdownError('Failed to load breakdown');
     } finally {
@@ -68,6 +91,11 @@ export default function StudentAssignmentsPanel() {
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div className="fixed bottom-4 right-4 z-50 bg-white border shadow-lg rounded-lg p-3 text-xs">
+          {toast.message}
+        </div>
+      )}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <h3 className="text-2xl font-bold text-gray-900">My Assignments</h3>
         <div className="flex flex-wrap gap-2 items-center text-xs">
@@ -76,7 +104,7 @@ export default function StudentAssignmentsPanel() {
             <button onClick={()=>{setStatusFilter('active');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='active'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Active</button>
             <button onClick={()=>{setStatusFilter('dueSoon');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='dueSoon'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Due Soon</button>
             <button onClick={()=>{setStatusFilter('upcoming');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='upcoming'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Upcoming</button>
-            <button onClick={()=>{setStatusFilter('closed');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='closed'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Closed</button>
+            <button onClick={()=>{setStatusFilter('completed');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='completed'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Completed</button>
           </div>
           <div className="flex gap-1 bg-white border rounded-lg p-1">
             <select value={classFilter} onChange={e=>{setClassFilter(e.target.value);setPage(1);}} className="text-xs px-2 py-1 rounded-md focus:outline-none">
@@ -100,7 +128,7 @@ export default function StudentAssignmentsPanel() {
           const { progress } = a;
           const dueSoon = a.dueSoon;
           const status = a.status;
-          const statusColor = status === 'active' ? 'bg-emerald-100 text-emerald-700' : status === 'upcoming' ? 'bg-blue-100 text-blue-700' : status === 'closed' ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600';
+          const statusColor = status === 'active' ? 'bg-emerald-100 text-emerald-700' : status === 'upcoming' ? 'bg-blue-100 text-blue-700' : status === 'completed' ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600';
           const locked = status === 'upcoming';
           return (
             <div key={a._id} className={`p-5 rounded-xl border shadow-sm transition group ${locked ? 'bg-gray-50 opacity-80' : 'bg-white hover:shadow-md'}` }>
@@ -117,6 +145,7 @@ export default function StudentAssignmentsPanel() {
                       </span>
                     )}
                   </div>
+                  {a.description && <p className="mt-1 text-[11px] text-gray-600 line-clamp-2">{a.description}</p>}
                 </div>
                 <div className="text-right text-xs">
                   <div className="font-semibold text-gray-900 mb-1">{progress.completed}/{progress.totalGames} done</div>
@@ -175,6 +204,7 @@ export default function StudentAssignmentsPanel() {
                   <div className="space-y-3">
                     {breakdownData.games.map(g => {
                       const remaining = breakdownData.attemptLimit ? Math.max(0, breakdownData.attemptLimit - g.attemptCount) : null;
+                      const badgeDefs = breakdownData.badgesByTemplate?.[g.templateId] || [];
                       return (
                         <div key={g.gameId} className="p-4 rounded-xl border bg-gray-50">
                           <div className="flex flex-wrap justify-between gap-4">
@@ -186,6 +216,18 @@ export default function StudentAssignmentsPanel() {
                               <p className="text-xs text-gray-500">Attempts: {g.attemptCount}</p>
                             </div>
                           </div>
+                          {badgeDefs.length > 0 && (
+                            <div className="mt-2 text-[10px] text-gray-600">
+                              <p className="mb-1 font-medium text-gray-700">Possible Badges:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {badgeDefs.map(b => (
+                                  <span key={b._id} className="px-2 py-0.5 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-800">
+                                    {b.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <div className="mt-2 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                             {g.attempts.map(a => (
                               <div key={a.attemptNumber} className="p-2 rounded-lg bg-white border text-[11px] flex justify-between">

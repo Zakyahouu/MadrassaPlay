@@ -14,6 +14,8 @@ const PlayGame = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [gate, setGate] = useState({ loading: true, allow: true, reason: null, attemptNumber: 1, attemptLimit: 1, attemptsRemaining: 1 });
+  const [submitError, setSubmitError] = useState(null);
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -30,6 +32,24 @@ const PlayGame = () => {
     fetchGameCreation();
   }, [creationId]);
 
+  // Fetch canAttempt gate
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!assignmentId) { setGate(g => ({ ...g, loading: false })); return; }
+        const res = await axios.get(`/api/assignments/${assignmentId}/can-attempt`, { params: { gameId: creationId } });
+        if (!mounted) return;
+        const d = res.data || {};
+        setGate({ loading: false, allow: !!d.allow, reason: d.reason || null, attemptNumber: d.attemptNumber || 1, attemptLimit: d.attemptLimit || 1, attemptsRemaining: d.attemptsRemaining ?? 0 });
+      } catch (e) {
+        if (!mounted) return;
+        setGate({ loading: false, allow: true, reason: null, attemptNumber: 1, attemptLimit: 1, attemptsRemaining: 1 });
+      }
+    })();
+    return () => { mounted = false; };
+  }, [assignmentId, creationId]);
+
   useEffect(() => {
     const handleGameMessage = async (event) => {
     if (event.data?.type === 'GAME_COMPLETE') {
@@ -38,13 +58,63 @@ const PlayGame = () => {
   // Normalize identifiers expected by backend
   if (!payload.gameCreationId && gameCreation?._id) payload.gameCreationId = gameCreation._id;
       if (assignmentId && !payload.assignmentId) payload.assignmentId = assignmentId;
-      await axios.post('/api/results', payload);
+      const resp = await axios.post('/api/results', payload);
           console.log('Result saved successfully');
           // Dispatch events so dashboards/components can refresh without polling
           window.dispatchEvent(new Event('assignmentProgressRefresh'));
           window.dispatchEvent(new Event('templateBadgesRefresh'));
+          // Dispatch a detailed event with XP and badges hint
+          try {
+            const detail = { detail: { 
+              xpAwarded: resp.data?.xpAwarded ?? 0,
+              percentage: resp.data?.percentage,
+              attemptNumber: resp.data?.attemptNumber,
+              attemptsRemaining: resp.data?.attemptsRemaining,
+              counted: resp.data?.counted,
+            }};
+            window.dispatchEvent(new CustomEvent('assignmentResultSaved', detail));
+          } catch {}
+          // Reflect new counters locally for header/overlay
+          if (assignmentId) {
+            const submittedAttempt = Number(resp.data?.attemptNumber || 0);
+            const attemptLimit = Number(gate.attemptLimit || 1);
+            const remaining = Number(resp.data?.attemptsRemaining ?? Math.max(0, (gate.attemptsRemaining || 0) - 1));
+            const nextAttempt = submittedAttempt > 0 ? submittedAttempt + 1 : gate.attemptNumber;
+            const allowNext = remaining > 0;
+            setGate(g => ({
+              ...g,
+              attemptNumber: nextAttempt,
+              attemptLimit,
+              attemptsRemaining: remaining,
+              allow: allowNext,
+              reason: allowNext ? null : 'attempt_limit',
+            }));
+          }
         } catch (err) {
-          console.error('Failed to save result:', err);
+          // Surface server reason codes and counters
+          const resp = err?.response?.data || {};
+          const reason = resp.reason || null;
+          const reasonMap = {
+            assignment_completed: 'This assignment is completed.',
+            canceled: 'This assignment has been canceled.',
+            time_window: 'This assignment is not currently active.',
+            attempt_limit: 'Attempt limit reached for this game.',
+          };
+          const msg = reason ? (reasonMap[reason] || 'You cannot submit this result right now.') : (resp.message || 'Failed to save result.');
+          setSubmitError(msg);
+          // Reflect counters in header if provided
+          if (typeof resp.attemptNumber === 'number' || typeof resp.attemptsRemaining === 'number' || typeof resp.attemptLimit === 'number') {
+            setGate(g => ({
+              ...g,
+              allow: reason ? false : g.allow,
+              attemptNumber: typeof resp.attemptNumber === 'number' ? resp.attemptNumber : g.attemptNumber,
+              attemptLimit: typeof resp.attemptLimit === 'number' ? resp.attemptLimit : g.attemptLimit,
+              attemptsRemaining: typeof resp.attemptsRemaining === 'number' ? resp.attemptsRemaining : g.attemptsRemaining,
+              reason: reason ?? g.reason,
+            }));
+          }
+          // Auto-clear after a short delay
+          setTimeout(() => setSubmitError(null), 4000);
         }
       }
     };
@@ -88,7 +158,7 @@ const PlayGame = () => {
     return paths[user.role] || '/';
   };
 
-  if (loading) return (
+  if (loading || gate.loading) return (
     <div className="h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
         <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full mx-auto mb-3"></div>
@@ -112,6 +182,13 @@ const PlayGame = () => {
     </div>
   );
 
+  const blockMsgMap = {
+    assignment_completed: 'This assignment is completed.',
+    canceled: 'This assignment has been canceled.',
+    time_window: 'This assignment is not currently active.',
+    attempt_limit: 'You have used all attempts for this game.',
+  };
+
   return (
     <div className="h-screen bg-white flex flex-col">
       {/* Header */}
@@ -130,7 +207,7 @@ const PlayGame = () => {
                 {gameCreation?.name || 'Game'}
               </h1>
               <p className="text-xs text-gray-500">
-                Playing • {gameCreation?.template?.name}
+                {assignmentId ? `Attempt ${gate.attemptNumber} of ${gate.attemptLimit}` : (gameCreation?.template?.name ? `Playing • ${gameCreation?.template?.name}` : '')}
               </p>
             </div>
           </div>
@@ -152,11 +229,16 @@ const PlayGame = () => {
           </div>
         </div>
       </header>
+      {/* Submission error banner */}
+      {submitError && (
+        <div className="bg-red-50 border-b border-red-200 text-red-700 text-sm px-6 py-2">{submitError}</div>
+      )}
       
       {/* Game Container */}
       <main className="flex-1 bg-gray-100 p-4">
         <div className="h-full bg-black rounded-lg overflow-hidden shadow-sm">
-      { (gameCreation?.enginePath || gameCreation?.template?.enginePath) ? (
+      { !assignmentId || gate.allow ? (
+        (gameCreation?.enginePath || gameCreation?.template?.enginePath) ? (
             <iframe
               ref={iframeRef}
         src={`${(gameCreation.enginePath || gameCreation.template.enginePath)}/index.html`}
@@ -172,7 +254,16 @@ const PlayGame = () => {
                 <p className="text-gray-500 text-sm mt-1">Contact administrator for support</p>
               </div>
             </div>
-          )}
+          )
+      ) : (
+        <div className="h-full flex items-center justify-center text-white bg-gray-900">
+          <div className="text-center">
+            <div className="text-4xl mb-4">⛔</div>
+            <p className="text-gray-300">{blockMsgMap[gate.reason] || 'You cannot attempt this game right now.'}</p>
+            {gate.reason === 'attempt_limit' && <p className="text-gray-400 text-sm mt-1">Attempts used: {gate.attemptLimit}</p>}
+          </div>
+        </div>
+      )}
         </div>
       </main>
     </div>

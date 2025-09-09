@@ -49,18 +49,21 @@ const topStudentsByClass = async (req, res) => {
   const limit = Math.max(1, Math.min(parseInt(req.query.limit || '10', 10), 100));
   const offset = Math.max(0, parseInt(req.query.offset || '0', 10));
 
-  const klass = await Class.findById(classId).select('teacher school students');
+  const klass = await Class.findById(classId).select('teacherId schoolId enrolledStudents');
     if (!klass) return res.status(404).json({ message: 'Class not found.' });
 
     // Light authorization: teachers can access their classes; managers/admins can access within their school
-    if (req.user.role === 'teacher' && klass.teacher.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'teacher' && klass.teacherId?.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to view this class leaderboard.' });
     }
-    if (req.user.role === 'manager' && req.user.school?.toString() !== klass.school.toString()) {
-      return res.status(403).json({ message: 'Managers can only access leaderboards in their school.' });
+    if (req.user.role === 'manager') {
+      const managerSchoolId = req.user.school?._id?.toString?.() || req.user.school?.toString?.();
+      if (managerSchoolId !== klass.schoolId?.toString()) {
+        return res.status(403).json({ message: 'Managers can only access leaderboards in their school.' });
+      }
     }
 
-  const studentIds = klass.students || [];
+  const studentIds = (klass.enrolledStudents || []).map(e => e.studentId).filter(Boolean);
   const classQuery = { _id: { $in: studentIds } };
   const sinceStr2 = req.query.since;
   const sinceDate2 = sinceStr2 ? new Date(sinceStr2) : null;
@@ -115,19 +118,19 @@ const myRankInClass = async (req, res) => {
     const { classId } = req.params;
     const metricField = getMetricField(req.query.metric);
 
-    const klass = await Class.findById(classId).select('students teacher school');
+  const klass = await Class.findById(classId).select('enrolledStudents teacherId schoolId');
     if (!klass) return res.status(404).json({ message: 'Class not found.' });
 
     // Authorization: student must belong to class, or teacher/manager/admin with proper scope
-    const isStudentInClass = (klass.students || []).some(id => id.toString() === req.user._id.toString());
-    const isTeacher = req.user.role === 'teacher' && klass.teacher?.toString() === req.user._id.toString();
-    const isManagerInSchool = req.user.role === 'manager' && req.user.school?.toString() === klass.school?.toString();
+  const isStudentInClass = (klass.enrolledStudents || []).some(e => e.studentId?.toString() === req.user._id.toString());
+  const isTeacher = req.user.role === 'teacher' && klass.teacherId?.toString() === req.user._id.toString();
+  const isManagerInSchool = req.user.role === 'manager' && ((req.user.school?._id?.toString?.() || req.user.school?.toString?.()) === klass.schoolId?.toString());
     const isAdmin = req.user.role === 'admin';
     if (!(isStudentInClass || isTeacher || isManagerInSchool || isAdmin)) {
       return res.status(403).json({ message: 'Not authorized to view this class rank.' });
     }
 
-    const cohortIds = klass.students || [];
+  const cohortIds = (klass.enrolledStudents || []).map(e => e.studentId).filter(Boolean);
     if (cohortIds.length === 0) return res.json({ metric: metricField, rank: 0, total: 0 });
 
     const me = await User.findById(req.user._id).select(metricField);

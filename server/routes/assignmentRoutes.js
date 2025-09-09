@@ -10,6 +10,11 @@ const {
   getAssignmentsForTeacher,
   getMyAssignmentsDetailed,
   getAssignmentBreakdown,
+  updateAssignment,
+  deleteAssignment,
+  cancelAssignment,
+  completeAssignment,
+  
 } = require('../controllers/assignmentController');
 
 // Import middleware for protection
@@ -26,5 +31,16 @@ router.get('/:id/breakdown', protect, getAssignmentBreakdown);
 
 // Teacher: list own assignments
 router.get('/teacher', protect, getAssignmentsForTeacher);
+
+// Teacher: update/delete an assignment
+router.put('/:id', protect, updateAssignment);
+router.delete('/:id', protect, deleteAssignment);
+
+// Teacher: cancel / complete
+router.post('/:id/cancel', protect, cancelAssignment);
+router.post('/:id/complete', protect, completeAssignment);
+
+// Student: attempt gating
+router.get('/:id/can-attempt', protect, require('../controllers/assignmentController').getCanAttempt);
 
 module.exports = router;

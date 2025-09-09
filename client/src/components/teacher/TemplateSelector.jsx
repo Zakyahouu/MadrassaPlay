@@ -1,12 +1,17 @@
 // TemplateSelector.jsx - Enhanced with creative minimal design
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const TemplateSelector = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [levelModal, setLevelModal] = useState(null); // templateId when open
+  const [levels, setLevels] = useState([]);
+  const [levelChoice, setLevelChoice] = useState('Any');
+  const navigate = useNavigate();
+  
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -22,6 +27,31 @@ const TemplateSelector = () => {
     fetchTemplates();
   }, []);
 
+  useEffect(() => {
+    // Preload teacher classes to build level options
+    (async () => {
+      try {
+        const res = await axios.get('/api/classes/teacher');
+        const classes = Array.isArray(res.data) ? res.data : [];
+        const names = Array.from(new Set(classes.map(c => c.name).filter(Boolean)));
+        setLevels(['Any', ...names]);
+      } catch (_) { setLevels(['Any']); }
+    })();
+  }, []);
+
+  const startWithLevel = (templateId) => {
+    setLevelModal(templateId);
+    setLevelChoice('Any');
+  };
+
+  const proceed = () => {
+    const tmpl = levelModal;
+    setLevelModal(null);
+    navigate(`/teacher/create-game/${tmpl}`, { state: { levelLabel: levelChoice === 'Any' ? undefined : levelChoice } });
+  };
+
+  
+
   if (loading) return (
     <div className="flex items-center justify-center py-16">
       <div className="animate-spin w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full"></div>
@@ -35,6 +65,7 @@ const TemplateSelector = () => {
   );
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -65,12 +96,10 @@ const TemplateSelector = () => {
               </div>
 
               {/* Action Button */}
-              <Link to={`/teacher/create-game/${template._id}`} className="block">
-                <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
-                  <span>Use Template</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </button>
-              </Link>
+              <button onClick={() => startWithLevel(template._id)} className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center gap-2">
+                <span>Use Template</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
             </div>
           ))}
         </div>
@@ -83,7 +112,27 @@ const TemplateSelector = () => {
           </p>
         </div>
       )}
+  </div>
+  {levelModal && (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Choose Level</h3>
+          <button onClick={() => setLevelModal(null)} className="text-gray-500 hover:text-gray-800">✕</button>
+        </div>
+        <p className="text-sm text-gray-600 mb-3">Pick a level (your class name) to tag the game, or choose Any.</p>
+        <select value={levelChoice} onChange={e=>setLevelChoice(e.target.value)} className="w-full border rounded px-3 py-2 mb-4">
+          {levels.map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setLevelModal(null)} className="px-4 py-2 rounded border">Cancel</button>
+          <button onClick={proceed} className="px-4 py-2 rounded bg-indigo-600 text-white">Continue</button>
+        </div>
+      </div>
     </div>
+  )}
+    
+  </>
   );
 };
 

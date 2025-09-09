@@ -24,7 +24,8 @@ import {
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
 import AdsBar from '../components/shared/AdsBar';
-import MyAssignments from '../components/student/MyAssignments';
+import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
+import StudentResources from '../components/student/StudentResources';
 
 // Main Student Dashboard Component
 const StudentDashboard = () => {
@@ -164,7 +165,7 @@ const StudentDashboard = () => {
           </div>
         );
       case 'assignments':
-        return <MyAssignments />;
+        return <StudentAssignmentsPanel />;
       case 'games':
         return (
           <div className="text-center py-12">
@@ -186,6 +187,8 @@ const StudentDashboard = () => {
             <p className="text-gray-600">Compare your performance with classmates</p>
           </div>
         );
+      case 'resources':
+        return <StudentResources />;
       default:
         return (
           <div className="text-center py-12">
@@ -201,7 +204,8 @@ const StudentDashboard = () => {
     { id: 'assignments', name: 'My Assignments' },
     { id: 'games', name: 'Games' },
     { id: 'progress', name: 'Progress' },
-    { id: 'leaderboard', name: 'Leaderboard' }
+  { id: 'leaderboard', name: 'Leaderboard' },
+  { id: 'resources', name: 'Resources' }
   ];
 
   return (

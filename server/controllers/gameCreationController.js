@@ -3,12 +3,13 @@ const asyncHandler = require('express-async-handler');
 const GameCreation = require('../models/GameCreation');
 const GameTemplate = require('../models/GameTemplate');
 const Assignment = require('../models/Assignment');
+const Class = require('../models/Class');
 
 // @desc    Create a new game creation
 // @route   POST /api/creations
 // @access  Private/Teacher or Admin
 const createGameCreation = asyncHandler(async (req, res) => {
-  const { template: templateId, config, content } = req.body;
+  const { template: templateId, config, content, levelLabel, levelId } = req.body;
 
   const owner = req.user._id; // The model expects 'owner', which is the logged-in user's ID.
 
@@ -127,6 +128,8 @@ const createGameCreation = asyncHandler(async (req, res) => {
     enginePath: template.enginePath,
     engineVersion: manifest.version || undefined,
     attemptPolicy,
+  levelLabel: levelLabel || undefined,
+  levelId: levelId || undefined,
     xp: xpSnapshot,
   });
 
@@ -207,6 +210,8 @@ const getMyGameCreations = asyncHandler(async (req, res) => {
   if (req.query.template) {
     filter.template = req.query.template;
   }
+
+  // Return creations with persisted levelLabel
   const creations = await GameCreation.find(filter)
     .populate('template', 'name status')
     .sort({ createdAt: -1 });

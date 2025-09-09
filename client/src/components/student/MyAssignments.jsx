@@ -39,8 +39,12 @@ const MyAssignments = () => {
           assignments.map((assignment) => (
             <div key={assignment._id} className="p-4 border rounded-md bg-blue-50">
               <h4 className="font-semibold text-lg text-blue-800">{assignment.title}</h4>
+              {assignment.description && (
+                <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">{assignment.description}</p>
+              )}
               <p className="text-sm text-gray-600">
-                Due by: {new Date(assignment.endDate).toLocaleDateString()}
+                {assignment.startDate ? `Starts: ${new Date(assignment.startDate).toLocaleDateString()} • ` : ''}
+                Due: {new Date(assignment.endDate).toLocaleDateString()}
               </p>
               <div className="mt-4">
                 {/* Link to the student play route; pass assignmentId via state for result attribution */}

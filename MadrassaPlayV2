@@ -25,3 +25,40 @@ This file lists good ideas we will NOT implement now, reserved for the next vers
 ## Maintenance & Ops
 - Background job to purge orphaned uploads not referenced by any creation.
 - Health page to validate static routes (/engines, /uploads, /badge-icons) and write permissions.
+
+## Teacher — My Games
+- Manage actions: rename and duplicate creations (with server endpoints), bulk delete.
+- Better discovery: search, sort (newest/oldest/name), pagination or infinite scroll.
+- Quick analytics chips: attempts count and avg percent (lazy-loaded summaries).
+- Per-template caps: show “N/M creations” and “images used/max” overlays.
+- Card badges: deprecated template, missing engine, policy (first-only/all) indicators.
+
+## Teacher — Assignments
+- Recurrence and advanced scheduling (windows, late policy).
+- Inline “Assign this” from game cards with preset selection sheets.
+- Assignment detail page: class-level progress, per-game completion tiles.
+- Bulk operations: close, duplicate, extend dates.
+
+## Teacher — Reporting
+- Filters (date/student/class), CSV export, and print-friendly views.
+- Attempt history drill-down and trend charts (per class and per student).
+- Cross-assignment comparisons for a creation or template.
+
+## Teacher — My Classes
+- Attendance/presence integration and per-session rollup.
+- Per-student profile: recent assignments, badges, progress sparkline.
+- Messaging shortcuts (announce to class, DM student/guardian).
+
+## Teacher — Live Sessions
+- Full student join UX (code + name), lobby roster, and moderation (kick/mute).
+- Host controls: pause, end, timer, reveal answers, show leaderboard.
+- Post-session summary (attempts, top performers) with export.
+- Socket auth/room security (JWT handshake), reconnect/resume flows.
+
+## Teacher — Timetable
+- Real data wiring for teacher classes; inline edit schedule.
+- Conflict detection and suggestions; calendar sync (ICS export).
+
+## Student — Join Game UI
+- Dedicated “Join” screen with room code and display name; error states and retry.
+- Persist last used name; join history list.

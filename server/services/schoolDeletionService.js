@@ -14,8 +14,15 @@ const Advertisement = require('../models/Advertisement');
 
 class SchoolDeletionService {
   constructor() {
-    // Schedule daily check for schools to be permanently deleted
-    this.scheduleDeletionCheck();
+    // Safety gate: only enable cron if explicitly allowed via env
+    const enabled = process.env.ENABLE_SCHOOL_DELETION_CRON === 'true';
+    if (enabled) {
+      // Schedule daily check for schools to be permanently deleted
+      this.scheduleDeletionCheck();
+    } else {
+      // No-op in dev/test/prod unless explicitly enabled
+      // console.log('[SchoolDeletionService] Cron disabled (set ENABLE_SCHOOL_DELETION_CRON=true to enable)');
+    }
   }
 
   async initiateSchoolDeletion(schoolId) {

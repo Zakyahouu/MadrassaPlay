@@ -6,6 +6,7 @@ const User = require('../models/User');
 const GameCreation = require('../models/GameCreation');
 // Legacy global badge system removed
 const { evaluateTemplateBadgeForResult } = require('./templateBadgeController');
+const { checkCanAttempt } = require('../services/attemptGate');
 
 // @desc    Submit a result for a game
 // @route   POST /api/results
@@ -36,40 +37,50 @@ const submitGameResult = async (req, res) => {
     if (assignmentId) {
       assignment = await Assignment.findOne({ _id: assignmentId, gameCreations: gameCreationId });
     } else {
-      // Fallback: any assignment referencing this game where user is direct student or member via class
+      // Fallback: any assignment referencing this game for this student either explicitly or via class membership
+      const Class = require('../models/Class');
+      const myClasses = await Class.find({ 'enrolledStudents.studentId': studentId }).select('_id');
+      const myClassIds = myClasses.map(c => c._id.toString());
       assignment = await Assignment.findOne({
         gameCreations: gameCreationId,
-        $or: [ { students: studentId }, { classes: { $exists: true, $ne: [] } } ]
+        $or: [ { students: studentId }, { classes: { $in: myClassIds } } ]
       });
-      // If found via class membership ensure membership
-      if (assignment && !assignment.students.map(s=>s.toString()).includes(studentId.toString())) {
-        // Verify class membership
-        const Class = require('../models/Class');
-        const classCount = await Class.countDocuments({ _id: { $in: assignment.classes }, students: studentId });
-        if (classCount === 0) assignment = null;
-      }
     }
 
     if (!assignment) {
       return res.status(404).json({ message: 'No active assignment found for this game.' });
     }
 
-    // Count previous attempts for this assignment/game
-    const previousAttempts = await GameResult.find({
-      student: studentId,
-      gameCreation: gameCreationId,
-      assignment: assignment._id,
-    }).sort({ createdAt: 1 });
-
-    const attemptLimit = assignment.attemptLimit || 1;
-    if (previousAttempts.length >= attemptLimit) {
-      return res.status(400).json({ message: 'Attempt limit reached for this assignment.' });
+    // Centralized gate
+    const gate = await checkCanAttempt({ assignment, studentId, gameId: gameCreationId });
+    if (!gate.allow) {
+      // Map gate.reason to consistent HTTP status + message
+      const status = gate.reason === 'attempt_limit' ? 400 : 403;
+      const reasonMessages = {
+        canceled: 'This assignment has been canceled.',
+        assignment_completed: 'This assignment is completed.',
+        time_window: 'This assignment is not yet active.',
+        attempt_limit: 'Attempt limit reached for this assignment.',
+      };
+      return res.status(status).json({
+        message: reasonMessages[gate.reason] || 'Not allowed to submit result.',
+        reason: gate.reason,
+        attemptNumber: gate.attemptNumber,
+        attemptLimit: gate.attemptLimit,
+        attemptsRemaining: gate.attemptsRemaining,
+      });
     }
 
-  const attemptNumber = previousAttempts.length + 1;
+    const attemptNumber = gate.attemptNumber;
 
   // Determine counted based on creation policy (first_only) and if a prior counted exists
-  const hasCounted = previousAttempts.some(r => r.counted);
+  const priorCounted = await GameResult.findOne({
+    student: studentId,
+    gameCreation: gameCreationId,
+    assignment: assignment._id,
+    counted: true,
+  }).select('_id').lean();
+  const hasCounted = !!priorCounted;
   const firstOnly = (creation.attemptPolicy || 'first_only') === 'first_only';
   const counted = firstOnly ? !hasCounted : true;
 
@@ -84,7 +95,7 @@ const submitGameResult = async (req, res) => {
       if (xpConf.enabled) xpAwarded = Number(xpConf.amount || 0);
     }
 
-    const gameResult = await GameResult.create({
+  const gameResult = await GameResult.create({
       student: studentId,
       gameCreation: gameCreationId,
       assignment: assignment._id,
@@ -117,16 +128,50 @@ const submitGameResult = async (req, res) => {
       evaluateTemplateBadgeForResult({ userId: studentId, gameCreationId, percentage });
     }
 
-    res.status(201).json({ 
-      message: 'Result submitted successfully!', 
+    // Optional: auto-complete when all targeted students have at least one counted attempt for all games
+    try {
+      const freshAssignment = await Assignment.findById(assignment._id).lean();
+      if (freshAssignment && freshAssignment.status !== 'canceled' && freshAssignment.status !== 'completed') {
+        const studentIds = (freshAssignment.students || []).map(s => s.toString());
+        const gameIds = (freshAssignment.gameCreations || []).map(g => g.toString());
+        if (studentIds.length && gameIds.length) {
+          const results = await GameResult.find({
+            assignment: freshAssignment._id,
+            counted: true,
+            gameCreation: { $in: gameIds },
+            student: { $in: studentIds },
+          }).select('student gameCreation').lean();
+          const byStudent = new Map();
+          for (const r of results) {
+            const k = r.student.toString();
+            if (!byStudent.has(k)) byStudent.set(k, new Set());
+            byStudent.get(k).add(r.gameCreation.toString());
+          }
+          let allDone = true;
+          for (const sid of studentIds) {
+            const set = byStudent.get(sid);
+            if (!set || set.size < gameIds.length) { allDone = false; break; }
+          }
+          if (allDone) {
+            const A = require('../models/Assignment');
+            await A.findByIdAndUpdate(freshAssignment._id, { status: 'completed', completedAt: new Date() });
+          }
+        }
+      }
+    } catch (e) {
+      // Best effort, ignore errors here
+    }
+
+    res.status(201).json({
+      message: 'Result submitted successfully!',
       result: gameResult,
-  xpAwarded,
+      xpAwarded,
       pointsEarned,
-  percentage,
-  attemptNumber,
-  attemptsRemaining: Math.max(0, attemptLimit - attemptNumber),
-  counted,
-  isTest,
+      percentage,
+      attemptNumber,
+      attemptsRemaining: gate.attemptsRemaining - 1 >= 0 ? gate.attemptsRemaining - 1 : 0,
+      counted,
+      isTest,
     });
 
   } catch (error) {
@@ -150,18 +195,46 @@ const getAttemptHistory = async (req, res) => {
   }
 };
 
-// @desc    Get all results for a specific game creation
-// @route   GET /api/results/:gameCreationId
-// @access  Private/Teacher
+// @desc    Get all results for a specific game creation (with ownership + optional filters)
+// @route   GET /api/results/:gameCreationId?classId=&startDate=&endDate=
+// @access  Private (Teacher/Admin/Manager)
 const getResultsForGame = async (req, res) => {
   try {
-    // We use .populate('student', 'name') to replace the student's ObjectId
-    // with their actual document, but we only select the 'name' field.
-    const results = await GameResult.find({ gameCreation: req.params.gameCreationId })
-      .populate('student', 'name');
+    const { gameCreationId } = req.params;
+    const { classId, startDate, endDate } = req.query;
 
-    // We can add a security check here later to ensure the user requesting
-    // the results is the teacher who owns the game creation.
+    // 1) Authorize access: teachers must own the game; admins/managers allowed
+    const creation = await GameCreation.findById(gameCreationId).select('owner');
+    if (!creation) return res.status(404).json({ message: 'Game creation not found' });
+
+    const isTeacher = req.user?.role === 'teacher';
+    const isOwner = creation.owner?.toString() === req.user?._id?.toString();
+    const isElevated = req.user && (req.user.role === 'admin' || req.user.role === 'manager');
+    if (isTeacher && !isOwner) {
+      return res.status(403).json({ message: 'Not authorized to view results for this game.' });
+    }
+
+    // 2) Build assignment scope: limit to this teacher's assignments by default
+    const assignmentQuery = { gameCreations: gameCreationId };
+    if (isTeacher) assignmentQuery.teacher = req.user._id;
+    if (classId) assignmentQuery.classes = classId;
+    const assignments = await Assignment.find(assignmentQuery).select('_id');
+    const assignmentIds = assignments.map(a => a._id);
+
+    // If no matching assignments, return empty
+    if (assignmentIds.length === 0) return res.status(200).json([]);
+
+    // 3) Build result query with optional date range
+    const resultQuery = { gameCreation: gameCreationId, assignment: { $in: assignmentIds } };
+    if (startDate || endDate) {
+      resultQuery.createdAt = {};
+      if (startDate) resultQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) resultQuery.createdAt.$lte = new Date(endDate);
+    }
+
+    const results = await GameResult.find(resultQuery)
+      .populate('student', 'name')
+      .sort({ createdAt: -1 });
 
     res.status(200).json(results);
   } catch (error) {

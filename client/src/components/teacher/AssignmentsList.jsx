@@ -1,49 +1,106 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import AssignmentCard from './AssignmentCard';
 
-const badgeFor = (status) => {
-  const base = 'px-2 py-0.5 text-xs rounded-full';
-  if (status === 'active') return `${base} bg-green-100 text-green-800`;
-  if (status === 'upcoming') return `${base} bg-yellow-100 text-yellow-800`;
-  return `${base} bg-gray-200 text-gray-700`;
-};
-
-const AssignmentsList = () => {
+// A full list view for the "All" tab, reusing the same card component
+export default function AssignmentsList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [summaryMap, setSummaryMap] = useState({});
 
   useEffect(() => {
     let mounted = true;
     (async () => {
+      setLoading(true);
       try {
-        const res = await axios.get('/api/assignments/teacher');
-        if (mounted) setItems(res.data || []);
-      } catch (_) { /* ignore */ }
+        const axios = (await import('axios')).default;
+        const res = await axios.get('/api/assignments/teacher', { params: { page, limit, status: 'all' } });
+        const arr = Array.isArray(res.data?.items) ? res.data.items : Array.isArray(res.data) ? res.data : [];
+        if (!mounted) return;
+        setItems(arr);
+        setTotal(res.data?.total ?? arr.length ?? 0);
+      } catch (_) {}
       finally { if (mounted) setLoading(false); }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [page, limit]);
 
-  if (loading) return <div className="text-sm text-gray-500">Loading…</div>;
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!items.length) { setSummaryMap({}); return; }
+      try {
+        const axios = (await import('axios')).default;
+        const slice = items.slice(0, 25);
+        const results = await Promise.allSettled(slice.map(a => axios.get(`/api/reporting/assignments/${a._id}/summary`)));
+        if (!mounted) return;
+        const map = {};
+        for (let i = 0; i < slice.length; i++) {
+          const r = results[i];
+          if (r.status === 'fulfilled') {
+            const d = r.value.data;
+            map[slice[i]._id] = { submittedCount: d.submittedCount || 0, totalStudents: d.totalStudents || 0 };
+          }
+        }
+        setSummaryMap(map);
+      } catch (_) { setSummaryMap({}); }
+    })();
+    return () => { mounted = false; };
+  }, [items]);
 
-  if (items.length === 0) return <div className="text-sm text-gray-500">No assignments yet.</div>;
+  const handleDelete = async (a) => {
+    if (!window.confirm('Delete this assignment?')) return;
+    try {
+      const axios = (await import('axios')).default;
+      await axios.delete(`/api/assignments/${a._id}`);
+      // refresh current page
+      const res = await axios.get('/api/assignments/teacher', { params: { page, limit, status: 'all' } });
+      const arr = Array.isArray(res.data?.items) ? res.data.items : Array.isArray(res.data) ? res.data : [];
+      setItems(arr);
+      setTotal(res.data?.total ?? arr.length ?? 0);
+    } catch (e) {
+      // noop
+    }
+  };
+
+  const handleCancel = async (a) => {
+    if (!window.confirm('Cancel this assignment? Students will no longer be able to submit.')) return;
+    try {
+      const axios = (await import('axios')).default;
+      await axios.post(`/api/assignments/${a._id}/cancel`);
+      const res = await axios.get('/api/assignments/teacher', { params: { page, limit, status: 'all' } });
+      const arr = Array.isArray(res.data?.items) ? res.data.items : Array.isArray(res.data) ? res.data : [];
+      setItems(arr);
+      setTotal(res.data?.total ?? arr.length ?? 0);
+    } catch (_) {}
+  };
+
+  // Complete is now automatic (time or 100%), no manual action
 
   return (
-    <div className="space-y-2">
-      {items.map(a => (
-        <div key={a._id} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-          <div>
-            <div className="font-medium text-gray-900">{a.title}</div>
-            <div className="text-xs text-gray-500">{new Date(a.startDate).toLocaleString()} → {new Date(a.endDate).toLocaleString()}</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className={badgeFor(a.status)}>{a.status}</span>
-            <span className="text-xs text-gray-500">Games: {a.gameCreations?.length || 0}</span>
-          </div>
-        </div>
+    <div className="space-y-4">
+      {loading && <div className="text-sm text-gray-500">Loading…</div>}
+      {!loading && !items.length && <div className="text-sm text-gray-500">No assignments yet.</div>}
+    {!loading && items.map(a => (
+        <AssignmentCard
+          key={a._id}
+          assignment={a}
+          summary={summaryMap[a._id]}
+          onView={() => window.dispatchEvent(new CustomEvent('teacher:view-assignment', { detail: { assignment: a } }))}
+          onEdit={null}
+          onDelete={a.status === 'active' ? null : () => handleDelete(a)}
+          onCancel={(a.status === 'upcoming' || a.status === 'active') ? () => handleCancel(a) : null}
+        />
       ))}
+
+      <div className="flex items-center justify-end gap-2 text-xs pt-2">
+        <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 border rounded disabled:opacity-50">Prev</button>
+        <span className="text-gray-500">Page {page} / {Math.max(1, Math.ceil(total/limit))}</span>
+        <button disabled={page>=Math.max(1, Math.ceil(total/limit))} onClick={()=>setPage(p=>p+1)} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
+      </div>
     </div>
   );
-};
+}
 
-export default AssignmentsList;

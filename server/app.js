@@ -3,12 +3,21 @@ const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
 const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes } = require('./config/migrations');
+// Load optional services guarded by env flags
+const enableDeletionCron = process.env.ENABLE_SCHOOL_DELETION_CRON === 'true';
+if (enableDeletionCron) {
+  // Lazy-require to avoid any side effects when disabled
+  try { require('./services/schoolDeletionService'); } catch (e) { /* ignore */ }
+}
 
 // Avoid auto-connecting when running under Jest (tests manage their own DB)
 if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
   connectDB().then(async () => {
     await ensureUserStudentCodePartialIndex();
     await ensureAttendanceIndexes();
+    if (process.env.BACKUP_ON_START === 'true') {
+      try { await require('./scripts/autoBackup')(); } catch (e) { /* ignore */ }
+    }
   });
 }
 
@@ -38,6 +47,8 @@ app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
 app.use('/api/reporting', require('./routes/reportingRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/employees', require('./routes/employeeRoutes'));
+// Important: mount resource routes before generic class routes to avoid guard conflicts
+app.use('/api/classes', require('./routes/classResourceRoutes'));
 app.use('/api/classes', require('./routes/classRoutes'));
 app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));

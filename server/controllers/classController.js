@@ -5,6 +5,9 @@ const Room = require('../models/Room');
 const User = require('../models/User');
 const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
+const path = require('path');
+const fs = require('fs-extra');
+const ClassResource = require('../models/ClassResource');
 
 // @desc    Get all classes for a school
 // @route   GET /api/classes
@@ -381,7 +384,23 @@ const deleteClass = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Cannot delete class with enrolled students. Please deactivate instead.');
   }
-  
+  // Cleanup class associations in resources (teacher-scoped storage). If a resource ends up with no allowed classes, delete file and record.
+  try {
+    const resources = await ClassResource.find({ allowedClasses: id });
+    for (const r of resources) {
+      r.allowedClasses = (r.allowedClasses || []).filter(cid => String(cid) !== String(id));
+      if (r.allowedClasses.length === 0) {
+        // delete file and record
+        const uploadsRoot = path.join(__dirname, '..', 'public', 'uploads', 'teacher-resources', String(r.teacherId));
+        const filePath = path.join(uploadsRoot, r.fileName);
+        await fs.unlink(filePath).catch(() => {});
+        await r.deleteOne();
+      } else {
+        await r.save();
+      }
+    }
+  } catch (_) { /* ignore */ }
+
   await classItem.deleteOne();
   
   res.json({
@@ -537,7 +556,7 @@ const getClassesByTeacher = asyncHandler(async (req, res) => {
     status: { $in: ['active', 'enrolling'] }
   })
     .populate('roomId', 'name capacity')
-    .populate('catalogItem.itemId', 'name description')
+  .populate('catalogItem.itemId')
     .sort({ 'schedules.dayOfWeek': 1, 'schedules.startTime': 1 });
   
   res.json(classes);
@@ -643,3 +662,36 @@ module.exports = {
   getClassesByTeacher,
   checkConflicts
 };
+// @desc    Get classes for the logged-in student
+// @route   GET /api/classes/my
+// @access  Private (Student)
+module.exports.getClassesForStudent = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const classes = await Class.find({ 'enrolledStudents.studentId': userId })
+    .select('_id name teacherId')
+    .populate('teacherId', 'firstName lastName')
+    .sort({ name: 1 });
+  res.json(classes);
+});
+// @desc    Get students for a specific class (teacher-owned)
+// @route   GET /api/classes/:id/students
+// @access  Private (Teacher)
+module.exports.getClassStudents = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const me = req.user;
+  if (me.role !== 'teacher') return res.status(403).json({ message: 'Not authorized' });
+  const klass = await Class.findOne({ _id: id, teacherId: me._id })
+    .populate('enrolledStudents.studentId', 'firstName lastName name email studentCode');
+  if (!klass) return res.status(404).json({ message: 'Class not found' });
+  const items = (klass.enrolledStudents || [])
+    .filter(e => e && e.studentId)
+    .map(e => ({
+      id: e.studentId._id,
+      name: e.studentId.name || `${e.studentId.firstName} ${e.studentId.lastName}`.trim(),
+      email: e.studentId.email || '',
+      studentCode: e.studentId.studentCode || '',
+      status: e.status || 'active',
+      enrolledAt: e.enrolledAt,
+    }));
+  res.json({ classId: klass._id, students: items });
+});

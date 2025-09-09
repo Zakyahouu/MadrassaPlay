@@ -5,6 +5,8 @@ const Reports = () => {
   const [assignments, setAssignments] = useState([]);
   const [summaries, setSummaries] = useState({});
   const [loading, setLoading] = useState(true);
+  const [openDetails, setOpenDetails] = useState(null);
+  const [studentsByAssignment, setStudentsByAssignment] = useState({});
 
   useEffect(() => {
     let mounted = true;
@@ -54,6 +56,36 @@ const Reports = () => {
                 <div className="text-sm text-gray-500">No results yet</div>
               )}
             </div>
+            <div className="mt-3">
+              <button
+                className="text-xs text-indigo-600"
+                onClick={async ()=>{
+                  setOpenDetails(openDetails===a._id?null:a._id);
+                  if (!studentsByAssignment[a._id]) {
+                    try {
+                      const resp = await axios.get(`/api/reporting/assignments/${a._id}/students`);
+                      setStudentsByAssignment(prev=>({ ...prev, [a._id]: resp.data.items || [] }));
+                    } catch {}
+                  }
+                }}
+              >{openDetails===a._id ? 'Hide' : 'Show'} students</button>
+            </div>
+            {openDetails===a._id && (
+              <div className="mt-3 border-t pt-3">
+                {(studentsByAssignment[a._id]||[]).length===0 ? (
+                  <div className="text-xs text-gray-500">No students yet.</div>
+                ) : (
+                  <ul className="text-sm text-gray-800 space-y-1">
+                    {(studentsByAssignment[a._id]||[]).map(st => (
+                      <li key={st.id} className="flex justify-between">
+                        <span>{st.name}</span>
+                        <span className="text-gray-600">Best: {st.bestPercentage}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
