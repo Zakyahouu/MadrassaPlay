@@ -283,28 +283,53 @@ const TeacherResources = () => {
   };
 
   return (
-    <div className="space-y-6">
-  <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Class Resources</h1>
-          <p className="text-gray-600">Upload and manage files for your classes</p>
+    <div className="space-y-8">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 border border-indigo-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Class Resources</h1>
+            <p className="text-gray-600 text-lg">Upload and manage educational materials for your classes</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-indigo-600">{allResources.length}</div>
+            <div className="text-sm text-indigo-600">Files uploaded</div>
+          </div>
         </div>
       </div>
 
-      {/* View switch + Class Picker */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <div className="flex flex-col md:flex-row gap-3 items-center">
+      {/* Enhanced View switch + Class Picker */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="flex items-center gap-2">
-            <button onClick={()=>setViewMode('class')} className={`px-3 py-1.5 text-sm rounded-md border ${viewMode==='class'?'bg-gray-900 text-white border-gray-900':'bg-white hover:bg-gray-50'}`}>By Class</button>
-            <button onClick={()=>setViewMode('all')} className={`px-3 py-1.5 text-sm rounded-md border ${viewMode==='all'?'bg-gray-900 text-white border-gray-900':'bg-white hover:bg-gray-50'}`}>All Files</button>
+            <button 
+              onClick={()=>setViewMode('class')} 
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                viewMode==='class'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                  : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'
+              }`}
+            >
+              By Class
+            </button>
+            <button 
+              onClick={()=>setViewMode('all')} 
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                viewMode==='all'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' 
+                  : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'
+              }`}
+            >
+              All Files
+            </button>
           </div>
           {viewMode==='class' && (
-            <div className="flex items-center gap-2 w-full md:w-auto md:ml-4">
-              <label className="text-sm text-gray-600">Class</label>
+            <div className="flex items-center gap-3 w-full md:w-auto md:ml-4">
+              <label className="text-sm font-medium text-gray-700">Class</label>
               <select
                 value={selectedClass}
                 onChange={(e)=>setSelectedClass(e.target.value)}
-                className="px-3 py-2 border rounded-md"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 {classes.map(c => (
                   <option key={c._id} value={c._id}>{c.name}</option>
@@ -312,44 +337,101 @@ const TeacherResources = () => {
               </select>
             </div>
           )}
-          <div className="text-xs text-gray-500 md:ml-auto">Per-teacher limit: 20 files</div>
+          <div className="flex items-center gap-2 md:ml-auto">
+            <div className="text-sm text-gray-500">Storage:</div>
+            <div className="text-sm font-medium text-indigo-600">{allResources.length}/20 files</div>
+            <div className="w-20 bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-indigo-500 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(allResources.length / 20) * 100}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Uploader (no class selection) */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        {error && <div className="text-xs text-red-600 mb-2">{error}</div>}
-        {limitReached && (
-          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-2">
-            You reached the limit of {TEACHER_LIMIT} files. Delete some files to upload new ones.
+      {/* Enhanced Uploader */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
-        <form onSubmit={handleUpload} className="flex flex-col gap-3">
-          <input type="text" placeholder="Title (optional)" value={uploadTitle} onChange={(e)=>setUploadTitle(e.target.value)} className="flex-1 px-3 py-2 border rounded-md" />
-          <input type="text" placeholder="Description (optional)" value={uploadDesc} onChange={(e)=>setUploadDesc(e.target.value)} className="flex-1 px-3 py-2 border rounded-md" />
+        {limitReached && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="text-sm text-amber-700">
+              <span className="font-medium">Storage limit reached!</span> You've reached the limit of {TEACHER_LIMIT} files. Delete some files to upload new ones.
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input 
+              type="text" 
+              placeholder="File title (optional)" 
+              value={uploadTitle} 
+              onChange={(e)=>setUploadTitle(e.target.value)} 
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            />
+            <input 
+              type="text" 
+              placeholder="Description (optional)" 
+              value={uploadDesc} 
+              onChange={(e)=>setUploadDesc(e.target.value)} 
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            />
+          </div>
           <div
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className={`border-2 border-dashed rounded-md p-4 text-center ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+              isDragging 
+                ? 'border-indigo-400 bg-indigo-50' 
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            }`}
           >
-            <div className="text-sm text-gray-600">Drag and drop a file here, or click to browse</div>
-            <div className="mt-2">
-              <input id="fileInput" type="file" onChange={(e)=>setUploadFile(e.target.files?.[0]||null)} className="hidden" disabled={limitReached} />
-              <label
-                htmlFor="fileInput"
-                className={`px-3 py-2 text-sm rounded-md border inline-block ${limitReached ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white hover:bg-gray-50 cursor-pointer'}`}
-              >
-                Choose file
-              </label>
+            <div className="space-y-3">
+              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <div className="text-lg font-medium text-gray-700">Drop your file here</div>
+              <div className="text-sm text-gray-500">or click to browse your computer</div>
+              <div className="mt-4">
+                <input id="fileInput" type="file" onChange={(e)=>setUploadFile(e.target.files?.[0]||null)} className="hidden" disabled={limitReached} />
+                <label
+                  htmlFor="fileInput"
+                  className={`px-6 py-3 text-sm font-medium rounded-lg border inline-block transition-all duration-200 ${
+                    limitReached 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                      : 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 cursor-pointer shadow-sm hover:shadow-md'
+                  }`}
+                >
+                  Choose File
+                </label>
+              </div>
             </div>
             {uploadFile && (
-              <div className="mt-2 text-xs text-gray-500">Selected: {uploadFile.name} • {(uploadFile.size/1024).toFixed(1)} KB</div>
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-sm text-green-700">
+                  <span className="font-medium">Selected:</span> {uploadFile.name} • {(uploadFile.size/1024).toFixed(1)} KB
+                </div>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button type="submit" disabled={!isOwner || uploading || !uploadFile || limitReached} className="px-3 py-2 text-sm rounded-md border bg-white hover:bg-gray-50 disabled:opacity-50">{uploading ? 'Uploading…' : 'Upload'}</button>
-            <div className="text-xs text-gray-500 ml-auto">Usage: {allResources.length}/{TEACHER_LIMIT}</div>
+          <div className="flex items-center justify-between">
+            <button 
+              type="submit" 
+              disabled={!isOwner || uploading || !uploadFile || limitReached} 
+              className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
+            >
+              {uploading ? 'Uploading...' : 'Upload File'}
+            </button>
+            <div className="text-sm text-gray-500">
+              <span className="font-medium">{allResources.length}</span> of <span className="font-medium">{TEACHER_LIMIT}</span> files used
+            </div>
           </div>
         </form>
       </div>
@@ -367,171 +449,257 @@ const TeacherResources = () => {
         </div>
       )}
 
-      {/* Resources List */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      {/* Enhanced Resources List */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {viewMode === 'class' ? (
           loading ? (
-            <div className="text-sm text-gray-500 py-8 text-center">Loading resources…</div>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <span className="ml-3 text-gray-600">Loading resources...</span>
+            </div>
           ) : (
-            <div className="space-y-2">
-              {resources.length === 0 && <div className="text-sm text-gray-500 py-8 text-center">No resources yet.</div>}
-              {resources.map(r => (
-                <div key={r._id} className="flex items-center justify-between p-3 rounded border bg-gray-50">
-                  <input type="checkbox" className="mr-3" checked={selectedIds.includes(r._id)} onChange={()=>toggleSelected(r._id)} />
-                  <div className="min-w-0 flex-1">
-                    {editingId === r._id ? (
-                      <div className="space-y-1">
-                        {editMode === 'meta' && (
-                          <>
-                            <input value={editTitle} onChange={(e)=>setEditTitle(e.target.value)} className="w-full px-2 py-1 border rounded" placeholder="Title" />
-                            <input value={editDesc} onChange={(e)=>setEditDesc(e.target.value)} className="w-full px-2 py-1 border rounded" placeholder="Description" />
-                            <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                              <span>{(r._type||'').split('/')[1] || r._type || 'file'}</span>
-                              <span>• {(r._size/1024).toFixed(1)} KB</span>
-                              {r._date && <span>• {new Date(r._date).toLocaleString()}</span>}
-                            </div>
-                          </>
-                        )}
-                        {editMode === 'access' && (
-                          <>
-                            <div className="text-[11px] text-gray-600 mt-1">Choose classes with access</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <button type="button" onClick={() => setEditAllowed(classes.map(c=>c._id))} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Select all</button>
-                              <button type="button" onClick={() => setEditAllowed([])} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Clear all</button>
-                              <div className="text-[11px] text-gray-500">{editAllowed.length}/{classes.length} selected</div>
-                            </div>
-                            <div className="max-h-40 overflow-auto border rounded p-2 bg-white">
-                              {classes.map(c => (
-                                <label key={c._id} className="flex items-center gap-2 text-sm py-0.5">
-                                  <input type="checkbox" checked={editAllowed.includes(c._id)} onChange={(e)=>{ setEditAllowed(prev => e.target.checked ? [...new Set([...prev, c._id])] : prev.filter(id => id !== c._id)); }} />
-                                  <span className="truncate">{c.name}</span>
-                                </label>
-                              ))}
-                            </div>
-                            <div className="text-[11px] text-gray-500">{editAllowed.length} class{editAllowed.length!==1?'es':''} selected</div>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="truncate">
-                        <div className="text-sm font-medium text-gray-800 truncate">{r.title || r.originalName}</div>
-                        <div className="text-[11px] text-gray-500 truncate">{r.description}</div>
-                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                          <span>{(r._type||'').split('/')[1] || r._type || 'file'}</span>
-                          <span>• {(r._size/1024).toFixed(1)} KB</span>
-                          {r._date && <span>• {new Date(r._date).toLocaleString()}</span>}
-                        </div>
-                      </div>
-                    )}
+            <div className="divide-y divide-gray-200">
+              {resources.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                   </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    {editingId === r._id ? (
-                      <>
-                        <button onClick={saveInlineEdit} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Save</button>
-                        <button onClick={cancelInlineEdit} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Cancel</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={()=>handleDownload(r._id, r.originalName)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Download</button>
-                        {isOwner && (
-                          <>
-                            <button onClick={()=>startInlineEdit(r)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Edit Meta</button>
-                            <button onClick={()=>startAssignAccess(r)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Manage Access</button>
-                            <button onClick={()=>handleReplace(r._id)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Replace</button>
-                            <button onClick={()=>handleDelete(r._id)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50 text-red-600">Delete</button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <p className="text-gray-500">No resources yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Upload files to share with your students</p>
                 </div>
-              ))}
+              ) : (
+                resources.map(r => (
+                  <div key={r._id} className="p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
+                        checked={selectedIds.includes(r._id)} 
+                        onChange={()=>toggleSelected(r._id)} 
+                      />
+                      <div className="flex-1 min-w-0">
+                        {editingId === r._id ? (
+                          <div className="space-y-3">
+                            {editMode === 'meta' && (
+                              <>
+                                <input 
+                                  value={editTitle} 
+                                  onChange={(e)=>setEditTitle(e.target.value)} 
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                                  placeholder="File title" 
+                                />
+                                <input 
+                                  value={editDesc} 
+                                  onChange={(e)=>setEditDesc(e.target.value)} 
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                                  placeholder="Description" 
+                                />
+                                <div className="flex items-center gap-3 text-sm text-gray-500">
+                                  <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">{(r._type||'').split('/')[1] || r._type || 'file'}</span>
+                                  <span>{(r._size/1024).toFixed(1)} KB</span>
+                                  {r._date && <span>{new Date(r._date).toLocaleDateString()}</span>}
+                                </div>
+                              </>
+                            )}
+                            {editMode === 'access' && (
+                              <>
+                                <div className="text-sm font-medium text-gray-700 mb-2">Choose classes with access</div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <button type="button" onClick={() => setEditAllowed(classes.map(c=>c._id))} className="px-3 py-1 text-xs rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Select all</button>
+                                  <button type="button" onClick={() => setEditAllowed([])} className="px-3 py-1 text-xs rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Clear all</button>
+                                  <div className="text-xs text-gray-500">{editAllowed.length}/{classes.length} selected</div>
+                                </div>
+                                <div className="max-h-40 overflow-auto border border-gray-200 rounded-lg p-3 bg-white">
+                                  {classes.map(c => (
+                                    <label key={c._id} className="flex items-center gap-2 text-sm py-1">
+                                      <input type="checkbox" checked={editAllowed.includes(c._id)} onChange={(e)=>{ setEditAllowed(prev => e.target.checked ? [...new Set([...prev, c._id])] : prev.filter(id => id !== c._id)); }} />
+                                      <span className="truncate">{c.name}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                                <div className="text-xs text-gray-500">{editAllowed.length} class{editAllowed.length!==1?'es':''} selected</div>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
+                              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-gray-900 truncate">{r.title || r.originalName}</h3>
+                              {r.description && <p className="text-sm text-gray-500 truncate mt-1">{r.description}</p>}
+                              <div className="flex items-center gap-3 mt-2">
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">{(r._type||'').split('/')[1] || r._type || 'file'}</span>
+                                <span className="text-xs text-gray-500">{(r._size/1024).toFixed(1)} KB</span>
+                                {r._date && <span className="text-xs text-gray-500">{new Date(r._date).toLocaleDateString()}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {editingId === r._id ? (
+                          <>
+                            <button onClick={saveInlineEdit} className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save</button>
+                            <button onClick={cancelInlineEdit} className="px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={()=>handleDownload(r._id, r.originalName)} className="px-3 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100">Download</button>
+                            {isOwner && (
+                              <>
+                                <button onClick={()=>startInlineEdit(r)} className="px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Edit</button>
+                                <button onClick={()=>startAssignAccess(r)} className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100">Access</button>
+                                <button onClick={()=>handleReplace(r._id)} className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">Replace</button>
+                                <button onClick={()=>handleDelete(r._id)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100">Delete</button>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )
         ) : (
           loadingAll ? (
-            <div className="text-sm text-gray-500 py-8 text-center">Loading your files…</div>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <span className="ml-3 text-gray-600">Loading your files...</span>
+            </div>
           ) : (
-            <div className="space-y-2">
-              {allResources.length === 0 && <div className="text-sm text-gray-500 py-8 text-center">No files yet. Upload to get started.</div>}
-              {allResources.map(r => {
-                const allowedIds = Array.isArray(r.allowedClasses) ? r.allowedClasses.map(x => (typeof x === 'string' ? x : x?._id || String(x))) : [];
-                const classForDownload = allowedIds.includes(selectedClass) ? selectedClass : (allowedIds[0] || null);
-                return (
-                  <div key={r._id} className="flex items-center justify-between p-3 rounded border bg-gray-50">
-                    <input type="checkbox" className="mr-3" checked={selectedIds.includes(r._id)} onChange={()=>toggleSelected(r._id)} />
-                    <div className="min-w-0 flex-1">
-                      {editingId === r._id ? (
-                        <div className="space-y-1">
-                          {editMode === 'meta' && (
-                            <>
-                              <input value={editTitle} onChange={(e)=>setEditTitle(e.target.value)} className="w-full px-2 py-1 border rounded" placeholder="Title" />
-                              <input value={editDesc} onChange={(e)=>setEditDesc(e.target.value)} className="w-full px-2 py-1 border rounded" placeholder="Description" />
-                              <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                <span>{(r._type||'').split('/')[1] || r._type || 'file'}</span>
-                                <span>• {(r._size/1024).toFixed(1)} KB</span>
-                                {r._date && <span>• {new Date(r._date).toLocaleString()}</span>}
-                              </div>
-                            </>
-                          )}
-                          {editMode === 'access' && (
-                            <>
-                              <div className="text-[11px] text-gray-600 mt-1">Choose classes with access</div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <button type="button" onClick={() => setEditAllowed(classes.map(c=>c._id))} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Select all</button>
-                                <button type="button" onClick={() => setEditAllowed([])} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Clear all</button>
-                                <div className="text-[11px] text-gray-500">{editAllowed.length}/{classes.length} selected</div>
-                              </div>
-                              <div className="max-h-40 overflow-auto border rounded p-2 bg-white">
-                                {classes.map(c => (
-                                  <label key={c._id} className="flex items-center gap-2 text-sm py-0.5">
-                                    <input type="checkbox" checked={editAllowed.includes(c._id)} onChange={(e)=>{ setEditAllowed(prev => e.target.checked ? [...new Set([...prev, c._id])] : prev.filter(id => id !== c._id)); }} />
-                                    <span className="truncate">{c.name}</span>
-                                  </label>
-                                ))}
-                              </div>
-                              <div className="text-[11px] text-gray-500">{editAllowed.length} class{editAllowed.length!==1?'es':''} selected</div>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="truncate">
-                          <div className="text-sm font-medium text-gray-800 truncate">{r.title || r.originalName}</div>
-                          <div className="text-[11px] text-gray-500 truncate">{r.description}</div>
-                          <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
-                            <span>{(r._type||'').split('/')[1] || r._type || 'file'}</span>
-                            <span>• {(r._size/1024).toFixed(1)} KB</span>
-                            {r._date && <span>• {new Date(r._date).toLocaleString()}</span>}
-                            {Array.isArray(r.allowedClasses) && r.allowedClasses.length === 0 && (
-                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">No class access</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 ml-3">
-                      {editingId === r._id ? (
-                        <>
-                          <button onClick={saveInlineEdit} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Save</button>
-                          <button onClick={cancelInlineEdit} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <button disabled={!classForDownload} onClick={()=>handleDownload(r._id, r.originalName, classForDownload)} className={`px-2 py-1 text-xs rounded-md border ${classForDownload ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>Download</button>
-                          {isOwner && (
-                            <>
-                              <button onClick={()=>startInlineEdit(r)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Edit Meta</button>
-                              <button onClick={()=>startAssignAccess(r)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Manage Access</button>
-                              <button onClick={()=>handleReplace(r._id)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Replace</button>
-                              <button onClick={()=>handleDelete(r._id)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50 text-red-600">Delete</button>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
+            <div className="divide-y divide-gray-200">
+              {allResources.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
                   </div>
-                );
-              })}
+                  <p className="text-gray-500">No files yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Upload files to get started</p>
+                </div>
+              ) : (
+                allResources.map(r => {
+                  const allowedIds = Array.isArray(r.allowedClasses) ? r.allowedClasses.map(x => (typeof x === 'string' ? x : x?._id || String(x))) : [];
+                  const classForDownload = allowedIds.includes(selectedClass) ? selectedClass : (allowedIds[0] || null);
+                  return (
+                    <div key={r._id} className="p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
+                          checked={selectedIds.includes(r._id)} 
+                          onChange={()=>toggleSelected(r._id)} 
+                        />
+                        <div className="flex-1 min-w-0">
+                          {editingId === r._id ? (
+                            <div className="space-y-3">
+                              {editMode === 'meta' && (
+                                <>
+                                  <input 
+                                    value={editTitle} 
+                                    onChange={(e)=>setEditTitle(e.target.value)} 
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                                    placeholder="File title" 
+                                  />
+                                  <input 
+                                    value={editDesc} 
+                                    onChange={(e)=>setEditDesc(e.target.value)} 
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                                    placeholder="Description" 
+                                  />
+                                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                                    <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">{(r._type||'').split('/')[1] || r._type || 'file'}</span>
+                                    <span>{(r._size/1024).toFixed(1)} KB</span>
+                                    {r._date && <span>{new Date(r._date).toLocaleDateString()}</span>}
+                                  </div>
+                                </>
+                              )}
+                              {editMode === 'access' && (
+                                <>
+                                  <div className="text-sm font-medium text-gray-700 mb-2">Choose classes with access</div>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <button type="button" onClick={() => setEditAllowed(classes.map(c=>c._id))} className="px-3 py-1 text-xs rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Select all</button>
+                                    <button type="button" onClick={() => setEditAllowed([])} className="px-3 py-1 text-xs rounded-lg border border-gray-300 bg-white hover:bg-gray-50">Clear all</button>
+                                    <div className="text-xs text-gray-500">{editAllowed.length}/{classes.length} selected</div>
+                                  </div>
+                                  <div className="max-h-40 overflow-auto border border-gray-200 rounded-lg p-3 bg-white">
+                                    {classes.map(c => (
+                                      <label key={c._id} className="flex items-center gap-2 text-sm py-1">
+                                        <input type="checkbox" checked={editAllowed.includes(c._id)} onChange={(e)=>{ setEditAllowed(prev => e.target.checked ? [...new Set([...prev, c._id])] : prev.filter(id => id !== c._id)); }} />
+                                        <span className="truncate">{c.name}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                  <div className="text-xs text-gray-500">{editAllowed.length} class{editAllowed.length!==1?'es':''} selected</div>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
+                                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-semibold text-gray-900 truncate">{r.title || r.originalName}</h3>
+                                {r.description && <p className="text-sm text-gray-500 truncate mt-1">{r.description}</p>}
+                                <div className="flex items-center gap-3 mt-2">
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">{(r._type||'').split('/')[1] || r._type || 'file'}</span>
+                                  <span className="text-xs text-gray-500">{(r._size/1024).toFixed(1)} KB</span>
+                                  {r._date && <span className="text-xs text-gray-500">{new Date(r._date).toLocaleDateString()}</span>}
+                                  {Array.isArray(r.allowedClasses) && r.allowedClasses.length === 0 && (
+                                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">No access</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {editingId === r._id ? (
+                            <>
+                              <button onClick={saveInlineEdit} className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save</button>
+                              <button onClick={cancelInlineEdit} className="px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button 
+                                disabled={!classForDownload} 
+                                onClick={()=>handleDownload(r._id, r.originalName, classForDownload)} 
+                                className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                                  classForDownload 
+                                    ? 'text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100' 
+                                    : 'text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed'
+                                }`}
+                              >
+                                Download
+                              </button>
+                              {isOwner && (
+                                <>
+                                  <button onClick={()=>startInlineEdit(r)} className="px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Edit</button>
+                                  <button onClick={()=>startAssignAccess(r)} className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100">Access</button>
+                                  <button onClick={()=>handleReplace(r._id)} className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">Replace</button>
+                                  <button onClick={()=>handleDelete(r._id)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100">Delete</button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           )
         )}

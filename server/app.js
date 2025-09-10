@@ -3,15 +3,14 @@ const path = require('path');
 require('dotenv').config();
 const connectDB = require('./config/db');
 
-const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes } = require('./config/migrations');
+const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes, ensurePaymentsIdempotencyIndex } = require('./config/migrations');
+
 // Load optional services guarded by env flags
 const enableDeletionCron = process.env.ENABLE_SCHOOL_DELETION_CRON === 'true';
 if (enableDeletionCron) {
   // Lazy-require to avoid any side effects when disabled
   try { require('./services/schoolDeletionService'); } catch (e) { /* ignore */ }
 }
-
-const { ensureUserStudentCodePartialIndex, ensureAttendanceIndexes, ensurePaymentsIdempotencyIndex } = require('./config/migrations');
 
 
 // Avoid auto-connecting when running under Jest (tests manage their own DB)
