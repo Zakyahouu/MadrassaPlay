@@ -248,3 +248,77 @@ module.exports = {
   getResultsForGame, // NEW: Export the new function
   getAttemptHistory,
 };
+
+// --- Student self metrics ---
+// @desc    Summary metrics for the logged-in student
+// @route   GET /api/results/me/summary
+// @access  Private/Student
+module.exports.getMyResultsSummary = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    // Count unique gameCreations with at least one counted result
+    const counted = await GameResult.find({ student: studentId, counted: true, isTest: false })
+      .select('gameCreation createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    const uniqueGames = new Set(counted.map(r => r.gameCreation.toString())).size;
+
+    // Current streak: consecutive days with at least one counted result ending today
+    const daySet = new Set(counted.map(r => new Date(r.createdAt).toISOString().slice(0,10)));
+    let streak = 0;
+    let cursor = new Date();
+    // normalize to local date string compare by ISO date
+    for (;;) {
+      const iso = new Date(Date.UTC(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())).toISOString().slice(0,10);
+      if (daySet.has(iso)) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      } else {
+        // allow skipping future days only; break when first missing day
+        break;
+      }
+    }
+
+    // Total points from user profile
+    const user = await User.findById(studentId).select('totalPoints');
+    const totalPoints = user?.totalPoints || 0;
+
+    // Time spent: approximate sum of attempt durations if tracked; fallback to attempt count * 5min
+    // We don't store duration, so approximate 5 minutes per counted attempt
+    const attempts = counted.length;
+    const approxMinutes = attempts * 5;
+
+    res.json({
+      gamesCompleted: uniqueGames,
+      currentStreakDays: streak,
+      totalPoints,
+      timeSpentMinutes: approxMinutes,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// @desc    Recent games for the logged-in student (latest counted attempts)
+// @route   GET /api/results/me/recent?limit=5
+// @access  Private/Student
+module.exports.getMyRecentResults = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit || '5')));
+    const results = await GameResult.find({ student: studentId, counted: true, isTest: false })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate('gameCreation', 'name')
+      .select('score totalPossibleScore createdAt gameCreation')
+      .lean();
+    const mapped = results.map(r => ({
+      name: r.gameCreation?.name || 'Game',
+      percentage: r.totalPossibleScore > 0 ? Math.round((r.score / r.totalPossibleScore) * 100) : 0,
+      createdAt: r.createdAt,
+    }));
+    res.json(mapped);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};

@@ -90,29 +90,31 @@ export default function StudentAssignmentsPanel() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {toast && (
-        <div className="fixed bottom-4 right-4 z-50 bg-white border shadow-lg rounded-lg p-3 text-xs">
+        <div className="fixed bottom-4 right-4 z-50 bg-white/90 backdrop-blur border shadow-lg rounded-lg p-3 text-xs">
           {toast.message}
         </div>
       )}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <h3 className="text-2xl font-bold text-gray-900">My Assignments</h3>
-        <div className="flex flex-wrap gap-2 items-center text-xs">
-          <div className="flex gap-1 bg-white border rounded-lg p-1">
-            <button onClick={()=>{setStatusFilter('all');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='all'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>All</button>
-            <button onClick={()=>{setStatusFilter('active');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='active'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Active</button>
-            <button onClick={()=>{setStatusFilter('dueSoon');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='dueSoon'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Due Soon</button>
-            <button onClick={()=>{setStatusFilter('upcoming');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='upcoming'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Upcoming</button>
-            <button onClick={()=>{setStatusFilter('completed');setPage(1);}} className={`px-3 py-1 rounded-md ${statusFilter==='completed'?'bg-indigo-600 text-white':'hover:bg-gray-100'}`}>Completed</button>
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-3 sm:p-5">
+        <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">My Assignments</h3>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-xs">
+            <div className="flex gap-1 bg-white/70 backdrop-blur border border-indigo-100 rounded-lg p-1 overflow-x-auto">
+              <button onClick={()=>{setStatusFilter('all');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='all'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>All</button>
+              <button onClick={()=>{setStatusFilter('active');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='active'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Active</button>
+              <button onClick={()=>{setStatusFilter('dueSoon');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='dueSoon'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Due Soon</button>
+              <button onClick={()=>{setStatusFilter('upcoming');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='upcoming'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Upcoming</button>
+              <button onClick={()=>{setStatusFilter('completed');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='completed'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Completed</button>
+            </div>
+            <div className="flex gap-1 bg-white/70 backdrop-blur border border-indigo-100 rounded-lg p-1">
+              <select value={classFilter} onChange={e=>{setClassFilter(e.target.value);setPage(1);}} className="text-xs px-2 py-1 rounded-md focus:outline-none min-w-0">
+                <option value="all">All Classes</option>
+                {classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </div>
+            <button onClick={()=>setRefreshToken(t=>t+1)} className="px-2 sm:px-3 py-1 border rounded-md bg-white hover:bg-indigo-50 flex items-center justify-center gap-1 border-indigo-200"><Filter className="w-3 h-3 text-indigo-600" /> <span className="hidden sm:inline">Refresh</span></button>
           </div>
-          <div className="flex gap-1 bg-white border rounded-lg p-1">
-            <select value={classFilter} onChange={e=>{setClassFilter(e.target.value);setPage(1);}} className="text-xs px-2 py-1 rounded-md focus:outline-none">
-              <option value="all">All Classes</option>
-              {classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
-            </select>
-          </div>
-          <button onClick={()=>setRefreshToken(t=>t+1)} className="px-3 py-1 border rounded-md bg-white hover:bg-gray-50 flex items-center gap-1"><Filter className="w-3 h-3" /> Refresh</button>
         </div>
       </div>
 
@@ -131,7 +133,7 @@ export default function StudentAssignmentsPanel() {
           const statusColor = status === 'active' ? 'bg-emerald-100 text-emerald-700' : status === 'upcoming' ? 'bg-blue-100 text-blue-700' : status === 'completed' ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600';
           const locked = status === 'upcoming';
           return (
-            <div key={a._id} className={`p-5 rounded-xl border shadow-sm transition group ${locked ? 'bg-gray-50 opacity-80' : 'bg-white hover:shadow-md'}` }>
+            <div key={a._id} className={`p-5 rounded-2xl border shadow-sm transition group ${locked ? 'bg-gray-50 opacity-80' : 'bg-white hover:shadow-md'}` }>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <h4 className="font-semibold text-gray-900 text-sm truncate">{a.title}</h4>
@@ -153,7 +155,7 @@ export default function StudentAssignmentsPanel() {
                 </div>
               </div>
               <div className="mt-3">
-                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${progress.completionPercent}%` }}></div>
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-gray-500">
@@ -169,26 +171,26 @@ export default function StudentAssignmentsPanel() {
                 >
                   {progress.completed < progress.totalGames ? 'Continue' : 'Completed'}
                 </Link>
-        <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-medium border bg-white hover:bg-gray-50">Details</button>
+        <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-medium border bg-white hover:bg-indigo-50">Details</button>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t mt-4">
-        <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40"><ChevronLeft className="w-3 h-3" /> Prev</button>
-        <div className="text-[11px] text-gray-500">Page {page} / {totalPages}</div>
-        <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40">Next <ChevronRight className="w-3 h-3" /></button>
+      <div className="flex flex-col sm:flex-row items-center justify-between pt-2 border-t mt-4 gap-2">
+        <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center"><ChevronLeft className="w-3 h-3" /> Prev</button>
+        <div className="text-xs text-gray-500">Page {page} / {totalPages}</div>
+        <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center">Next <ChevronRight className="w-3 h-3" /></button>
       </div>
 
       {breakdownOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl border animate-fadeIn relative">
-            <div className="p-5 border-b flex items-start justify-between">
+            <div className="p-5 border-b flex items-start justify-between bg-gradient-to-r from-indigo-50 to-purple-50">
               <div>
-                <h3 className="text-lg font-semibold">Assignment Breakdown</h3>
-                {breakdownData && <p className="text-xs text-gray-500 mt-1">{breakdownData.title}</p>}
+                <h3 className="text-lg font-semibold text-indigo-900">Assignment Breakdown</h3>
+                {breakdownData && <p className="text-xs text-gray-600 mt-1">{breakdownData.title}</p>}
               </div>
               <button onClick={()=>{setBreakdownOpen(false);}} className="p-2 text-gray-500 hover:text-gray-700">✕</button>
             </div>
@@ -197,9 +199,9 @@ export default function StudentAssignmentsPanel() {
               {breakdownError && <div className="text-sm text-red-600">{breakdownError}</div>}
               {breakdownData && (
                 <div className="space-y-4">
-                  <div className="text-xs text-gray-600 flex gap-4 flex-wrap">
-                    <span>Total Games: {breakdownData.games.length}</span>
-                    {breakdownData.attemptLimit && <span>Attempt Limit: {breakdownData.attemptLimit}</span>}
+                  <div className="text-xs text-gray-700 flex gap-4 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">Total Games: {breakdownData.games.length}</span>
+                    {breakdownData.attemptLimit && <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">Attempt Limit: {breakdownData.attemptLimit}</span>}
                   </div>
                   <div className="space-y-3">
                     {breakdownData.games.map(g => {
@@ -245,7 +247,7 @@ export default function StudentAssignmentsPanel() {
               )}
             </div>
             <div className="p-4 border-t flex justify-end">
-              <button onClick={()=>setBreakdownOpen(false)} className="px-4 py-2 text-sm border rounded-md bg-white hover:bg-gray-50">Close</button>
+              <button onClick={()=>setBreakdownOpen(false)} className="px-4 py-2 text-sm border rounded-md bg-white hover:bg-indigo-50">Close</button>
             </div>
           </div>
         </div>

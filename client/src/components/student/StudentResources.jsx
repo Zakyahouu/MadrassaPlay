@@ -78,37 +78,35 @@ const StudentResources = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Class Resources</h1>
-          <p className="text-gray-600">View and download files shared by your teachers</p>
-        </div>
+      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-3 sm:p-5">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">Class Resources</h1>
+        <p className="text-indigo-700 text-sm">View and download files shared by your teachers</p>
       </div>
 
       {/* Class Picker */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <label className="text-sm text-gray-600">Class</label>
+      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-indigo-100">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label className="text-sm text-gray-600 whitespace-nowrap">Class</label>
             <select
               value={selectedClass}
               onChange={(e)=>setSelectedClass(e.target.value)}
-              className="px-3 py-2 border rounded-md"
+              className="px-3 py-2 border rounded-md focus:ring-indigo-200 focus:border-indigo-300 w-full sm:w-auto"
             >
               {classes.map(c => (
                 <option key={c._id} value={c._id}>{c.name}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-2 ml-auto w-full md:w-auto">
-            <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search…" className="px-3 py-2 border rounded-md w-full md:w-64" />
-            <div className="text-xs text-gray-500 whitespace-nowrap">{resources.length} files</div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search…" className="px-3 py-2 border rounded-md w-full sm:w-64 focus:ring-indigo-200 focus:border-indigo-300" />
+            <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{resources.length} files</div>
           </div>
         </div>
       </div>
 
       {/* Resources List */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-indigo-100">
         {error && <div className="text-xs text-red-600 mb-2">{error}</div>}
         {loading ? (
           <div className="text-xs text-gray-500">Loading…</div>
@@ -128,9 +126,9 @@ const StudentResources = () => {
               const c = (r.originalName||'').toLowerCase();
               return !q || a.includes(q) || b.includes(q) || c.includes(q);
             }).map(r => (
-              <div key={r._id} className="flex items-center justify-between p-2 rounded border bg-gray-50">
+              <div key={r._id} className="flex items-center justify-between p-3 rounded-xl border bg-gray-50">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-800 truncate">{r.title || r.originalName}</div>
+                  <div className="text-sm font-medium text-gray-900 truncate">{r.title || r.originalName}</div>
                   <div className="text-[11px] text-gray-500 truncate">{r.description}</div>
                   <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
                     <span>{(r._type||'').split('/')[1] || r._type || 'file'}</span>
@@ -138,7 +136,7 @@ const StudentResources = () => {
                     {r._date && <span>• {new Date(r._date).toLocaleString()}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   {(r._type?.startsWith('image/') || r._type === 'application/pdf') && (
                     <button onClick={async ()=>{
                       try {
@@ -147,9 +145,9 @@ const StudentResources = () => {
                         const url = URL.createObjectURL(new Blob([resp.data], { type: r._type }));
                         setPreview({ url, type: r._type, name: r.originalName });
                       } catch (_) {}
-                    }} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Preview</button>
+                    }} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-indigo-50 whitespace-nowrap">Preview</button>
                   )}
-                  <button onClick={()=>handleDownload(r._id, r.originalName)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Download</button>
+                  <button onClick={()=>handleDownload(r._id, r.originalName)} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-indigo-50 whitespace-nowrap">Download</button>
                 </div>
               </div>
             ))}
@@ -159,10 +157,10 @@ const StudentResources = () => {
 
       {preview && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>{ URL.revokeObjectURL(preview.url); setPreview(null); }}>
-          <div className="bg-white w-full max-w-3xl rounded-xl overflow-hidden" onClick={(e)=>e.stopPropagation()}>
-            <div className="p-3 border-b flex items-center justify-between">
-              <div className="text-sm font-medium text-gray-800 truncate">{preview.name}</div>
-              <button onClick={()=>{ URL.revokeObjectURL(preview.url); setPreview(null); }} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50">Close</button>
+          <div className="bg-white w-full max-w-3xl rounded-2xl overflow-hidden" onClick={(e)=>e.stopPropagation()}>
+            <div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-indigo-50 to-blue-50">
+              <div className="text-sm font-medium text-indigo-900 truncate">{preview.name}</div>
+              <button onClick={()=>{ URL.revokeObjectURL(preview.url); setPreview(null); }} className="px-2 py-1 text-xs rounded-md border bg-white hover:bg-indigo-50">Close</button>
             </div>
             <div className="p-3">
               {preview.type === 'application/pdf' ? (
