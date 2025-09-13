@@ -130,7 +130,7 @@ const UnifiedSidebar = ({
               {/* Desktop collapse toggle */}
               <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`hidden lg:flex p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105 ${
+                className={`hidden lg:flex p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${
                   isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
                 title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -144,7 +144,7 @@ const UnifiedSidebar = ({
               {/* Mobile close button */}
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105"
+                className="lg:hidden p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200 ease-in-out transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -161,10 +161,12 @@ const UnifiedSidebar = ({
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveTab(item.id);
+                    if (activeTab !== item.id) {
+                      setActiveTab(item.id);
+                    }
                     setSidebarOpen(false);
                   }}
-                  className={`group relative w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] ${
+                  className={`group relative w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${
                     isActive
                       ? `${getActiveColor()} border shadow-sm`
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'

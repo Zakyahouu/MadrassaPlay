@@ -16,17 +16,21 @@ let currentQuestionIndex = 0;
 let score = 0;
 let gameConfig = {};
 let gameCreationId = null; // To store the ID of the game being played
+// instrumentation for online + reporting
+let questionStartMs = 0;
+let answers = [];
 
 // --- Core Game Logic ---
 
 function initializeGame(data) {
   console.log('Game Engine: Received data from platform', data);
-  gameConfig = data.config.settings;
-  questions = data.config.content;
+  gameConfig = data.config?.settings || data.config || {};
+  questions = data.questions || data.content || data.config?.content || [];
   gameCreationId = data._id; // Store the game creation ID
   
   currentQuestionIndex = 0;
   score = 0;
+  answers = [];
   
   gameContainer.classList.remove('hidden');
   resultsScreen.classList.add('hidden');
@@ -58,12 +62,16 @@ function showNextQuestion() {
     button.addEventListener('click', handleOptionSelect);
     optionsContainer.appendChild(button);
   });
+
+  // mark question start time
+  questionStartMs = Date.now();
 }
 
 function handleOptionSelect(e) {
   const selectedButton = e.target;
   const selectedIndex = parseInt(selectedButton.dataset.index);
   const correctIndex = parseInt(questions[currentQuestionIndex].correctOptionIndex);
+  const deltaMs = Math.max(0, Date.now() - (questionStartMs || Date.now()));
 
   document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
 
@@ -78,6 +86,13 @@ function handleOptionSelect(e) {
     }
   }
 
+  // record answer and emit live progress
+  const correct = selectedIndex === correctIndex;
+  answers.push({ index: currentQuestionIndex, selectedIndex, correctIndex, correct, deltaMs });
+  try {
+    window.parent.postMessage({ type: 'LIVE_ANSWER', payload: { correct, deltaMs, scoreDelta: correct ? 1 : 0, currentScore: score } }, '*');
+  } catch {}
+
   setTimeout(() => {
     currentQuestionIndex++;
     showNextQuestion();
@@ -89,14 +104,20 @@ function showResults() {
   resultsScreen.classList.remove('hidden');
   finalScore.textContent = `${score} / ${questions.length}`;
 
-  // --- NEW: Send the final score back to the parent React app ---
-  // We post a message with a specific type and a payload containing the results.
+  // total time and finish for live leaderboards
+  const totalTimeMs = answers.reduce((acc, a) => acc + (Number(a.deltaMs) || 0), 0);
+  try {
+    window.parent.postMessage({ type: 'LIVE_FINISH', payload: { totalTimeMs } }, '*');
+  } catch {}
+
+  // Send the final score back to the parent React app
   window.parent.postMessage({
     type: 'GAME_COMPLETE',
     payload: {
       gameCreationId: gameCreationId,
       score: score,
-      totalPossibleScore: questions.length
+      totalPossibleScore: questions.length,
+      answers
     }
   }, '*'); // Again, restrict the target origin in production
 }

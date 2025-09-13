@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { 
   LogOut, 
@@ -22,21 +23,27 @@ import {
   Megaphone,
   Lock,
 } from 'lucide-react';
+import { Copy as CopyIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
 import AdsBar from '../components/shared/AdsBar';
 import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
 import StudentResources from '../components/student/StudentResources';
+import { useToast } from '../components/shared/ToastProvider';
 
 // Main Student Dashboard Component
 const StudentDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adsPanelOpen, setAdsPanelOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({ gamesCompleted: 0, currentStreakDays: 0, totalPoints: 0, timeSpentMinutes: 0 });
   const [recent, setRecent] = useState([]);
+  const [liveRecent, setLiveRecent] = useState([]);
+  const [liveAll, setLiveAll] = useState({ loading: false, error: null, items: [] });
   const [earnedBadges, setEarnedBadges] = useState([]);
   // Games/Progress data
   const [assignDetails, setAssignDetails] = useState({ loading: false, error: null, items: [] });
@@ -49,19 +56,48 @@ const StudentDashboard = () => {
   const [lbClassId, setLbClassId] = useState('');
   const [classLeaders, setClassLeaders] = useState([]);
   const [myClassRank, setMyClassRank] = useState(null);
+  // Join live state
+  const [joinCode, setJoinCode] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const { toast } = useToast();
 
   // Debug logs to verify AdsBar wiring and user context
   useEffect(() => {
-    console.log('[StudentDashboard] mounted');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[StudentDashboard] mounted');
+    }
   }, []);
 
+  // Load more live results when Live Sessions tab is active
   useEffect(() => {
-    console.log('[StudentDashboard] user context', user);
-    console.log('[StudentDashboard] schoolId for AdsBar', user?.school);
+    let mounted = true;
+    const load = async () => {
+      if (activeTab !== 'live') return;
+      try {
+        setLiveAll({ loading: true, error: null, items: [] });
+        const res = await axios.get('/api/results/me/live?limit=25');
+        if (!mounted) return;
+        setLiveAll({ loading: false, error: null, items: Array.isArray(res.data) ? res.data : [] });
+      } catch (e) {
+        if (!mounted) return;
+        setLiveAll({ loading: false, error: 'Failed to load', items: [] });
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[StudentDashboard] user context', user);
+      console.log('[StudentDashboard] schoolId for AdsBar', user?.school);
+    }
   }, [user]);
 
   useEffect(() => {
-    console.log('[StudentDashboard] activeTab changed ->', activeTab);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[StudentDashboard] activeTab changed ->', activeTab);
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -69,9 +105,10 @@ const StudentDashboard = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [summaryRes, recentRes, badgesRes, gamRes] = await Promise.all([
+        const [summaryRes, recentRes, liveRes, badgesRes, gamRes] = await Promise.all([
           axios.get('/api/results/me/summary'),
           axios.get('/api/results/me/recent?limit=5'),
+          axios.get('/api/results/me/live?limit=5'),
           axios.get('/api/template-badges/me/list'),
           axios.get('/api/users/me/gamification')
         ]);
@@ -86,7 +123,8 @@ const StudentDashboard = () => {
           totalPoints: s.totalPoints || 0,
           timeSpentMinutes: s.timeSpentMinutes || 0,
         });
-        setRecent(Array.isArray(recentRes.data) ? recentRes.data : []);
+  setRecent(Array.isArray(recentRes.data) ? recentRes.data : []);
+  setLiveRecent(Array.isArray(liveRes.data) ? liveRes.data : []);
         // earned badges list
         const earned = Array.isArray(badgesRes.data) ? badgesRes.data.filter(b => b.templateBadge).map(b => ({
           name: b.templateBadge.name,
@@ -100,6 +138,7 @@ const StudentDashboard = () => {
           setSummary({ gamesCompleted: 0, currentStreakDays: 0, totalPoints: 0, timeSpentMinutes: 0 });
           setRecent([]);
           setEarnedBadges([]);
+          setLiveRecent([]);
         }
       } finally {
         if (mounted) setLoading(false);
@@ -107,6 +146,14 @@ const StudentDashboard = () => {
     };
     load();
     return () => { mounted = false; };
+  }, []);
+
+  // Pick initial tab from navigation state (e.g., coming from PlayGame after live result)
+  useEffect(() => {
+    if (location.state && location.state.tab && typeof location.state.tab === 'string') {
+      setActiveTab(location.state.tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
@@ -200,6 +247,40 @@ const StudentDashboard = () => {
       case 'overview':
         return (
           <div className="space-y-6">
+            {/* Join Live Game */}
+            <UnifiedCard>
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                <div className="flex-1">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Join Live Game</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">Enter the 8‑character code your teacher gave you.</p>
+                </div>
+                <form
+                  onSubmit={(e)=>{
+                    e.preventDefault();
+                    const code = (joinCode||'').trim().toUpperCase();
+                    const valid = /^[A-Z0-9]{8}$/.test(code);
+                    if (!valid) { setJoinError('Code must be 8 letters/numbers'); return; }
+                    setJoinError('');
+                    navigate(`/student/lobby/${code}`);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    value={joinCode}
+                    onChange={(e)=>{ setJoinCode(e.target.value.toUpperCase()); if (joinError) setJoinError(''); }}
+                    maxLength={8}
+                    placeholder="ABCDEFGH"
+                    className="px-3 py-2 border rounded-md text-sm tracking-widest uppercase w-40 sm:w-48"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                    disabled={(joinCode||'').trim().length!==8}
+                  >Join</button>
+                </form>
+              </div>
+              {joinError && <div className="text-xs text-red-600 mt-2">{joinError}</div>}
+            </UnifiedCard>
             {/* Welcome Section */}
             <UnifiedCard className="bg-blue-50 border-blue-200">
               <div className="flex items-center justify-between">
@@ -260,6 +341,47 @@ const StudentDashboard = () => {
                 </div>
               </UnifiedCard>
 
+              {/* Recent Live Sessions */}
+              <UnifiedCard>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Recent Live Sessions</h3>
+                <div className="space-y-2 sm:space-y-3">
+                  {loading && <div className="text-sm text-gray-500">Loading…</div>}
+                  {!loading && liveRecent.length === 0 && <div className="text-sm text-gray-500">No recent live sessions yet.</div>}
+                  {!loading && liveRecent.map((game, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{game.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-500 truncate flex items-center gap-2">
+                            <span>{new Date(game.createdAt).toLocaleString()}</span>
+                            {game.code && (
+                              <span className="inline-flex items-center gap-1">
+                                • Code <span className="font-mono select-all">{game.code}</span>
+                                <button
+                                  type="button"
+                                  onClick={async (e)=>{ e.stopPropagation(); try{ await navigator.clipboard.writeText(game.code); toast('Code copied'); } catch{} }}
+                                  title="Copy code"
+                                  aria-label="Copy code"
+                                  className="p-1 rounded hover:bg-gray-200 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                                >
+                                  <CopyIcon className="w-3.5 h-3.5" />
+                                </button>
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <p className="font-semibold text-gray-900 text-sm sm:text-base">{game.percentage}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </UnifiedCard>
+
               {/* Achievements */}
               <UnifiedCard>
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Achievements</h3>
@@ -294,6 +416,18 @@ const StudentDashboard = () => {
       case 'games':
         return (
           <div className="space-y-6">
+            <UnifiedCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Join a Live Game</h3>
+                  <p className="text-xs text-gray-500">Got a room code? Use the box on Overview to join live.</p>
+                </div>
+                <button
+                  className="text-xs px-3 py-1.5 rounded-md border bg-white hover:bg-gray-50"
+                  onClick={()=>{ setActiveTab('overview'); setTimeout(()=>{ const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
+                >Go to Join</button>
+              </div>
+            </UnifiedCard>
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
               <h2 className="text-xl md:text-2xl font-extrabold text-indigo-900">Available Games</h2>
               <p className="text-indigo-700 text-sm">Continue active assignments and play assigned games.</p>
@@ -430,6 +564,48 @@ const StudentDashboard = () => {
             </UnifiedCard>
           </div>
         );
+      case 'live':
+        return (
+          <div className="space-y-4">
+            <UnifiedCard>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">My Live Sessions</h3>
+              {liveAll.loading && <div className="text-sm text-gray-500">Loading…</div>}
+              {!liveAll.loading && liveAll.items.length === 0 && <div className="text-sm text-gray-500">No past live sessions yet.</div>}
+              <div className="divide-y divide-gray-100">
+                {liveAll.items.map((g, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><Gamepad2 className="w-4 h-4 text-gray-600" /></div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{g.name}</p>
+                        <p className="text-xs text-gray-500 truncate flex items-center gap-2">
+                          <span>{new Date(g.createdAt).toLocaleString()}</span>
+                          {g.code && (
+                            <span className="inline-flex items-center gap-1">
+                              • Code <span className="font-mono select-all">{g.code}</span>
+                              <button
+                                type="button"
+                                onClick={async (e)=>{ e.stopPropagation(); try{ await navigator.clipboard.writeText(g.code); toast('Code copied'); } catch{} }}
+                                title="Copy code"
+                                aria-label="Copy code"
+                                className="p-1 rounded hover:bg-gray-200 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                              >
+                                <CopyIcon className="w-3.5 h-3.5" />
+                              </button>
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className="font-semibold text-gray-900 text-sm">{g.percentage}%</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </UnifiedCard>
+          </div>
+        );
       case 'resources':
         return <StudentResources />;
       default:
@@ -448,6 +624,7 @@ const StudentDashboard = () => {
     { id: 'games', name: 'Games' },
     { id: 'progress', name: 'Progress' },
   { id: 'leaderboard', name: 'Leaderboard' },
+  { id: 'live', name: 'Live Sessions' },
   { id: 'resources', name: 'Resources' }
   ];
 
@@ -467,6 +644,13 @@ const StudentDashboard = () => {
               >
                 <Megaphone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Announcements
+              </button>
+              <button
+                onClick={() => { setActiveTab('overview'); setTimeout(()=>{ const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-purple-300 text-xs sm:text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors w-full sm:w-auto justify-center"
+              >
+                <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Join Live
               </button>
               <span className="text-xs sm:text-sm text-gray-600">Welcome, {user?.name}</span>
               <button

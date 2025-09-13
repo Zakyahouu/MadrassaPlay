@@ -237,18 +237,35 @@ const getGameCreationById = asyncHandler(async (req, res) => {
         gameCreations: req.params.id,
     });
 
+    // Live access: allow if the student is currently in a live room for this creation
     let isInLiveGame = false;
-    if (req.liveGames) {
-      for (const roomCode in req.liveGames) {
-        const room = req.liveGames[roomCode];
-        if (room.gameId === req.params.id && room.players.some(p => p.id === req.user._id.toString())) {
+    try {
+      const live = req.liveGames || require('../realtimeState').liveGames;
+      // Prefer explicit room code when provided (via header), else scan all rooms
+      const hintedCode = req.headers['x-live-room'];
+      if (hintedCode && live[hintedCode]) {
+        const room = live[hintedCode];
+        if (
+          String(room.gameCreationId) === String(req.params.id) &&
+          Array.isArray(room.players) && room.players.some(p => String(p.userId) === String(req.user._id))
+        ) {
           isInLiveGame = true;
-          break;
+        }
+      } else if (live) {
+        for (const code in live) {
+          const room = live[code];
+          if (
+            String(room.gameCreationId) === String(req.params.id) &&
+            Array.isArray(room.players) && room.players.some(p => String(p.userId) === String(req.user._id))
+          ) {
+            isInLiveGame = true;
+            break;
+          }
         }
       }
-    }
+    } catch {}
 
-    if (isOwner || (req.user.role === 'student' && (isAssignedStudent || isInLiveGame))) {
+  if (isOwner || (req.user.role === 'student' && (isAssignedStudent || isInLiveGame))) {
         res.json(gameCreation);
     } else {
         res.status(403);

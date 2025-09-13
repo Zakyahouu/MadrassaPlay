@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 // Import layout components
@@ -18,7 +19,15 @@ import AdsBar from '../components/shared/AdsBar';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
-  const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+  // Persist active tab to avoid flicker/reset on remounts (e.g., StrictMode)
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) return tabParam;
+    const saved = sessionStorage.getItem('teacher.activeTab');
+    return saved || 'overview';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adsPanelOpen, setAdsPanelOpen] = useState(false);
   const [stats, setStats] = useState({
@@ -36,6 +45,14 @@ const TeacherDashboard = () => {
     }, 1000);
   }, []);
 
+  // React to tab query param changes (e.g., when navigating back from summary)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && tabParam !== activeTab) setActiveTab(tabParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
   const navigationItems = [
     { id: 'overview', name: 'Overview' },
     { id: 'my-games', name: 'My Games' },
@@ -48,6 +65,11 @@ const TeacherDashboard = () => {
   { id: 'students', name: 'My Classes' },
     { id: 'calendar', name: 'Calendar' }
   ];
+
+  // Keep the active tab in session storage
+  useEffect(() => {
+    try { sessionStorage.setItem('teacher.activeTab', activeTab); } catch {}
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {

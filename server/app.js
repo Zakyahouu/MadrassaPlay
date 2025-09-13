@@ -28,6 +28,15 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
 const app = express();
 app.use(express.json());
 
+// Attach realtime state to requests so controllers can check live access
+const { liveGames } = require('./realtimeState');
+app.use((req, res, next) => {
+  // io is set in server.js; we pick it up lazily to avoid circular requires
+  try { req.io = require('./realtimeState').io || null; } catch { req.io = null; }
+  req.liveGames = liveGames;
+  next();
+});
+
 app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
 // Serve uploaded media (icons/content assets)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
@@ -60,6 +69,7 @@ app.use('/api/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/rooms', require('./routes/roomRoutes'));
 app.use('/api/equipment', require('./routes/equipmentRoutes'));
 app.use('/api/advertisements', require('./routes/advertisementRoutes'));
+app.use('/api/live-sessions', require('./routes/liveSessionRoutes'));
 
 // Centralized error handler: respect res.statusCode set by controllers; default to 500
 // Ensures thrown errors with prior res.status(...) don't become generic 500s
