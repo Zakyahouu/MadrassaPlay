@@ -258,3 +258,65 @@ module.exports.assignmentStudentAttempts = async (req, res) => {
     res.status(500).json({ message: 'Server Error', error: err.message });
   }
 };
+
+// --- Analytics ---
+// @desc    Last 7 days daily active users (unique students per day)
+// @route   GET /api/reporting/analytics/weekly-active-users
+// @access  Private
+module.exports.weeklyActiveUsers = async (req, res) => {
+  try {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - 6); // include today + previous 6 days
+    start.setHours(0, 0, 0, 0);
+
+    const agg = await GameResult.aggregate([
+      { $match: { createdAt: { $gte: start }, counted: true, isTest: { $ne: true } } },
+      { $project: { day: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, student: '$student' } },
+      { $group: { _id: { day: '$day', student: '$student' } } },
+      { $group: { _id: '$_id.day', users: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // Build a full 7-day series, filling missing days with 0
+    const out = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const found = agg.find(a => a._id === key);
+      out.push({ day: key, users: found ? found.users : 0 });
+    }
+    res.json({ items: out });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// @desc    Sessions by template for last 14 days
+// @route   GET /api/reporting/analytics/sessions-by-template
+// @access  Private
+module.exports.sessionsByTemplate = async (req, res) => {
+  try {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - 13);
+    start.setHours(0, 0, 0, 0);
+
+    const data = await GameResult.aggregate([
+      { $match: { createdAt: { $gte: start }, counted: true, isTest: { $ne: true } } },
+      { $lookup: { from: 'gamecreations', localField: 'gameCreation', foreignField: '_id', as: 'gc' } },
+      { $unwind: '$gc' },
+      { $lookup: { from: 'gametemplates', localField: 'gc.template', foreignField: '_id', as: 'tpl' } },
+      { $unwind: '$tpl' },
+      { $group: { _id: '$tpl.name', sessions: { $sum: 1 } } },
+      { $project: { _id: 0, name: '$_id', sessions: 1 } },
+      { $sort: { sessions: -1 } },
+      { $limit: 8 },
+    ]);
+
+    res.json({ items: data });
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};

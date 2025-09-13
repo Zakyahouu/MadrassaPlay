@@ -178,7 +178,7 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
   try {
-  const { name, email, username, contact, experience, status, activities } = req.body;
+  const { name, firstName, lastName, email, username, contact, experience, status, activities } = req.body;
 
     // Find the user by ID
     const user = await User.findById(req.user._id);
@@ -196,7 +196,22 @@ const updateUserProfile = async (req, res) => {
     }
 
     // Update user fields
-    user.name = name || user.name;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (name) {
+      user.name = name;
+      // Ensure required first/last names exist before validation
+      if (!firstName || !lastName) {
+        const parts = String(name).trim().split(/\s+/);
+        if (parts.length >= 2) {
+          user.firstName = user.firstName || (parts[0] || 'User');
+          user.lastName = user.lastName || (parts.slice(1).join(' ') || 'User');
+        } else if (parts.length === 1) {
+          user.firstName = user.firstName || (parts[0] || 'User');
+          user.lastName = user.lastName || 'User';
+        }
+      }
+    }
     user.email = email || user.email;
     if (username) user.username = username;
     if (contact) {
@@ -214,12 +229,33 @@ const updateUserProfile = async (req, res) => {
       if (Array.isArray(activities)) user.activities = activities;
     }
     // Optional: allow staff/employees to update their own status if exposed in UI
-    if ((user.role === 'staff' || user.role === 'employee') && status) {
+  if ((user.role === 'staff' || user.role === 'employee' || user.role === 'staff pedagogique') && status) {
       user.staffStatus = status;
     }
 
-    // Save the updated user
-    const updatedUser = await user.save();
+    // Ensure required name fields are present before save (legacy safety)
+  if (!user.firstName || !user.lastName) {
+      const base = name || user.name || (user.email ? String(user.email).split('@')[0] : `User-${user._id}`);
+      if (!user.firstName && !user.lastName) {
+        const parts = String(base).trim().split(/\s+/);
+    user.firstName = parts[0] || 'User';
+    user.lastName = parts.slice(1).join(' ') || 'User';
+      } else {
+    if (!user.firstName) user.firstName = base || 'User';
+    if (!user.lastName) user.lastName = 'User';
+      }
+    }
+
+    // Save the updated user with graceful duplicate error handling
+    let updatedUser;
+    try {
+      updatedUser = await user.save();
+    } catch (err) {
+      if (err && err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({ message: 'Email already exists.' });
+      }
+      throw err;
+    }
 
     // Send back the updated user data (without password)
     res.status(200).json({

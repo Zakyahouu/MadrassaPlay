@@ -44,22 +44,29 @@ const Analytics = () => {
     return () => { mounted = false; };
   }, []);
 
-  const userTrends = [
-    { day: 'Mon', users: 240 },
-    { day: 'Tue', users: 390 },
-    { day: 'Wed', users: 300 },
-    { day: 'Thu', users: 460 },
-    { day: 'Fri', users: 380 },
-    { day: 'Sat', users: 220 },
-    { day: 'Sun', users: 400 },
-  ];
+  const [userTrends, setUserTrends] = useState([]);
+  const [sessionStats, setSessionStats] = useState([]);
 
-  const sessionStats = [
-    { name: 'Chrome', sessions: 4000 },
-    { name: 'Safari', sessions: 3000 },
-    { name: 'Firefox', sessions: 2000 },
-    { name: 'Edge', sessions: 1000 },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    const token = (() => { try { return JSON.parse(localStorage.getItem('user'))?.token; } catch { return null; } })();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    (async () => {
+      try {
+        const [dau, tpl] = await Promise.all([
+          axios.get('/api/reporting/analytics/weekly-active-users', { headers }),
+          axios.get('/api/reporting/analytics/sessions-by-template', { headers }),
+        ]);
+        if (!mounted) return;
+        const days = (dau.data?.items || []).map(i => ({ day: i.day.slice(5), users: i.users }));
+        setUserTrends(days);
+        setSessionStats(tpl.data?.items || []);
+      } catch (_) {
+        // keep empty
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
@@ -93,29 +100,37 @@ const Analytics = () => {
         {/* Line Chart */}
         <div className="bg-gray-50 border border-gray-100 p-6 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Active Users</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={userTrends}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          {userTrends.length === 0 ? (
+            <div className="h-[250px] flex items-center justify-center text-sm text-gray-500">No data yet.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={userTrends}>
+                <XAxis dataKey="day" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Bar Chart */}
         <div className="bg-gray-50 border border-gray-100 p-6 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sessions by Browser</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={sessionStats}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="sessions" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sessions by Template</h3>
+          {sessionStats.length === 0 ? (
+            <div className="h-[250px] flex items-center justify-center text-sm text-gray-500">No data yet.</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={sessionStats}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="sessions" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>
