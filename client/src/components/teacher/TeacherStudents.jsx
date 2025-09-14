@@ -104,10 +104,20 @@ const TeacherStudents = () => {
     setHistoryLoading(true);
     try {
       const axios = (await import('axios')).default;
-      const res = await axios.get(`/api/reporting/classes/${selectedClass}/students/${student.id}/history`);
-      setHistoryData(res.data);
+      const [resPerf, resAttendance, resPayments] = await Promise.all([
+        axios.get(`/api/reporting/classes/${selectedClass}/students/${student.id}/history`, { headers: authHeaders() }),
+        student.enrollmentId
+          ? axios.get(`/api/attendance/history`, { params: { enrollmentId: student.enrollmentId }, headers: authHeaders() })
+          : Promise.resolve({ data: { items: [] } }),
+        axios.get(`/api/payments/teacher`, { params: { classId: selectedClass, studentId: student.id, limit: 100 }, headers: authHeaders() })
+      ]);
+      setHistoryData({
+        assignments: resPerf.data?.assignments || [],
+        attendance: resAttendance.data?.items || [],
+        payments: resPayments.data?.items || [],
+      });
     } catch (_) {
-      setHistoryData({ assignments: [] });
+      setHistoryData({ assignments: [], attendance: [], payments: [] });
     } finally {
       setHistoryLoading(false);
     }
@@ -391,7 +401,7 @@ const TeacherStudents = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
                   <span className="ml-3 text-gray-600">Loading performance data...</span>
                 </div>
-              ) : historyData && (historyData.assignments||[]).length === 0 ? (
+              ) : historyData && (historyData.assignments||[]).length === 0 && (historyData.attendance||[]).length === 0 && (historyData.payments||[]).length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,6 +458,46 @@ const TeacherStudents = () => {
                       </div>
                     </div>
                   ))}
+                  {(historyData.attendance||[]).length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
+                        <h4 className="text-lg font-semibold text-gray-900">Attendance</h4>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {(historyData.attendance||[]).map((a, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-white">
+                            <div className="text-sm text-gray-800">{new Date(a.date).toLocaleDateString()}</div>
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${a.status === 'present' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                              {a.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(historyData.payments||[]).length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
+                        <h4 className="text-lg font-semibold text-gray-900">Payments</h4>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {(historyData.payments||[]).map((p) => (
+                          <div key={p._id} className="flex items-center justify-between p-3 rounded-lg border bg-white">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{p.kind === 'pay_cycles' ? 'Cycle purchase' : 'Session purchase'}</div>
+                              <div className="text-xs text-gray-500">{new Date(p.createdAt || p.created_at || p.date || Date.now()).toLocaleString()}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-semibold text-gray-900">{Number(p.taken ?? p.amount).toFixed(2)} DH</div>
+                              {typeof p.debtDelta === 'number' && p.debtDelta !== 0 && (
+                                <div className={`text-xs ${p.debtDelta > 0 ? 'text-red-600' : 'text-green-600'}`}>{p.debtDelta > 0 ? `Debt +${p.debtDelta}` : `Credit ${p.debtDelta}`}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

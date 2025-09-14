@@ -683,6 +683,17 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
   const klass = await Class.findOne({ _id: id, teacherId: me._id })
     .populate('enrolledStudents.studentId', 'firstName lastName name email studentCode xp level');
   if (!klass) return res.status(404).json({ message: 'Class not found' });
+  // Map active enrollments to include enrollmentId for attendance/payment history
+  const Enrollment = require('../models/Enrollment');
+  const studentIds = (klass.enrolledStudents || []).map(e => e && e.studentId?._id).filter(Boolean);
+  const enrollments = await Enrollment.find({ classId: id, schoolId: me.school, studentId: { $in: studentIds } })
+    .select('_id studentId createdAt status')
+    .sort({ createdAt: -1 });
+  const enrollByStudent = new Map();
+  for (const en of enrollments) {
+    const key = en.studentId.toString();
+    if (!enrollByStudent.has(key)) enrollByStudent.set(key, en._id);
+  }
   const items = (klass.enrolledStudents || [])
     .filter(e => e && e.studentId)
     .map(e => ({
@@ -694,6 +705,7 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
       level: typeof e.studentId.level === 'number' ? e.studentId.level : 1,
       status: e.status || 'active',
       enrolledAt: e.enrolledAt,
+      enrollmentId: enrollByStudent.get(e.studentId._id.toString()) || null,
     }));
   res.json({ classId: klass._id, students: items });
 });
