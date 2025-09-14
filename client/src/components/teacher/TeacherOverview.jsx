@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   TrendingUp, 
   Users, 
@@ -10,8 +10,66 @@ import {
   Activity
 } from 'lucide-react';
 import UnifiedCard from '../shared/UnifiedCard';
+import axios from 'axios';
 
 const TeacherOverview = ({ stats }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [metrics, setMetrics] = useState({ totalGames: 0, activeStudents: 0, averageScore: 0, liveSessions: 0 });
+
+  const authHeaders = () => {
+    try { const token = JSON.parse(localStorage.getItem('user'))?.token; return token ? { Authorization: `Bearer ${token}` } : {}; } catch { return {}; }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true); setError(null);
+        const headers = authHeaders();
+        // Fetch creations and classes in parallel
+        const [creRes, clsRes, pastRes, actRes, uniqRes] = await Promise.all([
+          axios.get('/api/creations', { headers }),
+          axios.get('/api/classes/teacher', { headers }),
+          axios.get('/api/live-sessions', { params: { status: 'past' }, headers }),
+          axios.get('/api/live-sessions', { params: { status: 'active' }, headers }),
+          axios.get('/api/classes/teacher/students/count', { headers }),
+        ]);
+        if (!mounted) return;
+        const creations = Array.isArray(creRes.data) ? creRes.data : (creRes.data?.creations || []);
+        const classes = Array.isArray(clsRes.data) ? clsRes.data : (clsRes.data?.classes || []);
+        const past = Array.isArray(pastRes.data) ? pastRes.data : (pastRes.data?.sessions || []);
+        const active = Array.isArray(actRes.data) ? actRes.data : (actRes.data?.sessions || []);
+
+  // Active students: use new aggregated endpoint
+  const uniqueStudents = Number(uniqRes.data?.uniqueStudents || 0);
+
+        // Average score from past live sessions (if controller provides averageScore)
+        const avgScores = past.map(s => (typeof s.averageScore === 'number' ? s.averageScore : null)).filter(v => v !== null);
+        const averageScore = avgScores.length ? Math.round((avgScores.reduce((a,b)=>a+b,0) / avgScores.length) * 10) / 10 : 0;
+
+        setMetrics({
+          totalGames: creations.length,
+          activeStudents: uniqueStudents,
+          averageScore,
+          liveSessions: active.length + past.length,
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setError(e?.response?.data?.message || 'Failed to load teacher stats');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const display = useMemo(() => ({
+    totalGames: metrics.totalGames || stats?.totalGames || 0,
+    activeStudents: metrics.activeStudents || stats?.totalStudents || 0,
+    averageScore: metrics.averageScore || stats?.averageScore || 0,
+    liveSessions: metrics.liveSessions || stats?.liveSessions || 0,
+  }), [metrics, stats]);
   const recentActivity = [
     {
       id: 1,
@@ -51,6 +109,11 @@ const TeacherOverview = ({ stats }) => {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
       {/* Welcome Section */}
       <UnifiedCard className="bg-blue-50 border-blue-200">
         <div className="flex items-center justify-between">
@@ -66,13 +129,13 @@ const TeacherOverview = ({ stats }) => {
         </div>
       </UnifiedCard>
 
-      {/* Stats Cards */}
+  {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <UnifiedCard>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Games</p>
-              <p className="text-2xl font-bold text-gray-900">24</p>
+      <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.totalGames}</p>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
               <BookOpen className="w-6 h-6 text-blue-600" />
@@ -89,7 +152,7 @@ const TeacherOverview = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Students</p>
-              <p className="text-2xl font-bold text-gray-900">156</p>
+              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.activeStudents}</p>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
               <Users className="w-6 h-6 text-green-600" />
@@ -106,7 +169,7 @@ const TeacherOverview = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Average Score</p>
-              <p className="text-2xl font-bold text-gray-900">87%</p>
+              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : `${display.averageScore}%`}</p>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
               <Target className="w-6 h-6 text-purple-600" />
@@ -123,7 +186,7 @@ const TeacherOverview = ({ stats }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Live Sessions</p>
-              <p className="text-2xl font-bold text-gray-900">8</p>
+              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.liveSessions}</p>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
               <Activity className="w-6 h-6 text-orange-600" />

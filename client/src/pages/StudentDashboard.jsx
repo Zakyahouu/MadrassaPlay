@@ -29,6 +29,7 @@ import UnifiedCard from '../components/shared/UnifiedCard';
 import AdsBar from '../components/shared/AdsBar';
 import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
 import StudentResources from '../components/student/StudentResources';
+import StudentBadges from '../components/student/StudentBadges';
 import { useToast } from '../components/shared/ToastProvider';
 
 // Main Student Dashboard Component
@@ -45,6 +46,7 @@ const StudentDashboard = () => {
   const [liveRecent, setLiveRecent] = useState([]);
   const [liveAll, setLiveAll] = useState({ loading: false, error: null, items: [] });
   const [earnedBadges, setEarnedBadges] = useState([]);
+  const recentBadges = useMemo(() => (earnedBadges || []).slice(0, 4), [earnedBadges]);
   // Games/Progress data
   const [assignDetails, setAssignDetails] = useState({ loading: false, error: null, items: [] });
   // Leaderboard data
@@ -117,11 +119,15 @@ const StudentDashboard = () => {
         // prefer totalPoints from gamification if available
         const gam = gamRes.data || {};
         s.totalPoints = typeof gam.totalPoints === 'number' ? gam.totalPoints : (s.totalPoints || 0);
+        if (typeof gam.xp === 'number') s.xp = gam.xp;
+        if (typeof gam.level === 'number') s.level = gam.level;
         setSummary({
           gamesCompleted: s.gamesCompleted || 0,
           currentStreakDays: s.currentStreakDays || 0,
           totalPoints: s.totalPoints || 0,
           timeSpentMinutes: s.timeSpentMinutes || 0,
+          xp: s.xp || 0,
+          level: s.level || 1,
         });
   setRecent(Array.isArray(recentRes.data) ? recentRes.data : []);
   setLiveRecent(Array.isArray(liveRes.data) ? liveRes.data : []);
@@ -194,8 +200,8 @@ const StudentDashboard = () => {
         setLbLoading(true); setLbError(null);
         // school leaderboard & my rank
         const [schoolRes, myRankRes] = await Promise.all([
-          axios.get('/api/leaderboard/school'),
-          axios.get('/api/leaderboard/school/rank')
+          axios.get('/api/leaderboard/school', { params: { metric: 'points' } }),
+          axios.get('/api/leaderboard/school/rank', { params: { metric: 'points' } })
         ]);
         if (!mounted) return;
         const normalizeLeaders = (d) => Array.isArray(d) ? d : (Array.isArray(d?.items) ? d.items : (Array.isArray(d?.leaders) ? d.leaders : []));
@@ -226,8 +232,8 @@ const StudentDashboard = () => {
       try {
         if (activeTab !== 'leaderboard' || !lbClassId) return;
         const [classRes, myClassRankRes] = await Promise.all([
-          axios.get(`/api/leaderboard/class/${lbClassId}`),
-          axios.get(`/api/leaderboard/class/${lbClassId}/rank`)
+          axios.get(`/api/leaderboard/class/${lbClassId}`, { params: { metric: 'points' } }),
+          axios.get(`/api/leaderboard/class/${lbClassId}/rank`, { params: { metric: 'points' } })
         ]);
         if (!mounted) return;
         const normalizeLeaders = (d) => Array.isArray(d) ? d : (Array.isArray(d?.items) ? d.items : (Array.isArray(d?.leaders) ? d.leaders : []));
@@ -312,6 +318,46 @@ const StudentDashboard = () => {
                   </div>
                 </UnifiedCard>
               ))}
+            </div>
+
+            {/* XP & Level quick view + Recent Badges */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              <UnifiedCard>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">My Progress</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+                    <div className="text-xs text-gray-600">XP</div>
+                    <div className="text-xl font-extrabold text-indigo-900">{summary?.xp ?? 0}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
+                    <div className="text-xs text-gray-600">Level</div>
+                    <div className="text-xl font-extrabold text-orange-900">{summary?.level ?? 1}</div>
+                  </div>
+                </div>
+              </UnifiedCard>
+              <UnifiedCard className="lg:col-span-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recently Earned Badges</h3>
+                  <button onClick={()=>setActiveTab('badges')} className="text-xs text-indigo-600 hover:underline">View all</button>
+                </div>
+                {loading && <div className="text-sm text-gray-500">Loading…</div>}
+                {!loading && recentBadges.length === 0 && <div className="text-sm text-gray-500">No badges yet.</div>}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {recentBadges.map((b, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg border bg-white shadow-sm hover:shadow transition">
+                      {b.iconUrl ? (
+                        <img src={b.iconUrl} alt="" className="w-10 h-10 rounded-full ring-1 ring-indigo-200/70 object-contain" />
+                      ) : (
+                        <Award className="w-6 h-6 text-indigo-600" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">{b.name}</div>
+                        <div className="text-[11px] text-gray-500 truncate">{b.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </UnifiedCard>
             </div>
 
             {/* Main Content Grid */}
@@ -416,96 +462,23 @@ const StudentDashboard = () => {
       case 'games':
         return (
           <div className="space-y-6">
-            <UnifiedCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Join a Live Game</h3>
-                  <p className="text-xs text-gray-500">Got a room code? Use the box on Overview to join live.</p>
-                </div>
-                <button
-                  className="text-xs px-3 py-1.5 rounded-md border bg-white hover:bg-gray-50"
-                  onClick={()=>{ setActiveTab('overview'); setTimeout(()=>{ const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
-                >Go to Join</button>
-              </div>
+            <UnifiedCard className="bg-gray-50 border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Games</h3>
+              <p className="text-xs text-gray-600">Coming Soon</p>
             </UnifiedCard>
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
-              <h2 className="text-xl md:text-2xl font-extrabold text-indigo-900">Available Games</h2>
-              <p className="text-indigo-700 text-sm">Continue active assignments and play assigned games.</p>
-            </div>
-            {assignDetails.loading && <div className="text-sm text-gray-500">Loading…</div>}
-            {assignDetails.error && <div className="text-sm text-red-600">{assignDetails.error}</div>}
-            {!assignDetails.loading && assignDetails.items.length === 0 && (
-              <div className="text-sm text-gray-500">No games assigned yet.</div>
-            )}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-              {assignDetails.items.map(a => (
-                <UnifiedCard key={a._id} padding="p-3 sm:p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{a.title}</h4>
-                      <p className="text-xs text-gray-500">{new Date(a.endDate).toLocaleDateString()}</p>
-                    </div>
-                    <span className="text-xs text-gray-600 flex-shrink-0 ml-2">{a.progress?.completed}/{a.progress?.totalGames} done</span>
-                  </div>
-                  <div className="space-y-2">
-                    {(a.games || []).map(g => (
-                      <div key={g.gameId} className="flex items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-800 truncate">{g.name}</div>
-                          <div className="text-xs text-gray-500">Best {g.bestPercent}% • Attempts {g.attemptCount}</div>
-                        </div>
-                        <a
-                          href={a.status==='active' && (g.attemptsRemaining===undefined || g.attemptsRemaining>0) ? `/student/play-game/${g.gameId}` : '#'}
-                          onClick={e=>{ if (a.status!=='active' || (g.attemptsRemaining===0)) e.preventDefault(); }}
-                          className={`text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-md font-medium border flex-shrink-0 ${a.status==='active' && (g.attemptsRemaining===undefined || g.attemptsRemaining>0) ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
-                        >Play</a>
-                      </div>
-                    ))}
-                  </div>
-                </UnifiedCard>
-              ))}
-            </div>
           </div>
         );
       case 'progress':
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
-              <h2 className="text-xl md:text-2xl font-extrabold text-indigo-900">Learning Progress</h2>
-              <p className="text-indigo-700 text-sm">Your assignment completion and best scores.</p>
-            </div>
-            {assignDetails.loading && <div className="text-sm text-gray-500">Loading…</div>}
-            {assignDetails.error && <div className="text-sm text-red-600">{assignDetails.error}</div>}
-            {!assignDetails.loading && assignDetails.items.length === 0 && (
-              <div className="text-sm text-gray-500">No progress yet.</div>
-            )}
-            <div className="space-y-3 sm:space-y-4">
-              {assignDetails.items.map(a => (
-                <UnifiedCard key={a._id} padding="p-3 sm:p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{a.title}</h4>
-                      <p className="text-xs text-gray-500">Due {new Date(a.endDate).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right text-xs flex-shrink-0 ml-2">
-                      <div className="font-semibold text-gray-900 mb-1">{a.progress?.completed}/{a.progress?.totalGames} done</div>
-                      <div className="text-xs text-gray-500">Avg {a.progress?.averagePercent}%</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="w-full h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${a.progress?.completionPercent || 0}%` }}></div>
-                    </div>
-                    <div className="mt-1 flex justify-between text-xs text-gray-500">
-                      <span>{a.progress?.completionPercent || 0}% Complete</span>
-                      {a.progress && a.progress.completed < a.progress.totalGames && a.status === 'active' && <span>{a.progress.totalGames - a.progress.completed} left</span>}
-                    </div>
-                  </div>
-                </UnifiedCard>
-              ))}
-            </div>
+            <UnifiedCard className="bg-gray-50 border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Progress</h3>
+              <p className="text-xs text-gray-600">Coming Soon</p>
+            </UnifiedCard>
           </div>
         );
+      case 'badges':
+        return <StudentBadges />;
       case 'leaderboard':
         return (
           <div className="space-y-6">
@@ -519,7 +492,7 @@ const StudentDashboard = () => {
             <UnifiedCard>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">School Top Students</h3>
-                {mySchoolRank && <div className="text-xs text-gray-600">Your Rank: #{mySchoolRank.rank} • Points {mySchoolRank.totalPoints}</div>}
+                {mySchoolRank && <div className="text-xs text-gray-600">Your Rank: #{mySchoolRank.rank} • Points {summary.totalPoints}</div>}
               </div>
               <div className="divide-y border rounded-lg">
                 {(Array.isArray(schoolLeaders) ? schoolLeaders : []).map((s, idx) => (
@@ -548,7 +521,7 @@ const StudentDashboard = () => {
                   </select>
                 </div>
               </div>
-              {myClassRank && <div className="text-xs text-gray-600 mb-2">Your Rank: #{myClassRank.rank} • Points {myClassRank.totalPoints}</div>}
+              {myClassRank && <div className="text-xs text-gray-600 mb-2">Your Rank: #{myClassRank.rank} • Points {summary.totalPoints}</div>}
               <div className="divide-y border rounded-lg">
                 {(Array.isArray(classLeaders) ? classLeaders : []).map((s, idx) => (
                   <div key={s._id || idx} className="flex items-center justify-between p-2 sm:p-3">
@@ -623,6 +596,7 @@ const StudentDashboard = () => {
     { id: 'assignments', name: 'My Assignments' },
     { id: 'games', name: 'Games' },
     { id: 'progress', name: 'Progress' },
+    { id: 'badges', name: 'Badges' },
   { id: 'leaderboard', name: 'Leaderboard' },
   { id: 'live', name: 'Live Sessions' },
   { id: 'resources', name: 'Resources' }

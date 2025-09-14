@@ -37,6 +37,13 @@ const TeacherLiveSessions = () => {
   const [confirmEnd, setConfirmEnd] = useState({ open: false, id: null, title: '' });
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, title: '' });
 
+  // Quick results popup (trophy click)
+  const [quickResults, setQuickResults] = useState({ open: false, id: null, title: '', loading: false, error: null, ranks: [], session: null });
+
+  const authHeaders = () => {
+    try { const token = JSON.parse(localStorage.getItem('user'))?.token; return token ? { Authorization: `Bearer ${token}` } : {}; } catch { return {}; }
+  };
+
   useEffect(() => {
     fetchActive();
     fetchPast();
@@ -57,7 +64,7 @@ const TeacherLiveSessions = () => {
     try {
       setLoadingActive(true);
   setErrorActive(null);
-      const { data } = await axios.get('/api/live-sessions', { params: { status: 'active' } });
+  const { data } = await axios.get('/api/live-sessions', { params: { status: 'active' }, headers: authHeaders() });
       setActiveSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
   console.error('Failed to load active sessions', e);
@@ -72,7 +79,7 @@ const TeacherLiveSessions = () => {
     try {
       setLoadingPast(true);
   setErrorPast(null);
-      const { data } = await axios.get('/api/live-sessions', { params: { status: 'past' } });
+  const { data } = await axios.get('/api/live-sessions', { params: { status: 'past' }, headers: authHeaders() });
       setPastSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
   console.error('Failed to load past sessions', e);
@@ -86,10 +93,10 @@ const TeacherLiveSessions = () => {
   const openNewModal = async () => {
     setShowNewModal(true);
     try {
-      const gamesRes = await axios.get('/api/creations');
+  const gamesRes = await axios.get('/api/creations', { headers: authHeaders() });
       setGames(Array.isArray(gamesRes.data) ? gamesRes.data : (gamesRes.data?.creations || []));
       try {
-        const classesRes = await axios.get('/api/classes/teacher');
+  const classesRes = await axios.get('/api/classes/teacher', { headers: authHeaders() });
         const cls = Array.isArray(classesRes.data) ? classesRes.data : (classesRes.data?.classes || []);
         setClasses(cls);
       } catch {}
@@ -116,7 +123,7 @@ const TeacherLiveSessions = () => {
         classIds: newForm.classIds,
         config: { timePenaltyPerWrongMs: 3000 },
       };
-      const res = await axios.post('/api/live-sessions', payload);
+  const res = await axios.post('/api/live-sessions', payload, { headers: authHeaders() });
     setShowNewModal(false);
   setNewForm({ title: '', gameCreationId: '', classIds: [] });
       fetchActive();
@@ -138,7 +145,7 @@ const TeacherLiveSessions = () => {
 
   const endSession = async (id) => {
     try {
-      await axios.post(`/api/live-sessions/${id}/end`);
+  await axios.post(`/api/live-sessions/${id}/end`, null, { headers: authHeaders() });
       setActionsOpenId(null);
       fetchActive();
       fetchPast();
@@ -154,7 +161,25 @@ const TeacherLiveSessions = () => {
 
   const deleteSession = async (id) => {
     try {
-      await axios.delete(`/api/live-sessions/${id}`);
+      await axios.delete(`/api/live-sessions/${id}`, { headers: authHeaders() });
+
+  const openQuickResults = async (id, title) => {
+    setQuickResults({ open: true, id, title, loading: true, error: null, ranks: [], session: null });
+    try {
+      const [sumRes, detRes] = await Promise.all([
+        axios.get(`/api/live-sessions/${id}/summary`, { headers: authHeaders() }),
+        axios.get(`/api/live-sessions/${id}`, { headers: authHeaders() })
+      ]);
+      const ranks = Array.isArray(sumRes.data?.ranks) ? sumRes.data.ranks : [];
+      const session = sumRes.data?.session || detRes.data || null;
+      setQuickResults(q => ({ ...q, loading: false, ranks, session }));
+    } catch (e) {
+      const msg = e?.response?.data?.message || 'Failed to load results';
+      setQuickResults(q => ({ ...q, loading: false, error: msg }));
+      toast(msg);
+    }
+  };
+  const closeQuickResults = () => setQuickResults({ open: false, id: null, title: '', loading: false, error: null, ranks: [], session: null });
   fetchPast();
   toast('Session deleted');
     } catch (e) {
@@ -196,6 +221,77 @@ const TeacherLiveSessions = () => {
           className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700"
         >
           <Plus className="w-4 h-4" />
+              {quickResults.open && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
+                    <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Quick Results {quickResults.title ? `- ${quickResults.title}` : ''}</h3>
+                      <button onClick={closeQuickResults} className="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+                    <div className="p-6 space-y-4 max-h-[70vh] overflow-auto">
+                      {quickResults.loading && (
+                        <div className="text-sm text-gray-500">Loading…</div>
+                      )}
+                      {!quickResults.loading && quickResults.error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{quickResults.error}</div>
+                      )}
+                      {!quickResults.loading && !quickResults.error && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-xs text-gray-500">Participants</p>
+                              <p className="text-lg font-semibold">{quickResults.ranks.length}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Status</p>
+                              <p className="text-lg font-semibold capitalize">{quickResults.session?.status || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Code</p>
+                              <p className="text-lg font-mono">{quickResults.session?.code || '—'}</p>
+                            </div>
+                          </div>
+                          {quickResults.ranks.length === 0 ? (
+                            <div className="text-sm text-gray-600">No results recorded.</div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full text-sm">
+                                <thead className="bg-gray-100 text-gray-700">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left">#</th>
+                                    <th className="px-3 py-2 text-left">Name</th>
+                                    <th className="px-3 py-2 text-left">Score</th>
+                                    <th className="px-3 py-2 text-left">Time</th>
+                                    <th className="px-3 py-2 text-left">Wrong</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {quickResults.ranks.slice(0, 10).map((r, i) => (
+                                    <tr key={`${r.studentId || r.userId || i}`} className="border-t border-gray-100">
+                                      <td className="px-3 py-2">{i + 1}</td>
+                                      <td className="px-3 py-2">{[r.firstName, r.lastName].filter(Boolean).join(' ') || r.name || r.userId || '—'}</td>
+                                      <td className="px-3 py-2">{r.score ?? 0}</td>
+                                      <td className="px-3 py-2">{Number.isFinite(r.effectiveTimeMs) ? `${Math.round(r.effectiveTimeMs/100)/10}s` : '—'}</td>
+                                      <td className="px-3 py-2">{r.wrong ?? 0}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {quickResults.ranks.length > 10 && (
+                                <div className="text-xs text-gray-500 mt-2">Showing top 10 of {quickResults.ranks.length}</div>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <button onClick={() => { const id = quickResults.id; closeQuickResults(); navigate(`/teacher/live-sessions/${id}`); }} className="px-3 py-2 text-sm rounded-md border">Open Full Summary</button>
+                            <button onClick={closeQuickResults} className="px-3 py-2 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700">Close</button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
           <span>New Session</span>
         </button>
       </div>
@@ -416,7 +512,7 @@ const TeacherLiveSessions = () => {
                       <p className="text-xs text-gray-500">Duration</p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button title="Leaderboard" aria-label="Open leaderboard" onClick={() => navigate(`/teacher/live-sessions/${key}`)} className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300">
+                      <button title="Quick Results" aria-label="Quick results" onClick={() => openQuickResults(key, title)} className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300">
                         <Trophy className="w-4 h-4" />
                       </button>
                       <button title="View Summary" aria-label="View summary" onClick={() => navigate(`/teacher/live-sessions/${key}`)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">

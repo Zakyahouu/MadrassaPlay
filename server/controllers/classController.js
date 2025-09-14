@@ -681,7 +681,7 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
   const me = req.user;
   if (me.role !== 'teacher') return res.status(403).json({ message: 'Not authorized' });
   const klass = await Class.findOne({ _id: id, teacherId: me._id })
-    .populate('enrolledStudents.studentId', 'firstName lastName name email studentCode');
+    .populate('enrolledStudents.studentId', 'firstName lastName name email studentCode xp level');
   if (!klass) return res.status(404).json({ message: 'Class not found' });
   const items = (klass.enrolledStudents || [])
     .filter(e => e && e.studentId)
@@ -690,8 +690,25 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
       name: e.studentId.name || `${e.studentId.firstName} ${e.studentId.lastName}`.trim(),
       email: e.studentId.email || '',
       studentCode: e.studentId.studentCode || '',
+      xp: typeof e.studentId.xp === 'number' ? e.studentId.xp : 0,
+      level: typeof e.studentId.level === 'number' ? e.studentId.level : 1,
       status: e.status || 'active',
       enrolledAt: e.enrolledAt,
     }));
   res.json({ classId: klass._id, students: items });
+});
+
+// @desc    Get unique student count across all classes owned by the teacher
+// @route   GET /api/classes/teacher/students/count
+// @access  Private (Teacher)
+module.exports.getTeacherUniqueStudentCount = asyncHandler(async (req, res) => {
+  const me = req.user;
+  if (me.role !== 'teacher') return res.status(403).json({ message: 'Not authorized' });
+  const classes = await Class.find({ teacherId: me._id, schoolId: me.school, status: { $in: ['active','enrolling'] } })
+    .select('enrolledStudents.studentId');
+  const set = new Set();
+  for (const c of classes) {
+    (c.enrolledStudents || []).forEach(e => { if (e && e.studentId) set.add(String(e.studentId)); });
+  }
+  res.json({ uniqueStudents: set.size });
 });

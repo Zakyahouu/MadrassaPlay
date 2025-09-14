@@ -15,6 +15,16 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+// Local helper to attach Authorization header from stored user token
+const authHeaders = () => {
+  try {
+    const token = JSON.parse(localStorage.getItem('user'))?.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+};
+
 const Timetable = () => {
   const [classes, setClasses] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
@@ -24,7 +34,7 @@ const Timetable = () => {
   const [filterTeacher, setFilterTeacher] = useState('all');
   const [filterRoom, setFilterRoom] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [teachers, setTeachers] = useState([]);
+  const [teachers, setTeachers] = useState([]); // kept for future; hidden in UI for teacher role
   const [rooms, setRooms] = useState([]);
   const [filterCategory, setFilterCategory] = useState('all'); // New state for dropdown filter category
 
@@ -88,7 +98,8 @@ const Timetable = () => {
 
   useEffect(() => {
     fetchClasses();
-    fetchTeachers();
+    // Teachers list endpoint is manager-only; skip in teacher view to avoid 403
+    // fetchTeachers();
     fetchRooms();
   }, []);
 
@@ -96,7 +107,7 @@ const Timetable = () => {
     try {
       setLoading(true);
       // Fetch classes for the current teacher
-      const response = await axios.get('/api/classes/teacher');
+      const response = await axios.get('/api/classes/teacher', { headers: authHeaders() });
       setClasses(response.data || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -107,19 +118,20 @@ const Timetable = () => {
     }
   };
 
-  const fetchTeachers = async () => {
-    try {
-      const response = await axios.get('/api/classes/available-teachers');
-      setTeachers(response.data || []);
-    } catch (error) {
-      console.error('Error fetching teachers:', error);
-      setTeachers([]);
-    }
-  };
+  // Manager-only; intentionally not used for teacher view to avoid 403
+  // const fetchTeachers = async () => {
+  //   try {
+  //     const response = await axios.get('/api/classes/available-teachers', { headers: authHeaders() });
+  //     setTeachers(response.data || []);
+  //   } catch (error) {
+  //     console.error('Error fetching teachers:', error);
+  //     setTeachers([]);
+  //   }
+  // };
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get('/api/rooms');
+      const response = await axios.get('/api/rooms', { headers: authHeaders() });
       setRooms(response.data || []);
     } catch (error) {
       console.error('Error fetching rooms:', error);
@@ -349,21 +361,7 @@ const Timetable = () => {
               </select>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher:</label>
-              <select
-                value={filterTeacher}
-                onChange={(e) => setFilterTeacher(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="all">All Teachers</option>
-                {teachers.map(teacher => (
-                  <option key={teacher._id} value={teacher._id}>
-                    {teacher.firstName} {teacher.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Teacher filter hidden for teacher role to avoid unused/empty list */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Room:</label>

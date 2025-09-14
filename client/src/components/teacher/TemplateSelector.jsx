@@ -93,6 +93,33 @@ const TemplateSelector = () => {
               <div className="flex-grow">
                 <h4 className="font-bold text-xl text-gray-900 mb-2">{template.name}</h4>
                 <p className="text-gray-600 text-sm leading-relaxed mb-6">{template.description}</p>
+                {/* Quotas/limits for teachers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                  <div className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                    <span className="text-base">🖼️</span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-gray-900">Images per game</div>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const maxImages = Number(template?.manifest?.assets?.maxImagesPerCreation || 0);
+                          return maxImages > 0 ? `${maxImages} max` : 'Unlimited';
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                    <span className="text-base">🧩</span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-gray-900">Creations you can make</div>
+                      <div className="text-gray-600">
+                        {(() => {
+                          const maxCreations = Number(template?.manifest?.limits?.maxCreationsPerTeacher || 0);
+                          return maxCreations > 0 ? `${maxCreations} per teacher` : 'Unlimited';
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Action Button */}

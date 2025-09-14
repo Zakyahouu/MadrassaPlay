@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Search, Trophy, Shuffle, X } from 'lucide-react';
+import { useToast } from '../shared/ToastProvider';
 
 const TeacherStudents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,15 +16,25 @@ const TeacherStudents = () => {
   const [wheelPool, setWheelPool] = useState([]);
   const [wheelLastPick, setWheelLastPick] = useState(null);
   const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const [winnerModal, setWinnerModal] = useState({ open: false, name: '' });
+  // Persist wheel pool per class (optional future improvement)
   const [perfLoading, setPerfLoading] = useState(false);
   const [perfItems, setPerfItems] = useState([]);
   // Class resources moved to dedicated Resources tab
 
+  const authHeaders = () => {
+    try { const token = JSON.parse(localStorage.getItem('user'))?.token; return token ? { Authorization: `Bearer ${token}` } : {}; } catch { return {}; }
+  };
+  const spinTimer = useRef(null);
+  const { toast } = useToast();
+
   useEffect(() => {
     let mounted = true;
-    (async () => {
+  (async () => {
       try {
-        const res = await (await import('axios')).default.get('/api/classes/teacher');
+    const axios = (await import('axios')).default;
+    const res = await axios.get('/api/classes/teacher', { headers: authHeaders() });
         if (!mounted) return;
         const opts = [{ id: 'all', name: 'All Classes' }, ...res.data.map(c => ({ id: c._id, name: c.name }))];
         setClasses(opts);
@@ -34,11 +45,11 @@ const TeacherStudents = () => {
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
+  (async () => {
       if (selectedClass === 'all') { setStudents([]); return; }
       try {
         const axios = (await import('axios')).default;
-        const res = await axios.get(`/api/classes/${selectedClass}/students`);
+    const res = await axios.get(`/api/classes/${selectedClass}/students`, { headers: authHeaders() });
         if (!mounted) return;
         setStudents(res.data.students || []);
         setWheelPool((res.data.students || []).map(s => s.id));
@@ -50,12 +61,12 @@ const TeacherStudents = () => {
   // Fetch class performance summary when a class is selected
   useEffect(() => {
     let mounted = true;
-    (async () => {
+  (async () => {
       if (selectedClass === 'all') { setPerfItems([]); return; }
       setPerfLoading(true);
       try {
         const axios = (await import('axios')).default;
-        const res = await axios.get(`/api/reporting/classes/${selectedClass}/performance`);
+    const res = await axios.get(`/api/reporting/classes/${selectedClass}/performance`, { headers: authHeaders() });
         if (!mounted) return;
         setPerfItems(res.data?.items || []);
       } catch (_) {
@@ -102,18 +113,66 @@ const TeacherStudents = () => {
     }
   };
 
+  const wheelParticipants = useMemo(() => {
+    // Build ordered participants list from current wheelPool
+    const byId = new Map(students.map(s => [s.id, s]));
+    const list = wheelPool.map(id => byId.get(id)).filter(Boolean);
+    // Ensure at least 2 slices for visuals
+    return list.length >= 2 ? list : list.length === 1 ? [...list, list[0]] : [];
+  }, [wheelPool, students]);
+
+  const buildWheelGradient = (parts) => {
+    const n = parts.length;
+    if (n === 0) return 'conic-gradient(#eee 0deg 360deg)';
+    const slice = 360 / n;
+    const palette = ['#fde68a','#bfdbfe','#c7d2fe','#fbcfe8','#fecaca','#bbf7d0','#a7f3d0','#fdba74','#fca5a5','#f5d0fe'];
+    const stops = parts.map((_, i) => {
+      const start = i * slice;
+      const end = (i + 1) * slice;
+      const color = palette[i % palette.length];
+      return `${color} ${start}deg ${end}deg`;
+    }).join(', ');
+    return `conic-gradient(${stops})`;
+  };
+
+  // Clear any pending spin timer on unmount
+  useEffect(() => {
+    return () => { if (spinTimer.current) { clearTimeout(spinTimer.current); } };
+  }, []);
+
   const rollWheel = () => {
-    if (!wheelPool.length || wheelSpinning) return;
+    if (!wheelParticipants.length || wheelSpinning) return;
+    // Choose a random index from actual participants (maps to wheelPool id)
+    const idx = Math.floor(Math.random() * wheelParticipants.length);
+    const pickId = wheelParticipants[idx]?.id;
+    if (!pickId) return;
+    setWheelLastPick(null);
     setWheelSpinning(true);
-    const idx = Math.floor(Math.random() * wheelPool.length);
-    const pickId = wheelPool[idx];
-    setTimeout(() => {
-      setWheelLastPick(pickId);
-      if (wheelMode === 'elimination') {
-        setWheelPool(prev => prev.filter(id => id !== pickId));
-      }
-      setWheelSpinning(false);
-    }, 1000);
+    const n = wheelParticipants.length;
+    const slice = 360 / n;
+    const center = (idx + 0.5) * slice;
+    // Bias a tiny amount toward the slice interior so pointer doesn't sit on the separator line
+    const pointerBias = Math.min(1.5, slice * 0.1); // degrees
+    const baseOffset = 270; // align to top pointer
+    const spins = 5 + Math.floor(Math.random() * 3); // 5-7 spins
+    setWheelAngle(prev => {
+      const current = ((prev % 360) + 360) % 360;
+      const delta = spins * 360 + (baseOffset - center + pointerBias) - current;
+      const next = prev + delta;
+      // Complete action after animation
+      if (spinTimer.current) clearTimeout(spinTimer.current);
+      spinTimer.current = setTimeout(() => {
+        setWheelLastPick(pickId);
+        const winnerName = students.find(s=>s.id===pickId)?.name || 'Student';
+        try { toast(`Winner: ${winnerName}`); } catch {}
+        if (wheelMode === 'elimination') {
+          setWheelPool(p => p.filter(id => id !== pickId));
+        }
+        setWheelSpinning(false);
+        setWinnerModal({ open: true, name: winnerName });
+      }, 4200);
+      return next;
+    });
   };
 
   return (
@@ -397,7 +456,7 @@ const TeacherStudents = () => {
         </div>
       )}
 
-      {/* Luck Wheel Modal (UI-first) */}
+      {/* Luck Wheel Modal with animated wheel */}
       {wheelOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl border relative">
@@ -410,20 +469,83 @@ const TeacherStudents = () => {
             </div>
             <div className="p-4 space-y-3">
               <div className="text-xs text-gray-500">Students in wheel: {wheelPool.length}</div>
-              <div className={`h-48 rounded-xl border flex items-center justify-center ${wheelSpinning ? 'animate-pulse' : ''}`}>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500">{wheelSpinning ? 'Spinning…' : 'Ready'}</div>
-                  <div className="text-lg font-semibold text-gray-800 mt-1">
-                    {wheelLastPick ? (students.find(s=>s.id===wheelLastPick)?.name || 'Student') : '—'}
+              <div className="flex items-center justify-center">
+                <div className="relative" style={{ width: 320, height: 320 }}>
+                  {/* Rotating container: wheel + labels rotate together for smooth animation */}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      transform: `rotate(${wheelAngle}deg)`,
+                      transition: wheelSpinning ? 'transform 4s cubic-bezier(.17,.67,.32,1.34)' : 'none'
+                    }}
+                  >
+                    {/* Wheel background */}
+                    <div className="absolute inset-0 rounded-full shadow-sm border border-gray-200"
+                         style={{ background: buildWheelGradient(wheelParticipants) }} />
+                    {/* Labels */}
+                    {wheelParticipants.map((p, i) => {
+                      const n = wheelParticipants.length || 1;
+                      const slice = 360 / n;
+                      const angle = i * slice + slice / 2 - 90; // center relative to top
+                      const name = (p.name || '').slice(0, 16);
+                      return (
+                        <div
+                          key={p.id}
+                          className="absolute left-1/2 top-1/2 text-[11px] text-gray-800 font-medium"
+                          style={{
+                            transform: `rotate(${angle}deg) translate(0, -120px)`,
+                            transformOrigin: '0 0'
+                          }}
+                        >
+                          <span className="px-1.5 py-0.5 rounded bg-white/85 border border-gray-200 shadow-sm">
+                            {name}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {/* Center hub */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white border-2 border-gray-300 shadow-inner" />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-gray-400" />
+                  </div>
+                  {/* Pointer */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 drop-shadow">
+                    <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-red-500" />
                   </div>
                 </div>
               </div>
+              <div className="text-center text-sm text-gray-500">
+                {wheelSpinning ? 'Spinning…' : (wheelLastPick ? `Winner: ${students.find(s=>s.id===wheelLastPick)?.name || 'Student'}` : 'Ready')}
+              </div>
               <div className="flex items-center gap-2">
-                <button disabled={wheelSpinning || wheelPool.length===0} onClick={rollWheel} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50 disabled:opacity-50">Spin</button>
+                <button disabled={wheelSpinning || winnerModal.open || wheelPool.length===0} onClick={rollWheel} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50 disabled:opacity-50">Spin</button>
                 {wheelMode === 'elimination' && (
                   <button onClick={()=>setWheelPool(students.map(s=>s.id))} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50">Reset Pool</button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Winner Modal: appears after wheel stops; closing resets wheel to origin */}
+      {winnerModal.open && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl border overflow-hidden">
+            <div className="px-5 py-4 border-b bg-gray-50">
+              <h3 className="text-lg font-semibold">Winner</h3>
+            </div>
+            <div className="px-6 py-8 text-center">
+              <div className="text-5xl mb-3">🎉</div>
+              <div className="text-gray-600 mb-1">Selected Student</div>
+              <div className="text-2xl font-bold text-gray-900">{winnerModal.name}</div>
+            </div>
+            <div className="px-5 py-4 border-t bg-gray-50 flex items-center justify-end">
+              <button
+                className="px-4 py-2 text-sm rounded-md border bg-white hover:bg-gray-50"
+                onClick={() => { setWinnerModal({ open: false, name: '' }); setWheelAngle(0); }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

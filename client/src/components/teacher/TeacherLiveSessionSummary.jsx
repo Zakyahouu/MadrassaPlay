@@ -27,9 +27,10 @@ export default function TeacherLiveSessionSummary() {
       try {
         setLoading(true);
         setError(null);
+        const headers = (() => { try { const t = JSON.parse(localStorage.getItem('user'))?.token; return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; } })();
         const [sumRes, detRes] = await Promise.all([
-          axios.get(`/api/live-sessions/${id}/summary`),
-          axios.get(`/api/live-sessions/${id}`)
+          axios.get(`/api/live-sessions/${id}/summary`, { headers }),
+          axios.get(`/api/live-sessions/${id}`, { headers })
         ]);
         if (!mounted) return;
         setSession(sumRes.data?.session || null);
