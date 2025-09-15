@@ -129,6 +129,14 @@ const loginUser = async (req, res) => {
 
     // Check if user exists AND if the provided password matches the hashed password in the DB
     if (user && (await bcrypt.compare(password, user.password))) {
+      // If user is assigned to a school, check school status
+      if (user.school) {
+        const School = require('../models/School');
+        const school = await School.findById(user.school);
+        if (school && (school.status === 'inactive' || school.status === 'deleted')) {
+          return res.status(403).json({ message: 'Your school subscription is deactivated. Please contact the administrator.' });
+        }
+      }
       // If they match, send back the user data and a new token
       res.status(200).json({
         _id: user._id,
@@ -279,9 +287,72 @@ const updateUserProfile = async (req, res) => {
 
 // 4. EXPORT THE FUNCTIONS
 // ==============================================================================
+// @desc    Get user breakdown by school and type (admin analytics)
+// @route   GET /api/users/analytics/user-breakdown
+// @access  Admin
+const getUserBreakdownAnalytics = async (req, res) => {
+  try {
+    // Aggregate users by school and role
+    const pipeline = [
+      {
+        $match: {
+          role: { $in: ["student", "teacher", "manager", "employee"] }
+        }
+      },
+      {
+        $group: {
+          _id: { school: "$school", role: "$role" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: "$_id.school",
+          breakdown: {
+            $push: {
+              role: "$_id.role",
+              count: "$count"
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "schools",
+          localField: "_id",
+          foreignField: "_id",
+          as: "school"
+        }
+      },
+      {
+        $unwind: "$school"
+      },
+      {
+        $project: {
+          school: { _id: "$school._id", name: "$school.name" },
+          breakdown: 1
+        }
+      }
+    ];
+    const results = await User.aggregate(pipeline);
+    // Format breakdown as { student: N, teacher: N, manager: N, employee: N }
+    const formatted = results.map(r => ({
+      school: r.school,
+      breakdown: r.breakdown.reduce((acc, curr) => {
+        acc[curr.role] = curr.count;
+        return acc;
+      }, {})
+    }));
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
+  getUserBreakdownAnalytics,
 };

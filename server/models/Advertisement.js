@@ -18,7 +18,11 @@ const advertisementSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  dateTime: {
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: {
     type: Date,
     required: true,
   },
@@ -51,7 +55,6 @@ const advertisementSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-advertisementSchema.index({ dateTime: 1 });
 advertisementSchema.index({ targetAudience: 1 });
 advertisementSchema.index({ location: 1 });
 

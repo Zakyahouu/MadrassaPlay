@@ -16,6 +16,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let gameConfig = {};
 let gameCreationId = null;
+let callbacks = null;
 // instrumentation for live + reporting
 let questionStartMs = 0;
 let answers = [];
@@ -27,6 +28,7 @@ function initializeGame(data) {
   gameConfig = data.config?.settings || data.config || {};
   questions = data.questions || data.content || data.config?.content || [];
   gameCreationId = data._id;
+  callbacks = data.callbacks || null;
 
   currentQuestionIndex = 0;
   score = 0;
@@ -115,19 +117,24 @@ function showResults() {
 
   // compute total time and notify finish for live leaderboard
   const totalTimeMs = answers.reduce((acc, a) => acc + (Number(a.deltaMs) || 0), 0);
+  if (callbacks && callbacks.onComplete) {
+    callbacks.onComplete({ score, totalPossibleScore: questions.length, answers });
+  }
   try {
     window.parent.postMessage({ type: 'LIVE_FINISH', payload: { totalTimeMs } }, '*');
   } catch {}
 
-  window.parent.postMessage({
-    type: 'GAME_COMPLETE',
-    payload: {
-      gameCreationId: gameCreationId,
-      score: score,
-      totalPossibleScore: questions.length,
-      answers
-    }
-  }, '*');
+  try {
+    window.parent.postMessage({
+      type: 'GAME_COMPLETE',
+      payload: {
+        gameCreationId: gameCreationId,
+        score: score,
+        totalPossibleScore: questions.length,
+        answers
+      }
+    }, '*');
+  } catch {}
 }
 
 // --- Event Listeners ---
@@ -136,6 +143,10 @@ window.addEventListener('message', (event) => {
     initializeGame(event.data.payload);
   }
 });
+// If pre-injected config exists and autoStart flag is present, optionally start
+if (window.__GAME_CONFIG__ && window.__GAME_CONFIG__.config && window.__GAME_CONFIG__.config.autoStart) {
+  try { initializeGame(window.__GAME_CONFIG__); } catch {}
+}
 
 restartButton.addEventListener('click', () => {
   alert("Restarting is disabled for this game mode.");

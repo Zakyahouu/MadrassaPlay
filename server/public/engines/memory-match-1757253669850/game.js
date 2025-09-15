@@ -1,8 +1,9 @@
+/* Memory Match Engine - Unified INIT/COMPLETE contract */
 (function(){
-  let creation, settings, pairs=[], gridEl, first=null, second=null, lock=false, found=0, moves=0;
+  let creation = window.__GAME_CONFIG__ || null, settings, pairs=[], gridEl, first=null, second=null, lock=false, found=0, moves=0;
   const byId=(id)=>document.getElementById(id);
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
-    const enterBtn=byId('enterBtn'); const movesEl=byId('moves'); const pairsEl=byId('pairs'); const summary=byId('summary');
+  const enterBtn=byId('enterBtn'); const movesEl=byId('moves'); const pairsEl=byId('pairs'); const summary=byId('summary');
   // instrumentation
   let startMs = 0; const answers = []; // record matched pairs order
 
@@ -109,9 +110,13 @@
     // perfect is pairs.length moves min; we consider score inversely proportional to moves, but keep simple: 100% when found all, score=pairs.length
     const score = pairs.length; const total = pairs.length; // treat as full completion
     summary.textContent = `Completed in ${moves} moves`;
-  const totalTimeMs = Math.max(0, Date.now() - (startMs || Date.now()));
-  try{ window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); }catch{}
-  window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*');
+    const totalTimeMs = Math.max(0, Date.now() - (startMs || Date.now()));
+    // Unified completion contract
+    if(creation?.callbacks?.onComplete){
+      creation.callbacks.onComplete({ score, totalPossibleScore: total, answers });
+    }
+    try{ window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); }catch{}
+    try{ window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*'); }catch{}
   }
 
   window.addEventListener('message', (e)=>{
@@ -121,4 +126,8 @@
       enterBtn.onclick = countdown;
     }
   });
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creation && creation.config && creation.config.autoStart) {
+    try { show('ready'); enterBtn.onclick = countdown; } catch {}
+  }
 })();

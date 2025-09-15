@@ -286,7 +286,12 @@ const getSchoolById = async (req, res) => {
       return res.status(404).json({ message: 'School not found.' });
     }
     // If manager, only allow access to their own school
-    if (req.user.role === 'manager' && school._id.toString() !== req.user.school.toString()) {
+    let userSchoolId = req.user.school;
+    if (userSchoolId && typeof userSchoolId === 'object' && userSchoolId._id) {
+      userSchoolId = userSchoolId._id;
+    }
+    if (req.user.role === 'manager' && school._id.toString() !== String(userSchoolId)) {
+      console.warn(`SECURITY: Manager ${req.user._id} tried to access school ${school._id}, but is assigned to ${JSON.stringify(req.user.school)}`);
       return res.status(403).json({ message: 'Managers can only access their own school.' });
     }
     res.status(200).json(school);
