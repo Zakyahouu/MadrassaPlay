@@ -37,7 +37,6 @@ const gameTemplateSchema = new mongoose.Schema({
   iconUrl: { type: String },
   isFeatured: { type: Boolean, default: false },
   deprecated: { type: Boolean, default: false },
-  defaultConfigOverrides: { type: mongoose.Schema.Types.Mixed }, // only value overrides for existing formSchema.settings keys
 }, {
   timestamps: true,
 });

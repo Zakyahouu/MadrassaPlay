@@ -217,3 +217,56 @@ module.exports = {
   updatePayment,
   deletePayment,
 };
+// @desc    Get payments for teacher-owned classes (read-only)
+// @route   GET /api/payments/teacher?classId=&studentId=&limit=&skip=
+// @access  Private (Teacher; also allows manager/staff as pass-through)
+module.exports.getPaymentsForTeacher = async (req, res) => {
+  try {
+    const role = req.user?.role;
+    if (!['teacher', 'manager', 'staff'].includes(role)) {
+      return res.status(403).json({ message: 'Not authorized.' });
+    }
+
+    const schoolIdRaw = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!schoolIdRaw || !mongoose.isValidObjectId(schoolIdRaw)) {
+      return res.status(400).json({ message: 'Invalid or missing school assignment.' });
+    }
+    const schoolId = new mongoose.Types.ObjectId(schoolIdRaw);
+
+    const { classId, studentId, limit = 50, skip = 0 } = req.query || {};
+    if (classId && !mongoose.isValidObjectId(classId)) return res.status(400).json({ message: 'Invalid classId.' });
+    if (studentId && !mongoose.isValidObjectId(studentId)) return res.status(400).json({ message: 'Invalid studentId.' });
+
+    const limNum = Number.parseInt(limit, 10);
+    const skNum = Number.parseInt(skip, 10);
+    const safeLimit = Number.isFinite(limNum) ? Math.min(Math.max(limNum, 1), 200) : 50;
+    const safeSkip = Number.isFinite(skNum) ? Math.max(skNum, 0) : 0;
+
+    // Build base visibility for teacher: payments in teacher-owned classes
+    let visibility = { schoolId };
+    if (role === 'teacher') {
+      const Class = require('../models/Class');
+      const owned = await Class.find({ schoolId, teacherId: req.user._id }).select('_id');
+      const ownedIds = owned.map(c => c._id);
+      if (ownedIds.length === 0) return res.json({ items: [], pageInfo: { limit: safeLimit, skip: safeSkip } });
+      visibility.classId = { $in: ownedIds };
+    }
+
+    // Apply optional filters (within visibility)
+    if (classId) visibility.classId = classId;
+    if (studentId) visibility.studentId = studentId;
+
+    const items = await Payment.find(visibility)
+      .sort({ createdAt: -1 })
+      .populate('studentId', 'firstName lastName name studentCode')
+      .populate('classId', 'name')
+      .limit(safeLimit)
+      .skip(safeSkip)
+      .lean();
+
+    res.json({ items, pageInfo: { limit: safeLimit, skip: safeSkip } });
+  } catch (error) {
+    console.error('getPaymentsForTeacher error:', { message: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};

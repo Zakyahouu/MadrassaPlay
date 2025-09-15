@@ -192,7 +192,7 @@ const deleteTemplate = asyncHandler(async (req, res) => {
 
 // PATCH: update editable meta fields (admin only)
 const updateTemplateMeta = asyncHandler(async (req, res) => {
-  const editable = ['displayName','description','tags','category','iconUrl','isFeatured','deprecated','defaultConfigOverrides','status','attemptPolicy','xp','limitsMaxCreationsPerTeacher','assetsMaxImagesPerCreation'];
+  const editable = ['displayName','description','tags','category','iconUrl','isFeatured','deprecated','status','attemptPolicy','xp','limitsMaxCreationsPerTeacher','assetsMaxImagesPerCreation'];
   const bodyKeys = Object.keys(req.body || {});
   const illegal = bodyKeys.filter(k => !editable.includes(k));
   if (illegal.length) {
@@ -205,15 +205,6 @@ const updateTemplateMeta = asyncHandler(async (req, res) => {
   // If trying to change status from published back to draft, forbid
   if (template.status === 'published' && req.body.status === 'draft') {
     return res.status(400).json({ message: 'Cannot revert a published template to draft' });
-  }
-  // Validate defaultConfigOverrides keys
-  if (req.body.defaultConfigOverrides) {
-    const allowedKeys = Object.keys(template.formSchema?.settings || {});
-    const overrideKeys = Object.keys(req.body.defaultConfigOverrides);
-    const bad = overrideKeys.filter(k => !allowedKeys.includes(k));
-    if (bad.length) {
-      return res.status(400).json({ message: 'Invalid override keys', invalid: bad });
-    }
   }
   // Normalize xp/attemptPolicy if provided
   if (req.body.attemptPolicy && !['first_only','all'].includes(req.body.attemptPolicy)) {

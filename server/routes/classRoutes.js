@@ -14,7 +14,8 @@ const {
   getClassesByTeacher,
   checkConflicts,
   getClassStudents,
-  getClassesForStudent
+  getClassesForStudent,
+  getTeacherUniqueStudentCount
 } = require('../controllers/classController');
 const { protect, manager, teacher } = require('../middleware/authMiddleware');
 
@@ -23,6 +24,7 @@ router.use(protect);
 
 // Teacher-specific route (requires teacher role) - must be defined before manager-only guard
 router.get('/teacher', teacher, getClassesByTeacher);
+router.get('/teacher/students/count', teacher, getTeacherUniqueStudentCount);
 // Student-specific classes route
 router.get('/my', getClassesForStudent);
 

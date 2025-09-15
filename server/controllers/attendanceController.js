@@ -17,21 +17,28 @@ const history = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Invalid enrollmentId');
   }
-  const enrollment = await Enrollment.findById(enrollmentId).select('schoolId studentId');
+  const enrollment = await Enrollment.findById(enrollmentId).select('schoolId studentId classId');
   if (!enrollment) {
     res.status(404);
     throw new Error('Enrollment not found');
   }
   const role = req.user.role;
   const schoolId = (req.user.school?._id || req.user.school || '').toString();
-  // Authorization: managers/staff same school, or student owner
-  if ((role === 'manager' || role === 'staff')) {
+  // Authorization: managers/staff same school, student owner, or teacher who owns the class
+  if (role === 'manager' || role === 'staff') {
     if (enrollment.schoolId.toString() !== schoolId) {
       res.status(403);
       throw new Error('Access denied');
     }
   } else if (role === 'student') {
     if (enrollment.studentId.toString() !== req.user._id.toString()) {
+      res.status(403);
+      throw new Error('Access denied');
+    }
+  } else if (role === 'teacher') {
+    // Teacher can only read history if the enrollment belongs to a class they own
+    const klass = await Class.findById(enrollment.classId).select('teacherId');
+    if (!klass || klass.teacherId.toString() !== req.user._id.toString()) {
       res.status(403);
       throw new Error('Access denied');
     }

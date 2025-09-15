@@ -13,7 +13,7 @@ const { checkCanAttempt } = require('../services/attemptGate');
 // @access  Private/Student
 const submitGameResult = async (req, res) => {
   try {
-  const { gameCreationId, score, totalPossibleScore, assignmentId, isTest: isTestFromClient } = req.body;
+  const { gameCreationId, score, totalPossibleScore, assignmentId, isTest: isTestFromClient, answers, liveSessionId: liveSessionIdFromBody } = req.body;
   const studentId = req.user._id;
 
     if (!gameCreationId || score === undefined || totalPossibleScore === undefined) {
@@ -33,6 +33,17 @@ const submitGameResult = async (req, res) => {
     });
   }
 
+  // Detect live session context (either explicit liveSessionId in body or via in-room header)
+  let liveSessionId = liveSessionIdFromBody || null;
+  if (!liveSessionId) {
+    const hintedCode = req.headers['x-live-room'];
+    try {
+      if (hintedCode && req.liveGames && req.liveGames[hintedCode]) {
+        liveSessionId = req.liveGames[hintedCode].sessionId || null;
+      }
+    } catch {}
+  }
+
   let assignment;
     if (assignmentId) {
       assignment = await Assignment.findOne({ _id: assignmentId, gameCreations: gameCreationId });
@@ -47,12 +58,14 @@ const submitGameResult = async (req, res) => {
       });
     }
 
-    if (!assignment) {
+    // If no assignment, allow live session submissions (store as live-only, no XP)
+    if (!assignment && !liveSessionId) {
       return res.status(404).json({ message: 'No active assignment found for this game.' });
     }
 
     // Centralized gate
-    const gate = await checkCanAttempt({ assignment, studentId, gameId: gameCreationId });
+  // Skip gate for pure live submissions (no assignment)
+  const gate = assignment ? await checkCanAttempt({ assignment, studentId, gameId: gameCreationId }) : { allow: true, attemptNumber: 1, attemptLimit: 1, attemptsRemaining: 1 };
     if (!gate.allow) {
       // Map gate.reason to consistent HTTP status + message
       const status = gate.reason === 'attempt_limit' ? 400 : 403;
@@ -74,22 +87,23 @@ const submitGameResult = async (req, res) => {
     const attemptNumber = gate.attemptNumber;
 
   // Determine counted based on creation policy (first_only) and if a prior counted exists
-  const priorCounted = await GameResult.findOne({
+  const priorCounted = assignment ? await GameResult.findOne({
     student: studentId,
     gameCreation: gameCreationId,
     assignment: assignment._id,
     counted: true,
-  }).select('_id').lean();
+  }).select('_id').lean() : null;
   const hasCounted = !!priorCounted;
   const firstOnly = (creation.attemptPolicy || 'first_only') === 'first_only';
-  const counted = firstOnly ? !hasCounted : true;
+  // Live submissions are always counted for the live leaderboard; they don't affect assignments when none
+  const counted = assignment ? (firstOnly ? !hasCounted : true) : true;
 
   // Determine if this is a test run (teacher/admin/hotspot) - trusted over client flag
   const isTest = (req.user.role !== 'student') || !!isTestFromClient;
 
     // XP policy
     let xpAwarded = 0;
-    if (!isTest && counted) {
+  if (!isTest && counted && assignment) {
       // assignment mode: honor creation.xp.assignment
       const xpConf = creation.xp?.assignment || { enabled: true, amount: 0, firstAttemptOnly: true };
       if (xpConf.enabled) xpAwarded = Number(xpConf.amount || 0);
@@ -98,13 +112,15 @@ const submitGameResult = async (req, res) => {
   const gameResult = await GameResult.create({
       student: studentId,
       gameCreation: gameCreationId,
-      assignment: assignment._id,
+      assignment: assignment ? assignment._id : undefined,
+      liveSessionId: liveSessionId || undefined,
       score,
       totalPossibleScore,
       attemptNumber,
       counted,
       isTest,
       xpAwarded,
+  answers: Array.isArray(answers) ? answers.slice(0, 1000) : undefined,
     });
 
     // --- Update student's XP and points ---
@@ -112,7 +128,7 @@ const submitGameResult = async (req, res) => {
   const pointsEarned = score; // raw score as points
 
     const user = await User.findById(studentId);
-    if (user) {
+  if (user) {
       // Only add xpAwarded, not percentage-based anymore
       user.xp = (user.xp || 0) + (xpAwarded || 0);
       user.totalPoints = (user.totalPoints || 0) + pointsEarned;
@@ -124,7 +140,7 @@ const submitGameResult = async (req, res) => {
     }
 
   // New per-template tiered badge evaluation
-    if (!isTest && counted) {
+  if (!isTest && counted && assignment) {
       evaluateTemplateBadgeForResult({ userId: studentId, gameCreationId, percentage });
     }
 
@@ -169,7 +185,7 @@ const submitGameResult = async (req, res) => {
       pointsEarned,
       percentage,
       attemptNumber,
-      attemptsRemaining: gate.attemptsRemaining - 1 >= 0 ? gate.attemptsRemaining - 1 : 0,
+      attemptsRemaining: assignment ? (gate.attemptsRemaining - 1 >= 0 ? gate.attemptsRemaining - 1 : 0) : 0,
       counted,
       isTest,
     });
@@ -249,6 +265,55 @@ module.exports = {
   getAttemptHistory,
 };
 
+// @desc    Get single result with full details (teacher/admin only)
+// @route   GET /api/results/detail/:resultId
+// @access  Private
+module.exports.getResultDetail = async (req, res) => {
+  try {
+    const { resultId } = req.params;
+    const result = await GameResult.findById(resultId).populate('student', 'firstName lastName name').lean();
+    if (!result) return res.status(404).json({ message: 'Result not found' });
+
+    // Authorization: teacher must own the game; admin/manager allowed; student can only see own
+    const creation = await GameCreation.findById(result.gameCreation).select('owner content name template');
+    const isElevated = req.user && (req.user.role === 'admin' || req.user.role === 'manager');
+    const isTeacherOwner = req.user?.role === 'teacher' && creation?.owner?.toString() === req.user?._id?.toString();
+    const isOwnerStudent = req.user?._id?.toString() === result.student?._id?.toString();
+    if (!isElevated && !isTeacherOwner && !isOwnerStudent) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Build merged view of questions + answers
+    const content = Array.isArray(creation?.content) ? creation.content : [];
+    const ans = Array.isArray(result.answers) ? result.answers : [];
+    const byIndex = new Map(ans.filter(a=>typeof a?.index==='number').map(a=>[a.index, a]));
+    const items = content.map((q, idx) => ({
+      index: idx,
+      question: q.question || q.prompt || q.text || q.title || null,
+      options: q.options || q.choices || undefined,
+      correctIndex: typeof q.correctIndex === 'number' ? q.correctIndex : undefined,
+      correctText: q.correctText || undefined,
+      answer: byIndex.get(idx) || null,
+    }));
+
+    res.json({
+      result: {
+        _id: result._id,
+        student: result.student,
+        score: result.score,
+        totalPossibleScore: result.totalPossibleScore,
+        attemptNumber: result.attemptNumber,
+        counted: result.counted,
+        createdAt: result.createdAt,
+      },
+      game: { _id: creation?._id, name: creation?.name, template: creation?.template },
+      items,
+    });
+  } catch (e) {
+    res.status(500).json({ message: 'Server Error', error: e.message });
+  }
+};
+
 // --- Student self metrics ---
 // @desc    Summary metrics for the logged-in student
 // @route   GET /api/results/me/summary
@@ -314,6 +379,32 @@ module.exports.getMyRecentResults = async (req, res) => {
       .lean();
     const mapped = results.map(r => ({
       name: r.gameCreation?.name || 'Game',
+      percentage: r.totalPossibleScore > 0 ? Math.round((r.score / r.totalPossibleScore) * 100) : 0,
+      createdAt: r.createdAt,
+    }));
+    res.json(mapped);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// @desc    Recent live session results for the logged-in student
+// @route   GET /api/results/me/live?limit=5
+// @access  Private/Student
+module.exports.getMyRecentLiveResults = async (req, res) => {
+  try {
+    const studentId = req.user._id;
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit || '5')));
+    const results = await GameResult.find({ student: studentId, isTest: false, liveSessionId: { $exists: true, $ne: null } })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate('gameCreation', 'name')
+      .populate('liveSessionId', 'code title')
+      .select('score totalPossibleScore createdAt gameCreation liveSessionId')
+      .lean();
+    const mapped = results.map(r => ({
+      name: r.liveSessionId?.title || r.gameCreation?.name || 'Live Game',
+      code: r.liveSessionId?.code || null,
       percentage: r.totalPossibleScore > 0 ? Math.round((r.score / r.totalPossibleScore) * 100) : 0,
       createdAt: r.createdAt,
     }));

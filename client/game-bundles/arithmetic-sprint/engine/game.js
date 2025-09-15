@@ -9,8 +9,8 @@
   const progressFill = document.getElementById('progressFill');
   const finishedEl = document.getElementById('finished');
 
-  // Platform will inject these via iframe global? Provide safe fallback.
-  let creationData = window.__GAME_CONFIG__ || null; // { config, content, callbacks }
+  // Platform init: prefer INIT_GAME postMessage, fallback to global injection
+  let creationData = window.__GAME_CONFIG__ || null; // { config, content, callbacks, _id }
 
   let state = { timeLeft:0, score:0, currentIndex:0, questions:[], active:false };
   let interval = null;
@@ -142,9 +142,31 @@
     if(creationData?.callbacks?.onComplete){
       creationData.callbacks.onComplete({ score: state.score, totalPossibleScore: state.questions.length });
     }
-  updateProgress();
+    // Also emit standard postMessage events for live/recording
+    try {
+      const totalTimeMs = Math.max(0, (creationData?.config?.timeLimit || 0) - state.timeLeft) * 1000;
+      window.parent.postMessage({ type: 'LIVE_FINISH', payload: { totalTimeMs } }, '*');
+    } catch {}
+    try {
+      window.parent.postMessage({ type: 'GAME_COMPLETE', payload: { gameCreationId: creationData?._id, score: state.score, totalPossibleScore: state.questions.length } }, '*');
+    } catch {}
+    updateProgress();
   }
 
   startBtn.addEventListener('click', startGame);
+
+  // Support postMessage INIT_GAME bootstrap
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'INIT_GAME') {
+      creationData = e.data.payload || creationData;
+      // auto-show start UI if present
+      try { startBtn.classList.remove('hidden'); finishedEl.classList.add('hidden'); } catch {}
+    }
+  });
+
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creationData && creationData.config && creationData.config.autoStart) {
+    try { startGame(); } catch {}
+  }
 
 })();

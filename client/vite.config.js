@@ -21,6 +21,10 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/badge-icons': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
   },
   // NEW: Add the optimizeDeps configuration

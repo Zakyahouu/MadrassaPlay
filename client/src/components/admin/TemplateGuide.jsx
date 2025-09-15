@@ -56,9 +56,21 @@ const TemplateGuide = () => {
         <ul className="list-disc pl-6 text-gray-700 text-sm space-y-1">
           <li>Parent posts INIT_GAME with payload: creation data, settings, content, assignmentId, mode, isTest</li>
           <li>Engine shows a short countdown, runs gameplay</li>
-          <li>On finish, engine posts GAME_COMPLETE with: {'{ gameCreationId, score, totalPossibleScore, ... }'}</li>
+          <li>During play (optional but recommended for online mode), engine can post LIVE_ANSWER with: {'{ correct: boolean, deltaMs: number, scoreDelta?: number, currentScore?: number }'} — deltaMs is the time since the last question</li>
+          <li>When done (online or not), engine posts GAME_COMPLETE with: {'{ gameCreationId, score, totalPossibleScore, answers?: AnswerItem[] }'}</li>
+          <li>For online mode, engine may also post LIVE_FINISH with: {'{ totalTimeMs: number }'} so the leaderboard locks in the final time</li>
         </ul>
         <p className="text-gray-500 text-sm">Engines must not fetch external scripts. Keep everything local.</p>
+        <div className="mt-3 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded p-3">
+          <div className="font-semibold mb-1">AnswerItem recommendation</div>
+          <div>{`{ index: number, correct: boolean, deltaMs: number, ...engineSpecific }`}</div>
+          <div className="mt-1">Examples:</div>
+          <ul className="list-disc pl-6">
+            <li>Multiple-choice: {'{ index, selectedIndex, correctIndex, correct, deltaMs }'}</li>
+            <li>Word-builder: {'{ index, guess, target, correct, deltaMs }'}</li>
+            <li>Target-sum: {'{ index, target, selected: number[], correct, deltaMs }'}</li>
+          </ul>
+        </div>
       </section>
 
       <section>

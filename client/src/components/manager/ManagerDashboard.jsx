@@ -31,7 +31,7 @@ export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   const [stats, setStats] = useState([
     { title: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', change: 0 },
     { title: 'Active Teachers', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
@@ -40,15 +40,18 @@ export const ManagerDashboard = () => {
   ]);
   const [loading, setLoading] = useState(true);
 
+  // School trial status state
+  const [schoolTrial, setSchoolTrial] = useState(null);
+  const [loadingTrial, setLoadingTrial] = useState(true);
+
   // Fetch real stats data
+  // Refetch stats and school trial info on page load and when switching to overview tab
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
         if (!token) return;
-
         const config = { headers: { Authorization: `Bearer ${token}` } };
-
         // Fetch counts for different user types
         const [studentsRes, teachersRes, classesRes, staffRes] = await Promise.all([
           axios.get('/api/users/count?role=student', config),
@@ -56,38 +59,12 @@ export const ManagerDashboard = () => {
           axios.get('/api/classes', config),
           axios.get('/api/users/count?role=staff', config)
         ]);
-
         const newStats = [
-          { 
-            title: 'Total Students', 
-            value: studentsRes.data.count?.toString() || '0', 
-            icon: Users, 
-            color: 'text-blue-600', 
-            change: 0 
-          },
-          { 
-            title: 'Active Teachers', 
-            value: teachersRes.data.count?.toString() || '0', 
-            icon: UserCheck, 
-            color: 'text-green-600', 
-            change: 0 
-          },
-          { 
-            title: 'Total Classes', 
-            value: (classesRes.data?.length || 0).toString(), 
-            icon: BookOpen, 
-            color: 'text-purple-600', 
-            change: 0 
-          },
-          { 
-            title: 'Total Staff', 
-            value: staffRes.data.count?.toString() || '0', 
-            icon: BarChart3, 
-            color: 'text-orange-600', 
-            change: 0 
-          },
+          { title: 'Total Students', value: studentsRes.data.count?.toString() || '0', icon: Users, color: 'text-blue-600', change: 0 },
+          { title: 'Active Teachers', value: teachersRes.data.count?.toString() || '0', icon: UserCheck, color: 'text-green-600', change: 0 },
+          { title: 'Total Classes', value: (classesRes.data?.length || 0).toString(), icon: BookOpen, color: 'text-purple-600', change: 0 },
+          { title: 'Total Staff', value: staffRes.data.count?.toString() || '0', icon: BarChart3, color: 'text-orange-600', change: 0 },
         ];
-
         setStats(newStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -95,9 +72,34 @@ export const ManagerDashboard = () => {
         setLoading(false);
       }
     };
-
+    const fetchSchoolTrial = async () => {
+      try {
+        const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
+        if (!token || !user?.school) return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get(`/api/schools/${user.school}`, config);
+        const school = res.data;
+        // Calculate days left
+        let daysLeft = null;
+        if (school.trialExpiresAt) {
+          const now = new Date();
+          const expires = new Date(school.trialExpiresAt);
+          daysLeft = Math.max(0, Math.ceil((expires - now) / (1000 * 60 * 60 * 24)));
+        }
+        setSchoolTrial({
+          status: school.status,
+          trialExpiresAt: school.trialExpiresAt,
+          daysLeft,
+        });
+      } catch (err) {
+        setSchoolTrial(null);
+      } finally {
+        setLoadingTrial(false);
+      }
+    };
     fetchStats();
-  }, []);
+    fetchSchoolTrial();
+  }, [activeTab, user?.school]);
 
   const quickActions = [
     {
@@ -153,9 +155,48 @@ export const ManagerDashboard = () => {
   ];
 
   const renderTabContent = () => {
+    // Show trial status at top of overview tab
+    if (activeTab === 'overview') {
+      return (
+        <>
+          <div className="mb-6">
+            <div className={
+              schoolTrial?.status === 'trial'
+                ? "bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+                : schoolTrial?.status === 'active'
+                ? "bg-green-50 border border-green-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+                : "bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+            }>
+              <div>
+                <div className={
+                  schoolTrial?.status === 'trial' ? "font-semibold text-yellow-700" :
+                  schoolTrial?.status === 'active' ? "font-semibold text-green-700" :
+                  "font-semibold text-gray-700"
+                }>School Status</div>
+                {loadingTrial ? (
+                  <div className="text-gray-500">Loading trial info...</div>
+                ) : schoolTrial ? (
+                  <div className="text-gray-800 mt-1">
+                    Status: <span className="font-bold">{schoolTrial.status}</span><br />
+                    {schoolTrial.status === 'trial' && (
+                      <>
+                        Trial ends: <span className="font-bold">{schoolTrial.trialExpiresAt ? new Date(schoolTrial.trialExpiresAt).toLocaleDateString() : 'N/A'}</span><br />
+                        Days left: <span className="font-bold">{schoolTrial.daysLeft !== null ? schoolTrial.daysLeft : 'N/A'}</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-red-500">Trial info not available.</div>
+                )}
+              </div>
+            </div>
+          </div>
+          <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />
+        </>
+      );
+    }
+    // ...existing code...
     switch (activeTab) {
-      case 'overview':
-        return <OverviewTab stats={stats} quickActions={quickActions} notifications={notifications} setActiveTab={setActiveTab} loading={loading} />;
       case 'classes':
         return <ClassesTab onNavigateToAttendance={(classId)=>{ setActiveTab('attendance'); setTimeout(()=>{
           const ev = new CustomEvent('attendance:setSelectedClass', { detail: { classId } });
@@ -181,7 +222,6 @@ export const ManagerDashboard = () => {
         return <AdsTab />;
       case 'reports':
         return <ReportsTab />;
-  // legacy staff tab hidden
       default:
         return (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">

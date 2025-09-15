@@ -16,6 +16,10 @@ let currentQuestionIndex = 0;
 let score = 0;
 let gameConfig = {};
 let gameCreationId = null;
+let callbacks = null;
+// instrumentation for live + reporting
+let questionStartMs = 0;
+let answers = [];
 
 // --- Core Game Logic ---
 
@@ -24,9 +28,11 @@ function initializeGame(data) {
   gameConfig = data.config?.settings || data.config || {};
   questions = data.questions || data.content || data.config?.content || [];
   gameCreationId = data._id;
+  callbacks = data.callbacks || null;
 
   currentQuestionIndex = 0;
   score = 0;
+  answers = [];
 
   gameContainer.classList.remove('hidden');
   resultsScreen.classList.add('hidden');
@@ -58,12 +64,16 @@ function showNextQuestion() {
     button.addEventListener('click', handleOptionSelect);
     optionsContainer.appendChild(button);
   });
+
+  // mark question start time
+  questionStartMs = Date.now();
 }
 
 function handleOptionSelect(e) {
   const selectedButton = e.target;
   const selectedIndex = parseInt(selectedButton.dataset.index);
   const correctIndex = parseInt(questions[currentQuestionIndex].correctOptionIndex);
+  const deltaMs = Math.max(0, Date.now() - (questionStartMs || Date.now()));
 
   document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
 
@@ -78,6 +88,22 @@ function handleOptionSelect(e) {
     }
   }
 
+  // record answer and emit live event
+  const correct = selectedIndex === correctIndex;
+  answers.push({
+    index: currentQuestionIndex,
+    selectedIndex,
+    correctIndex,
+    correct,
+    deltaMs,
+  });
+  try {
+    window.parent.postMessage({
+      type: 'LIVE_ANSWER',
+      payload: { correct, deltaMs, scoreDelta: correct ? 1 : 0, currentScore: score }
+    }, '*');
+  } catch {}
+
   setTimeout(() => {
     currentQuestionIndex++;
     showNextQuestion();
@@ -89,14 +115,26 @@ function showResults() {
   resultsScreen.classList.remove('hidden');
   finalScore.textContent = `${score} / ${questions.length}`;
 
-  window.parent.postMessage({
-    type: 'GAME_COMPLETE',
-    payload: {
-      gameCreationId: gameCreationId,
-      score: score,
-      totalPossibleScore: questions.length
-    }
-  }, '*');
+  // compute total time and notify finish for live leaderboard
+  const totalTimeMs = answers.reduce((acc, a) => acc + (Number(a.deltaMs) || 0), 0);
+  if (callbacks && callbacks.onComplete) {
+    callbacks.onComplete({ score, totalPossibleScore: questions.length, answers });
+  }
+  try {
+    window.parent.postMessage({ type: 'LIVE_FINISH', payload: { totalTimeMs } }, '*');
+  } catch {}
+
+  try {
+    window.parent.postMessage({
+      type: 'GAME_COMPLETE',
+      payload: {
+        gameCreationId: gameCreationId,
+        score: score,
+        totalPossibleScore: questions.length,
+        answers
+      }
+    }, '*');
+  } catch {}
 }
 
 // --- Event Listeners ---
@@ -105,6 +143,10 @@ window.addEventListener('message', (event) => {
     initializeGame(event.data.payload);
   }
 });
+// If pre-injected config exists and autoStart flag is present, optionally start
+if (window.__GAME_CONFIG__ && window.__GAME_CONFIG__.config && window.__GAME_CONFIG__.config.autoStart) {
+  try { initializeGame(window.__GAME_CONFIG__); } catch {}
+}
 
 restartButton.addEventListener('click', () => {
   alert("Restarting is disabled for this game mode.");

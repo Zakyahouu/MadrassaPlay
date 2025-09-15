@@ -1,9 +1,11 @@
 (function(){
-	let creation, settings, items=[], idx=0, score=0, timerIv, timeLeft=0, selected=null;
+	let creation, settings, items=[], idx=0, score=0, timerIv, timeLeft=0, selected=null, selectedLabel=null;
 	const byId=(id)=>document.getElementById(id);
 	const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
 	const enterBtn=byId('enterBtn'); const qIdx=byId('qIdx'); const timer=byId('timer'); const scoreEl=byId('score');
 	const qEl=byId('question'); const opts=byId('options'); const explain=byId('explain'); const nextBtn=byId('nextBtn');
+	// instrumentation
+	let qStartMs = 0; const answers = [];
 
 	function show(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
 	function countdown(){ show('countdown'); let n=3; const c=document.querySelector('#countdown .count'); c.textContent=n; const iv=setInterval(()=>{ n--; c.textContent=n; if(n<=0){ clearInterval(iv); start(); } }, 800); }
@@ -24,6 +26,7 @@
 		explain.textContent = '';
 		nextBtn.disabled = true;
 		selected = null;
+	selectedLabel = null;
 		// build options list from available fields A-D; enforce single-selection radio-like
 		const rawOptions = [
 			['A', it.optionA], ['B', it.optionB], ['C', it.optionC], ['D', it.optionD]
@@ -43,6 +46,7 @@
 			if (timerIv) clearInterval(timerIv);
 			timerIv = setInterval(()=>{ timeLeft--; timer.textContent = `⏱️ ${timeLeft}s`; if (timeLeft<=0){ clearInterval(timerIv); lockAndReveal(); } }, 1000);
 		} else { timer.textContent = ''; if (timerIv) clearInterval(timerIv); }
+	qStartMs = Date.now();
 	}
 
 	function select(btn, key, correct){
@@ -50,6 +54,7 @@
 		[...opts.children].forEach(b=> b.classList.remove('selected'));
 		btn.classList.add('selected');
 		selected = key;
+	selectedLabel = btn.textContent;
 		nextBtn.disabled = false;
 	}
 
@@ -57,8 +62,14 @@
 		const it=current(); if(!it) return;
 		if (timerIv) { clearInterval(timerIv); timerIv=null; }
 		// grade
-		const ok = String(selected||'').toUpperCase() === String(it.correct||'A').toUpperCase();
+	const correctKey = String(it.correct||'A').toUpperCase();
+	const selectedKey = String(selected||'').toUpperCase();
+	const ok = selectedKey === correctKey;
+	const deltaMs = Math.max(0, Date.now() - (qStartMs || Date.now()));
 		if (ok) score++;
+	// record + emit live
+	answers.push({ index: idx, correct: ok, selectedText: String(selectedLabel||'').trim(), timeMs: deltaMs });
+	try { window.parent.postMessage({ type:'LIVE_ANSWER', payload:{ correct: ok, deltaMs, scoreDelta: ok?1:0, currentScore: score }}, '*'); } catch {}
 		// mark options
 		[...opts.children].forEach(b=>{
 			const isThis = b.classList.contains('selected');
@@ -76,7 +87,15 @@
 	nextBtn.onclick = ()=>{ if([...opts.children].some(b=>b.disabled)) { idx++; render(); } else { lockAndReveal(); } };
 
 	function start(){ show('play'); idx=0; score=0; render(); }
-	function finish(){ show('done'); const total=items.length; const summary=byId('summary'); summary.textContent = `You scored ${score} / ${total}`; window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total }}, '*'); }
+	function finish(){
+		show('done');
+		const total=items.length;
+		const summary=byId('summary');
+		summary.textContent = `You scored ${score} / ${total}`;
+		const totalTimeMs = answers.reduce((a,b)=> a + (Number(b.timeMs)||0), 0);
+		try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); } catch {}
+		window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*');
+	}
 
 	window.addEventListener('message', (e)=>{
 		if (e.data?.type==='INIT_GAME'){

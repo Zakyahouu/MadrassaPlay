@@ -1,24 +1,45 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
+
+// Simple in-memory cache to avoid repeated network calls on re-mounts
+// Keyed by role, expires after 5 minutes
+const adsCache = {};
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const AdsBar = ({ userRole, schoolId }) => {
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const fetchedRef = useRef(false); // guard against React.StrictMode double-invoke
+
+  const role = useMemo(() => userRole || 'students', [userRole]);
 
   useEffect(() => {
     const fetchAds = async () => {
       try {
+        // StrictMode guard: prevent duplicate run on mount
+        if (fetchedRef.current) return;
+        fetchedRef.current = true;
+
+        // Serve from cache if fresh
+        const cached = adsCache[role];
+        const now = Date.now();
+        if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+          setAds(cached.data);
+          setIndex(0);
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const token = getAuthToken();
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const role = userRole || 'students';
-        console.log('[AdsBar] fetching /api/advertisements/user/' + role);
+        // console.debug('[AdsBar] fetching /api/advertisements/user/' + role);
         const res = await axios.get(`/api/advertisements/user/${role}`, config);
-        console.log('[AdsBar] response', res.status, Array.isArray(res.data) ? res.data.length : typeof res.data);
         const bannerAds = (res.data || []).filter(a => a.location === 'banner');
-        console.log('[AdsBar] bannerAds', bannerAds.length);
+        // cache result
+        adsCache[role] = { data: bannerAds, timestamp: Date.now() };
         setAds(bannerAds);
         setIndex(0);
       } catch (e) {
@@ -29,7 +50,7 @@ const AdsBar = ({ userRole, schoolId }) => {
       }
     };
     fetchAds();
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     if (ads.length <= 1) return;

@@ -1,5 +1,6 @@
+/* Word Builder Engine - Unified INIT/COMPLETE contract */
 (function(){
-  let creation, items=[], settings, idx=0, score=0;
+  let creation = window.__GAME_CONFIG__ || null, items=[], settings, idx=0, score=0;
   const byId=(id)=>document.getElementById(id);
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
   const enterBtn=byId('enterBtn'); const wIdx=byId('wIdx'); const scoreEl=byId('score'); const hint=byId('hint');
@@ -39,12 +40,25 @@
 
   function start(){ show('play'); idx=0; score=0; render(); }
 
-  function finish(){ show('done'); summary.textContent=`You formed ${score} / ${items.length}`; window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length }}, '*'); }
+  function finish(){
+    show('done');
+    summary.textContent=`You formed ${score} / ${items.length}`;
+    // Unified completion contract
+    if(creation?.callbacks?.onComplete){
+      creation.callbacks.onComplete({ score, totalPossibleScore: items.length });
+    }
+    try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs: null }}, '*'); } catch{}
+    try { window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length }}, '*'); } catch{}
+  }
 
   window.addEventListener('message', (e)=>{
     if (e.data?.type==='INIT_GAME'){
       const p=e.data.payload; creation=p; items=Array.isArray(p.content)?p.content:[]; settings=p.config||{}; show('ready'); enterBtn.onclick = countdown; }
   });
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creation && creation.config && creation.config.autoStart) {
+    try { show('ready'); enterBtn.onclick = countdown; } catch {}
+  }
 
   undoBtn.onclick = ()=>{ const last=assembled.lastElementChild; if(last) last.remove(); };
   clearBtn.onclick = ()=>{ assembled.innerHTML=''; };

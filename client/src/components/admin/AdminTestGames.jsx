@@ -92,7 +92,7 @@ const AdminTestGames = () => {
         </div>
       ) : (
         <EmptyState
-          icon={<Joystick className="w-12 h-12 text-indigo-500" />}
+          icon={<Joystick className="w-12 h-12 text-indigo-500 text-center" />}
           title="No test games yet"
           message="Create games from templates to start testing!"
         />

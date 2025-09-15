@@ -11,7 +11,7 @@ const EmptyState = ({
 }) => {
   return (
     <div className={`text-center py-12 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-dashed border-gray-200 ${className}`}>
-      <div className="text-6xl mb-4 select-none" aria-hidden="true">{icon}</div>
+      <div className="text-6xl mb-4 select-none flex justify-center" aria-hidden="true">{icon}</div>
       <p className="text-gray-700 font-medium mb-1">{title}</p>
       <p className="text-sm text-gray-500 mb-4">{message}</p>
       {actionLabel && onAction && (
