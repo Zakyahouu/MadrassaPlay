@@ -84,7 +84,8 @@ const freezeMonthlyData = async (schoolId, year, month, frozenBy) => {
 
     const teacherPayouts = teacherPayoutsData.length > 0 ? {
       ...teacherPayoutsData[0],
-      teacherCount: teacherPayoutsData[0].teacherCount.length
+      teacherCount: teacherPayoutsData[0].teacherCount.length,
+      totalPaid: teacherPayoutsData[0].totalPaid
     } : { totalCalculated: 0, totalPaid: 0, totalRemaining: 0, teacherCount: 0 };
 
     // 4. Aggregate employee salaries
@@ -109,7 +110,8 @@ const freezeMonthlyData = async (schoolId, year, month, frozenBy) => {
 
     const employeeSalaries = employeeSalariesData.length > 0 ? {
       ...employeeSalariesData[0],
-      employeeCount: employeeSalariesData[0].employeeCount.length
+      employeeCount: employeeSalariesData[0].employeeCount.length,
+      totalPaid: employeeSalariesData[0].totalPaid
     } : { totalCalculated: 0, totalPaid: 0, totalRemaining: 0, employeeCount: 0 };
 
     // 5. Aggregate student debts
@@ -130,11 +132,12 @@ const freezeMonthlyData = async (schoolId, year, month, frozenBy) => {
 
     // 6. Calculate totals
     const totalIncome = studentPayments.totalAmount + incomeData.totalAmount;
-    const totalExpenses = expenseData.totalAmount + employeeSalaries.totalPaid;
+    const totalExpenses = expenseData.totalAmount;
     const manualIncome = incomeData.totalAmount;
     const teacherEarnings = teacherPayouts.totalCalculated;
     const employeeSalariesPaid = employeeSalaries.totalPaid;
-    const netBalance = totalIncome - totalExpenses - teacherEarnings;
+    const totalStaffSalariesPaid = teacherPayouts.totalPaid + employeeSalaries.totalPaid;
+    const netBalance = totalIncome - totalExpenses - totalStaffSalariesPaid;
 
     // 7. Create or update the monthly summary
     const summary = await MonthlyFinancialSummary.findOneAndUpdate(
@@ -148,6 +151,9 @@ const freezeMonthlyData = async (schoolId, year, month, frozenBy) => {
         totalDebts: studentDebts.totalDebt,
         teacherEarnings,
         manualIncome,
+        totalStaffSalariesPaid,
+        employeeCount: employeeSalaries.employeeCount,
+        teacherCount: teacherPayouts.teacherCount,
         netBalance,
         lastCalculated: new Date(),
         isCalculated: true,
@@ -253,18 +259,20 @@ const calculateLiveFinancialData = async (schoolId, year, month) => {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-  // Calculate student payments
+  // Calculate student payments (only actual money received, exclude debt payments)
   const studentPaymentsData = await Payment.aggregate([
     {
       $match: {
         schoolId: schoolIdObj,
-        createdAt: { $gte: startDate, $lte: endDate }
+        createdAt: { $gte: startDate, $lte: endDate },
+        kind: { $ne: 'debt_payment' }, // Exclude debt payments
+        classId: { $exists: true, $ne: null } // Only include class-based payments
       }
     },
     {
       $group: {
         _id: null,
-        totalIncome: { $sum: '$amount' },
+        totalIncome: { $sum: '$taken' }, // Use 'taken' field (actual money received)
         paymentCount: { $sum: 1 }
       }
     }
@@ -311,11 +319,28 @@ const calculateLiveFinancialData = async (schoolId, year, month) => {
 
   const manualIncome = manualIncomeData.length > 0 ? manualIncomeData[0].totalIncome : 0;
 
-  // Calculate teacher earnings
-  const teacherEarningsData = await calculateTeacherEarnings(schoolId, year, month);
-  const totalTeacherEarnings = teacherEarningsData.totalTeacherEarnings;
+  // Calculate teacher payouts (paid amounts only)
+  const teacherPayoutsData = await TeacherPayout.aggregate([
+    {
+      $match: {
+        schoolId: schoolIdObj,
+        year,
+        month
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalPaid: { $sum: '$paidAmount' },
+        teacherCount: { $addToSet: '$teacherId' }
+      }
+    }
+  ]);
 
-  // Calculate employee salaries
+  const totalTeacherEarningsPaid = teacherPayoutsData.length > 0 ? teacherPayoutsData[0].totalPaid : 0;
+  const teacherCount = teacherPayoutsData.length > 0 ? teacherPayoutsData[0].teacherCount.length : 0;
+
+  // Calculate employee salaries (paid amounts only)
   const employeeSalariesData = await EmployeeSalaryTransaction.aggregate([
     {
       $match: {
@@ -327,12 +352,20 @@ const calculateLiveFinancialData = async (schoolId, year, month) => {
     {
       $group: {
         _id: null,
-        totalPaid: { $sum: '$paidAmount' }
+        totalPaid: { $sum: '$paidAmount' },
+        totalCalculated: { $sum: '$calculatedSalary' },
+        employeeCount: { $addToSet: '$employeeId' }
       }
     }
   ]);
 
-  const totalEmployeeSalaries = employeeSalariesData.length > 0 ? employeeSalariesData[0].totalPaid : 0;
+  const totalEmployeeSalariesPaid = employeeSalariesData.length > 0 ? employeeSalariesData[0].totalPaid : 0;
+  const totalEmployeeSalariesCalculated = employeeSalariesData.length > 0 ? employeeSalariesData[0].totalCalculated : 0;
+  const employeeCount = employeeSalariesData.length > 0 ? employeeSalariesData[0].employeeCount.length : 0;
+
+  // Get calculated teacher earnings for transparency
+  const teacherEarningsData = await calculateTeacherEarnings(schoolId, year, month);
+  const totalTeacherEarningsCalculated = teacherEarningsData.totalTeacherEarnings;
 
   // Calculate student debts
   const debtData = await StudentFinancial.aggregate([
@@ -349,8 +382,10 @@ const calculateLiveFinancialData = async (schoolId, year, month) => {
 
   const totalDebts = debtData.length > 0 ? debtData[0].totalDebts : 0;
 
-  // Calculate net balance
-  const netBalance = totalIncome + manualIncome - totalExpenses - totalTeacherEarnings - totalEmployeeSalaries;
+  // Calculate net balance (using only paid amounts)
+  const netBalance = totalIncome + manualIncome - totalExpenses - totalTeacherEarningsPaid - totalEmployeeSalariesPaid;
+  const totalStaffSalariesPaid = totalTeacherEarningsPaid + totalEmployeeSalariesPaid;
+  const totalStaffSalariesCalculated = totalTeacherEarningsCalculated + totalEmployeeSalariesCalculated;
 
   return {
     success: true,
@@ -360,11 +395,17 @@ const calculateLiveFinancialData = async (schoolId, year, month) => {
       totalIncome,
       totalExpenses,
       totalDebts,
-      teacherEarnings: totalTeacherEarnings,
-      employeeSalaries: totalEmployeeSalaries,
+      teacherEarnings: totalTeacherEarningsPaid,
+      employeeSalaries: totalEmployeeSalariesPaid,
+      teacherEarningsCalculated: totalTeacherEarningsCalculated,
+      employeeSalariesCalculated: totalEmployeeSalariesCalculated,
       manualIncome,
       netBalance,
       paymentCount,
+      totalStaffSalariesPaid,
+      totalStaffSalariesCalculated,
+      teacherCount,
+      employeeCount,
       lastCalculated: new Date(),
       isFrozen: false,
       dataSource: 'live'

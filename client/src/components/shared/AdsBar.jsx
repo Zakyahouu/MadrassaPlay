@@ -37,10 +37,13 @@ const AdsBar = ({ userRole, schoolId }) => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         // console.debug('[AdsBar] fetching /api/advertisements/user/' + role);
         const res = await axios.get(`/api/advertisements/user/${role}`, config);
-        const bannerAds = (res.data || []).filter(a => a.location === 'banner');
+        console.log('[AdsBar] Raw response:', res.data);
+        // Show all active ads, not just banner ads
+        const activeAds = (res.data || []).filter(a => a.status === 'active');
+        console.log('[AdsBar] Active ads after filtering:', activeAds);
         // cache result
-        adsCache[role] = { data: bannerAds, timestamp: Date.now() };
-        setAds(bannerAds);
+        adsCache[role] = { data: activeAds, timestamp: Date.now() };
+        setAds(activeAds);
         setIndex(0);
       } catch (e) {
         console.error('[AdsBar] fetch error', e);

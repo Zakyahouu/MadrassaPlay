@@ -6,7 +6,7 @@ const path = require('path');
 // @route   POST /api/advertisements
 // @access  Private (Manager)
 const createAdvertisement = asyncHandler(async (req, res) => {
-  const { title, description, startDate, endDate, targetAudience, location } = req.body;
+  const { title, description, startDate, endDate, targetAudience, location, dateTime } = req.body;
   const schoolId = req.user?.school?._id || req.user?.school;
   console.log('[ads] createAdvertisement request', {
     userId: req.user?._id?.toString?.(),
@@ -27,12 +27,28 @@ const createAdvertisement = asyncHandler(async (req, res) => {
     throw new Error('Please provide all required fields');
   }
 
+  // Validate dates
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  const dateTimeObj = new Date(dateTime || startDate); // Use dateTime if provided, otherwise use startDate
+
+  if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime()) || isNaN(dateTimeObj.getTime())) {
+    res.status(400);
+    throw new Error('Invalid date format');
+  }
+
+  if (startDateObj >= endDateObj) {
+    res.status(400);
+    throw new Error('Start date must be before end date');
+  }
+
   const advertisement = await Advertisement.create({
     schoolId,
     title,
     description,
-    startDate: startDate ? new Date(startDate) : null,
-    endDate: endDate ? new Date(endDate) : null,
+    startDate: startDateObj,
+    endDate: endDateObj,
+    dateTime: dateTimeObj,
     targetAudience,
     location,
     bannerImageUrl: null
@@ -190,8 +206,7 @@ const getAdvertisementsForUser = asyncHandler(async (req, res) => {
   // Get current date for filtering active advertisements
   const now = new Date();
 
-
-  // Include banners regardless of schedule; other ads must be active by time
+  // Find advertisements that are currently active (within date range)
   const advertisements = await Advertisement.find({
     schoolId,
     $and: [
@@ -204,14 +219,45 @@ const getAdvertisementsForUser = asyncHandler(async (req, res) => {
       },
       {
         $or: [
-          { dateTime: { $lte: now } },
-          { location: 'banner' }
+          // Regular ads: must be within date range and active
+          {
+            $and: [
+              { startDate: { $lte: now } },
+              { endDate: { $gte: now } },
+              { status: 'active' }
+            ]
+          },
+          // Banner ads: always show if active (regardless of date)
+          {
+            $and: [
+              { location: 'banner' },
+              { status: 'active' }
+            ]
+          }
         ]
       }
     ]
   })
     .sort({ dateTime: -1 })
     .limit(10); // Limit to 10 most recent ads
+
+  console.log('[ads] getAdvertisementsForUser', {
+    role,
+    schoolId: schoolId?.toString?.(),
+    now: now.toISOString(),
+    foundAds: advertisements.length,
+    ads: advertisements.map(ad => ({
+      id: ad._id?.toString?.(),
+      title: ad.title,
+      targetAudience: ad.targetAudience,
+      location: ad.location,
+      status: ad.status,
+      startDate: ad.startDate?.toISOString?.(),
+      endDate: ad.endDate?.toISOString?.(),
+      dateTime: ad.dateTime?.toISOString?.()
+    }))
+  });
+
   res.json(advertisements);
 });
 

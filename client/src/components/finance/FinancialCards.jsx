@@ -36,15 +36,15 @@ const FinancialCards = ({ data, formatCurrency }) => {
       description: 'Manual expenses'
     },
     {
-      title: 'Employee Salaries',
-      value: data.employeeSalaries || 0,
-      icon: TrendingUp,
+      title: 'Staff Salaries Paid',
+      value: data.totalStaffSalariesPaid || 0,
+      icon: DollarSign,
       color: 'purple',
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
       borderColor: 'border-purple-200',
       textColor: 'text-purple-700',
-      description: 'Staff salary payments'
+      description: `Only paid amounts - ${data.employeeCount || 0} Employees, ${data.teacherCount || 0} Teachers`
     },
     {
       title: 'Total Debts',

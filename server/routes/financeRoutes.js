@@ -30,10 +30,10 @@ router.use(authorize('manager'));
 // @access  Private (Manager)
 router.get('/overview/:schoolId/:year/:month', getFinancialOverview);
 
-// @route   GET /api/finance/transactions/:schoolId/:year/:month
+// @route   GET /api/finance/student-payments/:schoolId/:year/:month
 // @desc    Get transactions for a specific month
 // @access  Private (Manager)
-router.get('/transactions/:schoolId/:year/:month', getTransactions);
+router.get('/student-payments/:schoolId/:year/:month', getTransactions);
 
 // @route   POST /api/finance/calculate/:schoolId/:year/:month
 // @desc    Recalculate monthly financial data

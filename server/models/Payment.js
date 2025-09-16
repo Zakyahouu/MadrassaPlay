@@ -5,13 +5,13 @@ const mongoose = require('mongoose');
 const paymentSchema = new mongoose.Schema(
   {
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
+    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: false }, // Optional for debt payments
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true },
+    enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: false }, // Optional for debt payments
     amount: { type: Number, required: true, min: 1 }, // integers only
     kind: {
       type: String,
-      enum: ['pay_sessions', 'pay_cycles'],
+      enum: ['pay_sessions', 'pay_cycles', 'debt_payment'],
       required: true,
     },
     method: { type: String, enum: ['cash'], default: 'cash', required: true },

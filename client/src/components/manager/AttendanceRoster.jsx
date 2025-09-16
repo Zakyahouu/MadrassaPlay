@@ -304,41 +304,16 @@ const AttendanceRoster = ({ classId, date }) => {
 										</button>
 									</div>
 
-									{/* Secondary Actions */}
-									<div className="flex items-center space-x-2">
-										<button 
-											disabled={isSaving} 
-											onClick={(e) => { e.stopPropagation(); undo(eid); }} 
-											className={`px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200 ${
-												isSaving 
-													? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-500' 
-													: 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-											}`}
-										>
-											<svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-											</svg>
-											Undo
-										</button>
-										<button 
-											onClick={(e) => { e.stopPropagation(); openHistory(eid); }} 
-											className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-										>
-											<svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
-											History
-										</button>
-										<button 
-											onClick={(e) => { e.stopPropagation(); openAddPayment(eid); }} 
-											className="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 hover:scale-105 active:scale-95"
-										>
-											<svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-											</svg>
-											Add Payment
-										</button>
-									</div>
+									{/* Payment Button */}
+									<button 
+										onClick={(e) => { e.stopPropagation(); openAddPayment(eid); }} 
+										className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 hover:scale-105 active:scale-95"
+									>
+										<svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+										</svg>
+										Payment
+									</button>
 								</div>
 							</div>
 						</div>

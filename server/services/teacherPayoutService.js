@@ -24,12 +24,18 @@ const calculateTeacherEarnings = async (schoolId, year, month) => {
       createdAt: {
         $gte: startDate,
         $lte: endDate
-      }
+      },
+      classId: { $exists: true, $ne: null } // Only include payments with classId
     }).populate('classId', 'teacherId teacherCut name');
 
     // Group payments by class
     const classPayments = {};
     payments.forEach(payment => {
+      // Skip payments without classId (like debt payments)
+      if (!payment.classId || !payment.classId._id) {
+        return;
+      }
+      
       const classId = payment.classId._id.toString();
       if (!classPayments[classId]) {
         classPayments[classId] = {

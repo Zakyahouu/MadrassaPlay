@@ -26,6 +26,10 @@ const advertisementSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  dateTime: {
+    type: Date,
+    required: true,
+  },
   targetAudience: {
     type: String,
     enum: ['students', 'teachers', 'both', 'custom'],

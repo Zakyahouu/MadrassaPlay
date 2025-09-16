@@ -11,30 +11,33 @@ const EmployeeSalaryTransaction = require('../models/EmployeeSalaryTransaction')
  * @access  Private (Manager)
  */
 const createEmployee = asyncHandler(async (req, res) => {
-  const { name, role, salaryType, salaryValue, hireDate, phone, email, address, notes } = req.body;
+  const { name, role, employeeType, salaryType, salaryValue, hireDate, phone, email, address, notes, username, password } = req.body;
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
-
-  // Get school ID (fallback for testing)
-  let schoolId = userSchoolId;
-  if (!schoolId) {
-    const School = require('../models/School');
-    const firstSchool = await School.findOne();
-    schoolId = firstSchool?._id;
-  }
-
-  if (!schoolId) {
-    return res.status(400).json({ message: 'No school found' });
+  if (!userSchoolId) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'No school associated with your account. Please contact an administrator.' 
+    });
   }
 
   // Validate required fields
-  if (!name || !role || !salaryType || !salaryValue || !hireDate) {
+  if (!name || !role || !employeeType || !salaryType || !salaryValue || !hireDate) {
     return res.status(400).json({ message: 'Please provide all required fields' });
+  }
+
+  // Validate employee type
+  if (!['staff', 'other'].includes(employeeType)) {
+    return res.status(400).json({ message: 'Employee type must be staff or other' });
+  }
+
+  // For staff employees, validate platform access fields
+  if (employeeType === 'staff') {
+    if (!email || !username || !password) {
+      return res.status(400).json({ message: 'Staff employees require email, username, and password' });
+    }
   }
 
   // Validate salary type and value
@@ -42,15 +45,17 @@ const createEmployee = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Salary type must be fixed or hourly' });
   }
 
+  
   if (salaryValue <= 0) {
     return res.status(400).json({ message: 'Salary value must be greater than 0' });
   }
 
   try {
-    const employee = await Employee.create({
-      schoolId: new mongoose.Types.ObjectId(schoolId),
+    const employeeData = {
+      schoolId: new mongoose.Types.ObjectId(userSchoolId),
       name,
       role,
+      employeeType,
       salaryType,
       salaryValue,
       hireDate: new Date(hireDate),
@@ -58,7 +63,15 @@ const createEmployee = asyncHandler(async (req, res) => {
       email: email || '',
       address: address || '',
       notes: notes || ''
-    });
+    };
+
+    // Add platform access fields for staff
+    if (employeeType === 'staff') {
+      employeeData.username = username;
+      employeeData.password = password; // Note: In production, this should be hashed
+    }
+
+    const employee = await Employee.create(employeeData);
 
     res.status(201).json({
       success: true,
@@ -67,7 +80,11 @@ const createEmployee = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error creating employee:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error', 
+      error: error.message 
+    });
   }
 });
 
@@ -77,36 +94,41 @@ const createEmployee = asyncHandler(async (req, res) => {
  * @access  Private (Manager)
  */
 const getEmployees = asyncHandler(async (req, res) => {
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
-  const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
+  console.log('Getting employees for user:', req.user);
   
-  // if (!userSchoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
-
-  // Get school ID (fallback for testing)
-  let schoolId = userSchoolId;
-  if (!schoolId) {
-    const School = require('../models/School');
-    const firstSchool = await School.findOne();
-    schoolId = firstSchool?._id;
-  }
-
-  if (!schoolId) {
-    return res.status(400).json({ message: 'No school found' });
+  // Check if user has access to this school
+  const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
+  console.log('User school ID:', userSchoolId);
+  
+  if (!userSchoolId) {
+    console.log('User has no school associated');
+    return res.status(400).json({ 
+      success: false,
+      message: 'No school associated with your account. Please contact an administrator.' 
+    });
   }
 
   try {
-    const employees = await Employee.getBySchool(schoolId);
+    const employees = await Employee.getBySchool(userSchoolId);
+
+    // Ensure all employees have employeeType field (for backward compatibility)
+    const employeesWithDefaults = employees.map(emp => ({
+      ...emp,
+      employeeType: emp.employeeType || 'other'
+    }));
 
     res.json({
       success: true,
-      data: employees
+      data: employeesWithDefaults
     });
 
   } catch (error) {
     console.error('Error getting employees:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error', 
+      error: error.message 
+    });
   }
 });
 

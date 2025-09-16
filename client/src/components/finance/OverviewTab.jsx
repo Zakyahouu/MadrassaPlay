@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import FinancialCards from './FinancialCards';
 import TransactionsTable from './TransactionsTable';
+import StudentPaymentDetailModal from './StudentPaymentDetailModal';
 
 const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const [financialData, setFinancialData] = useState(null);
@@ -23,6 +24,8 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const [error, setError] = useState(null);
   const [freezing, setFreezing] = useState(false);
   const [freezeError, setFreezeError] = useState(null);
+  const [showPaymentDetailModal, setShowPaymentDetailModal] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
 
   // Fetch financial overview data
   const fetchFinancialData = async () => {
@@ -70,7 +73,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
       // Fetch transactions
       const transactionsResponse = await axios.get(
-        `/api/finance/transactions/${schoolId}/${year}/${month}`,
+        `/api/finance/student-payments/${schoolId}/${year}/${month}`,
         config
       );
       
@@ -94,6 +97,11 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
     fetchFinancialData();
     fetchTransactions();
     if (onRefresh) onRefresh();
+  };
+
+  const handleViewPaymentDetails = (transactionId) => {
+    setSelectedTransactionId(transactionId);
+    setShowPaymentDetailModal(true);
   };
 
   // Handle freeze month
@@ -342,8 +350,18 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
           formatCurrency={formatCurrency}
           formatDate={formatDate}
           loading={loading}
+          onViewDetails={handleViewPaymentDetails}
         />
       </div>
+
+      {showPaymentDetailModal && (
+        <StudentPaymentDetailModal
+          transactionId={selectedTransactionId}
+          onClose={() => setShowPaymentDetailModal(false)}
+          formatCurrency={formatCurrency}
+          formatDate={formatDate}
+        />
+      )}
     </div>
   );
 };

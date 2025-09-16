@@ -97,7 +97,11 @@ const getTransactions = asyncHandler(async (req, res) => {
       }
     })
     .populate('studentId', 'firstName lastName studentCode')
-    .populate('classId', 'name')
+    .populate({
+      path: 'classId',
+      select: 'name',
+      options: { strictPopulate: false } // Allow null values
+    })
     .sort({ createdAt: -1 })
     .limit(limit * 1)
     .skip((page - 1) * limit);
@@ -116,13 +120,16 @@ const getTransactions = asyncHandler(async (req, res) => {
       _id: transaction._id,
       date: transaction.createdAt,
       student: {
-        _id: transaction.studentId._id,
-        name: `${transaction.studentId.firstName} ${transaction.studentId.lastName}`,
-        studentCode: transaction.studentId.studentCode
+        _id: transaction.studentId?._id,
+        name: transaction.studentId ? `${transaction.studentId.firstName || ''} ${transaction.studentId.lastName || ''}`.trim() : 'Unknown Student',
+        studentCode: transaction.studentId?.studentCode || 'N/A'
       },
-      class: {
+      class: transaction.classId ? {
         _id: transaction.classId._id,
         name: transaction.classId.name
+      } : {
+        _id: null,
+        name: 'Debt Payment'
       },
       amount: transaction.amount,
       kind: transaction.kind,

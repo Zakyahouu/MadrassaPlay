@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   DollarSign, 
@@ -7,7 +8,8 @@ import {
   FileText, 
   BarChart3,
   Calendar,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from 'lucide-react';
 import OverviewTab from '../components/finance/OverviewTab';
 import TeachersTab from '../components/finance/TeachersTab';
@@ -21,6 +23,7 @@ const Finance = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Generate years for dropdown (current year ± 2)
   const currentYear = new Date().getFullYear();
@@ -36,7 +39,6 @@ const Finance = () => {
     { id: 'overview', name: 'Overview', icon: BarChart3, component: OverviewTab },
     { id: 'teachers', name: 'Teachers', icon: Users, component: TeachersTab },
     { id: 'employees', name: 'Employees', icon: Users, component: EmployeesTab },
-    { id: 'students', name: 'Students', icon: Users, component: null },
     { id: 'expenses', name: 'Expenses', icon: FileText, component: ExpensesTab },
     { id: 'analytics', name: 'Analytics', icon: TrendingUp, component: AnalyticsTab }
   ];
@@ -49,6 +51,20 @@ const Finance = () => {
     setLoading(true);
     // Trigger refresh in active tab component
     setTimeout(() => setLoading(false), 1000);
+  };
+
+  const handleGoBack = () => {
+    if (user?.role === 'manager') {
+      navigate('/manager/dashboard');
+    } else if (user?.role === 'teacher') {
+      navigate('/teacher/dashboard');
+    } else if (user?.role === 'student') {
+      navigate('/student/dashboard');
+    } else if (user?.role === 'staff') {
+      navigate('/staff/dashboard');
+    } else {
+      navigate('/'); // Fallback to home page
+    }
   };
 
   const renderActiveTab = () => {
@@ -109,6 +125,13 @@ const Finance = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              <button
+                onClick={handleGoBack}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Dashboard</span>
+              </button>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>

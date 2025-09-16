@@ -19,6 +19,12 @@ const employeeSchema = new mongoose.Schema(
       required: true, 
       trim: true 
     },
+    employeeType: {
+      type: String,
+      enum: ['staff', 'other'],
+      required: true,
+      default: 'other'
+    },
     salaryType: { 
       type: String, 
       enum: ['fixed', 'hourly'], 
@@ -54,6 +60,17 @@ const employeeSchema = new mongoose.Schema(
     notes: { 
       type: String, 
       trim: true 
+    },
+    // Platform access fields (only for staff)
+    username: {
+      type: String,
+      trim: true,
+      sparse: true, // Allows multiple null values
+      unique: true
+    },
+    password: {
+      type: String,
+      trim: true
     }
   },
   { 
@@ -91,7 +108,8 @@ employeeSchema.methods.isActive = function() {
 // Static method to get employees by school
 employeeSchema.statics.getBySchool = function(schoolId) {
   return this.find({ schoolId: new mongoose.Types.ObjectId(schoolId) })
-    .sort({ name: 1 });
+    .sort({ name: 1 })
+    .lean(); // Use lean() for better performance
 };
 
 // Static method to get active employees

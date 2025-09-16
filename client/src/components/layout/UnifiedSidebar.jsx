@@ -56,13 +56,12 @@ const UnifiedSidebar = ({
           { id: 'timetable', name: 'Timetable', icon: Calendar },
           { id: 'students', name: 'Students', icon: Users },
           { id: 'teachers', name: 'Teachers', icon: UserCheck },
-          { id: 'employees', name: 'Staff', icon: Building2 },
+          { id: 'employees', name: 'Employees', icon: Building2 },
           { id: 'rooms', name: 'Rooms', icon: Building2 },
           { id: 'equipment', name: 'Equipment', icon: Package },
           { id: 'catalog', name: 'Catalog', icon: Package },
           { id: 'ads', name: 'Advertisements', icon: Megaphone },
-          { id: 'finance', name: 'Finance', icon: DollarSign },
-          { id: 'reports', name: 'Reports', icon: TrendingUp }
+          { id: 'finance', name: 'Finance', icon: DollarSign }
         ];
       case 'teacher':
         return [

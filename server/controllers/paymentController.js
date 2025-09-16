@@ -1,5 +1,6 @@
 // server/controllers/paymentController.js
 
+const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const StudentFinancial = require('../models/StudentFinancial');
@@ -101,8 +102,8 @@ const createPayment = async (req, res) => {
       );
     }
 
-    // Update per-student aggregate
-    if (typeof payment.debtDelta === 'number' && payment.debtDelta !== 0) {
+    // Update per-student aggregate (always update, even if debtDelta is 0)
+    if (typeof payment.debtDelta === 'number') {
       await StudentFinancial.updateOne(
         { schoolId, studentId: enrollment.studentId },
         { $inc: { debt: payment.debtDelta } },
@@ -116,6 +117,38 @@ const createPayment = async (req, res) => {
       message: error.message,
       stack: error.stack,
     });
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Get single payment by ID
+// @route   GET /api/payments/:id
+// @access  Private (Manager, Staff, Student)
+const getPaymentById = async (req, res) => {
+  try {
+    const paymentId = req.params.id;
+    if (!mongoose.isValidObjectId(paymentId)) {
+      return res.status(400).json({ message: 'Invalid payment ID.' });
+    }
+
+    const payment = await Payment.findById(paymentId)
+      .populate('studentId', 'firstName lastName studentCode')
+      .populate('classId', 'name')
+      .lean();
+
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found.' });
+    }
+
+    // Authorization check (optional, depending on requirements)
+    // const schoolIdRaw = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    // if (payment.schoolId.toString() !== schoolIdRaw?.toString()) {
+    //   return res.status(403).json({ message: 'Not authorized to view this payment.' });
+    // }
+
+    res.status(200).json(payment);
+  } catch (error) {
+    console.error('getPaymentById error:', { message: error.message, stack: error.stack });
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
@@ -211,12 +244,230 @@ const deletePayment = async (req, res) => {
   }
 };
 
+// @desc    Manually adjust student debt
+// @route   POST /api/payments/adjust-debt
+// @access  Private (Manager)
+const adjustStudentDebt = asyncHandler(async (req, res) => {
+  const { studentId, debtAdjustment, reason, note } = req.body;
+  const schoolId = req.user?.school?._id || req.user?.school;
+
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to adjust student debt');
+  }
+
+  if (!studentId || typeof debtAdjustment !== 'number') {
+    res.status(400);
+    throw new Error('Please provide studentId and debtAdjustment');
+  }
+
+  try {
+    // Update student debt
+    const result = await StudentFinancial.updateOne(
+      { schoolId, studentId },
+      { $inc: { debt: debtAdjustment } },
+      { upsert: true }
+    );
+
+    // Note: Debt adjustments are not manual transactions
+    // They only affect the StudentFinancial record and don't impact income/expenses
+
+    res.status(200).json({
+      success: true,
+      message: `Student debt adjusted by ${debtAdjustment}`,
+      data: {
+        studentId,
+        debtAdjustment,
+        reason,
+        note
+      }
+    });
+
+  } catch (error) {
+    console.error('Error adjusting student debt:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get student debt information
+// @route   GET /api/payments/student-debt/:studentId
+// @access  Private (Manager)
+const getStudentDebt = asyncHandler(async (req, res) => {
+  const { studentId } = req.params;
+  const schoolId = req.user?.school?._id || req.user?.school;
+
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to view student debt');
+  }
+
+  try {
+    const studentDebt = await StudentFinancial.findOne({
+      schoolId,
+      studentId
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        studentId,
+        debt: studentDebt?.debt || 0,
+        lastUpdated: studentDebt?.updatedAt || null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting student debt:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Pay student debt
+// @route   POST /api/payments/pay-debt
+// @access  Private (Manager)
+const payStudentDebt = asyncHandler(async (req, res) => {
+  const { studentId, amount, note } = req.body;
+  const schoolId = req.user?.school?._id || req.user?.school;
+
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to pay student debt');
+  }
+
+  if (!studentId || !amount || amount <= 0) {
+    res.status(400);
+    throw new Error('Please provide studentId and valid amount');
+  }
+
+  try {
+    // Get current debt
+    const studentDebt = await StudentFinancial.findOne({
+      schoolId,
+      studentId
+    });
+
+    const currentDebt = studentDebt?.debt || 0;
+    
+    if (currentDebt <= 0) {
+      res.status(400);
+      throw new Error('Student has no outstanding debt');
+    }
+
+    // Calculate payment amount (cannot exceed debt)
+    const paymentAmount = Math.min(amount, currentDebt);
+    const debtReduction = -paymentAmount; // Negative to reduce debt
+
+    // Update student debt
+    await StudentFinancial.updateOne(
+      { schoolId, studentId },
+      { $inc: { debt: debtReduction } },
+      { upsert: true }
+    );
+
+    // Create a payment record for debt payment
+    const payment = await Payment.create({
+      schoolId: new mongoose.Types.ObjectId(schoolId),
+      classId: null, // Debt payments are not tied to specific classes
+      studentId: new mongoose.Types.ObjectId(studentId),
+      enrollmentId: null, // Debt payments are not tied to specific enrollments
+      amount: paymentAmount,
+      kind: 'debt_payment',
+      method: 'cash',
+      note: note || `Debt payment - ${paymentAmount} DZD`,
+      unitType: undefined,
+      units: undefined,
+      expectedPrice: paymentAmount,
+      taken: paymentAmount,
+      debtDelta: debtReduction,
+      idempotencyKey: `DEBT-PAY-${studentId}-${Date.now()}`
+    });
+
+    // Note: Debt payments are not manual transactions
+    // They only affect the StudentFinancial record and create Payment records for audit
+
+    res.status(200).json({
+      success: true,
+      message: `Debt payment of ${paymentAmount} DZD processed successfully`,
+      data: {
+        studentId,
+        paymentAmount,
+        previousDebt: currentDebt,
+        remainingDebt: currentDebt - paymentAmount,
+        payment
+      }
+    });
+
+  } catch (error) {
+    console.error('Error paying student debt:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Clean up debt-related manual transactions
+// @route   DELETE /api/payments/cleanup-debt-transactions
+// @access  Private (Manager)
+const cleanupDebtTransactions = asyncHandler(async (req, res) => {
+  const schoolId = req.user?.school?._id || req.user?.school;
+
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to cleanup debt transactions');
+  }
+
+  try {
+    const ManualTransaction = require('../models/ManualTransaction');
+    
+    // Remove all manual transactions related to debt adjustments
+    const result = await ManualTransaction.deleteMany({
+      schoolId: new mongoose.Types.ObjectId(schoolId),
+      $or: [
+        { category: 'Debt Adjustment' },
+        { category: 'Debt Payment' }
+      ]
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Cleaned up ${result.deletedCount} debt-related manual transactions`,
+      data: {
+        deletedCount: result.deletedCount
+      }
+    });
+
+  } catch (error) {
+    console.error('Error cleaning up debt transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+});
+
 module.exports = {
   createPayment,
   getPayments,
+  getPaymentById,
   updatePayment,
   deletePayment,
+  adjustStudentDebt,
+  getStudentDebt,
+  payStudentDebt,
+  cleanupDebtTransactions,
 };
+
 // @desc    Get payments for teacher-owned classes (read-only)
 // @route   GET /api/payments/teacher?classId=&studentId=&limit=&skip=
 // @access  Private (Teacher; also allows manager/staff as pass-through)

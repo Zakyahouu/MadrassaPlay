@@ -13,7 +13,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 
-const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading }) => {
+const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, onViewDetails }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -295,7 +295,10 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading }
                   </td>
                   
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 flex items-center">
+                    <button 
+                      onClick={() => onViewDetails(transaction._id)}
+                      className="text-blue-600 hover:text-blue-900 flex items-center"
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </button>
