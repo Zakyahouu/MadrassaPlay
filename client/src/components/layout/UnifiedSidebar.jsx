@@ -22,7 +22,8 @@ import {
   Megaphone,
   Gamepad2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  DollarSign
 } from 'lucide-react';
 
 const UnifiedSidebar = ({ 
@@ -60,6 +61,7 @@ const UnifiedSidebar = ({
           { id: 'equipment', name: 'Equipment', icon: Package },
           { id: 'catalog', name: 'Catalog', icon: Package },
           { id: 'ads', name: 'Advertisements', icon: Megaphone },
+          { id: 'finance', name: 'Finance', icon: DollarSign },
           { id: 'reports', name: 'Reports', icon: TrendingUp }
         ];
       case 'teacher':

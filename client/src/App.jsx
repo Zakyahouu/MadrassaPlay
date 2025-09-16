@@ -10,11 +10,12 @@ import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
+import Finance from './pages/Finance';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './components/teacher/ViewResults';
 import HostLobby from './pages/HostLobby';
-import PlayerLobby from './pages/PlayerLobby'; // 1. Import the new page
+import PlayerLobby from './pages/PlayerLobby';
 import TeacherLiveSessions from './components/teacher/TeacherLiveSessions';
 import TeacherLiveSessionSummary from './components/teacher/TeacherLiveSessionSummary';
 import ResultDetail from './components/teacher/ResultDetail';
@@ -32,16 +33,11 @@ function App() {
           {/* Route 1: The Login Page */}
           <Route 
             path="/login" 
-            element={
-              user ? <RoleBasedRedirect /> : <Login />
-            } 
+            element={user ? <RoleBasedRedirect /> : <Login />} 
           />
 
           {/* Route 2: The Home/Redirect Page */}
-          <Route 
-            path="/" 
-            element={<RoleBasedRedirect />} 
-          />
+          <Route path="/" element={<RoleBasedRedirect />} />
 
           {/* Route 3: The Admin Dashboard */}
           <Route 
@@ -83,7 +79,17 @@ function App() {
             }
           />
 
-          {/* Route 6: The Create Game Page */}
+          {/* Route 6.1: The Finance Page (Manager only) */}
+          <Route
+            path="/manager/finance"
+            element={
+              <ProtectedRoute>
+                <Finance />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route 7: The Create Game Page */}
           <Route
             path="/teacher/create-game/:templateId"
             element={
@@ -93,7 +99,7 @@ function App() {
             }
           />
 
-          {/* Route 7: The Play Game Page */}
+          {/* Route 8: The Play Game Page */}
           <Route
             path="/admin/play-game/:creationId"
             element={
@@ -110,8 +116,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Student direct play route (assignments) */}
           <Route
             path="/student/play-game/:creationId"
             element={
@@ -121,7 +125,7 @@ function App() {
             }
           />
 
-          {/* Route 8: The View Results Page */}
+          {/* Route 9: The View Results Page */}
           <Route
             path="/teacher/results/:gameCreationId"
             element={
@@ -141,7 +145,7 @@ function App() {
             }
           />
 
-          {/* Route 9: The Host Lobby Page */}
+          {/* Route 10: The Host Lobby Page */}
           <Route
             path="/teacher/host-lobby/:gameCreationId"
             element={
@@ -150,7 +154,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Host Lobby by existing session (resume) */}
           <Route
             path="/teacher/host-lobby/session/:sessionId"
             element={
@@ -160,7 +163,7 @@ function App() {
             }
           />
 
-          {/* 10. NEW ROUTE: The Player Lobby Page */}
+          {/* Route 11: The Player Lobby Page */}
           <Route
             path="/student/lobby/:roomCode"
             element={
@@ -170,7 +173,7 @@ function App() {
             }
           />
 
-          {/* Live Sessions index for teachers -> now route into dashboard tab */}
+          {/* Live Sessions */}
           <Route
             path="/teacher/live-sessions"
             element={
@@ -179,7 +182,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Single session summary */}
           <Route
             path="/teacher/live-sessions/:id"
             element={
@@ -188,8 +190,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-    {/* (deduplicated) admin play route already declared above */}
 
           {/* Profile Route - Unified for all roles */}
           <Route
@@ -200,7 +200,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
         </Routes>
       </Router>
     </ToastProvider>
@@ -208,4 +207,3 @@ function App() {
 }
 
 export default App;
-

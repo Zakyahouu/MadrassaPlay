@@ -1,3 +1,4 @@
+// ManagerDashboard.jsx
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios';
@@ -26,6 +27,7 @@ import ManagerClassPanel from './shared/ManagerClassPanel';
 import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
 import UnifiedSidebar from '../layout/UnifiedSidebar';
 import TopNav from '../layout/TopNav';
+
 // Main Dashboard Component
 export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -45,7 +47,6 @@ export const ManagerDashboard = () => {
   const [loadingTrial, setLoadingTrial] = useState(true);
 
   // Fetch real stats data
-  // Refetch stats and school trial info on page load and when switching to overview tab
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -151,11 +152,11 @@ export const ManagerDashboard = () => {
     { id: 'equipment', name: 'Equipment' },
     { id: 'catalog', name: 'Catalog' },
     { id: 'ads', name: 'Advertisements' },
-    { id: 'reports', name: 'Reports' }
+    { id: 'reports', name: 'Reports' },
+    { id: 'finance', name: 'Finance' } // ✅ added to navigation
   ];
 
   const renderTabContent = () => {
-    // Show trial status at top of overview tab
     if (activeTab === 'overview') {
       return (
         <>
@@ -195,7 +196,6 @@ export const ManagerDashboard = () => {
         </>
       );
     }
-    // ...existing code...
     switch (activeTab) {
       case 'classes':
         return <ClassesTab onNavigateToAttendance={(classId)=>{ setActiveTab('attendance'); setTimeout(()=>{
@@ -222,6 +222,9 @@ export const ManagerDashboard = () => {
         return <AdsTab />;
       case 'reports':
         return <ReportsTab />;
+      case 'finance': // ✅ added finance support
+        window.location.href = '/manager/finance';
+        return null;
       default:
         return (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -237,7 +240,7 @@ export const ManagerDashboard = () => {
     }
   };
 
-    return (
+  return (
     <div className="min-h-screen bg-gray-50 lg:flex">
       <UnifiedSidebar 
         activeTab={activeTab}
@@ -257,8 +260,6 @@ export const ManagerDashboard = () => {
           logout={logout}
         />
 
-        {/* Ads bar removed for managers */}
-
         <main className="p-6">
           {renderTabContent()}
         </main>
@@ -270,8 +271,6 @@ export const ManagerDashboard = () => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Removed side panel */}
     </div>
   );
 };

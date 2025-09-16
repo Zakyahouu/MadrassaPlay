@@ -21,9 +21,17 @@ const EmployeesTab = () => {
       if (filters.type) params.append('type', filters.type);
       if (filters.contractType) params.append('contractType', filters.contractType);
       const { data } = await axios.get(`/api/employees?${params.toString()}`, authConfig());
-      setItems(data || []);
+      
+      // The API returns { success: true, data: employees }
+      if (data && data.success && Array.isArray(data.data)) {
+        setItems(data.data);
+      } else {
+        console.warn('API response is not in expected format:', data);
+        setItems([]);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch employees');
+      setItems([]); // Ensure items is always an array even on error
     } finally {
       setLoading(false);
     }
@@ -32,7 +40,15 @@ const EmployeesTab = () => {
   useEffect(() => { fetchItems(); }, [filters.type, filters.contractType]);
 
   const filtered = useMemo(() => {
-    return items.filter(x => `${x.firstName} ${x.lastName} ${x.contact?.phone1 || ''}`.toLowerCase().includes(search.toLowerCase()));
+    if (!Array.isArray(items)) {
+      console.warn('items is not an array:', items);
+      return [];
+    }
+    return items.filter(x => {
+      if (!x || typeof x !== 'object') return false;
+      const searchText = `${x.firstName || ''} ${x.lastName || ''} ${x.contact?.phone1 || ''}`.toLowerCase();
+      return searchText.includes(search.toLowerCase());
+    });
   }, [items, search]);
 
   const onSave = async (form) => {
