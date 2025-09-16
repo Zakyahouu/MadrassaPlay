@@ -181,6 +181,10 @@ export const ManagerDashboard = () => {
         return <AdsTab />;
       case 'reports':
         return <ReportsTab />;
+      case 'finance':
+        // Redirect to dedicated Finance page
+        window.location.href = '/manager/finance';
+        return null;
   // legacy staff tab hidden
       default:
         return (

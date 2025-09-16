@@ -1,17 +1,61 @@
+// server/routes/employeeRoutes.js
+
 const express = require('express');
 const router = express.Router();
-const { protect, manager } = require('../middleware/authMiddleware');
-const ctrl = require('../controllers/employeeController');
+const {
+  createEmployee,
+  getEmployees,
+  getEmployee,
+  updateEmployee,
+  deleteEmployee,
+  getEmployeeSalaryHistory,
+  payEmployeeSalary,
+  getSalarySummary
+} = require('../controllers/employeeController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect, manager);
+// All routes are protected and require Manager role
+router.use(protect);
+router.use(authorize('manager'));
 
-router.route('/')
-  .get(ctrl.listEmployees)
-  .post(ctrl.createEmployee);
+// @route   POST /api/employees
+// @desc    Create a new employee
+// @access  Private (Manager)
+router.post('/', createEmployee);
 
-router.route('/:id')
-  .get(ctrl.getEmployee)
-  .put(ctrl.updateEmployee)
-  .delete(ctrl.deleteEmployee);
+// @route   GET /api/employees
+// @desc    Get all employees for a school
+// @access  Private (Manager)
+router.get('/', getEmployees);
+
+// @route   GET /api/employees/:id
+// @desc    Get employee by ID
+// @access  Private (Manager)
+router.get('/:id', getEmployee);
+
+// @route   PUT /api/employees/:id
+// @desc    Update employee
+// @access  Private (Manager)
+router.put('/:id', updateEmployee);
+
+// @route   DELETE /api/employees/:id
+// @desc    Delete employee (archive)
+// @access  Private (Manager)
+router.delete('/:id', deleteEmployee);
+
+// @route   GET /api/employees/:id/salary
+// @desc    Get employee salary history
+// @access  Private (Manager)
+router.get('/:id/salary', getEmployeeSalaryHistory);
+
+// @route   POST /api/employees/:id/pay
+// @desc    Pay employee salary
+// @access  Private (Manager)
+router.post('/:id/pay', payEmployeeSalary);
+
+// @route   GET /api/employees/salary-summary/:schoolId/:year/:month
+// @desc    Get salary summary for a month
+// @access  Private (Manager)
+router.get('/salary-summary/:schoolId/:year/:month', getSalarySummary);
 
 module.exports = router;

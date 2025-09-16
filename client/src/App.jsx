@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
+import Finance from './pages/Finance';
 import CreateGame from './pages/CreateGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './pages/ViewResults';
@@ -74,6 +75,16 @@ function App() {
           element={
             <ProtectedRoute>
               <ManagerDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Route 6.1: The Finance Page (Manager only) */}
+        <Route
+          path="/manager/finance"
+          element={
+            <ProtectedRoute>
+              <Finance />
             </ProtectedRoute>
           }
         />
