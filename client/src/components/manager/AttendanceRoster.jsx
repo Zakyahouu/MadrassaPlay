@@ -15,7 +15,16 @@ const AttendanceRoster = ({ classId, date }) => {
 	const [historyItems, setHistoryItems] = useState([]);
 	const [historyFor, setHistoryFor] = useState(null); // enrollmentId
 	const [savingIds, setSavingIds] = useState(() => new Set()); // enrollmentIds currently saving
+	const [recentActions, setRecentActions] = useState(() => new Map()); // enrollmentId -> { action, timestamp }
 		// Removed local overrides; we rely on server as source of truth
+
+	// Helper function to check if we should show "Not Marked Yet" for new days
+	const shouldShowNotMarkedYet = (todayStatus, currentDate) => {
+		// Always show "Not Marked Yet" if no status is recorded for today
+		// This automatically handles the midnight reset - when you check the next day,
+		// there will be no attendance record for that date, so it shows "Not Marked Yet"
+		return !todayStatus;
+	};
 
 	const fetchRoster = async () => {
 		try {
@@ -58,6 +67,26 @@ const AttendanceRoster = ({ classId, date }) => {
 			// Use roster returned by server as source of truth
 			const next = (res && res.data && Array.isArray(res.data.items)) ? res.data.items : items;
 			setItems(next);
+			
+			// Record the action for visual feedback
+			setRecentActions(prev => {
+				const newMap = new Map(prev);
+				newMap.set(enrollmentId, { 
+					action: `Marked as ${status}`, 
+					timestamp: Date.now() 
+				});
+				return newMap;
+			});
+			
+			// Clear the action after 3 seconds
+			setTimeout(() => {
+				setRecentActions(prev => {
+					const newMap = new Map(prev);
+					newMap.delete(enrollmentId);
+					return newMap;
+				});
+			}, 3000);
+			
 		} catch (e) {
 			alert(e.response?.data?.message || 'Failed to mark');
 		} finally {
@@ -76,6 +105,26 @@ const AttendanceRoster = ({ classId, date }) => {
 			const res = await axios.post('/api/attendance/undo', { enrollmentId, date });
 			const next = (res && res.data && Array.isArray(res.data.items)) ? res.data.items : items;
 			setItems(next);
+			
+			// Record the action for visual feedback
+			setRecentActions(prev => {
+				const newMap = new Map(prev);
+				newMap.set(enrollmentId, { 
+					action: 'Undo completed', 
+					timestamp: Date.now() 
+				});
+				return newMap;
+			});
+			
+			// Clear the action after 3 seconds
+			setTimeout(() => {
+				setRecentActions(prev => {
+					const newMap = new Map(prev);
+					newMap.delete(enrollmentId);
+					return newMap;
+				});
+			}, 3000);
+			
 		} catch (e) {
 			alert(e.response?.data?.message || 'Failed to undo');
 		} finally {
@@ -168,6 +217,7 @@ const AttendanceRoster = ({ classId, date }) => {
 					const overdue = balance < 0 || (it.owedSessions || 0) > 0;
 					const lastPay = paymentsIndex[eid];
 					const isSaving = savingIds.has(eid);
+					const recentAction = recentActions.get(eid);
 
 					return (
 						<div 
@@ -203,16 +253,16 @@ const AttendanceRoster = ({ classId, date }) => {
 									</div>
 
 									{/* Status Badges */}
-									<div className="flex flex-wrap items-center gap-2 mb-4">
+									<div className="flex items-center gap-2 mb-4 overflow-x-auto">
 										{/* Balance Badge */}
-										<div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 ${
+										<div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 whitespace-nowrap ${
 											balance > 0 
 												? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
 												: balance === 0 
 													? 'bg-gray-50 text-gray-600 border-gray-200' 
 													: 'bg-red-50 text-red-700 border-red-200'
 										}`}>
-											<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
 											</svg>
 											Balance: {balance.toFixed ? balance.toFixed(2) : balance}
@@ -220,8 +270,8 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Overdue Badge */}
 										{overdue && (
-											<div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 bg-orange-50 text-orange-700 border-orange-200">
-												<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-orange-50 text-orange-700 border-orange-200 whitespace-nowrap">
+												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 												</svg>
 												Overdue {it.owedSessions}
@@ -230,8 +280,8 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Pricing Model Badge */}
 										{it.pricingSnapshot?.paymentModel === 'per_cycle' && (
-											<div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 bg-indigo-50 text-indigo-700 border-indigo-200">
-												<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-indigo-50 text-indigo-700 border-indigo-200 whitespace-nowrap">
+												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 												</svg>
 												Cycle: {it.pricingSnapshot.cycleSize} sessions · {formatDZ(it.pricingSnapshot.cyclePrice)}
@@ -239,8 +289,8 @@ const AttendanceRoster = ({ classId, date }) => {
 										)}
 
 										{it.pricingSnapshot?.paymentModel === 'per_session' && typeof it.pricingSnapshot?.sessionPrice === 'number' && (
-											<div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 bg-purple-50 text-purple-700 border-purple-200">
-												<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap">
+												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
 												</svg>
 												Per session: {formatDZ(it.pricingSnapshot.sessionPrice)}
@@ -249,8 +299,8 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Last Payment Badge */}
 										{lastPay && (
-											<div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border-2 bg-blue-50 text-blue-700 border-blue-200">
-												<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-blue-50 text-blue-700 border-blue-200 whitespace-nowrap">
+												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
 												</svg>
 												Last: {formatDZ(lastPay.amount)} · {new Date(lastPay.createdAt).toLocaleDateString()}
@@ -263,13 +313,20 @@ const AttendanceRoster = ({ classId, date }) => {
 								<div className="flex items-center space-x-3 ml-6">
 									{/* Status Display */}
 									<div className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${
-										it.todayStatus === 'present' 
-											? 'bg-green-50 text-green-700 border-green-200' 
-											: it.todayStatus === 'absent' 
-												? 'bg-red-50 text-red-700 border-red-200' 
-												: 'bg-gray-50 text-gray-600 border-gray-200'
+										recentAction
+											? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse'
+											: shouldShowNotMarkedYet(it.todayStatus, date)
+												? 'bg-gray-50 text-gray-600 border-gray-200'
+												: (it.todayStatus === 'present' 
+													? 'bg-green-50 text-green-700 border-green-200' 
+													: 'bg-red-50 text-red-700 border-red-200')
 									}`}>
-										{it.todayStatus || 'Not Marked'}
+										{recentAction 
+											? recentAction.action 
+											: shouldShowNotMarkedYet(it.todayStatus, date)
+												? 'Not Marked Yet'
+												: it.todayStatus
+										}
 									</div>
 
 									{/* Attendance Buttons */}
@@ -277,13 +334,13 @@ const AttendanceRoster = ({ classId, date }) => {
 										<button 
 											disabled={isSaving} 
 											onClick={(e) => { e.stopPropagation(); mark(eid, 'present'); }} 
-											className={`px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
+											className={`inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
 												isSaving 
 													? 'opacity-50 cursor-not-allowed bg-green-600' 
 													: 'bg-green-600 hover:bg-green-700 hover:scale-105 active:scale-95'
 											}`}
 										>
-											<svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 											</svg>
 											Present
@@ -291,13 +348,13 @@ const AttendanceRoster = ({ classId, date }) => {
 										<button 
 											disabled={isSaving} 
 											onClick={(e) => { e.stopPropagation(); mark(eid, 'absent'); }} 
-											className={`px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
+											className={`inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
 												isSaving 
 													? 'opacity-50 cursor-not-allowed bg-red-600' 
 													: 'bg-red-600 hover:bg-red-700 hover:scale-105 active:scale-95'
 											}`}
 										>
-											<svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
 											</svg>
 											Absent
@@ -307,9 +364,9 @@ const AttendanceRoster = ({ classId, date }) => {
 									{/* Payment Button */}
 									<button 
 										onClick={(e) => { e.stopPropagation(); openAddPayment(eid); }} 
-										className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 hover:scale-105 active:scale-95"
+										className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 hover:scale-105 active:scale-95"
 									>
-										<svg className="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
 										</svg>
 										Payment

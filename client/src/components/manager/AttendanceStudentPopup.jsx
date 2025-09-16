@@ -22,9 +22,11 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
   const [payingDebt, setPayingDebt] = useState(false);
 
   useEffect(() => {
+    console.log('AttendanceStudentPopup - initialEnrollments:', initialEnrollments);
+    console.log('AttendanceStudentPopup - student:', student);
     setEnrollments(Array.isArray(initialEnrollments) ? initialEnrollments : []);
     setSelectedEnrollmentId(initialEnrollments?.[0]?._id || null);
-  }, [initialEnrollments]);
+  }, [initialEnrollments, student]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,10 +43,12 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
         
         // Load payments
         const paymentsRes = await axios.get('/api/payments', { params: { enrollmentId: selectedEnrollmentId, limit: 100 } });
+        console.log('Payments response:', paymentsRes.data);
         setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
         
         // Load attendance history
         const attendanceRes = await axios.get('/api/attendance/history', { params: { enrollmentId: selectedEnrollmentId } });
+        console.log('Attendance response:', attendanceRes.data);
         setAttendanceHistory(Array.isArray(attendanceRes.data?.items) ? attendanceRes.data.items : []);
       } catch (e) {
         setPayments([]);
@@ -65,7 +69,13 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
     }
   }, [isOpen, student?._id]);
 
-  const selectedEnrollment = useMemo(() => enrollments.find(e => (e._id||'').toString() === (selectedEnrollmentId||'').toString()) || null, [enrollments, selectedEnrollmentId]);
+  const selectedEnrollment = useMemo(() => {
+    const found = enrollments.find(e => (e._id||'').toString() === (selectedEnrollmentId||'').toString()) || null;
+    console.log('Selected enrollment:', found);
+    console.log('Available enrollments:', enrollments);
+    console.log('Selected enrollment ID:', selectedEnrollmentId);
+    return found;
+  }, [enrollments, selectedEnrollmentId]);
 
   const formatSchedule = (schedules) => {
     if (!Array.isArray(schedules)) return '';
@@ -240,7 +250,7 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
             
             <div className="overflow-x-auto">
               <div className="flex gap-6 pb-4">
-                {enrollments.filter(e=>e.status==='active').map((e)=>{
+                {(enrollments.filter(e=>e.status==='active').length > 0 ? enrollments.filter(e=>e.status==='active') : enrollments).map((e)=>{
                   const schedules = e.classId?.schedules || [];
                   const scheduleText = formatSchedule(schedules);
                   const balance = typeof e.balance === 'number' ? e.balance : 0;
