@@ -51,6 +51,16 @@ const Profile = () => {
     status: user?.status || 'active'
   });
 
+  // helper to add auth header
+  const authHeaders = () => {
+    try {
+      const token = JSON.parse(localStorage.getItem('user'))?.token;
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch {
+      return {};
+    }
+  };
+
   // Update formData when user data changes
   useEffect(() => {
     setFormData({
@@ -69,16 +79,18 @@ const Profile = () => {
   // Utility: DZ currency formatting (local, to avoid new imports)
   const fmtDZ = (n) => new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(Number(n || 0));
 
-  // Load enrollments for this user. Payments are fetched only for manager/staff (server RBAC).
+  // Load enrollments/payments only for student/manager/staff
   useEffect(() => {
     const load = async () => {
       if (!user?._id) return;
+      const role = user?.role;
+      const allowFinance = ['student', 'manager', 'staff'].includes(role);
+      if (!allowFinance) return; // avoid 403 for admin/teacher
       setLoadingFinance(true);
       try {
-        // Get raw enrollments with pricingSnapshot and counters if available
-        const enrPromise = axios.get(`/api/enrollments/student/${user._id}`);
-        const payPromise = canManageFinance
-          ? axios.get('/api/payments', { params: { studentId: user._id, limit: 200 } })
+        const enrPromise = axios.get(`/api/enrollments/student/${user._id}`, { headers: authHeaders() });
+        const payPromise = ['manager', 'staff'].includes(role)
+          ? axios.get('/api/payments', { params: { studentId: user._id, limit: 200 }, headers: authHeaders() })
           : Promise.resolve({ data: { items: [] } });
         const [enrRes, payRes] = await Promise.all([enrPromise, payPromise]);
         setEnrollments(Array.isArray(enrRes.data) ? enrRes.data : []);
@@ -114,7 +126,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      const response = await axios.put('/api/users/profile', formData);
+      const response = await axios.put('/api/users/profile', formData, { headers: authHeaders() });
       
       // Update the user data in context
       const updatedUserData = response.data;
@@ -123,7 +135,6 @@ const Profile = () => {
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
-      // You might want to show an error message to the user here
       alert('Error saving profile. Please try again.');
     }
   };
@@ -178,8 +189,7 @@ const Profile = () => {
     if (!paymentForm.enrollmentId) return;
     try {
       setSavingPayment(true);
-  // Amount is fixed: always use the derived suggested amount
-  const amt = Number(computeSuggestedAmount(paymentForm) || 0);
+      const amt = Number(computeSuggestedAmount(paymentForm) || 0);
       if (!amt || amt <= 0) {
         alert('Please enter a valid amount.');
         setSavingPayment(false);
@@ -193,10 +203,10 @@ const Profile = () => {
         note: paymentForm.note?.trim() || undefined,
         idempotencyKey
       };
-      await axios.post('/api/payments', body);
+      await axios.post('/api/payments', body, { headers: authHeaders() });
       setShowPaymentModal(false);
       // refresh payments
-      const payRes = await axios.get('/api/payments', { params: { studentId: user._id, limit: 200 } });
+      const payRes = await axios.get('/api/payments', { params: { studentId: user._id, limit: 200 }, headers: authHeaders() });
       setPayments(Array.isArray(payRes.data?.items) ? payRes.data.items : []);
     } catch (err) {
       console.error('Create payment failed', err);
@@ -205,8 +215,6 @@ const Profile = () => {
       setSavingPayment(false);
     }
   };
-
-  // (credit removed)
 
   const handleCancel = () => {
     setFormData({
@@ -243,7 +251,7 @@ const Profile = () => {
   const loadEnrollmentHistory = async (enrollmentId) => {
     try {
       setHistoryLoading(true);
-      const res = await axios.get(`/api/attendance/history`, { params: { enrollmentId } });
+      const res = await axios.get(`/api/attendance/history`, { params: { enrollmentId }, headers: authHeaders() });
       setHistoryMap(m => ({ ...m, [enrollmentId]: res.data?.items || [] }));
     } catch (e) {
       console.error('Failed history', e);
@@ -267,11 +275,12 @@ const Profile = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      'active': 'bg-green-50 text-green-700 border-green-200',
-      'on_leave': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      'retired': 'bg-gray-50 text-gray-700 border-gray-200',
-      'employed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      'freelance': 'bg-amber-50 text-amber-700 border-amber-200',
+      active: 'bg-green-50 text-green-700 border-green-200',
+      on_vacation: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      stopped: 'bg-gray-50 text-gray-700 border-gray-200',
+      employed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      freelance: 'bg-amber-50 text-amber-700 border-amber-200',
+      retired: 'bg-gray-50 text-gray-700 border-gray-200',
     };
     return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -298,7 +307,7 @@ const Profile = () => {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Employment Status</label>
             {isEditing ? (
               <select
                 name="status"
@@ -306,15 +315,13 @@ const Profile = () => {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="active">Active</option>
-                <option value="on_leave">On Leave</option>
-                <option value="retired">Retired</option>
                 <option value="employed">Employed</option>
                 <option value="freelance">Freelance</option>
+                <option value="retired">Retired</option>
               </select>
             ) : (
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
-                {user?.status || 'Active'}
+                {user?.status || 'employed'}
               </span>
             )}
           </div>
@@ -369,76 +376,112 @@ const Profile = () => {
   };
 
   const renderManagerSpecificFields = () => {
-    if (user?.role !== 'manager') return null;
+    if (user?.role !== 'manager' && user?.role !== 'staff' && user?.role !== 'employee') return null;
 
     return (
       <div className="space-y-6">
-        <UnifiedCard className="bg-indigo-50 border-indigo-200">
-          <div className="flex items-center space-x-2 mb-3">
-            <Users className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-lg font-semibold text-indigo-900">Management Access</h3>
+        {/* Management Access card unchanged for manager */}
+        {user?.role === 'manager' && (
+          <div className="bg-indigo-50 border-indigo-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Users className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-indigo-900">Management Access</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="flex items-center space-x-2"><CheckCircle className="w-4 h-4 text-green-500" /><span className="text-indigo-800">Staff Management</span></div>
+              <div className="flex items-center space-x-2"><CheckCircle className="w-4 h-4 text-green-500" /><span className="text-indigo-800">Class Management</span></div>
+              <div className="flex items-center space-x-2"><CheckCircle className="w-4 h-4 text-green-500" /><span className="text-indigo-800">Reports Access</span></div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-indigo-800">Staff Management</span>
+        )}
+        {(user?.role === 'staff' || user?.role === 'employee') && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Work Status</label>
+            {isEditing ? (
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="active">Active</option>
+                <option value="on_vacation">On Vacation</option>
+                <option value="stopped">Stopped</option>
+              </select>
+            ) : (
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
+                {user?.status || 'active'}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const [statsData, setStatsData] = useState(null);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const headers = authHeaders();
+        if (user?.role === 'admin') {
+          const [u, s, t] = await Promise.all([
+            axios.get('/api/users/count', { headers }),
+            axios.get('/api/schools/count', { headers }),
+            axios.get('/api/templates/count', { headers }),
+          ]);
+          if (!mounted) return;
+          setStatsData([
+            { label: 'Total Users', value: String(u.data?.count ?? 0), icon: Users, color: 'text-blue-600' },
+            { label: 'Schools', value: String(s.data?.count ?? 0), icon: MapPin, color: 'text-green-600' },
+            { label: 'Game Templates', value: String(t.data?.count ?? 0), icon: BookOpen, color: 'text-purple-600' },
+            { label: 'Last Updated', value: new Date(user?.updatedAt||Date.now()).toLocaleDateString(), icon: Clock, color: 'text-orange-600' },
+          ]);
+        } else if (user?.role === 'manager') {
+          const staffCount = await axios.get('/api/users/count', { params: { role: 'staff' }, headers });
+          if (!mounted) return;
+          setStatsData([
+            { label: 'Total Staff', value: String(staffCount.data?.count ?? 0), icon: Users, color: 'text-blue-600' },
+            { label: 'School', value: user?.school?.name || '-', icon: MapPin, color: 'text-green-600' },
+            { label: 'Last Updated', value: new Date(user?.updatedAt||Date.now()).toLocaleDateString(), icon: Clock, color: 'text-orange-600' },
+          ]);
+        } else if (user?.role === 'teacher') {
+          setStatsData([
+            { label: 'Experience', value: `${user?.experience||0} yrs`, icon: Activity, color: 'text-blue-600' },
+            { label: 'Status', value: user?.status || 'employed', icon: Star, color: 'text-yellow-600' },
+            { label: 'Last Updated', value: new Date(user?.updatedAt||Date.now()).toLocaleDateString(), icon: Clock, color: 'text-orange-600' },
+          ]);
+        } else {
+          setStatsData([]);
+        }
+      } catch (_) {
+        setStatsData([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.role, user?.updatedAt]);
+
+  const renderStats = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {(statsData||[]).map((stat, index) => (
+        <UnifiedCard key={index} padding="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
             </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-indigo-800">Class Management</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-indigo-800">Reports Access</span>
+            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+              <stat.icon className={`w-5 h-5 ${stat.color}`} />
             </div>
           </div>
         </UnifiedCard>
-      </div>
-    );
-  };
-
-  const renderStats = () => {
-    const stats = {
-      admin: [
-        { label: 'Total Users', value: '1,234', icon: Users, color: 'text-blue-600' },
-        { label: 'Active Schools', value: '45', icon: MapPin, color: 'text-green-600' },
-        { label: 'System Uptime', value: '99.9%', icon: Activity, color: 'text-purple-600' },
-        { label: 'Last Login', value: '2 hours ago', icon: Clock, color: 'text-orange-600' }
-      ],
-      manager: [
-        { label: 'Total Staff', value: '89', icon: Users, color: 'text-blue-600' },
-        { label: 'Active Classes', value: '23', icon: BookOpen, color: 'text-green-600' },
-        { label: 'Pending Tasks', value: '12', icon: AlertCircle, color: 'text-yellow-600' },
-        { label: 'Last Login', value: '1 hour ago', icon: Clock, color: 'text-orange-600' }
-      ],
-      teacher: [
-        { label: 'Total Games', value: '34', icon: BookOpen, color: 'text-blue-600' },
-        { label: 'Active Students', value: '156', icon: Users, color: 'text-green-600' },
-        { label: 'Avg. Rating', value: '4.8/5', icon: Star, color: 'text-yellow-600' },
-        { label: 'Live Sessions', value: '8', icon: Activity, color: 'text-purple-600' }
-      ]
-    };
-
-    const userStats = stats[user?.role] || [];
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {userStats.map((stat, index) => (
-          <UnifiedCard key={index} padding="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-            </div>
-          </UnifiedCard>
-        ))}
-      </div>
-    );
-  };
+      ))}
+      {statsData && statsData.length === 0 && (
+        <div className="text-sm text-gray-500">No stats available.</div>
+      )}
+    </div>
+  );
 
   if (!user) {
     return (

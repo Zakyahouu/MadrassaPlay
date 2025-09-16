@@ -6,7 +6,7 @@ const path = require('path');
 // @route   POST /api/advertisements
 // @access  Private (Manager)
 const createAdvertisement = asyncHandler(async (req, res) => {
-  const { title, description, dateTime, targetAudience, location } = req.body;
+  const { title, description, startDate, endDate, targetAudience, location } = req.body;
   const schoolId = req.user?.school?._id || req.user?.school;
   console.log('[ads] createAdvertisement request', {
     userId: req.user?._id?.toString?.(),
@@ -22,7 +22,7 @@ const createAdvertisement = asyncHandler(async (req, res) => {
     throw new Error('Manager must be assigned to a school to create advertisements');
   }
 
-  if (!title || !description || !dateTime || !targetAudience || !location) {
+  if (!title || !description || !startDate || !endDate || !targetAudience || !location) {
     res.status(400);
     throw new Error('Please provide all required fields');
   }
@@ -31,7 +31,8 @@ const createAdvertisement = asyncHandler(async (req, res) => {
     schoolId,
     title,
     description,
-    dateTime: new Date(dateTime),
+    startDate: startDate ? new Date(startDate) : null,
+    endDate: endDate ? new Date(endDate) : null,
     targetAudience,
     location,
     bannerImageUrl: null
@@ -74,7 +75,7 @@ const getAdvertisements = asyncHandler(async (req, res) => {
 // @route   PUT /api/advertisements/:id
 // @access  Private (Manager)
 const updateAdvertisement = asyncHandler(async (req, res) => {
-  const { title, description, dateTime, targetAudience, location } = req.body;
+  const { title, description, startDate, endDate, targetAudience, location } = req.body;
   const schoolId = req.user?.school?._id || req.user?.school;
 
   if (!schoolId) {
@@ -97,7 +98,8 @@ const updateAdvertisement = asyncHandler(async (req, res) => {
 
   advertisement.title = title || advertisement.title;
   advertisement.description = description || advertisement.description;
-  advertisement.dateTime = dateTime ? new Date(dateTime) : advertisement.dateTime;
+  advertisement.startDate = startDate ? new Date(startDate) : advertisement.startDate;
+  advertisement.endDate = endDate ? new Date(endDate) : advertisement.endDate;
   advertisement.targetAudience = targetAudience || advertisement.targetAudience;
   advertisement.location = location || advertisement.location;
 

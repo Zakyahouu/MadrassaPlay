@@ -15,9 +15,8 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     // If a user is logged in, we establish a new socket connection.
     if (user) {
-      // We connect to our backend server. The URL must match the one
-      // our server is running on.
-      const newSocket = io('http://localhost:5000');
+  // We connect to our backend server. The URL must match the one our server is running on.
+  const newSocket = io('http://localhost:5000');
       
       // Store the new socket connection in our state.
       setSocket(newSocket);
@@ -25,6 +24,11 @@ export const SocketProvider = ({ children }) => {
       // --- Event Listeners for Debugging ---
       newSocket.on('connect', () => {
         console.log('Socket connected to server:', newSocket.id);
+        try {
+          const role = user?.role;
+          const userId = user?._id;
+          if (role && userId) newSocket.emit('identify', { role, userId });
+        } catch {}
       });
 
       newSocket.on('disconnect', () => {

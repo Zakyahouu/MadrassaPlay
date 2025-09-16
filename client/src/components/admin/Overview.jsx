@@ -53,7 +53,8 @@ const Overview = ({ stats, loading, onNavigate }) => {
       title: 'Platform Settings', 
       icon: Settings, 
       description: 'Configure system settings',
-      action: 'settings'
+      action: 'settings',
+      comingSoon: true,
     }
   ];
 
@@ -111,15 +112,20 @@ const Overview = ({ stats, loading, onNavigate }) => {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {quickActions.map((action, index) => {
+          {quickActions.map((action, index) => {
             const IconComponent = action.icon;
+            const disabled = action.comingSoon;
             return (
               <button 
                 key={index}
-        onClick={() => onNavigate && onNavigate(action.action)}
-        className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-left group focus:outline-none focus:ring-2 focus:ring-blue-500"
-        aria-label={action.title}
+                onClick={() => { if (!disabled && onNavigate) onNavigate(action.action); }}
+                className={`relative p-4 border border-gray-200 rounded-lg transition-all duration-200 text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-70' : 'hover:bg-gray-50 hover:border-gray-300'}`}
+                aria-label={action.title}
+                disabled={disabled}
               >
+                {disabled && (
+                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Coming Soon</span>
+                )}
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
                     <IconComponent className="w-5 h-5 text-blue-600" />

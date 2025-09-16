@@ -7,6 +7,7 @@ const { mark, undo, roster, history } = require('../controllers/attendanceContro
 router.post('/mark', protect, authorize('manager', 'staff'), mark);
 router.post('/undo', protect, authorize('manager', 'staff'), undo);
 router.get('/roster', protect, authorize('manager', 'staff'), roster);
-router.get('/history', protect, authorize('manager', 'staff', 'student'), history);
+// Allow teachers to read history (scoped in controller to own classes)
+router.get('/history', protect, authorize('manager', 'staff', 'student', 'teacher'), history);
 
 module.exports = router;

@@ -118,15 +118,15 @@ export default function StudentBadges() {
           const nextVariant = b.progress?.nextVariant;
           const color = tierColors[idx % tierColors.length];
           return (
-            <div key={b._id} onClick={()=>openModal(b)} className={`relative group p-4 rounded-2xl border cursor-pointer transition overflow-hidden ${b.earned ? 'bg-white hover:shadow-md border-indigo-200' : 'bg-gray-50 hover:shadow-sm border-gray-200'} `}>
+            <div key={b._id} onClick={()=>openModal(b)} className={`relative group p-5 rounded-2xl border cursor-pointer transition overflow-hidden ${b.earned ? 'bg-white hover:shadow-md border-indigo-200' : 'bg-gray-50 hover:shadow-sm border-gray-200'} `}>
               <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition bg-gradient-to-br ${color} mix-blend-multiply pointer-events-none rounded-2xl`}></div>
-              <div className="relative z-10 flex items-start gap-3">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${color} text-white shadow ${!b.earned ? 'grayscale opacity-60' : ''}`}>
-                  {currentVariant?.iconUrl ? <img src={currentVariant.iconUrl} alt={currentVariant.label} className="w-12 h-12 object-contain rounded-xl" /> : <Award className="w-6 h-6" />}
+              <div className="relative z-10 flex items-start gap-4">
+                <div className={`w-28 h-28 rounded-full flex items-center justify-center bg-gradient-to-br ${color} text-white shadow-md ring-2 ring-indigo-200/70 transition-transform duration-200 group-hover:scale-[1.03] ${!b.earned ? 'grayscale opacity-60' : ''}`}>
+                  {currentVariant?.iconUrl ? <img src={currentVariant.iconUrl} alt={currentVariant.label} className="w-24 h-24 object-contain drop-shadow-sm" /> : <Award className="w-10 h-10" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm truncate ${b.earned ? 'text-gray-900' : 'text-gray-600'}`}>{b.name}</p>
-                  <p className="text-[11px] text-indigo-600 font-medium truncate">{b.currentVariantLabel || 'Locked'}</p>
+                  <p className={`font-semibold text-base truncate ${b.earned ? 'text-gray-900' : 'text-gray-600'}`}>{b.name}</p>
+                  <p className="text-sm text-indigo-600 font-medium truncate">{b.currentVariantLabel || 'Locked'}</p>
                   {b.earned ? (
                     <div className="mt-1 w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${Math.min(100, b.progress?.percentage || 0)}%` }}></div>
@@ -135,10 +135,10 @@ export default function StudentBadges() {
                     <div className="mt-1 text-[10px] text-gray-500 flex items-center gap-1"><Lock className="w-3 h-3" /> Earn ≥{b.progress?.nextVariant?.thresholdPercent}%</div>
                   )}
                   {b.earned && nextVariant && (
-                    <p className="mt-1 text-[10px] text-gray-500">Need {b.progress.neededForNext} pts for {nextVariant.label}</p>
+                    <p className="mt-1 text-xs text-gray-500">Need {b.progress.neededForNext} pts for {nextVariant.label}</p>
                   )}
                   {b.earned && !nextVariant && (
-                    <p className="mt-1 text-[10px] text-emerald-600 font-medium">Top tier achieved</p>
+                    <p className="mt-1 text-xs text-emerald-600 font-medium">Top tier achieved</p>
                   )}
                 </div>
               </div>
@@ -164,12 +164,14 @@ export default function StudentBadges() {
                   const passed = selected.percentage != null && selected.percentage >= v.thresholdPercent;
                   const locked = !passed;
                   return (
-                    <div key={v.label} className={`relative flex-1 min-w-[140px] p-4 rounded-xl border text-center ${earnedTier ? 'border-indigo-400 bg-indigo-50' : locked ? 'border-gray-200 bg-gray-50' : 'border-emerald-300 bg-emerald-50'} transition`}>
-                      <div className="mb-2 flex justify-center">
-                        {v.iconUrl ? <img src={v.iconUrl} alt={v.label} className={`h-10 w-10 object-contain ${locked && !earnedTier ? 'grayscale opacity-60' : ''}`} /> : <Award className={`w-8 h-8 ${(locked && !earnedTier) ? 'text-gray-400' : 'text-indigo-600'}`} />}
+                    <div key={v.label} className={`relative flex-1 min-w-[180px] p-6 rounded-xl border text-center ${earnedTier ? 'border-indigo-300 bg-indigo-50' : locked ? 'border-gray-200 bg-gray-50' : 'border-emerald-300 bg-emerald-50'} transition`}> 
+                      <div className="mb-4 flex justify-center">
+                        {v.iconUrl 
+                          ? <img src={v.iconUrl} alt={v.label} className={`h-24 w-24 object-contain rounded-full ring-2 ring-indigo-200/70 shadow ${locked && !earnedTier ? 'grayscale opacity-60' : ''}`} /> 
+                          : <Award className={`w-12 h-12 ${(locked && !earnedTier) ? 'text-gray-400' : 'text-indigo-600'}`} />}
                       </div>
-                      <p className={`font-semibold text-sm ${earnedTier ? 'text-indigo-700' : 'text-gray-700'}`}>{v.label}</p>
-                      <p className="text-[10px] text-gray-500 mb-2">≥{v.thresholdPercent}%</p>
+                      <p className={`font-semibold text-base ${earnedTier ? 'text-indigo-700' : 'text-gray-700'}`}>{v.label}</p>
+                      <p className="text-xs text-gray-500 mb-2">≥{v.thresholdPercent}%</p>
                       {earnedTier && <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-indigo-600 text-white">Current</span>}
                       {!earnedTier && !locked && <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white">Achieved</span>}
                       {locked && !earnedTier && <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-gray-300 text-gray-700">Locked</span>}

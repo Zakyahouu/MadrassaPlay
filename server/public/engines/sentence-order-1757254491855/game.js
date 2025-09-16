@@ -1,5 +1,6 @@
+/* Sentence Order Engine - Unified INIT/COMPLETE contract */
 (function(){
-  let creation, items=[], settings, qIndex=0, score=0;
+  let creation = window.__GAME_CONFIG__ || null, items=[], settings, qIndex=0, score=0;
   const byId=(id)=>document.getElementById(id);
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
   const enterBtn=byId('enterBtn'); const qIdx=byId('qIdx'); const scoreEl=byId('score');
@@ -71,7 +72,12 @@
   function finish(){
     show('done');
     summary.textContent = `You scored ${score} / ${items.length}`;
-    window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length }}, '*');
+    // Unified completion contract
+    if(creation?.callbacks?.onComplete){
+      creation.callbacks.onComplete({ score, totalPossibleScore: items.length });
+    }
+    try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs: null }}, '*'); } catch{}
+    try { window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length }}, '*'); } catch{}
   }
 
   window.addEventListener('message', (e)=>{
@@ -81,6 +87,10 @@
       enterBtn.onclick = countdown;
     }
   });
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creation && creation.config && creation.config.autoStart) {
+    try { show('ready'); enterBtn.onclick = countdown; } catch {}
+  }
 
   undoBtn.onclick = ()=>{ const last=assembled.lastElementChild; if(last) last.remove(); };
   clearBtn.onclick = ()=>{ assembled.innerHTML=''; };

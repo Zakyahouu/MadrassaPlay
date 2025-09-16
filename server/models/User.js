@@ -14,8 +14,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       // Employees/staff can be created without email; others require it
       required: function () {
-    // Email is optional for students, staff, and employees
-    return this.role !== 'employee' && this.role !== 'staff' && this.role !== 'student';
+        // Email is optional for students, staff, employees, and legacy 'staff pedagogique'
+        return this.role !== 'employee' && this.role !== 'staff' && this.role !== 'student' && this.role !== 'staff pedagogique';
       },
       unique: true,
       sparse: true, // allow multiple docs without email
@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['student', 'teacher', 'admin', 'manager', 'principal', 'staff', 'employee'],
+      enum: ['student', 'teacher', 'admin', 'manager', 'principal', 'staff', 'employee', 'staff pedagogique'],
     },
     school: {
       type: mongoose.Schema.Types.ObjectId,
@@ -155,7 +155,7 @@ userSchema.virtual('fullName').get(function () {
 // - student -> studentStatus
 userSchema.virtual('status').get(function () {
   if (this.role === 'teacher') return this.teacherStatus;
-  if (this.role === 'staff' || this.role === 'employee') return this.staffStatus;
+  if (this.role === 'staff' || this.role === 'employee' || this.role === 'staff pedagogique') return this.staffStatus;
   if (this.role === 'student') return this.studentStatus;
   return undefined;
 });

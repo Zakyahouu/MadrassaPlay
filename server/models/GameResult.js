@@ -16,10 +16,10 @@ const gameResultSchema = new mongoose.Schema(
       required: true,
       ref: 'GameCreation',
     },
-    // The assignment this result belongs to
+    // The assignment this result belongs to (optional for live sessions)
     assignment: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: false,
       ref: 'Assignment',
     },
     // The score the student achieved
@@ -40,6 +40,14 @@ const gameResultSchema = new mongoose.Schema(
   isTest: { type: Boolean, default: false },
   // XP awarded for this attempt (0 for non-counted or tests)
   xpAwarded: { type: Number, default: 0 },
+  // Optional live session id if this result comes from a real-time session
+  liveSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'LiveSession' },
+  // Optional per-question answers for full teacher report (engine-specific shape)
+  // Use Mixed to preserve engine-provided fields like { index, correct, selectedIndex, guess, target, deltaMs, ... }
+  answers: {
+    type: [mongoose.Schema.Types.Mixed],
+    default: undefined,
+  },
   },
   {
     timestamps: true,
@@ -55,5 +63,7 @@ gameResultSchema.index({ assignment: 1 });
 gameResultSchema.index({ gameCreation: 1, student: 1 });
 // Index to quickly find counted attempts
 gameResultSchema.index({ assignment: 1, gameCreation: 1, student: 1, counted: 1 });
+// Index for live session lookups (student recent live results)
+gameResultSchema.index({ liveSessionId: 1, student: 1, createdAt: -1 });
 
 module.exports = mongoose.model('GameResult', gameResultSchema);

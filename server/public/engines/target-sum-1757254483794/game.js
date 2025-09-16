@@ -1,5 +1,6 @@
+/* Target Sum Engine - Unified INIT/COMPLETE contract */
 (function(){
-  let creation, settings, puzzles=[], idx=0, score=0;
+  let creation = window.__GAME_CONFIG__ || null, settings, puzzles=[], idx=0, score=0;
   const byId=(id)=>document.getElementById(id);
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
   const enterBtn=byId('enterBtn'); const pIdx=byId('pIdx'); const targetEl=byId('target'); const sumEl=byId('sum'); const scoreEl=byId('score');
@@ -55,12 +56,26 @@
 
   function start(){ show('play'); idx=0; score=0; gen(); render(); }
 
-  function finish(){ show('done'); const total = puzzles.length; summary.textContent=`You solved ${score} / ${total}`; window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total }}, '*'); }
+  function finish(){
+    show('done');
+    const total = puzzles.length;
+    summary.textContent=`You solved ${score} / ${total}`;
+    // Unified completion contract
+    if(creation?.callbacks?.onComplete){
+      creation.callbacks.onComplete({ score, totalPossibleScore: total });
+    }
+    try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs: null }}, '*'); } catch{}
+    try { window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total }}, '*'); } catch{}
+  }
 
   window.addEventListener('message', (e)=>{
     if (e.data?.type==='INIT_GAME'){
       const p=e.data.payload; creation=p; settings=p.config||{}; show('ready'); enterBtn.onclick = countdown; }
   });
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creation && creation.config && creation.config.autoStart) {
+    try { show('ready'); enterBtn.onclick = countdown; } catch {}
+  }
 
   clearBtn.onclick = ()=>{ [...bank.querySelectorAll('.num.selected')].forEach(el=>el.classList.remove('selected')); updateSum(); };
   submitBtn.onclick = submit;

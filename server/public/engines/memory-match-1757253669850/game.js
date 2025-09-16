@@ -1,8 +1,11 @@
+/* Memory Match Engine - Unified INIT/COMPLETE contract */
 (function(){
-  let creation, settings, pairs=[], gridEl, first=null, second=null, lock=false, found=0, moves=0;
+  let creation = window.__GAME_CONFIG__ || null, settings, pairs=[], gridEl, first=null, second=null, lock=false, found=0, moves=0;
   const byId=(id)=>document.getElementById(id);
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
-    const enterBtn=byId('enterBtn'); const movesEl=byId('moves'); const pairsEl=byId('pairs'); const summary=byId('summary');
+  const enterBtn=byId('enterBtn'); const movesEl=byId('moves'); const pairsEl=byId('pairs'); const summary=byId('summary');
+  // instrumentation
+  let startMs = 0; const answers = []; // record matched pairs order
 
   function show(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
   function countdown(){ show('countdown'); let n=3; const c=document.querySelector('#countdown .count'); c.textContent=n; const iv=setInterval(()=>{ n--; c.textContent=n; if(n<=0){ clearInterval(iv); start(); } }, 800); }
@@ -57,6 +60,7 @@
         gridEl.appendChild(div);
       });
     moves=0; found=0; updateHud();
+  startMs = Date.now();
       if (settings?.showAllAtStart){
         // Briefly reveal all cards
     const useImages = (settings?.pairSource || 'theme') === 'customImages' || contentHasImages;
@@ -89,7 +93,7 @@
     second = card; lock=true; moves++; updateHud();
     const ok = first.dataset.value === second.dataset.value;
     setTimeout(()=>{
-      if (ok){ first.classList.add('matched'); second.classList.add('matched'); found++; if (found===pairs.length) finish(); }
+  if (ok){ first.classList.add('matched'); second.classList.add('matched'); found++; answers.push({ match: first.dataset.value }); if (found===pairs.length) finish(); }
         first.classList.remove('revealed'); second.classList.remove('revealed');
         if (!ok){
           if (useImages){ const i1=first.querySelector('img'); const i2=second.querySelector('img'); if (i1) i1.style.display='none'; if (i2) i2.style.display='none'; }
@@ -106,7 +110,13 @@
     // perfect is pairs.length moves min; we consider score inversely proportional to moves, but keep simple: 100% when found all, score=pairs.length
     const score = pairs.length; const total = pairs.length; // treat as full completion
     summary.textContent = `Completed in ${moves} moves`;
-    window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total }}, '*');
+    const totalTimeMs = Math.max(0, Date.now() - (startMs || Date.now()));
+    // Unified completion contract
+    if(creation?.callbacks?.onComplete){
+      creation.callbacks.onComplete({ score, totalPossibleScore: total, answers });
+    }
+    try{ window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); }catch{}
+    try{ window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*'); }catch{}
   }
 
   window.addEventListener('message', (e)=>{
@@ -116,4 +126,8 @@
       enterBtn.onclick = countdown;
     }
   });
+  // If pre-injected config exists and autoStart flag is present, optionally start
+  if (creation && creation.config && creation.config.autoStart) {
+    try { show('ready'); enterBtn.onclick = countdown; } catch {}
+  }
 })();

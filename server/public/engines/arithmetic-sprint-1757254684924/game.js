@@ -4,6 +4,8 @@
   const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
   const enterBtn=byId('enterBtn'); const timer=byId('timer'); const progress=byId('progress'); const scoreEl=byId('score');
   const qEl=byId('question'); const form=byId('answerForm'); const ans=byId('answer'); const summary=byId('summary');
+  // instrumentation
+  let qStartMs = 0; const answers = [];
 
   function show(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
   function countdown(){ show('countdown'); let n=3; const c=document.querySelector('#countdown .count'); c.textContent=n; const iv=setInterval(()=>{ n--; c.textContent=n; if(n<=0){ clearInterval(iv); start(); } }, 800); }
@@ -38,6 +40,7 @@
     progress.textContent = settings?.mode==='fixed_count' ? `${idx+1}/${pool.length}` : '';
     scoreEl.textContent = `⭐ ${score}`;
     ans.value=''; ans.focus();
+  qStartMs = Date.now();
   }
 
   function start(){
@@ -54,9 +57,13 @@
     e.preventDefault();
     const q = pool[idx]; if(!q) return;
     const val = Number(ans.value);
-    const ok = val===q.ans;
+  const ok = val===q.ans;
+  const deltaMs = Math.max(0, Date.now() - (qStartMs || Date.now()));
     if (ok) score++;
     qEl.classList.add(ok? 'correct':'wrong');
+  // record and emit live progress
+  answers.push({ index: idx, a: q.a, op: q.op, b: q.b, value: val, correctAnswer: q.ans, correct: ok, deltaMs });
+  try { window.parent.postMessage({ type:'LIVE_ANSWER', payload:{ correct: ok, deltaMs, scoreDelta: ok?1:0, currentScore: score }}, '*'); } catch {}
     setTimeout(()=>{ qEl.classList.remove('correct','wrong'); idx++; render(); }, 200);
   };
 
@@ -65,7 +72,9 @@
     show('done');
     const total = settings?.mode==='fixed_count' ? pool.length : score; // in timed mode, score is count of correct; set total=score for 100%
     summary.textContent = `You answered ${score}${settings?.mode==='fixed_count'?` / ${pool.length}`:''} correctly`;
-    window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total }}, '*');
+    const totalTimeMs = answers.reduce((a,b)=>a + (Number(b.deltaMs)||0), 0);
+    try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); } catch {}
+    window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*');
   }
 
   window.addEventListener('message', (e)=>{

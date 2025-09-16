@@ -53,7 +53,7 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
     new Date(school.trialExpiresAt) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   return (
-    <div className="group bg-white p-6 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300">
+    <div className="group bg-white p-6 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-bold text-lg text-gray-900 mb-2">{school.name}</h3>
@@ -128,7 +128,7 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
         )}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="mt-auto flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
           <button
             onClick={onViewManagers}
@@ -827,7 +827,7 @@ const SchoolManager = () => {
           {schools.length === 0 ? 'No schools found.' : 'No schools match your filters.'}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
           {filteredSchools.map(school => (
             <SchoolCard
               key={school._id}

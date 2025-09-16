@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import LoadingState from '../shared/LoadingState';
+import EmptyState from '../shared/EmptyState';
 
 /* StudentAssignmentsPanel
  * Enhanced assignment list with filters, pagination, and progress metrics.
@@ -118,11 +120,24 @@ export default function StudentAssignmentsPanel() {
         </div>
       </div>
 
-      {loading && <div className="text-sm text-gray-500">Loading assignments…</div>}
+      {loading && (
+        <div className="space-y-3">
+          <LoadingState message="Loading assignments…" />
+          <div className="grid grid-cols-1 gap-3">
+            {[...Array(3)].map((_,i)=> (
+              <div key={i} className="p-5 rounded-2xl border bg-white animate-pulse">
+                <div className="h-4 w-1/3 bg-gray-200 rounded mb-3" />
+                <div className="h-3 w-2/3 bg-gray-100 rounded mb-2" />
+                <div className="h-3 w-1/2 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {!loading && !error && items.length === 0 && (
-        <div className="text-sm text-gray-500">No assignments match your filters.</div>
+        <EmptyState title="No assignments" message="No assignments match your filters." />
       )}
 
       <div className="space-y-4">
@@ -130,7 +145,16 @@ export default function StudentAssignmentsPanel() {
           const { progress } = a;
           const dueSoon = a.dueSoon;
           const status = a.status;
-          const statusColor = status === 'active' ? 'bg-emerald-100 text-emerald-700' : status === 'upcoming' ? 'bg-blue-100 text-blue-700' : status === 'completed' ? 'bg-gray-200 text-gray-700' : 'bg-gray-100 text-gray-600';
+          // Color coding for statuses
+          // active: green, dueSoon hint: orange dot, upcoming: blue, completed: slate, canceled: red, expired: amber
+          const statusColor = (
+            status === 'active' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+            status === 'upcoming' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+            status === 'completed' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
+            status === 'canceled' ? 'bg-red-100 text-red-700 border border-red-200' :
+            status === 'expired' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+            'bg-gray-100 text-gray-700 border border-gray-200'
+          );
           const locked = status === 'upcoming';
           return (
             <div key={a._id} className={`p-5 rounded-2xl border shadow-sm transition group ${locked ? 'bg-gray-50 opacity-80' : 'bg-white hover:shadow-md'}` }>
@@ -166,12 +190,12 @@ export default function StudentAssignmentsPanel() {
               <div className="mt-4 flex gap-2 flex-wrap">
                 {/* Determine next gameCreation to continue */}
                 <Link to={!locked && progress.completed < progress.totalGames && a.nextGameAttemptsRemaining !== 0 ? `/student/play-game/${a.nextGameId || ''}` : '#'} state={{ assignmentId: a._id }}
-                  className={`text-xs px-3 py-1.5 rounded-md font-medium border ${!locked && progress.completed < progress.totalGames && status==='active' && a.nextGameAttemptsRemaining !== 0 ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
+                  className={`text-xs px-3 py-1.5 rounded-md font-medium border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${!locked && progress.completed < progress.totalGames && status==='active' && a.nextGameAttemptsRemaining !== 0 ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
                   onClick={e => { if (locked || progress.completed >= progress.totalGames || status!=='active' || a.nextGameAttemptsRemaining===0) e.preventDefault(); }}
                 >
                   {progress.completed < progress.totalGames ? 'Continue' : 'Completed'}
                 </Link>
-        <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-medium border bg-white hover:bg-indigo-50">Details</button>
+        <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-medium border bg-white hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Details</button>
               </div>
             </div>
           );
@@ -179,9 +203,9 @@ export default function StudentAssignmentsPanel() {
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between pt-2 border-t mt-4 gap-2">
-        <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center"><ChevronLeft className="w-3 h-3" /> Prev</button>
+  <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"><ChevronLeft className="w-3 h-3" /> Prev</button>
         <div className="text-xs text-gray-500">Page {page} / {totalPages}</div>
-        <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center">Next <ChevronRight className="w-3 h-3" /></button>
+  <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-3 py-1 text-xs border rounded-md flex items-center gap-1 disabled:opacity-40 w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Next <ChevronRight className="w-3 h-3" /></button>
       </div>
 
       {breakdownOpen && (
@@ -195,7 +219,7 @@ export default function StudentAssignmentsPanel() {
               <button onClick={()=>{setBreakdownOpen(false);}} className="p-2 text-gray-500 hover:text-gray-700">✕</button>
             </div>
             <div className="p-5 space-y-4">
-              {loadingBreakdown && <div className="text-sm text-gray-500">Loading…</div>}
+              {loadingBreakdown && <LoadingState message="Loading…" />}
               {breakdownError && <div className="text-sm text-red-600">{breakdownError}</div>}
               {breakdownData && (
                 <div className="space-y-4">

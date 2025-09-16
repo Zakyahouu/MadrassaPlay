@@ -5,6 +5,8 @@
   const enterBtn=byId('enterBtn'); const qIdx=byId('qIdx'); const scoreEl=byId('score');
   const wordBank=byId('wordBank'); const assembled=byId('assembled'); const summary=byId('summary');
   const undoBtn=byId('undoBtn'), clearBtn=byId('clearBtn'), submitBtn=byId('submitBtn');
+  // instrumentation
+  let qStartMs = 0; const answers = [];
 
   function show(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
   function countdown(){ show('countdown'); let n=3; const c=document.querySelector('#countdown .count'); c.textContent=n; const iv=setInterval(()=>{ n--; c.textContent=n; if(n<=0){ clearInterval(iv); start(); } }, 800); }
@@ -42,6 +44,7 @@
       };
       wordBank.appendChild(btn);
     });
+  qStartMs = Date.now();
   }
 
   function submit(){
@@ -52,6 +55,10 @@
     if (ok) score++;
     scoreEl.textContent = `⭐ ${score}/${items.length}`;
     assembled.classList.add(ok?'correct':'wrong');
+  const deltaMs = Math.max(0, Date.now() - (qStartMs || Date.now()));
+  const selectedWords = [...assembled.children].map(n=>n.textContent);
+  answers.push({ index: qIndex, selected: selectedWords, target: item.sentence, correct: ok, timeMs: deltaMs });
+  try { window.parent.postMessage({ type:'LIVE_ANSWER', payload:{ correct: ok, deltaMs, scoreDelta: ok?1:0, currentScore: score }}, '*'); } catch {}
     setTimeout(()=>{
       assembled.classList.remove('correct','wrong');
       next();
@@ -71,7 +78,9 @@
   function finish(){
     show('done');
     summary.textContent = `You scored ${score} / ${items.length}`;
-    window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length }}, '*');
+  const totalTimeMs = answers.reduce((a,b)=>a+(Number(b.timeMs)||0),0);
+  try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); } catch {}
+  window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: items.length, answers }}, '*');
   }
 
   window.addEventListener('message', (e)=>{

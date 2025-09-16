@@ -7,6 +7,9 @@ import {
 import axios from 'axios';
 
 const AdsTab = () => {
+  useEffect(() => {
+    fetchAds();
+  }, []);
   const [ads, setAds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,15 +18,13 @@ const AdsTab = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    dateTime: '',
+    startDate: '',
+    endDate: '',
     targetAudience: 'both',
     location: 'dashboard'
   });
   const [bannerFile, setBannerFile] = useState(null);
 
-  useEffect(() => {
-    fetchAds();
-  }, []);
 
   const fetchAds = async () => {
     try {
@@ -142,7 +143,8 @@ const AdsTab = () => {
       setFormData({
         title: ad.title,
         description: ad.description,
-        dateTime: ad.dateTime ? new Date(ad.dateTime).toISOString().slice(0, 16) : '',
+        startDate: ad.startDate ? new Date(ad.startDate).toISOString().slice(0, 16) : '',
+        endDate: ad.endDate ? new Date(ad.endDate).toISOString().slice(0, 16) : '',
         targetAudience: ad.targetAudience,
         location: ad.location
       });
@@ -152,7 +154,8 @@ const AdsTab = () => {
       setFormData({
         title: '',
         description: '',
-        dateTime: '',
+        startDate: '',
+        endDate: '',
         targetAudience: 'both',
         location: 'dashboard'
       });
@@ -167,7 +170,8 @@ const AdsTab = () => {
     setFormData({
       title: '',
       description: '',
-      dateTime: '',
+      startDate: '',
+      endDate: '',
       targetAudience: 'both',
       location: 'dashboard'
     });
@@ -253,21 +257,12 @@ const AdsTab = () => {
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Advertisement
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Target Audience
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Location
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Date & Time
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Actions
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Advertisement</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Target Audience</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Location</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Start Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">End Date</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -297,10 +292,10 @@ const AdsTab = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-900">{formatDateTime(ad.dateTime)}</span>
-                          </div>
+                          <span className="text-sm text-gray-900">{ad.startDate ? formatDateTime(ad.startDate) : '-'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-900">{ad.endDate ? formatDateTime(ad.endDate) : '-'}</span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1">
@@ -396,24 +391,31 @@ const AdsTab = () => {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Date & Time *
-                      </label>
-                      <input
-                        required
-                        type="datetime-local"
-                        value={formData.dateTime}
-                        onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                      />
-                    </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Target Audience *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                        <input
+                          required
+                          type="datetime-local"
+                          value={formData.startDate}
+                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
+                        <input
+                          required
+                          type="datetime-local"
+                          value={formData.endDate}
+                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Target Audience *</label>
                         <select
                           required
                           value={formData.targetAudience}
@@ -426,11 +428,8 @@ const AdsTab = () => {
                           <option value="custom">Custom</option>
                         </select>
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Display Location *
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Display Location *</label>
                         <select
                           required
                           value={formData.location}

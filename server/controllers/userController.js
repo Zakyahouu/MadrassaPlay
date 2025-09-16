@@ -129,6 +129,14 @@ const loginUser = async (req, res) => {
 
     // Check if user exists AND if the provided password matches the hashed password in the DB
     if (user && (await bcrypt.compare(password, user.password))) {
+      // If user is assigned to a school, check school status
+      if (user.school) {
+        const School = require('../models/School');
+        const school = await School.findById(user.school);
+        if (school && (school.status === 'inactive' || school.status === 'deleted')) {
+          return res.status(403).json({ message: 'Your school subscription is deactivated. Please contact the administrator.' });
+        }
+      }
       // If they match, send back the user data and a new token
       res.status(200).json({
         _id: user._id,
@@ -178,7 +186,7 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
   try {
-  const { name, email, username, contact, experience, status, activities } = req.body;
+  const { name, firstName, lastName, email, username, contact, experience, status, activities } = req.body;
 
     // Find the user by ID
     const user = await User.findById(req.user._id);
@@ -196,7 +204,22 @@ const updateUserProfile = async (req, res) => {
     }
 
     // Update user fields
-    user.name = name || user.name;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (name) {
+      user.name = name;
+      // Ensure required first/last names exist before validation
+      if (!firstName || !lastName) {
+        const parts = String(name).trim().split(/\s+/);
+        if (parts.length >= 2) {
+          user.firstName = user.firstName || (parts[0] || 'User');
+          user.lastName = user.lastName || (parts.slice(1).join(' ') || 'User');
+        } else if (parts.length === 1) {
+          user.firstName = user.firstName || (parts[0] || 'User');
+          user.lastName = user.lastName || 'User';
+        }
+      }
+    }
     user.email = email || user.email;
     if (username) user.username = username;
     if (contact) {
@@ -214,12 +237,33 @@ const updateUserProfile = async (req, res) => {
       if (Array.isArray(activities)) user.activities = activities;
     }
     // Optional: allow staff/employees to update their own status if exposed in UI
-    if ((user.role === 'staff' || user.role === 'employee') && status) {
+  if ((user.role === 'staff' || user.role === 'employee' || user.role === 'staff pedagogique') && status) {
       user.staffStatus = status;
     }
 
-    // Save the updated user
-    const updatedUser = await user.save();
+    // Ensure required name fields are present before save (legacy safety)
+  if (!user.firstName || !user.lastName) {
+      const base = name || user.name || (user.email ? String(user.email).split('@')[0] : `User-${user._id}`);
+      if (!user.firstName && !user.lastName) {
+        const parts = String(base).trim().split(/\s+/);
+    user.firstName = parts[0] || 'User';
+    user.lastName = parts.slice(1).join(' ') || 'User';
+      } else {
+    if (!user.firstName) user.firstName = base || 'User';
+    if (!user.lastName) user.lastName = 'User';
+      }
+    }
+
+    // Save the updated user with graceful duplicate error handling
+    let updatedUser;
+    try {
+      updatedUser = await user.save();
+    } catch (err) {
+      if (err && err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+        return res.status(400).json({ message: 'Email already exists.' });
+      }
+      throw err;
+    }
 
     // Send back the updated user data (without password)
     res.status(200).json({
@@ -243,9 +287,72 @@ const updateUserProfile = async (req, res) => {
 
 // 4. EXPORT THE FUNCTIONS
 // ==============================================================================
+// @desc    Get user breakdown by school and type (admin analytics)
+// @route   GET /api/users/analytics/user-breakdown
+// @access  Admin
+const getUserBreakdownAnalytics = async (req, res) => {
+  try {
+    // Aggregate users by school and role
+    const pipeline = [
+      {
+        $match: {
+          role: { $in: ["student", "teacher", "manager", "employee"] }
+        }
+      },
+      {
+        $group: {
+          _id: { school: "$school", role: "$role" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: "$_id.school",
+          breakdown: {
+            $push: {
+              role: "$_id.role",
+              count: "$count"
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "schools",
+          localField: "_id",
+          foreignField: "_id",
+          as: "school"
+        }
+      },
+      {
+        $unwind: "$school"
+      },
+      {
+        $project: {
+          school: { _id: "$school._id", name: "$school.name" },
+          breakdown: 1
+        }
+      }
+    ];
+    const results = await User.aggregate(pipeline);
+    // Format breakdown as { student: N, teacher: N, manager: N, employee: N }
+    const formatted = results.map(r => ({
+      school: r.school,
+      breakdown: r.breakdown.reduce((acc, curr) => {
+        acc[curr.role] = curr.count;
+        return acc;
+      }, {})
+    }));
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
+  getUserBreakdownAnalytics,
 };

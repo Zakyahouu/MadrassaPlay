@@ -11,6 +11,16 @@ import axios from 'axios';
 
 const emptyVariant = () => ({ label: '', thresholdPercent: 0, iconUrl: '' });
 
+// helper to add auth header
+const authHeaders = () => {
+  try {
+    const token = JSON.parse(localStorage.getItem('user'))?.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+};
+
 export default function BadgeManager() {
   // Data collections
   const [templates, setTemplates] = useState([]);
@@ -40,7 +50,7 @@ export default function BadgeManager() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get('/api/templates');
+  const res = await axios.get('/api/templates', { headers: authHeaders() });
         setTemplates(res.data || []);
       } catch (_) { /* ignore */ }
     })();
@@ -49,7 +59,7 @@ export default function BadgeManager() {
   // Fetch all badges for summary list
   const loadAllBadges = async () => {
     try {
-      const res = await axios.get('/api/template-badges');
+  const res = await axios.get('/api/template-badges', { headers: authHeaders() });
       setAllBadges(res.data || []);
     } catch (_) { /* ignore */ }
   };
@@ -62,7 +72,7 @@ export default function BadgeManager() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await axios.get('/api/template-badges', { params: { template: templateId } });
+  const res = await axios.get('/api/template-badges', { params: { template: templateId }, headers: authHeaders() });
       const list = res.data || [];
       if (list.length) {
         const b = list[0];
@@ -93,7 +103,7 @@ export default function BadgeManager() {
     const form = new FormData();
     form.append('icon', file);
     try {
-      const res = await axios.post('/api/template-badges/icon/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  const res = await axios.post('/api/template-badges/icon/upload', form, { headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' } });
       updateVariant(idx, 'iconUrl', res.data.url);
     } catch (e) {
       setMessage({ type: 'error', text: 'Icon upload failed' });
@@ -127,15 +137,15 @@ export default function BadgeManager() {
     try {
       const payload = { template: selectedTemplateId, name, description, evaluationMode, variants: sortedVariants };
       if (isEditing && editingBadgeId) {
-        await axios.put(`/api/template-badges/${editingBadgeId}`, payload);
+        await axios.put(`/api/template-badges/${editingBadgeId}`, payload, { headers: authHeaders() });
         setMessage({ type: 'success', text: 'Badge updated.' });
       } else {
-        const res = await axios.post('/api/template-badges', payload);
+        const res = await axios.post('/api/template-badges', payload, { headers: authHeaders() });
         setEditingBadgeId(res.data._id);
         setIsEditing(true);
         setMessage({ type: 'success', text: 'Badge created.' });
       }
-  await loadAllBadges();
+      await loadAllBadges();
       // Close modal after short delay so user sees success
       setTimeout(()=>{ setIsModalOpen(false); }, 600);
     } catch (e) {
@@ -150,7 +160,7 @@ export default function BadgeManager() {
     setRecalculating(true);
     setMessage(null);
     try {
-      const res = await axios.post(`/api/template-badges/${editingBadgeId}/recalculate`);
+  const res = await axios.post(`/api/template-badges/${editingBadgeId}/recalculate`, null, { headers: authHeaders() });
       setMessage({ type: 'success', text: `Recalculated: ${res.data.updated} users updated.` });
     } catch (e) {
       setMessage({ type: 'error', text: e.response?.data?.message || 'Recalc failed.' });
@@ -165,7 +175,7 @@ export default function BadgeManager() {
     setDeletingBadge(true);
     setMessage(null);
     try {
-      await axios.delete(`/api/template-badges/template/${selectedTemplateId}`);
+  await axios.delete(`/api/template-badges/template/${selectedTemplateId}`, { headers: authHeaders() });
       setMessage({ type: 'success', text: 'Badge system deleted.' });
       await loadAllBadges();
       // Close modal after a short delay
@@ -271,9 +281,13 @@ export default function BadgeManager() {
                   </div>
                   <span className="text-[10px] px-2 py-1 rounded bg-indigo-100 text-indigo-700 font-medium uppercase tracking-wide">{b.evaluationMode}</span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="mt-3 flex flex-wrap gap-2 items-center">
                   {b.variants?.map(v => (
-                    <span key={v.label} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/10 text-indigo-700 border border-indigo-300">{v.label} ≥{v.thresholdPercent}%</span>
+                    <span key={v.label} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-600/10 text-indigo-700 border border-indigo-300">
+                      {v.iconUrl ? <img src={v.iconUrl} alt={v.label} className="h-3.5 w-3.5 object-contain" /> : null}
+                      <span>{v.label}</span>
+                      <span>{v.thresholdPercent}%</span>
+                    </span>
                   ))}
                 </div>
               </div>
@@ -375,7 +389,11 @@ export default function BadgeManager() {
                             <input type="file" accept="image/*" className="hidden" onChange={(e)=>uploadIcon(e.target.files?.[0], idx)} />
                           </label>
                         </div>
-                        {v.iconUrl && <img src={v.iconUrl} alt="icon" className="h-8 w-8 object-contain" />}
+                        {v.iconUrl ? (
+                          <img src={v.iconUrl} alt="icon" className="h-8 w-8 object-contain" />
+                        ) : (
+                          <div className="h-8 w-8 border rounded bg-white text-[10px] text-gray-400 flex items-center justify-center">No Icon</div>
+                        )}
                       </div>
                       <div className="md:col-span-1 flex items-end">
                         <button type="button" onClick={()=>removeVariant(idx)} disabled={variants.length===1} className="text-xs px-2 py-1 border rounded w-full disabled:opacity-40">X</button>

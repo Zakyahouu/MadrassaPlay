@@ -63,6 +63,12 @@ router.get('/count', protect, async (req, res) => {
 		res.status(500).json({ message: 'Server Error', error: err.message });
 	}
 });
+
+// Admin analytics: user breakdown by school and type
+// GET /api/users/analytics/user-breakdown
+// Returns: [{ school: { _id, name }, breakdown: { student: N, teacher: N, manager: N, ... } }]
+const { getUserBreakdownAnalytics } = require('../controllers/userController');
+router.get('/analytics/user-breakdown', protect, admin, getUserBreakdownAnalytics);
 // Profile routes (protected)
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, updateUserProfile);
