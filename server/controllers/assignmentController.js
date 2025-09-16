@@ -297,16 +297,23 @@ const getMyAssignmentsDetailed = async (req, res) => {
       if (gameIds.length) {
         const results = byAssignment.get(a._id.toString()) || [];
         if (results.length) {
-          const byGame = new Map();
+          const byGameAttempts = new Map();
+          const byGameBestPct = new Map();
           for (const r of results) {
             if (!gameIds.includes(r.gameCreation.toString())) continue;
             const key = r.gameCreation.toString();
+            byGameAttempts.set(key, (byGameAttempts.get(key) || 0) + 1);
             const pct = r.totalPossibleScore > 0 ? (r.score / r.totalPossibleScore) * 100 : 0;
-            if (!byGame.has(key) || pct > byGame.get(key)) byGame.set(key, pct);
+            if (!byGameBestPct.has(key) || pct > byGameBestPct.get(key)) byGameBestPct.set(key, pct);
           }
-          completed = byGame.size;
-          if (byGame.size) {
-            averagePercent = Array.from(byGame.values()).reduce((acc,v)=>acc+v,0)/byGame.size;
+          // Only count as completed if attemptLimit reached for that game
+          completed = 0;
+          for (const key of gameIds) {
+            const attempts = byGameAttempts.get(key) || 0;
+            if (a.attemptLimit && attempts >= a.attemptLimit) completed++;
+          }
+          if (byGameBestPct.size) {
+            averagePercent = Array.from(byGameBestPct.values()).reduce((acc,v)=>acc+v,0)/byGameBestPct.size;
           }
         }
       }
@@ -354,14 +361,21 @@ const getMyAssignmentsDetailed = async (req, res) => {
       if (original && original.gameCreations && original.gameCreations.length) {
         const seq = original.gameCreations.map(id => id.toString());
         const results = byAssignment.get(d._id.toString()) || [];
-        const attemptedGameIds = new Set(results.map(r => r.gameCreation.toString()));
-        const next = seq.find(id => !attemptedGameIds.has(id));
-        if (next) {
-          d.nextGameId = next;
-          if (d.attemptLimit && d.attemptLimit > 1) {
-            const nextAttempts = results.filter(r => r.gameCreation.toString() === next).length;
-            d.nextGameAttemptsRemaining = Math.max(0, d.attemptLimit - nextAttempts);
+        // For each game, check if its attempt limit is reached
+        let nextGameId = null;
+        let nextGameAttemptsRemaining = null;
+        for (const gameId of seq) {
+          const attempts = results.filter(r => r.gameCreation.toString() === gameId).length;
+          if (!original.attemptLimit || attempts < original.attemptLimit) {
+            nextGameId = gameId;
+            nextGameAttemptsRemaining = Math.max(0, original.attemptLimit - attempts);
+            break;
           }
+        }
+        if (nextGameId) {
+          d.nextGameId = nextGameId;
+          d.nextGameAttemptsRemaining = nextGameAttemptsRemaining;
+          console.log(`[DEBUG] Assignment ${d._id} nextGameId=${nextGameId} nextAttempts=${original.attemptLimit - nextGameAttemptsRemaining} attemptLimit=${original.attemptLimit} nextGameAttemptsRemaining=${nextGameAttemptsRemaining}`);
         }
       }
     }
