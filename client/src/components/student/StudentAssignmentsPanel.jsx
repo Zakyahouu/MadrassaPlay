@@ -62,9 +62,14 @@ export default function StudentAssignmentsPanel() {
         ts: Date.now()
       });
       setTimeout(()=>setToast(null), 4000);
+      // Trigger assignment data refresh so UI updates for further attempts
+      setRefreshToken(t => t + 1);
     };
     window.addEventListener('assignmentResultSaved', onSaved);
-    return () => window.removeEventListener('assignmentProgressRefresh', handler);
+    return () => {
+      window.removeEventListener('assignmentProgressRefresh', handler);
+      window.removeEventListener('assignmentResultSaved', onSaved);
+    };
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -160,22 +165,37 @@ export default function StudentAssignmentsPanel() {
             <div key={a._id} className={`p-5 rounded-2xl border shadow-sm transition group ${locked ? 'bg-gray-50 opacity-80' : 'bg-white hover:shadow-md'}` }>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-gray-900 text-sm truncate">{a.title}</h4>
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-500 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded-full ${statusColor} font-medium capitalize`}>{status}{dueSoon && status==='active' && <span className="ml-1 text-orange-600">• Due Soon</span>}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(a.endDate).toLocaleDateString()}</span>
-                    {a.attemptLimit && <span className="flex items-center gap-1">Limit: {a.attemptLimit}</span>}
+                  <h4 className="font-extrabold text-indigo-900 text-lg truncate flex items-center gap-2">
+                    {a.title}
+                    {progress.averagePercent >= 90 && <span title="High Score!" className="ml-2 text-yellow-500">🏆</span>}
+                  </h4>
+                  <div className="flex items-center gap-3 mt-2 text-xs flex-wrap">
+                    <span className={`px-2 py-1 rounded-full ${statusColor} font-bold capitalize text-sm`}>{status}{dueSoon && status==='active' && <span className="ml-1 text-orange-600 animate-pulse">• Due Soon</span>}</span>
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200 font-semibold">
+                      <Clock className="w-4 h-4" /> Due: {new Date(a.endDate).toLocaleDateString()}
+                    </span>
+                    {a.attemptLimit && <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold">Attempts: {a.attemptLimit}</span>}
                     {a.nextGameAttemptsRemaining !== undefined && status==='active' && progress.completed < progress.totalGames && (
-                      <span className={`px-2 py-0.5 rounded-full border text-[10px] ${a.nextGameAttemptsRemaining>0 ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-gray-100 text-gray-500'}`}>
-                        {a.nextGameAttemptsRemaining} attempt{a.nextGameAttemptsRemaining===1?'':'s'} left for next game
+                      <span className={`px-2 py-1 rounded-full border font-bold text-sm ${a.nextGameAttemptsRemaining>0 ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-gray-100 text-gray-500'}`}>
+                        {a.nextGameAttemptsRemaining} left
                       </span>
                     )}
                   </div>
-                  {a.description && <p className="mt-1 text-[11px] text-gray-600 line-clamp-2">{a.description}</p>}
+                  {a.description && <p className="mt-2 text-sm text-gray-600 line-clamp-2 italic">{a.description}</p>}
                 </div>
                 <div className="text-right text-xs">
-                  <div className="font-semibold text-gray-900 mb-1">{progress.completed}/{progress.totalGames} done</div>
-                  <div className="text-[10px] text-gray-500">Avg {progress.averagePercent}%</div>
+                  {a.nextGameAttemptsRemaining === 0 && a.nextGameId && (
+                    <>
+                      <div className="font-bold text-green-700 mb-1 text-lg flex items-center gap-1">Final Score: {progress.averagePercent}% {progress.averagePercent >= 90 ? '🌟' : progress.averagePercent >= 60 ? '👍' : '💡'}</div>
+                      <div className="text-xs text-gray-500">All attempts used</div>
+                    </>
+                  )}
+                  {a.nextGameAttemptsRemaining > 0 && a.nextGameId && (
+                    <>
+                      <div className="font-bold text-indigo-700 mb-1 text-lg flex items-center gap-1">Best Score: {progress.averagePercent}%</div>
+                      <div className="text-xs text-gray-500">Attempts left: {a.nextGameAttemptsRemaining}</div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="mt-3">
@@ -183,19 +203,20 @@ export default function StudentAssignmentsPanel() {
                   <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${progress.completionPercent}%` }}></div>
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-gray-500">
-                  <span>{progress.completionPercent}% Complete</span>
-                  {progress.completed < progress.totalGames && status === 'active' && <span>{progress.totalGames - progress.completed} left</span>}
+                  <span className="font-bold text-indigo-700">{progress.completionPercent}% Complete</span>
+                  {progress.completed < progress.totalGames && status === 'active' && <span className="font-bold text-purple-700">{progress.totalGames - progress.completed} game(s) left</span>}
                 </div>
               </div>
               <div className="mt-4 flex gap-2 flex-wrap">
                 {/* Determine next gameCreation to continue */}
                 <Link to={!locked && progress.completed < progress.totalGames && a.nextGameAttemptsRemaining !== 0 ? `/student/play-game/${a.nextGameId || ''}` : '#'} state={{ assignmentId: a._id }}
-                  className={`text-xs px-3 py-1.5 rounded-md font-medium border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${!locked && progress.completed < progress.totalGames && status==='active' && a.nextGameAttemptsRemaining !== 0 ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
-                  onClick={e => { if (locked || progress.completed >= progress.totalGames || status!=='active' || a.nextGameAttemptsRemaining===0) e.preventDefault(); }}
+                  className={`text-xs px-3 py-1.5 rounded-md font-medium border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${!locked && status==='active' && a.nextGameAttemptsRemaining > 0 && a.nextGameId ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'}`}
+                  onClick={e => { if (locked || status!=='active' || a.nextGameAttemptsRemaining <= 0 || !a.nextGameId) e.preventDefault(); }}
                 >
-                  {progress.completed < progress.totalGames ? 'Continue' : 'Completed'}
+                  {a.nextGameAttemptsRemaining > 0 && a.nextGameId ? 'Continue' : 'Completed'}
                 </Link>
         <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-medium border bg-white hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300">Details</button>
+  <button onClick={()=>openBreakdown(a._id)} className="text-xs px-3 py-1.5 rounded-md font-bold border bg-yellow-50 hover:bg-yellow-100 text-yellow-800 border-yellow-300 flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"><span>Details</span> <span className="text-lg">ℹ️</span></button>
               </div>
             </div>
           );

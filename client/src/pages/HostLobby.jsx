@@ -12,6 +12,7 @@ const HostLobby = () => {
 
   const [roomCode, setRoomCode] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [playerSearch, setPlayerSearch] = useState('');
   const [ranks, setRanks] = useState([]);
   const [running, setRunning] = useState(false);
   const [sessionInfo, setSessionInfo] = useState(null);
@@ -170,17 +171,32 @@ const HostLobby = () => {
           </div>
           <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg">
             <h2 className="text-2xl font-semibold mb-4">Players Joined ({players.length})</h2>
-            <ul className="space-y-2">
-              {players.length > 0 ? (
-                players.map((player) => (
-                  <li key={player.id} className="bg-gray-700 p-3 rounded-md text-lg">
-                    {player.name}
-                  </li>
-                ))
-              ) : (
-                <li className="text-gray-500">Waiting for players...</li>
-              )}
-            </ul>
+            <input
+              type="text"
+              value={playerSearch}
+              onChange={e => setPlayerSearch(e.target.value)}
+              placeholder="Search players..."
+              className="w-full mb-3 px-3 py-2 rounded bg-gray-700 text-white border border-gray-600"
+              aria-label="Search players"
+            />
+            <div className="max-h-64 overflow-y-auto">
+              <ul className="space-y-2">
+                {players.length > 0 ? (
+                  players
+                    .filter(p => p.name.toLowerCase().includes(playerSearch.toLowerCase()))
+                    .map((player) => (
+                      <li key={player.id} className="bg-gray-700 p-3 rounded-md text-lg flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-base">
+                          {player.name ? player.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?'}
+                        </div>
+                        <span className="truncate">{player.name}</span>
+                      </li>
+                    ))
+                ) : (
+                  <li className="text-gray-500">Waiting for players...</li>
+                )}
+              </ul>
+            </div>
           </div>
           {/* Live leaderboard preview */}
           <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg mt-6">
