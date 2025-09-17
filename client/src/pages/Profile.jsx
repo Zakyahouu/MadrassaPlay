@@ -503,7 +503,7 @@ const Profile = () => {
             onClick={() => {
               const role = user?.role;
               if (role === 'admin') navigate('/admin/dashboard');
-              else if (role === 'manager') navigate('/manager/dashboard');
+              else if (role === 'manager' || role === 'staff') navigate('/manager/dashboard');
               else if (role === 'teacher') navigate('/teacher/dashboard');
               else navigate('/');
             }}

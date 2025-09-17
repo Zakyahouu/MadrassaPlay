@@ -162,3 +162,4 @@ const DetailRow = ({ label, value, icon }) => (
 export default StudentPaymentDetailModal;
 
 
+

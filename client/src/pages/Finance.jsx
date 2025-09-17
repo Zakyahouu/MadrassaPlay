@@ -61,7 +61,7 @@ const Finance = () => {
     } else if (user?.role === 'student') {
       navigate('/student/dashboard');
     } else if (user?.role === 'staff') {
-      navigate('/staff/dashboard');
+      navigate('/manager/dashboard');
     } else {
       navigate('/'); // Fallback to home page
     }

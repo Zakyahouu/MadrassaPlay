@@ -3,6 +3,7 @@ const ClassModel = require('../models/Class');
 const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
 const Enrollment = require('../models/Enrollment');
+const LoggingService = require('../services/loggingService');
 
 // @desc    Get all students for a school (manager only)
 // @route   GET /api/students
@@ -138,6 +139,13 @@ const createStudent = asyncHandler(async (req, res) => {
   const studentResponse = student.toObject();
     delete studentResponse.password;
 
+  // Log the activity
+  await LoggingService.logManagerActivity(req, 'manager_student_create', 
+    `Created new student: ${student.firstName} ${student.lastName} (${student.studentCode})`, 
+    { studentId: student._id, studentCode: student.studentCode },
+    { entityType: 'student', entityId: student._id }
+  );
+
   res.status(201).json({
     success: true,
     student: studentResponse,
@@ -204,6 +212,13 @@ const updateStudent = asyncHandler(async (req, res) => {
   
   const studentResponse = updatedStudent.toObject();
   delete studentResponse.password;
+
+  // Log the activity
+  await LoggingService.logManagerActivity(req, 'manager_student_update', 
+    `Updated student: ${updatedStudent.firstName} ${updatedStudent.lastName} (${updatedStudent.studentCode})`, 
+    { studentId: updatedStudent._id, studentCode: updatedStudent.studentCode, changes: req.body },
+    { entityType: 'student', entityId: updatedStudent._id }
+  );
 
   res.json({
     success: true,
@@ -374,6 +389,13 @@ const enrollStudent = asyncHandler(async (req, res) => {
   student.enrollmentStatus = 'enrolled';
   await student.save();
 
+  // Log the activity
+  await LoggingService.logManagerActivity(req, 'student_enroll', 
+    `Enrolled student ${student.firstName} ${student.lastName} in class ${klass.name}`, 
+    { studentId: student._id, classId: klass._id, enrollmentId: enrollmentDoc._id },
+    { entityType: 'enrollment', entityId: enrollmentDoc._id }
+  );
+
   res.status(201).json({
     success: true,
     message: 'Student enrolled',
@@ -424,6 +446,13 @@ const deleteStudent = asyncHandler(async (req, res) => {
   const Payment = require('../models/Payment');
   await Attendance.deleteMany({ schoolId, studentId: student._id });
   await Payment.deleteMany({ schoolId, studentId: student._id });
+
+  // Log the activity before deletion
+  await LoggingService.logManagerActivity(req, 'manager_student_delete', 
+    `Deleted student: ${student.firstName} ${student.lastName} (${student.studentCode})`, 
+    { studentId: student._id, studentCode: student.studentCode },
+    { entityType: 'student', entityId: student._id }
+  );
 
   // Finally delete the student record
   await student.deleteOne();

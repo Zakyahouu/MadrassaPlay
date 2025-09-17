@@ -317,6 +317,11 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
     // Platform access fields (only for staff)
     username: data?.username || '',
     password: data?.password || '',
+    // Permissions (only for staff)
+    permissions: {
+      finance: data?.permissions?.finance || false,
+      logs: data?.permissions?.logs || false
+    }
   });
 
 
@@ -337,6 +342,10 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
         status: data.status || 'active',
         username: data.username || '',
         password: data.password || '',
+        permissions: {
+          finance: data?.permissions?.finance || false,
+          logs: data?.permissions?.logs || false
+        }
       });
     } else {
       // Reset form for new employee
@@ -354,6 +363,10 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
         status: 'active',
         username: '',
         password: '',
+        permissions: {
+          finance: false,
+          logs: false
+        }
       });
     }
   }, [data]);
@@ -391,12 +404,17 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
       salaryValue: parseFloat(form.salaryValue) || 0
     };
     
+    console.log('Form submission payload:', payload);
+    console.log('Permissions being sent:', payload.permissions);
+    
     // Remove platform access fields if not staff
     if (form.employeeType !== 'staff') {
       delete payload.username;
       delete payload.password;
+      delete payload.permissions;
     }
     
+    console.log('Final payload being sent:', payload);
     onSave(payload);
   };
 
@@ -661,6 +679,60 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
                       Password cannot be changed here. Use profile settings instead.
                     </p>
                   )}
+                </div>
+              </div>
+              
+              {/* Permissions Section */}
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-900">Access Permissions</h4>
+                <p className="text-sm text-gray-600">
+                  Select which sections this staff member can access on the platform.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="finance-permission"
+                      disabled={readonly}
+                      checked={form.permissions.finance}
+                      onChange={(e) => setForm({
+                        ...form,
+                        permissions: {
+                          ...form.permissions,
+                          finance: e.target.checked
+                        }
+                      })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="finance-permission" className="text-sm font-medium text-gray-700">
+                      Finance Access
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="logs-permission"
+                      disabled={readonly}
+                      checked={form.permissions.logs}
+                      onChange={(e) => setForm({
+                        ...form,
+                        permissions: {
+                          ...form.permissions,
+                          logs: e.target.checked
+                        }
+                      })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="logs-permission" className="text-sm font-medium text-gray-700">
+                      Activity Logs Access
+                    </label>
+                  </div>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Note:</strong> Staff members can only access sections they have been granted permission for. 
+                    Without permissions, they will only see basic platform features.
+                  </p>
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ const School = require('../models/School');
 const bcrypt = require('bcryptjs');
 // NEW: Import jsonwebtoken for creating user tokens
 const jwt = require('jsonwebtoken');
+const LoggingService = require('../services/loggingService');
 
 
 // 2. HELPER FUNCTION TO GENERATE A TOKEN
@@ -137,6 +138,13 @@ const loginUser = async (req, res) => {
           return res.status(403).json({ message: 'Your school subscription is deactivated. Please contact the administrator.' });
         }
       }
+      // Log successful login
+      await LoggingService.logAuthActivity(req, 'login', 
+        `User logged in successfully: ${user.name || user.username}`, 
+        { userId: user._id, role: user.role, school: user.school },
+        user._id, user.role, user.name || user.username
+      );
+
       // If they match, send back the user data and a new token
       res.status(200).json({
         _id: user._id,

@@ -10,18 +10,19 @@ const {
   deleteEmployee,
   getEmployeeSalaryHistory,
   payEmployeeSalary,
-  getSalarySummary
+  getSalarySummary,
+  getEmployeeByUsername,
+  getEmployeeByUserId
 } = require('../controllers/employeeController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// All routes are protected and require Manager role
+// All routes are protected
 router.use(protect);
-router.use(authorize('manager'));
 
 // @route   POST /api/employees
 // @desc    Create a new employee
 // @access  Private (Manager)
-router.post('/', createEmployee);
+router.post('/', authorize('manager'), createEmployee);
 
 // @route   GET /api/employees
 // @desc    Get all employees for a school
@@ -57,5 +58,15 @@ router.post('/:id/pay', payEmployeeSalary);
 // @desc    Get salary summary for a month
 // @access  Private (Manager)
 router.get('/salary-summary/:schoolId/:year/:month', getSalarySummary);
+
+// @route   GET /api/employees/by-username/:username
+// @desc    Get employee by username (for staff users to check their permissions)
+// @access  Private (Staff)
+router.get('/by-username/:username', authorize('staff'), getEmployeeByUsername);
+
+// @route   GET /api/employees/by-user/:userId
+// @desc    Get employee by user ID (for staff users to check their permissions)
+// @access  Private (Staff)
+router.get('/by-user/:userId', authorize('staff'), getEmployeeByUserId);
 
 module.exports = router;

@@ -16,6 +16,8 @@
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
     "emailjs-com": "^3.2.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.2",
     "lucide-react": "^0.536.0",
     "react": "^19.1.1",
     "react-barcode": "^1.6.1",

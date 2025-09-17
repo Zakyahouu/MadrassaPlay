@@ -12,6 +12,7 @@ const User = require('../models/User');
 const EmployeeSalaryTransaction = require('../models/EmployeeSalaryTransaction');
 const { calculateTeacherEarnings } = require('../services/teacherPayoutService');
 const { freezeMonthlyData, getMonthlyFinancialData } = require('../services/monthlyAggregationService');
+const LoggingService = require('../services/loggingService');
 
 /**
  * @desc    Get financial overview for a specific month

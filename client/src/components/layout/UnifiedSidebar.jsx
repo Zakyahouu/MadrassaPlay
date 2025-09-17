@@ -23,7 +23,8 @@ import {
   Gamepad2,
   ChevronLeft,
   ChevronRight,
-  DollarSign
+  DollarSign,
+  Activity
 } from 'lucide-react';
 
 const UnifiedSidebar = ({ 
@@ -32,10 +33,12 @@ const UnifiedSidebar = ({
   sidebarOpen, 
   setSidebarOpen,
   user,
-  role = 'admin'
+  role = 'admin',
+  userPermissions = {}
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const getNavigationItems = () => {
+    console.log('Getting navigation items for role:', role, 'permissions:', userPermissions);
     switch (role) {
       case 'admin':
         return [
@@ -49,7 +52,7 @@ const UnifiedSidebar = ({
           { id: 'analytics', name: 'Analytics', icon: TrendingUp }
         ];
       case 'manager':
-        return [
+        const managerItems = [
           { id: 'overview', name: 'Overview', icon: BarChart3 },
           { id: 'classes', name: 'Classes', icon: BookOpen },
           { id: 'attendance', name: 'Attendance', icon: Calendar },
@@ -60,9 +63,25 @@ const UnifiedSidebar = ({
           { id: 'rooms', name: 'Rooms', icon: Building2 },
           { id: 'equipment', name: 'Equipment', icon: Package },
           { id: 'catalog', name: 'Catalog', icon: Package },
-          { id: 'ads', name: 'Advertisements', icon: Megaphone },
-          { id: 'finance', name: 'Finance', icon: DollarSign }
+          { id: 'ads', name: 'Advertisements', icon: Megaphone }
         ];
+
+        // Add conditional tabs based on permissions
+        console.log('Checking permissions for sidebar:', userPermissions);
+        console.log('Finance permission:', userPermissions?.finance, 'Type:', typeof userPermissions?.finance);
+        console.log('Logs permission:', userPermissions?.logs, 'Type:', typeof userPermissions?.logs);
+        
+        if (userPermissions && userPermissions.logs === true) {
+          console.log('Adding logs tab');
+          managerItems.push({ id: 'log', name: 'Log', icon: Activity });
+        }
+        if (userPermissions && userPermissions.finance === true) {
+          console.log('Adding finance tab');
+          managerItems.push({ id: 'finance', name: 'Finance', icon: DollarSign });
+        }
+
+        console.log('Final manager navigation items:', managerItems);
+        return managerItems;
       case 'teacher':
         return [
           { id: 'overview', name: 'Overview', icon: BarChart3 },

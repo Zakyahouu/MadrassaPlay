@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const StudentFinancial = require('../models/StudentFinancial');
+const LoggingService = require('../services/loggingService');
 
 // @desc    Create a cash payment record (aligned with new schema)
 // @route   POST /api/payments
@@ -110,6 +111,13 @@ const createPayment = async (req, res) => {
         { upsert: true }
       );
     }
+
+    // Log the payment activity
+    await LoggingService.logManagerActivity(req, 'manager_payment_record', 
+      `Recorded payment of ${parsedAmount} DZD for student ${enrollment.studentId}`, 
+      { paymentId: payment._id, amount: parsedAmount, kind, enrollmentId },
+      { entityType: 'payment', entityId: payment._id }
+    );
 
     res.status(201).json({ payment, balanceDelta: sessionsAdded });
   } catch (error) {

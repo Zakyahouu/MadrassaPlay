@@ -363,3 +363,4 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
 export default ManualTransactionsTable;
 
 
+

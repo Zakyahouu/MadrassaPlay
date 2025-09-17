@@ -23,6 +23,10 @@ import {
   Filter,
   Search
 } from 'lucide-react';
+import enhancedPdfExportService from '../../services/enhancedPdfExportService';
+import fallbackPdfExportService from '../../services/fallbackPdfExportService';
+import chartCaptureService from '../../services/chartCaptureService';
+import PDFExportTest from './PDFExportTest';
 
 const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const [monthData, setMonthData] = useState(null);
@@ -34,6 +38,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const [error, setError] = useState(null);
   const [selectedChart, setSelectedChart] = useState('overview');
   const [showDetailedView, setShowDetailedView] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   // Chart colors
   const colors = {
@@ -114,6 +119,33 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   useEffect(() => {
     fetchAnalyticsData();
   }, [schoolId, year, month]);
+
+  // Register charts for PDF capture
+  useEffect(() => {
+    const registerCharts = () => {
+      const incomeExpensesChart = document.getElementById('income-expenses-chart');
+      const teacherPayoutsChart = document.getElementById('teacher-payouts-chart');
+      const expenseCategoriesChart = document.getElementById('expense-categories-chart');
+
+      if (incomeExpensesChart) {
+        chartCaptureService.registerChart('income-expenses-chart', incomeExpensesChart);
+      }
+      if (teacherPayoutsChart) {
+        chartCaptureService.registerChart('teacher-payouts-chart', teacherPayoutsChart);
+      }
+      if (expenseCategoriesChart) {
+        chartCaptureService.registerChart('expense-categories-chart', expenseCategoriesChart);
+      }
+    };
+
+    // Register charts after a short delay to ensure DOM is ready
+    const timer = setTimeout(registerCharts, 1000);
+    
+    return () => {
+      clearTimeout(timer);
+      chartCaptureService.clearAllCharts();
+    };
+  }, [monthData, teacherPayouts, expenseCategories]);
 
   // Handle refresh
   const handleRefresh = () => {
@@ -351,10 +383,44 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   }));
 
   // Export functions
-  const exportToPDF = () => {
-    // Basic CSV export for now
-    const csvData = generateCSVData();
-    downloadCSV(csvData, `financial-report-${year}-${month}.csv`);
+  const exportToPDF = async () => {
+    try {
+      setExportingPDF(true);
+      const filename = `financial-analytics-report-${year}-${month}.pdf`;
+      
+      const exportData = {
+        monthData,
+        teacherPayouts,
+        debtData,
+        expenseCategories,
+        employeeSalaries,
+        schoolName: 'School Management System' // You can get this from props or context
+      };
+
+      // Try enhanced PDF export first, fallback to HTML if it fails
+      try {
+        // Chart IDs to capture
+        const chartIds = [
+          'income-expenses-chart',
+          'teacher-payouts-chart',
+          'expense-categories-chart'
+        ];
+
+        await enhancedPdfExportService.exportAnalyticsToPDF(exportData, chartIds, filename);
+        alert('PDF report generated successfully!');
+      } catch (enhancedError) {
+        console.warn('Enhanced PDF export failed, using fallback:', enhancedError);
+        
+        // Use fallback HTML export
+        await fallbackPdfExportService.exportAnalyticsToPDF(exportData, [], filename);
+        alert('PDF report generated successfully! (HTML format - use browser print to save as PDF)');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF report. Please try again.');
+    } finally {
+      setExportingPDF(false);
+    }
   };
 
   const exportToExcel = () => {
@@ -464,6 +530,9 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   return (
     <div className="space-y-6">
+      {/* PDF Export Test - Remove this in production */}
+      <PDFExportTest />
+      
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -482,10 +551,15 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={exportToPDF}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={exportingPDF}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <FileText className="w-4 h-4" />
-              <span>Export PDF</span>
+              {exportingPDF ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              <span>{exportingPDF ? 'Generating PDF...' : 'Export PDF'}</span>
             </button>
             
             <button
@@ -574,7 +648,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
           </div>
 
           {/* Income vs Expenses Donut Chart */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6" id="income-expenses-chart">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Income vs Expenses Distribution</h3>
             <div className="flex justify-center">
               <DonutChart
@@ -638,7 +712,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 colors={[colors.danger, colors.warning, colors.info]}
               />
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6" id="expense-categories-chart">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Expense Categories</h3>
               <DonutChart
                 data={expenseCategoryData}
@@ -707,7 +781,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 colors={colors.teachers}
               />
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6" id="teacher-payouts-chart">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Teacher Payouts Overview</h3>
               <DonutChart
                 data={teacherPayoutData}

@@ -19,6 +19,7 @@ import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
+import LogTab from './LogTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
@@ -41,10 +42,51 @@ export const ManagerDashboard = () => {
     { title: 'Total Staff', value: '0', icon: BarChart3, color: 'text-orange-600', change: 0 },
   ]);
   const [loading, setLoading] = useState(true);
+  const [userPermissions, setUserPermissions] = useState({});
 
   // School trial status state
   const [schoolTrial, setSchoolTrial] = useState(null);
   const [loadingTrial, setLoadingTrial] = useState(true);
+
+  // Fetch user permissions for staff users
+  const fetchUserPermissions = async () => {
+    try {
+      console.log('Fetching permissions for user:', user?.role, user?.username);
+      
+      if (user?.role === 'staff') {
+        const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
+        if (!token) {
+          console.log('No token found for staff user');
+          return;
+        }
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        console.log('Fetching employee data for user ID:', user._id);
+        const response = await axios.get(`/api/employees/by-user/${user._id}`, config);
+        console.log('Employee response:', response.data);
+        console.log('Employee data:', response.data.data);
+        console.log('Employee permissions:', response.data.data?.permissions);
+        
+        if (response.data.success && response.data.data.permissions) {
+          setUserPermissions(response.data.data.permissions);
+          console.log('Set permissions:', response.data.data.permissions);
+        } else {
+          console.log('No permissions found in response');
+          setUserPermissions({});
+        }
+      } else if (user?.role === 'manager') {
+        // Managers have all permissions
+        setUserPermissions({ finance: true, logs: true });
+        console.log('Set manager permissions: all access');
+      } else {
+        // Default permissions for any other role
+        console.log('Setting default permissions for role:', user?.role);
+        setUserPermissions({});
+      }
+    } catch (error) {
+      console.error('Error fetching user permissions:', error);
+      setUserPermissions({});
+    }
+  };
 
   // Fetch real stats data
   useEffect(() => {
@@ -100,7 +142,8 @@ export const ManagerDashboard = () => {
     };
     fetchStats();
     fetchSchoolTrial();
-  }, [activeTab, user?.school]);
+    fetchUserPermissions();
+  }, [activeTab, user?.school, user?.role, user?.username]);
 
   const quickActions = [
     {
@@ -222,6 +265,8 @@ export const ManagerDashboard = () => {
         return <AdsTab />;
       case 'reports':
         return <ReportsTab />;
+      case 'log':
+        return <LogTab schoolId={user?.school?._id || user?.school} />;
       case 'finance': // ✅ added finance support
         window.location.href = '/manager/finance';
         return null;
@@ -240,6 +285,9 @@ export const ManagerDashboard = () => {
     }
   };
 
+  console.log('ManagerDashboard rendering for user:', user);
+  console.log('User role:', user?.role, 'permissions:', userPermissions);
+
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
       <UnifiedSidebar 
@@ -249,6 +297,7 @@ export const ManagerDashboard = () => {
         setSidebarOpen={setSidebarOpen}
         user={user}
         role="manager"
+        userPermissions={userPermissions}
       />
 
       <div className="flex-1 relative">

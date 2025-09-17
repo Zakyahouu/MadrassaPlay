@@ -71,6 +71,23 @@ const employeeSchema = new mongoose.Schema(
     password: {
       type: String,
       trim: true
+    },
+    // Permissions for platform access (only for staff)
+    permissions: {
+      finance: {
+        type: Boolean,
+        default: false
+      },
+      logs: {
+        type: Boolean,
+        default: false
+      }
+    },
+    // Link to User record for staff employees
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
     }
   },
   { 

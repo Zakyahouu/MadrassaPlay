@@ -20,10 +20,12 @@ const {
   getEmployeeSalaryAnalytics
 } = require('../controllers/financeController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { checkFinanceAccess } = require('../middleware/permissionMiddleware');
 
 // All routes are protected and require Manager role
 router.use(protect);
 router.use(authorize('manager'));
+router.use(checkFinanceAccess);
 
 // @route   GET /api/finance/overview/:schoolId/:year/:month
 // @desc    Get financial overview for a specific month

@@ -4,6 +4,9 @@ const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 const Employee = require('../models/Employee');
 const EmployeeSalaryTransaction = require('../models/EmployeeSalaryTransaction');
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const LoggingService = require('../services/loggingService');
 
 /**
  * @desc    Create a new employee
@@ -11,7 +14,7 @@ const EmployeeSalaryTransaction = require('../models/EmployeeSalaryTransaction')
  * @access  Private (Manager)
  */
 const createEmployee = asyncHandler(async (req, res) => {
-  const { name, role, employeeType, salaryType, salaryValue, hireDate, phone, email, address, notes, username, password } = req.body;
+  const { name, role, employeeType, salaryType, salaryValue, hireDate, phone, email, address, notes, username, password, permissions } = req.body;
 
   // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
@@ -69,9 +72,72 @@ const createEmployee = asyncHandler(async (req, res) => {
     if (employeeType === 'staff') {
       employeeData.username = username;
       employeeData.password = password; // Note: In production, this should be hashed
+      
+      // Add permissions for staff
+      employeeData.permissions = {
+        finance: permissions?.finance === true || permissions?.finance === 'true',
+        logs: permissions?.logs === true || permissions?.logs === 'true'
+      };
+      
+      console.log('Saving permissions for staff employee:', employeeData.permissions);
+      console.log('Received permissions from request:', permissions);
+      console.log('Finance permission type:', typeof permissions?.finance, 'Value:', permissions?.finance);
+      console.log('Logs permission type:', typeof permissions?.logs, 'Value:', permissions?.logs);
     }
 
     const employee = await Employee.create(employeeData);
+
+    // If this is a staff employee, also create a User record for login
+    if (employeeType === 'staff') {
+      try {
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create User record
+        const userData = {
+          firstName: name.split(' ')[0] || name,
+          lastName: name.split(' ').slice(1).join(' ') || '',
+          name: name,
+          email: email,
+          username: username,
+          password: hashedPassword,
+          role: 'staff',
+          school: new mongoose.Types.ObjectId(userSchoolId),
+          contact: {
+            phone1: phone || '',
+            address: address || ''
+          }
+        };
+
+        const user = await User.create(userData);
+        
+        // Link the employee to the user
+        employee.userId = user._id;
+        await employee.save();
+
+        console.log(`Created User record for staff employee: ${user.username}`);
+        console.log(`User ID: ${user._id}, Employee ID: ${employee._id}`);
+        console.log(`User school: ${user.school}, Employee school: ${employee.schoolId}`);
+        console.log(`User permissions:`, employee.permissions);
+      } catch (userError) {
+        console.error('Error creating User record for staff employee:', userError);
+        // If User creation fails, delete the employee record
+        await Employee.findByIdAndDelete(employee._id);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create user account for staff employee',
+          error: userError.message
+        });
+      }
+    }
+
+    // Log the activity
+    await LoggingService.logManagerActivity(req, 'manager_employee_create', 
+      `Created new employee: ${employee.name} (${employee.employeeType})`, 
+      { employeeId: employee._id, employeeType: employee.employeeType, role: employee.role },
+      { entityType: 'employee', entityId: employee._id }
+    );
 
     res.status(201).json({
       success: true,
@@ -340,6 +406,13 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
     await transaction.populate('employeeId', 'name role salaryType salaryValue');
     await transaction.populate('createdBy', 'firstName lastName');
 
+    // Log the salary payment activity
+    await LoggingService.logManagerActivity(req, 'manager_salary_pay', 
+      `Paid salary of ${paidAmount} DZD to employee ${employee.name} for ${year}-${month}`, 
+      { employeeId: employee._id, amount: paidAmount, year, month, paymentMethod },
+      { entityType: 'employee', entityId: employee._id }
+    );
+
     res.json({
       success: true,
       data: transaction
@@ -382,6 +455,95 @@ const getSalarySummary = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Get employee by username
+// @route   GET /api/employees/by-username/:username
+// @access  Private (Staff)
+const getEmployeeByUsername = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
+
+  if (!userSchoolId) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'No school associated with your account' 
+    });
+  }
+
+  try {
+    const employee = await Employee.findOne({
+      username: username,
+      schoolId: userSchoolId
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: employee
+    });
+  } catch (error) {
+    console.error('Error getting employee by username:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error', 
+      error: error.message 
+    });
+  }
+});
+
+// @desc    Get employee by user ID
+// @route   GET /api/employees/by-user/:userId
+// @access  Private (Staff)
+const getEmployeeByUserId = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
+
+  if (!userSchoolId) {
+    return res.status(400).json({ 
+      success: false,
+      message: 'No school associated with your account' 
+    });
+  }
+
+  try {
+    const employee = await Employee.findOne({
+      userId: userId,
+      schoolId: userSchoolId
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    console.log('Returning employee data for user ID:', userId, {
+      id: employee._id,
+      permissions: employee.permissions,
+      financeType: typeof employee.permissions?.finance,
+      logsType: typeof employee.permissions?.logs
+    });
+    
+    res.json({
+      success: true,
+      data: employee
+    });
+  } catch (error) {
+    console.error('Error getting employee by user ID:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error', 
+      error: error.message 
+    });
+  }
+});
+
 module.exports = {
   createEmployee,
   getEmployees,
@@ -390,5 +552,7 @@ module.exports = {
   deleteEmployee,
   getEmployeeSalaryHistory,
   payEmployeeSalary,
-  getSalarySummary
+  getSalarySummary,
+  getEmployeeByUsername,
+  getEmployeeByUserId
 };

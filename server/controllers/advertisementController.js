@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Advertisement = require('../models/Advertisement');
 const path = require('path');
+const LoggingService = require('../services/loggingService');
 
 // @desc    Create a new advertisement
 // @route   POST /api/advertisements
@@ -59,6 +60,14 @@ const createAdvertisement = asyncHandler(async (req, res) => {
       adId: advertisement._id?.toString?.(),
       schoolId: advertisement.schoolId?.toString?.()
     });
+
+    // Log the advertisement creation activity
+    await LoggingService.logManagerActivity(req, 'manager_advertisement_create', 
+      `Created advertisement: ${advertisement.title}`, 
+      { advertisementId: advertisement._id, title: advertisement.title, targetAudience: advertisement.targetAudience },
+      { entityType: 'advertisement', entityId: advertisement._id }
+    );
+
     res.status(201).json(advertisement);
   } else {
     res.status(400);

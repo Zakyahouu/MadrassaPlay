@@ -4,6 +4,7 @@ const Attendance = require('../models/Attendance');
 const Enrollment = require('../models/Enrollment');
 const Class = require('../models/Class');
 const { buildClassEnrollmentSummaries } = require('./enrollmentController');
+const LoggingService = require('../services/loggingService');
 const { Types } = mongoose;
 
 // GET /api/attendance/history?enrollmentId=...&status=present|absent
@@ -166,6 +167,13 @@ const mark = asyncHandler(async (req, res) => {
     // Keep a consistent shape even if roster build fails for any reason
     items = [];
   }
+  // Log the attendance marking activity
+  await LoggingService.logManagerActivity(req, 'manager_attendance_override', 
+    `Marked student attendance as ${status} for ${dateOnly.toISOString().split('T')[0]}`, 
+    { enrollmentId, studentId: enrollment.studentId, classId: enrollment.classId, status, date: dateOnly },
+    { entityType: 'enrollment', entityId: enrollmentId }
+  );
+
   res.status(prev ? 200 : 201).json({ success: true, classId: enrollment.classId, date: dateOnly, items, attendance, countersDelta, balanceDelta });
 });
 
@@ -210,6 +218,13 @@ const undo = asyncHandler(async (req, res) => {
   } catch (e) {
     items = [];
   }
+  // Log the attendance undo activity
+  await LoggingService.logManagerActivity(req, 'manager_attendance_override', 
+    `Undid student attendance for ${dateOnly.toISOString().split('T')[0]}`, 
+    { enrollmentId, studentId: enrollment.studentId, classId: enrollment.classId, date: dateOnly },
+    { entityType: 'enrollment', entityId: enrollmentId }
+  );
+
   res.json({ success: true, classId: enrollment.classId, date: dateOnly, items, deleted: true });
 });
 
