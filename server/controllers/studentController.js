@@ -582,7 +582,10 @@ const searchStudents = asyncHandler(async (req, res) => {
 
   const searchRegex = new RegExp(q, 'i');
   
-  const students = await User.find({
+  // Check if the query looks like a MongoDB ObjectId (24 hex characters)
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(q.trim());
+  
+  let searchQuery = {
     school: schoolId,
     role: 'student',
     $or: [
@@ -593,7 +596,18 @@ const searchStudents = asyncHandler(async (req, res) => {
       { 'contact.phone1': searchRegex },
       { studentCode: searchRegex }
     ]
-  }).select('-password');
+  };
+
+  // If it looks like an ObjectId, also search by exact _id match
+  if (isObjectId) {
+    searchQuery.$or.push({ _id: q.trim() });
+  }
+
+  console.log('Search query:', { q, isObjectId, searchQuery });
+  
+  const students = await User.find(searchQuery).select('-password');
+  
+  console.log('Search results count:', students.length);
 
   res.json(students);
 });

@@ -12,6 +12,9 @@ const AttendanceTab = ({ initialClassId = '' }) => {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [scanCode, setScanCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupStudent, setPopupStudent] = useState(null);
   const [popupEnrollments, setPopupEnrollments] = useState([]);
@@ -57,18 +60,42 @@ const AttendanceTab = ({ initialClassId = '' }) => {
     }
   };
 
-  const openPopupFromSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const searchStudents = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    
     try {
+      setSearchLoading(true);
+      console.log('Searching for:', searchQuery.trim());
       const { data } = await axios.get('/api/students/search', { params: { q: searchQuery.trim() } });
-      const s = Array.isArray(data) ? data[0] : null;
-      if (!s) return alert('No students found');
-      const enr = await axios.get(`/api/enrollments/student/${s._id}`);
-      setPopupStudent(s);
-      setPopupEnrollments(Array.isArray(enr.data) ? enr.data.filter(e=>e.status==='active') : []);
-      setPopupOpen(true);
+      console.log('Search API response:', data);
+      setSearchResults(Array.isArray(data) ? data : []);
+      setShowSearchResults(true);
     } catch (e) {
+      console.error('Search error:', e);
+      setSearchResults([]);
+      setShowSearchResults(false);
       alert(e?.response?.data?.message || 'Search failed');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const openStudentPopup = async (student) => {
+    try {
+      console.log('Opening popup for student:', student);
+      const enr = await axios.get(`/api/enrollments/student/${student._id}`);
+      console.log('Student enrollments:', enr.data);
+      setPopupStudent(student);
+      setPopupEnrollments(Array.isArray(enr.data) ? enr.data : []);
+      setPopupOpen(true);
+      setShowSearchResults(false);
+    } catch (e) {
+      console.error('Error loading student data:', e);
+      alert('Failed to load student data');
     }
   };
 
@@ -214,15 +241,22 @@ const AttendanceTab = ({ initialClassId = '' }) => {
                         placeholder="Name, email, or code…"
                         className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                         value={searchQuery}
-                        onChange={(e)=>setSearchQuery(e.target.value)}
-                        onKeyDown={(e)=>{ if (e.key==='Enter') openPopupFromSearch(); }}
+                        onChange={(e)=>{
+                          setSearchQuery(e.target.value);
+                          if (!e.target.value.trim()) {
+                            setSearchResults([]);
+                            setShowSearchResults(false);
+                          }
+                        }}
+                        onKeyDown={(e)=>{ if (e.key==='Enter') searchStudents(); }}
                       />
                     </div>
                     <button 
-                      onClick={openPopupFromSearch} 
-                      className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors font-medium"
+                      onClick={searchStudents}
+                      disabled={searchLoading}
+                      className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Search
+                      {searchLoading ? 'Searching...' : 'Search'}
                     </button>
                   </div>
                 </div>
@@ -231,6 +265,86 @@ const AttendanceTab = ({ initialClassId = '' }) => {
           </div>
         </div>
       </div>
+
+      {/* Search Results */}
+      {showSearchResults && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-600" />
+                Search Results
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                  {searchResults.length} found
+                </span>
+              </h2>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setShowSearchResults(false);
+                }}
+                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-white/50 rounded-lg transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div className="p-6">
+            {searchLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Searching...</span>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Students Found</h3>
+                <p className="text-gray-600">No students match your search criteria.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {searchResults.map((student) => (
+                  <div
+                    key={student._id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    onClick={() => openStudentPopup(student)}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                        {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-lg">
+                          {`${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          {student.studentCode && (
+                            <span className="flex items-center gap-1">
+                              <QrCode className="w-4 h-4" />
+                              {student.studentCode}
+                            </span>
+                          )}
+                          {student.email && (
+                            <span>{student.email}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-blue-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content Area */}
       {loading ? (
