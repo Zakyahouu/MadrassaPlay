@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -29,6 +30,7 @@ import UnifiedCard from '../components/shared/UnifiedCard';
 
 const Profile = () => {
   const { user, updateUser } = useContext(AuthContext);
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   // Payments/Profile extras
@@ -288,60 +290,76 @@ const Profile = () => {
   const renderTeacherSpecificFields = () => {
     if (user?.role !== 'teacher') return null;
 
+    // Only show if there's actual data or we're editing
+    const hasExperience = (user?.experience && user.experience > 0) || isEditing;
+    const hasStatus = user?.status || isEditing;
+    const hasActivities = Array.isArray(user?.activities) && user.activities.length > 0;
+
+    if (!hasExperience && !hasStatus && !hasActivities && !isEditing) return null;
+
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
-            {isEditing ? (
-              <input
-                type="number"
-                name="experience"
-                value={formData.experience}
-                onChange={handleInputChange}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            ) : (
-              <p className="text-gray-900">{user?.experience || 0} years</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Employment Status</label>
-            {isEditing ? (
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="employed">Employed</option>
-                <option value="freelance">Freelance</option>
-                <option value="retired">Retired</option>
-              </select>
-            ) : (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
-                {user?.status || 'employed'}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
-          {Array.isArray(user?.activities) && user.activities.length ? (
-            <div className="space-y-2">
-              {user.activities.map((act, idx) => (
-                <div key={idx} className="text-sm text-gray-800">
-                  <span className="font-semibold mr-1">{(act.type || '').replace(/([A-Z])/g,' $1').replace(/^\w/, c=>c.toUpperCase())}:</span>
-                  <span>{(act.items||[]).length} item{(act.items||[]).length!==1?'s':''}</span>
-                </div>
-              ))}
+        <h3 className="text-lg font-medium text-gray-900">Teaching Information</h3>
+        
+        {(hasExperience || isEditing) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+              {isEditing ? (
+                <input
+                  type="number"
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleInputChange}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                <p className="text-gray-900">{user?.experience} years</p>
+              )}
             </div>
-          ) : (
-            <p className="text-gray-500">No activities configured.</p>
-          )}
-        </div>
+            
+            {(hasStatus || isEditing) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Employment Status</label>
+                {isEditing ? (
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="employed">Employed</option>
+                    <option value="freelance">Freelance</option>
+                    <option value="retired">Retired</option>
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
+                    {user?.status}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(hasActivities || isEditing) && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
+            {Array.isArray(user?.activities) && user.activities.length ? (
+              <div className="space-y-2">
+                {user.activities.map((act, idx) => (
+                  <div key={idx} className="text-sm text-gray-800">
+                    <span className="font-semibold mr-1">{(act.type || '').replace(/([A-Z])/g,' $1').replace(/^\w/, c=>c.toUpperCase())}:</span>
+                    <span>{(act.items||[]).length} item{(act.items||[]).length!==1?'s':''}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No activities configured.</p>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -378,10 +396,18 @@ const Profile = () => {
   const renderManagerSpecificFields = () => {
     if (user?.role !== 'manager' && user?.role !== 'staff' && user?.role !== 'employee') return null;
 
+    const hasStatus = user?.status || isEditing;
+    const isManager = user?.role === 'manager';
+    const isStaff = user?.role === 'staff' || user?.role === 'employee';
+
+    if (!isManager && !hasStatus && !isEditing) return null;
+
     return (
       <div className="space-y-6">
-        {/* Management Access card unchanged for manager */}
-        {user?.role === 'manager' && (
+        <h3 className="text-lg font-medium text-gray-900">Work Information</h3>
+        
+        {/* Management Access card for manager */}
+        {isManager && (
           <div className="bg-indigo-50 border-indigo-200 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-3">
               <Users className="w-5 h-5 text-indigo-600" />
@@ -394,7 +420,8 @@ const Profile = () => {
             </div>
           </div>
         )}
-        {(user?.role === 'staff' || user?.role === 'employee') && (
+        
+        {(isStaff && (hasStatus || isEditing)) && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Work Status</label>
             {isEditing ? (
@@ -410,7 +437,7 @@ const Profile = () => {
               </select>
             ) : (
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(user?.status)}`}>
-                {user?.status || 'active'}
+                {user?.status}
               </span>
             )}
           </div>
@@ -462,26 +489,27 @@ const Profile = () => {
     return () => { mounted = false; };
   }, [user?.role, user?.updatedAt]);
 
-  const renderStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {(statsData||[]).map((stat, index) => (
-        <UnifiedCard key={index} padding="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+  const renderStats = () => {
+    if (!statsData || statsData.length === 0) return null;
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsData.map((stat, index) => (
+          <UnifiedCard key={index} padding="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              </div>
+              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              </div>
             </div>
-            <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-              <stat.icon className={`w-5 h-5 ${stat.color}`} />
-            </div>
-          </div>
-        </UnifiedCard>
-      ))}
-      {statsData && statsData.length === 0 && (
-        <div className="text-sm text-gray-500">No stats available.</div>
-      )}
-    </div>
-  );
+          </UnifiedCard>
+        ))}
+      </div>
+    );
+  };
 
   if (!user) {
     return (
@@ -495,7 +523,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Back Button */}
         <div className="mb-6">
@@ -510,7 +538,7 @@ const Profile = () => {
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+{t('back-to-dashboard')}
           </button>
         </div>
 
@@ -546,7 +574,7 @@ const Profile = () => {
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
                     {getRoleDisplayName(user.role)}
                   </span>
-                  {user?.school && (
+                  {user?.school?.name && (
                     <span className="text-sm text-gray-600">• {user.school.name}</span>
                   )}
                 </div>
@@ -584,10 +612,12 @@ const Profile = () => {
           </div>
 
           {/* Stats */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-            {renderStats()}
-          </div>
+          {statsData && statsData.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+              {renderStats()}
+            </div>
+          )}
         </UnifiedCard>
 
         {/* Profile Details */}
@@ -617,23 +647,65 @@ const Profile = () => {
                   )}
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Phone className="w-4 h-4 inline mr-2" />
-                    Phone Number
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      name="contact.phone1"
-                      value={formData.contact?.phone1 || ''}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{user?.contact?.phone1 || user?.phone || 'Not provided'}</p>
-                  )}
-                </div>
+                {(user?.contact?.phone1 || user?.phone || isEditing) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Phone className="w-4 h-4 inline mr-2" />
+                      Phone Number
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        name="contact.phone1"
+                        value={formData.contact?.phone1 || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{user?.contact?.phone1 || user?.phone}</p>
+                    )}
+                  </div>
+                )}
+
+                {(user?.contact?.phone2 || isEditing) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Phone className="w-4 h-4 inline mr-2" />
+                      Secondary Phone
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        name="contact.phone2"
+                        value={formData.contact?.phone2 || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{user?.contact?.phone2}</p>
+                    )}
+                  </div>
+                )}
+
+                {(user?.contact?.address || isEditing) && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <MapPin className="w-4 h-4 inline mr-2" />
+                      Address
+                    </label>
+                    {isEditing ? (
+                      <textarea
+                        name="contact.address"
+                        value={formData.contact?.address || ''}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <p className="text-gray-900">{user?.contact?.address}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -674,11 +746,9 @@ const Profile = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Enrollments & Balances</h3>
                 {loadingFinance ? (
                   <p className="text-gray-500">Loading...</p>
-                ) : (
+                ) : enrollments.length > 0 ? (
                   <div className="space-y-3">
-                    {enrollments.length === 0 ? (
-                      <p className="text-gray-500">No enrollments found.</p>
-                    ) : enrollments.map((enr) => {
+                    {enrollments.map((enr) => {
                       const remaining = deriveRemainingSessions(enr);
                       const overdue = remaining <= 0;
                       const lastPay = payments.find(p => (p.enrollmentId === enr._id) || (p.enrollmentId?._id === enr._id));
@@ -745,12 +815,14 @@ const Profile = () => {
                       );
                     })}
                   </div>
+                ) : (
+                  <p className="text-gray-500">No enrollments found.</p>
                 )}
               </div>
             )}
 
     {/* Payments History (manager/staff only; server RBAC restricts /api/payments) */}
-    {(['manager','staff'].includes(user?.role)) && (
+    {(['manager','staff'].includes(user?.role)) && (payments.length > 0 || canManageFinance) && (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Payments</h3>

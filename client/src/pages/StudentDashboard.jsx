@@ -290,9 +290,12 @@ const StudentDashboard = () => {
             {/* Welcome Section */}
             <UnifiedCard className="bg-blue-50 border-blue-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-blue-900 mb-2">Welcome back, {user?.name}!</h1>
-                  <p className="text-blue-700">Ready to continue your learning journey?</p>
+                <div className="flex items-center gap-4">
+                  <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-12 h-12 object-contain rounded-lg" />
+                  <div>
+                    <h1 className="text-2xl font-bold text-blue-900 mb-2">Bon retour, {user?.name} !</h1>
+                    <p className="text-blue-700">Prêt à continuer votre parcours d'apprentissage ?</p>
+                  </div>
                 </div>
                 <div className="hidden md:block">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">

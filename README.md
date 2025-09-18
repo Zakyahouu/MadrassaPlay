@@ -1,4 +1,4 @@
-# MadrassaPlay
+# Skill Snap
 
 An educational gaming platform for teachers to create and host interactive games for students.
 
@@ -30,7 +30,7 @@ An educational gaming platform for teachers to create and host interactive games
 1. Clone the repository
 ```bash
 git clone <repository-url>
-cd MadrassaPlay
+cd Skill Snap
 ```
 
 2. Install dependencies
@@ -88,7 +88,7 @@ See [CHANGELOG.md](./CHANGELOG.md) for the complete list of changes.
 ## Project Structure
 
 ```
-MadrassaPlay/
+Skill Snap/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable UI components

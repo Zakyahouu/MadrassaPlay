@@ -12,34 +12,68 @@ class PDFExportService {
   }
 
   // Initialize new PDF document
-  initDocument(title, schoolName) {
+  initDocument(title, schoolData) {
     this.doc = new jsPDF();
     this.currentY = this.margin;
     
     // Add header
-    this.addHeader(title, schoolName);
+    this.addHeader(title, schoolData);
     this.addPageBreak();
   }
 
   // Add header with title and school info
-  addHeader(title, schoolName) {
-    // School logo placeholder (you can replace with actual logo)
-    this.doc.setFontSize(20);
+  addHeader(title, schoolData) {
+    // Add logo
+    try {
+      // Add logo image (you may need to convert Logo.jpg to base64 or use a different method)
+      this.doc.addImage('/Logo.jpg', 'JPEG', this.margin, this.currentY, 30, 20);
+      this.currentY += 25;
+    } catch (error) {
+      console.log('Logo not found, using text fallback');
+      // Fallback to text if logo not found
+      this.doc.setFontSize(20);
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.text(schoolData?.name || 'Skill Snap', this.margin, this.currentY);
+      this.currentY += 8;
+    }
+
+    // School Information Section
+    this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(schoolName || 'School Management System', this.margin, this.currentY);
-    this.currentY += 8;
+    this.doc.text(schoolData?.name || 'Skill Snap', this.margin, this.currentY);
+    this.currentY += 6;
+
+    // School contact information
+    if (schoolData?.contact) {
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'normal');
+      if (schoolData.contact.address) {
+        this.doc.text(`Adresse : ${schoolData.contact.address}`, this.margin, this.currentY);
+        this.currentY += 4;
+      }
+      if (schoolData.contact.phone) {
+        this.doc.text(`Téléphone : ${schoolData.contact.phone}`, this.margin, this.currentY);
+        this.currentY += 4;
+      }
+      if (schoolData.contact.email) {
+        this.doc.text(`E-mail : ${schoolData.contact.email}`, this.margin, this.currentY);
+        this.currentY += 4;
+      }
+    }
 
     // Report title
     this.doc.setFontSize(16);
-    this.doc.setFont('helvetica', 'normal');
+    this.doc.setFont('helvetica', 'bold');
     this.doc.text(title, this.margin, this.currentY);
-    this.currentY += 6;
+    this.currentY += 8;
 
-    // Date
+    // Report details
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Generated on: ${new Date().toLocaleDateString()}`, this.margin, this.currentY);
-    this.currentY += 10;
+    this.doc.text(`Généré le : ${schoolData?.reportDate || new Date().toLocaleDateString()} à ${schoolData?.reportTime || new Date().toLocaleTimeString()}`, this.margin, this.currentY);
+    this.currentY += 4;
+    this.doc.text(`Généré par : ${schoolData?.generatedBy || 'Utilisateur'} (${schoolData?.userRole || 'Utilisateur'})`, this.margin, this.currentY);
+    this.currentY += 8;
 
     // Add line separator
     this.doc.setLineWidth(0.5);
@@ -215,10 +249,10 @@ class PDFExportService {
 
     // By role
     if (employeeData.byRole && employeeData.byRole.length > 0) {
-      this.addSectionTitle('Salaries by Role');
+      this.addSectionTitle('Salaires par Rôle');
 
       const tableData = [
-        ['Role', 'Count', 'Total Calculated', 'Total Paid', 'Remaining']
+        ['Rôle', 'Nombre', 'Total Calculé', 'Total Payé', 'Restant']
       ];
 
       employeeData.byRole.forEach(role => {
@@ -344,12 +378,12 @@ class PDFExportService {
         debtData,
         expenseCategories = [],
         employeeSalaries = {},
-        schoolName = 'School Management System'
+        schoolData = { name: 'Skill Snap' }
       } = data;
 
       this.initDocument(
-        `Financial Analytics Report - ${monthData?.monthName || 'Unknown'} ${monthData?.year || new Date().getFullYear()}`,
-        schoolName
+        `Rapport d'Analyses Financières - ${monthData?.monthName || 'Inconnu'} ${monthData?.year || new Date().getFullYear()}`,
+        schoolData
       );
 
       // Add financial summary

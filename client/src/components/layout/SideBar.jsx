@@ -28,11 +28,11 @@ const Sidebar = ({
     <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 shadow-sm transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-out lg:translate-x-0 lg:static lg:inset-0`}>
       <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">MP</span>
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center overflow-hidden">
+            <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-full h-full object-cover rounded-lg" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">
-            MadrassaPlay
+            Skill Snap
           </h1>
         </div>
         <button

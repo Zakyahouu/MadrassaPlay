@@ -62,7 +62,7 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading
         <UnifiedCard>
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Recent Notifications</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Notifications Récentes</h3>
           </div>
           <div className="space-y-3">
             {notifications.map((notification, index) => (
@@ -70,7 +70,7 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading
             ))}
           </div>
           <button className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
-            View all notifications →
+            Bientôt Disponible →
           </button>
         </UnifiedCard>
 

@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "skill-snap-server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {

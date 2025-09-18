@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   BarChart3, 
   TrendingUp,
@@ -37,33 +38,34 @@ const UnifiedSidebar = ({
   userPermissions = {}
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t, isRTL } = useLanguage();
   const getNavigationItems = () => {
     console.log('Getting navigation items for role:', role, 'permissions:', userPermissions);
     switch (role) {
       case 'admin':
         return [
-          { id: 'overview', name: 'Overview', icon: BarChart3 },
-          { id: 'schools', name: 'Schools', icon: School },
-          { id: 'games', name: 'Games', icon: Play },
-          { id: 'template-games', name: 'Games by Template', icon: Gamepad2 },
-          { id: 'templates', name: 'Game Templates', icon: Plus },
-          { id: 'template-guide', name: 'Template Guide', icon: BookOpen },
-          { id: 'badges', name: 'Badges', icon: Award },
-          { id: 'analytics', name: 'Analytics', icon: TrendingUp }
+          { id: 'overview', name: t('overview'), icon: BarChart3 },
+          { id: 'schools', name: t('schools'), icon: School },
+          { id: 'games', name: t('games'), icon: Play },
+          { id: 'template-games', name: t('template-games'), icon: Gamepad2 },
+          { id: 'templates', name: t('templates'), icon: Plus },
+          { id: 'template-guide', name: t('template-guide'), icon: BookOpen },
+          { id: 'badges', name: t('badges'), icon: Award },
+          { id: 'analytics', name: t('analytics'), icon: TrendingUp }
         ];
       case 'manager':
         const managerItems = [
-          { id: 'overview', name: 'Overview', icon: BarChart3 },
-          { id: 'classes', name: 'Classes', icon: BookOpen },
-          { id: 'attendance', name: 'Attendance', icon: Calendar },
-          { id: 'timetable', name: 'Timetable', icon: Calendar },
-          { id: 'students', name: 'Students', icon: Users },
-          { id: 'teachers', name: 'Teachers', icon: UserCheck },
-          { id: 'employees', name: 'Employees', icon: Building2 },
-          { id: 'rooms', name: 'Rooms', icon: Building2 },
-          { id: 'equipment', name: 'Equipment', icon: Package },
-          { id: 'catalog', name: 'Catalog', icon: Package },
-          { id: 'ads', name: 'Advertisements', icon: Megaphone }
+          { id: 'overview', name: t('overview'), icon: BarChart3 },
+          { id: 'classes', name: t('classes'), icon: BookOpen },
+          { id: 'attendance', name: t('attendance'), icon: Calendar },
+          { id: 'timetable', name: t('timetable'), icon: Calendar },
+          { id: 'students', name: t('students'), icon: Users },
+          { id: 'teachers', name: t('teachers'), icon: UserCheck },
+          { id: 'employees', name: t('employees'), icon: Building2 },
+          { id: 'rooms', name: t('rooms'), icon: Building2 },
+          { id: 'equipment', name: t('equipment'), icon: Package },
+          { id: 'catalog', name: t('catalog'), icon: Package },
+          { id: 'ads', name: t('ads'), icon: Megaphone }
         ];
 
         // Add conditional tabs based on permissions
@@ -73,30 +75,30 @@ const UnifiedSidebar = ({
         
         if (userPermissions && userPermissions.logs === true) {
           console.log('Adding logs tab');
-          managerItems.push({ id: 'log', name: 'Log', icon: Activity });
+          managerItems.push({ id: 'log', name: t('log'), icon: Activity });
         }
         if (userPermissions && userPermissions.finance === true) {
           console.log('Adding finance tab');
-          managerItems.push({ id: 'finance', name: 'Finance', icon: DollarSign });
+          managerItems.push({ id: 'finance', name: t('finance'), icon: DollarSign });
         }
 
         console.log('Final manager navigation items:', managerItems);
         return managerItems;
       case 'teacher':
         return [
-          { id: 'overview', name: 'Overview', icon: BarChart3 },
-          { id: 'my-games', name: 'My Games', icon: BookOpen },
-          { id: 'create-game', name: 'Create Game', icon: Plus },
-          { id: 'live-sessions', name: 'Live Sessions', icon: Play },
-          { id: 'assignments', name: 'Assignments', icon: FileText },
-          { id: 'resources', name: 'Resources', icon: FileText },
-          { id: 'timetable', name: 'Timetable', icon: Calendar },
-          { id: 'students', name: 'My Classes', icon: Users },
-          { id: 'calendar', name: 'Calendar', icon: Calendar }
+          { id: 'overview', name: t('overview'), icon: BarChart3 },
+          { id: 'my-games', name: t('my-games'), icon: BookOpen },
+          { id: 'create-game', name: t('create-game'), icon: Plus },
+          { id: 'live-sessions', name: t('live-sessions'), icon: Play },
+          { id: 'assignments', name: t('assignments'), icon: FileText },
+          { id: 'resources', name: t('resources'), icon: FileText },
+          { id: 'timetable', name: t('timetable'), icon: Calendar },
+          { id: 'students', name: t('my-classes'), icon: Users },
+          { id: 'calendar', name: t('calendar'), icon: Calendar }
         ];
       default:
         return [
-          { id: 'overview', name: 'Overview', icon: BarChart3 }
+          { id: 'overview', name: t('overview'), icon: BarChart3 }
         ];
     }
   };
@@ -129,7 +131,7 @@ const UnifiedSidebar = ({
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      } ${isCollapsed ? 'w-20' : 'w-64'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="flex flex-col h-full">
 
 

@@ -1,7 +1,7 @@
 # 🌐 Network Access Configuration Guide
 
 ## **Overview**
-This guide will help you configure your MadrassaPlay app to be accessible from any device on your local network.
+This guide will help you configure your Skill Snap app to be accessible from any device on your local network.
 
 ## **🔧 Configuration Changes Made**
 

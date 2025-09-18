@@ -71,7 +71,10 @@ const ViewResults = () => {
         <Link to={getDashboardPath()} className="text-indigo-600 hover:underline">
           &larr; Back to Dashboard
         </Link>
-        <h1 className="text-3xl font-bold mt-2">Game Results</h1>
+        <div className="flex items-center gap-4 mt-2">
+          <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-10 h-10 object-contain rounded-lg" />
+          <h1 className="text-3xl font-bold">Game Results</h1>
+        </div>
       </header>
 
       <div className="bg-white p-6 rounded-lg shadow">

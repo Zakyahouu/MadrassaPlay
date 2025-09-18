@@ -13,7 +13,8 @@ class FallbackPDFExportService {
       debtData,
       expenseCategories = [],
       employeeSalaries = {},
-      schoolName = 'School Management System'
+      schoolData = { name: 'Skill Snap' },
+      schoolName = schoolData?.name || 'Skill Snap'
     } = data;
 
     const html = `
@@ -22,7 +23,7 @@ class FallbackPDFExportService {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Financial Analytics Report</title>
+        <title>Rapport d'Analyses Financières</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -49,6 +50,15 @@ class FallbackPDFExportService {
             font-weight: bold;
             color: #1f2937;
             margin-bottom: 5px;
+          }
+          .school-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            line-height: 1.4;
+          }
+          .school-info div {
+            margin-bottom: 2px;
           }
           .report-title {
             font-size: 18px;
@@ -191,10 +201,21 @@ class FallbackPDFExportService {
       <body>
         <div class="report-container">
           <div class="header">
-            <div class="school-name">${schoolName}</div>
-            <div class="report-title">Financial Analytics Report</div>
-            <div class="report-title">${monthData?.monthName || 'Unknown'} ${monthData?.year || new Date().getFullYear()}</div>
-            <div class="report-date">Generated on: ${new Date().toLocaleDateString()}</div>
+            <div class="logo-container">
+              <img src="/Logo.jpg" alt="Skill Snap Logo" style="height: 40px; margin-bottom: 10px;" />
+            </div>
+            <div class="school-name">${schoolData?.name || schoolName}</div>
+            ${schoolData?.contact ? `
+              <div class="school-info">
+                ${schoolData.contact.address ? `<div>Adresse : ${schoolData.contact.address}</div>` : ''}
+                ${schoolData.contact.phone ? `<div>Téléphone : ${schoolData.contact.phone}</div>` : ''}
+                ${schoolData.contact.email ? `<div>E-mail : ${schoolData.contact.email}</div>` : ''}
+              </div>
+            ` : ''}
+            <div class="report-title">Rapport d'Analyses Financières</div>
+            <div class="report-title">${monthData?.monthName || 'Inconnu'} ${monthData?.year || new Date().getFullYear()}</div>
+            <div class="report-date">Généré le : ${schoolData?.reportDate || new Date().toLocaleDateString()} à ${schoolData?.reportTime || new Date().toLocaleTimeString()}</div>
+            <div class="report-date">Généré par : ${schoolData?.generatedBy || 'Utilisateur'} (${schoolData?.userRole || 'Utilisateur'})</div>
           </div>
 
           ${this.generateFinancialSummarySection(monthData)}
@@ -209,7 +230,7 @@ class FallbackPDFExportService {
           ${this.generateEmployeeSalariesSection(employeeSalaries)}
 
           <div class="footer">
-            <p>This report was generated automatically by the School Management System.</p>
+            <p>This report was generated automatically by Skill Snap.</p>
             <p>For questions or support, please contact your system administrator.</p>
           </div>
         </div>

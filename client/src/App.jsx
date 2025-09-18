@@ -3,6 +3,9 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import { ToastProvider } from './components/shared/ToastProvider';
+import { LanguageProvider } from './context/LanguageContext';
+import LanguageTransitionOverlay from './components/shared/LanguageTransitionOverlay';
+import './styles/language-transitions.css';
 
 // Import all our page and helper components
 import Login from './pages/Login';
@@ -27,9 +30,12 @@ function App() {
   const { user } = useContext(AuthContext);
 
   return (
-    <ToastProvider>
-      <Router>
-        <Routes>
+    <LanguageProvider>
+      <ToastProvider>
+        <Router>
+          <div className="App">
+            <LanguageTransitionOverlay />
+            <Routes>
           {/* Route 1: The Login Page */}
           <Route 
             path="/login" 
@@ -201,8 +207,10 @@ function App() {
             }
           />
         </Routes>
-      </Router>
-    </ToastProvider>
+          </div>
+        </Router>
+      </ToastProvider>
+    </LanguageProvider>
   );
 }
 

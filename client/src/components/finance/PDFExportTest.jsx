@@ -78,7 +78,6 @@ const PDFExportTest = () => {
         await fallbackPdfExportService.exportAnalyticsToPDF(testData, [], 'test-financial-report.pdf');
       }
       
-      alert('Test PDF generated successfully!');
     } catch (error) {
       console.error('Error generating test PDF:', error);
       alert('Error generating test PDF: ' + error.message);

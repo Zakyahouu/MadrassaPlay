@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { AuthContext } from '../../context/AuthContext';
 import {
   TrendingUp,
   TrendingDown,
@@ -29,6 +30,7 @@ import chartCaptureService from '../../services/chartCaptureService';
 import PDFExportTest from './PDFExportTest';
 
 const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
+  const { user } = useContext(AuthContext);
   const [monthData, setMonthData] = useState(null);
   const [teacherPayouts, setTeacherPayouts] = useState([]);
   const [debtData, setDebtData] = useState(null);
@@ -37,6 +39,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
   const [selectedChart, setSelectedChart] = useState('overview');
+  const [schoolData, setSchoolData] = useState(null);
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
 
@@ -72,19 +75,21 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      // Fetch all analytics data in parallel
+      // Fetch all analytics data and school data in parallel
       const [
         trendsResponse,
         teacherPayoutsResponse,
         debtTrendsResponse,
         expenseCategoriesResponse,
-        employeeSalariesResponse
+        employeeSalariesResponse,
+        schoolResponse
       ] = await Promise.all([
         axios.get(`/api/finance/analytics/trends/${schoolId}/${year}/${month}`, config),
         axios.get(`/api/finance/analytics/teacher-payouts/${schoolId}/${year}/${month}`, config),
         axios.get(`/api/finance/analytics/debt-trends/${schoolId}/${year}/${month}`, config),
         axios.get(`/api/finance/analytics/expense-categories/${schoolId}/${year}/${month}`, config),
-        axios.get(`/api/finance/analytics/employee-salaries/${schoolId}/${year}/${month}`, config)
+        axios.get(`/api/finance/analytics/employee-salaries/${schoolId}/${year}/${month}`, config),
+        axios.get(`/api/schools/${schoolId}`, config)
       ]);
 
       if (trendsResponse.data.success) {
@@ -105,6 +110,11 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       if (employeeSalariesResponse.data.success) {
         setEmployeeSalaries(employeeSalariesResponse.data.data);
+      }
+
+      // Set school data
+      if (schoolResponse.data) {
+        setSchoolData(schoolResponse.data);
       }
 
     } catch (err) {
@@ -394,7 +404,12 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         debtData,
         expenseCategories,
         employeeSalaries,
-        schoolName: 'School Management System' // You can get this from props or context
+        schoolData: schoolData || { name: 'Skill Snap' },
+        schoolName: schoolData?.name || 'Skill Snap',
+        reportDate: new Date().toLocaleDateString(),
+        reportTime: new Date().toLocaleTimeString(),
+        generatedBy: user?.name || 'User',
+        userRole: user?.role || 'User'
       };
 
       // Try enhanced PDF export first, fallback to HTML if it fails
@@ -407,13 +422,11 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         ];
 
         await enhancedPdfExportService.exportAnalyticsToPDF(exportData, chartIds, filename);
-        alert('PDF report generated successfully!');
       } catch (enhancedError) {
         console.warn('Enhanced PDF export failed, using fallback:', enhancedError);
         
         // Use fallback HTML export
         await fallbackPdfExportService.exportAnalyticsToPDF(exportData, [], filename);
-        alert('PDF report generated successfully! (HTML format - use browser print to save as PDF)');
       }
     } catch (error) {
       console.error('Error generating PDF:', error);

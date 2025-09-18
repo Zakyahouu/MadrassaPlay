@@ -147,29 +147,29 @@ export const ManagerDashboard = () => {
 
   const quickActions = [
     {
-      title: 'Schedule Management',
-      description: 'View and manage class schedules',
+      title: 'Gestion des Horaires',
+      description: 'Voir et gérer les horaires des classes',
       icon: Calendar,
       color: 'text-blue-600',
       onClick: () => setActiveTab('timetable')
     },
     {
-      title: 'Student Records',
-      description: 'Access student information and grades',
+      title: 'Dossiers des Étudiants',
+      description: 'Accéder aux informations et notes des étudiants',
       icon: GraduationCap,
       color: 'text-green-600',
       onClick: () => setActiveTab('students')
     },
     {
-      title: 'Reports & Analytics',
-      description: 'Generate performance reports',
+      title: 'Rapports et Analyses',
+      description: 'Générer des rapports de performance',
       icon: BarChart3,
       color: 'text-purple-600',
       onClick: () => setActiveTab('reports')
     },
     {
-      title: 'System Settings',
-      description: 'Configure school settings',
+      title: 'Paramètres du Système',
+      description: 'Configurer les paramètres de l\'école',
       icon: Settings,
       color: 'text-gray-600',
       onClick: () => setActiveTab('catalog')
@@ -177,25 +177,22 @@ export const ManagerDashboard = () => {
   ];
 
   const notifications = [
-    { message: 'New teacher application submitted', time: '2 minutes ago', type: 'info' },
-    { message: 'Low attendance in Class 7B today', time: '15 minutes ago', type: 'warning' },
-    { message: 'Parent-teacher meeting scheduled', time: '1 hour ago', type: 'info' },
-    { message: 'System maintenance tonight at 2 AM', time: '2 hours ago', type: 'urgent' },
+    { message: 'Fonctionnalité de notifications bientôt disponible !', time: 'Restez à l\'écoute', type: 'info' },
   ];
 
   const navigationItems = [
-    { id: 'overview', name: 'Overview' },
+    { id: 'overview', name: 'Aperçu' },
     { id: 'classes', name: 'Classes' },
-    { id: 'attendance', name: 'Attendance' },
-    { id: 'students', name: 'Students' },
-    { id: 'teachers', name: 'Teachers' },
-    { id: 'employees', name: 'Staff' },
-    { id: 'timetable', name: 'Timetable' },
-    { id: 'rooms', name: 'Rooms' },
-    { id: 'equipment', name: 'Equipment' },
-    { id: 'catalog', name: 'Catalog' },
-    { id: 'ads', name: 'Advertisements' },
-    { id: 'reports', name: 'Reports' },
+    { id: 'attendance', name: 'Présence' },
+    { id: 'students', name: 'Étudiants' },
+    { id: 'teachers', name: 'Enseignants' },
+    { id: 'employees', name: 'Personnel' },
+    { id: 'timetable', name: 'Emploi du Temps' },
+    { id: 'rooms', name: 'Salles' },
+    { id: 'equipment', name: 'Équipement' },
+    { id: 'catalog', name: 'Catalogue' },
+    { id: 'ads', name: 'Publicités' },
+    { id: 'reports', name: 'Rapports' },
     { id: 'finance', name: 'Finance' } // ✅ added to navigation
   ];
 

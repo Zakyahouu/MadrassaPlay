@@ -86,7 +86,7 @@ const ManagerSchoolPanel = () => {
 
   return (
     <div className="p-6 mt-8 bg-gray-50 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">School Info & Staff Management</h2>
+      <h2 className="text-xl font-bold mb-4">Skill Snap Info & Staff Management</h2>
       {school && (
         <div className="mb-6">
           <div><strong>Name:</strong> {school.name}</div>

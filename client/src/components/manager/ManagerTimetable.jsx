@@ -8,9 +8,7 @@ import {
   X,
   Info,
   Filter,
-  Search,
-  Eye,
-  Edit3
+  Search
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -573,14 +571,6 @@ const ManagerTimetable = () => {
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 Close
-              </button>
-              <button className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors flex items-center space-x-2">
-                <Eye className="w-4 h-4" />
-                <span>View Details</span>
-              </button>
-              <button className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors flex items-center space-x-2">
-                <Edit3 className="w-4 h-4" />
-                <span>Edit Schedule</span>
               </button>
             </div>
           </div>

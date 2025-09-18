@@ -536,7 +536,7 @@ const CatalogTab = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">School Catalog Management</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Skill Snap Catalog Management</h2>
           <p className="text-gray-600">Manage all services and offerings for your school</p>
         </div>
         

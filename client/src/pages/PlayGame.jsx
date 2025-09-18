@@ -245,7 +245,8 @@ const PlayGame = () => {
             >
               ←
             </Link>
-            <div>
+            <div className="flex items-center gap-3">
+              <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-8 h-8 object-contain rounded" />
               <h1 className="text-lg font-semibold text-gray-900">
                 {gameCreation?.name || 'Game'}
               </h1>

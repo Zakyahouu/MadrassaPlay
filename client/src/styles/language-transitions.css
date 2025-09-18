@@ -1,0 +1,131 @@
+/* Language transition styles */
+.language-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth text direction changes */
+[dir="ltr"] {
+  transition: all 0.3s ease-in-out;
+}
+
+[dir="rtl"] {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth sidebar transitions for RTL */
+[dir="rtl"] .sidebar-rtl {
+  transform: translateX(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Smooth content transitions */
+.main-content {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth input transitions */
+input[dir="rtl"] {
+  text-align: right;
+  transition: all 0.3s ease-in-out;
+}
+
+input[dir="ltr"] {
+  text-align: left;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth button transitions */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Smooth card transitions */
+.card-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Loading state for language change */
+.language-changing {
+  opacity: 0.7;
+  pointer-events: none;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth text transitions */
+.text-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .space-x-4 > * + * {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+[dir="rtl"] .space-x-2 > * + * {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+[dir="rtl"] .space-x-3 > * + * {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+/* Smooth icon transitions */
+.icon-transition {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Loading overlay transitions */
+.language-overlay {
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth toggle button transitions */
+.toggle-button {
+  transition: all 0.3s ease-in-out;
+}
+
+.toggle-button:hover {
+  transform: scale(1.02);
+}
+
+.toggle-button:active {
+  transform: scale(0.98);
+}
+
+/* Smooth slider transitions */
+.toggle-slider {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth text direction changes */
+.text-direction-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* RTL text alignment */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Smooth margin transitions for RTL */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
