@@ -42,7 +42,7 @@ function App() {
             element={user ? <RoleBasedRedirect /> : <Login />} 
           />
 
-          {/* Route 2: The Home/Redirect Page */}
+          {/* Route 2: The Home/Redirect Page - redirects to login if not authenticated, or to appropriate dashboard if authenticated */}
           <Route path="/" element={<RoleBasedRedirect />} />
 
           {/* Route 3: The Admin Dashboard */}

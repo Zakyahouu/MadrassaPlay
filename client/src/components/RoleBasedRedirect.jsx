@@ -8,8 +8,18 @@ import { AuthContext } from '../context/AuthContext';
 const RoleBasedRedirect = () => {
   const { user, loading } = useContext(AuthContext);
 
+  // Debug logging (remove in production)
+  console.log('RoleBasedRedirect - user:', user, 'loading:', loading);
+
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   // If a user is logged in, check their role and redirect.
@@ -29,10 +39,8 @@ const RoleBasedRedirect = () => {
     }
   }
 
-  // If there is no user, this component does nothing,
-  // allowing other routes (like the login page) to render.
-  // In our setup, this case will be handled by the main router logic.
-  return null;
+  // If there is no user, redirect to login page
+  return <Navigate to="/login" replace />;
 };
 
 export default RoleBasedRedirect;
