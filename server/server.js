@@ -61,13 +61,15 @@ app.use((req, res, next) => {
 // Serve React app static files in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
-  app.use(express.static(clientBuildPath));
+// After your API and static routes
+app.use((req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
   // Fallback for React Router (SPA)
-  app.get('*', (req, res) => {
-    // If the request is for an engine, let the static middleware handle it
-    if (req.path.startsWith('/engines/')) return;
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
-  });
+  app.get('/*', (req, res) => {
+  if (req.path.startsWith('/engines/')) return;
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
 }
 
 
