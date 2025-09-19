@@ -1,9 +1,11 @@
-// server/app.js
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-require('dotenv').config();
+// ✅ BREADCRUMB LOGS HAVE BEEN ADDED TO HELP DEBUG STARTUP
+console.log('✅ [1/5] Server script starting up...');
+
+const http = require('http');
+const { Server } = require('socket.io');
+const app = require('./app'); // Import the configured Express app
 const connectDB = require('./config/db');
+const { setSharedIO } = require('./realtimeState'); // We'll use this to share the IO instance
 
 const {
   ensureUserStudentCodePartialIndex,
@@ -13,84 +15,74 @@ const {
 
 // Optional services
 if (process.env.ENABLE_SCHOOL_DELETION_CRON === 'true') {
-  try { require('./services/schoolDeletionService'); } catch {}
+  try { require('./services/schoolDeletionService'); } catch (e) { console.error('Failed to load schoolDeletionService:', e); }
 }
 
-// DB connection (skip in test)
-if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
-  connectDB().then(async () => {
-    await ensureUserStudentCodePartialIndex();
-    await ensureAttendanceIndexes();
-    if (process.env.BACKUP_ON_START === 'true') {
-      try { await require('./scripts/autoBackup')(); } catch {}
-    }
-    await ensurePaymentsIdempotencyIndex();
-  });
-}
+const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
-const app = express();
-
-// Parse JSON
-app.use(express.json());
-
-// Enable CORS (from .env)
+// --- Configure Socket.IO ---
 const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
-app.use(cors({
-  origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true
-}));
-
-// Realtime state injection
-const { liveGames } = require('./realtimeState');
-app.use((req, res, next) => {
-  try { req.io = require('./realtimeState').io || null; } catch { req.io = null; }
-  req.liveGames = liveGames;
-  next();
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-// Static resources
-app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
-app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
+// Share the 'io' instance with the rest of the application
+setSharedIO(io);
+console.log('✅ [2/5] Socket.IO initialized and shared.');
 
-// API routes
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/schools', require('./routes/schoolRoutes'));
-app.use('/api/school-documents', require('./routes/schoolDocumentRoutes'));
-app.use('/api/catalog', require('./routes/catalogRoutes'));
-app.use('/api/teachers', require('./routes/teacherRoutes'));
-app.use('/api/students', require('./routes/studentRoutes'));
-app.use('/api/templates', require('./routes/gameTemplateRoutes'));
-app.use('/api/creations', require('./routes/gameCreationRoutes'));
-app.use('/api/assignments', require('./routes/assignmentRoutes'));
-app.use('/api/results', require('./routes/gameResultRoutes'));
-app.use('/api/template-badges', require('./routes/templateBadgeRoutes'));
-app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
-app.use('/api/reporting', require('./routes/reportingRoutes'));
-app.use('/api/staff', require('./routes/staffRoutes'));
-app.use('/api/employees', require('./routes/employeeRoutes'));
-app.use('/api/classes', require('./routes/classResourceRoutes'));
-app.use('/api/classes', require('./routes/classRoutes'));
-app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
-app.use('/api/payments', require('./routes/paymentRoutes'));
-app.use('/api/attendance', require('./routes/attendanceRoutes'));
-app.use('/api/rooms', require('./routes/roomRoutes'));
-app.use('/api/equipment', require('./routes/equipmentRoutes'));
-app.use('/api/advertisements', require('./routes/advertisementRoutes'));
-app.use('/api/finance', require('./routes/financeRoutes'));
-app.use('/api/logs', require('./routes/logRoutes'));
-app.use('/api/live-sessions', require('./routes/liveSessionRoutes'));
-
-// Error handler
-app.use((err, req, res, next) => {
-  const status = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
-  const message = err?.message || 'Server Error';
-  const payload = process.env.NODE_ENV === 'production'
-    ? { message }
-    : { message, stack: err?.stack };
-  res.status(status).json(payload);
+// --- Main Socket.IO connection handler ---
+// You would require your main socket handler file here, for example:
+// require('./socket/socketHandler')(io);
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 
-module.exports = app;
+// --- Asynchronous Start Function ---
+const startServer = async () => {
+  try {
+    // Connect to DB only if not in a test environment
+    if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
+      console.log('✅ [3/5] Connecting to database...');
+      await connectDB();
+      console.log('Database connection successful.');
+
+      // Run migrations and backups
+      await ensureUserStudentCodePartialIndex();
+      await ensureAttendanceIndexes();
+      await ensurePaymentsIdempotencyIndex();
+      if (process.env.BACKUP_ON_START === 'true') {
+        try { await require('./scripts/autoBackup')(); } catch (e) { console.error('Auto-backup failed:', e); }
+      }
+    }
+
+    console.log('✅ [4/5] About to start server on port', PORT);
+    server.listen(PORT, () => {
+      console.log(`🚀 [5/5] Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1); // Exit with failure code
+  }
+};
+
+// --- Execute Start ---
+startServer();
+
+// --- Graceful Shutdown & Error Handling ---
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  server.close(() => process.exit(1));
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  server.close(() => process.exit(1));
+});
