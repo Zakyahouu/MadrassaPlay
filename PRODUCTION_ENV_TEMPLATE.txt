@@ -1,0 +1,16 @@
+# Production Environment Variables for MadrassaPlay
+# Copy this content to your server's .env file
+
+NODE_ENV=production
+PORT=5000
+
+MONGO_URI=mongodb://localhost:27017/madrassaplay
+JWT_SECRET=thisisareallylongandsecretstring12345
+
+CORS_ORIGIN=http://72.60.133.119
+
+# Optional: Add these if needed
+# UPLOADS_DIR=/var/www/madrassaplay/server/public/uploads
+# SCAN_UPLOADS=false
+# ENABLE_SCHOOL_DELETION_CRON=false
+# BACKUP_ON_START=false

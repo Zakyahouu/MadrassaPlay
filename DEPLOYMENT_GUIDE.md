@@ -228,7 +228,54 @@ ENABLE_SCHOOL_DELETION_CRON=false
 BACKUP_ON_START=false
 ```
 
-### 6.3 Set Proper Permissions
+### 6.3 Fix CORS Configuration for Production
+
+**IMPORTANT**: The application has hardcoded CORS settings that need to be updated for production. You need to modify the Socket.IO CORS configuration in `server/server.js`:
+
+```bash
+nano /var/www/madrassaplay/server/server.js
+```
+
+Update lines 23-26 from:
+```javascript
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:5173", "http://0.0.0.0:5173"],
+    methods: ["GET", "POST"]
+  }
+});
+```
+
+To:
+```javascript
+const io = new Server(server, {
+  cors: {
+    origin: [process.env.CORS_ORIGIN || "https://yourdomain.com"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+```
+
+### 6.4 Add Express CORS Middleware
+
+Add CORS middleware to the Express app by modifying `server/app.js`:
+
+```bash
+nano /var/www/madrassaplay/server/app.js
+```
+
+Add this after line 29 (after `app.use(express.json());`):
+```javascript
+// Add CORS middleware
+const cors = require('cors');
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "https://yourdomain.com",
+  credentials: true
+}));
+```
+
+### 6.5 Set Proper Permissions
 ```bash
 sudo chown -R www-data:www-data /var/www/madrassaplay
 sudo chmod -R 755 /var/www/madrassaplay

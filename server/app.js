@@ -28,6 +28,14 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
 const app = express();
 app.use(express.json());
 
+// Add CORS middleware
+const cors = require('cors');
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*', // allow from env or default to all
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 // Attach realtime state to requests so controllers can check live access
 const { liveGames } = require('./realtimeState');
 app.use((req, res, next) => {
