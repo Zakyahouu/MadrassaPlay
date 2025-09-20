@@ -330,7 +330,7 @@ const PlayGame = () => {
         (gameCreation?.enginePath || gameCreation?.template?.enginePath) ? (
             <iframe
               ref={iframeRef}
-        src={`${(gameCreation.enginePath || gameCreation.template.enginePath)}/index.html`}
+        src={`${window.location.origin}${(gameCreation.enginePath || gameCreation.template.enginePath)}/index.html`}
               title="Game Engine"
               className="w-full h-full border-0"
               onLoad={handleIframeLoad}
