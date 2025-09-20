@@ -344,17 +344,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve React app static files in production
+// --- Serve static files in production ---
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
+
+  // 1. Engines FIRST
+  app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
+
+  // 2. Other static assets
+  app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+  app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
+  app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
+
+  // 3. React build
   app.use(express.static(clientBuildPath));
-  // Fallback for React Router (SPA)
+
+  // 4. SPA fallback (React Router)
   app.get('*', (req, res) => {
-    // If the request is for an engine, let the static middleware handle it
-    if (req.path.startsWith('/engines/')) return;
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
+
 
 // --- Asynchronous Start Function ---
 const startServer = async () => {
