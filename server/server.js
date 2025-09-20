@@ -1,6 +1,6 @@
 // ✅ BREADCRUMB LOGS HAVE BEEN ADDED TO HELP DEBUG STARTUP
 console.log('✅ [1/5] Server script starting up...');
-
+const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');

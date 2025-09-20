@@ -65,33 +65,62 @@ app.use((req, res, next) => {
 // Static file serving moved to server.js to ensure proper middleware order
 // This prevents React Router from intercepting engine files in production
 
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/schools', require('./routes/schoolRoutes'));
-app.use('/api/school-documents', require('./routes/schoolDocumentRoutes'));
-app.use('/api/catalog', require('./routes/catalogRoutes'));
-app.use('/api/teachers', require('./routes/teacherRoutes'));
-app.use('/api/students', require('./routes/studentRoutes'));
-app.use('/api/templates', require('./routes/gameTemplateRoutes'));
-app.use('/api/creations', require('./routes/gameCreationRoutes'));
-app.use('/api/assignments', require('./routes/assignmentRoutes'));
-app.use('/api/results', require('./routes/gameResultRoutes'));
-app.use('/api/template-badges', require('./routes/templateBadgeRoutes'));
-app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
-app.use('/api/reporting', require('./routes/reportingRoutes'));
-app.use('/api/staff', require('./routes/staffRoutes'));
-app.use('/api/employees', require('./routes/employeeRoutes'));
-// Important: mount resource routes before generic class routes to avoid guard conflicts
-app.use('/api/classes', require('./routes/classResourceRoutes'));
-app.use('/api/classes', require('./routes/classRoutes'));
-app.use('/api/enrollments', require('./routes/enrollmentRoutes'));
-app.use('/api/payments', require('./routes/paymentRoutes'));
-app.use('/api/attendance', require('./routes/attendanceRoutes'));
-app.use('/api/rooms', require('./routes/roomRoutes'));
-app.use('/api/equipment', require('./routes/equipmentRoutes'));
-app.use('/api/advertisements', require('./routes/advertisementRoutes'));
-app.use('/api/finance', require('./routes/financeRoutes'));
-app.use('/api/logs', require('./routes/logRoutes'));
-app.use('/api/live-sessions', require('./routes/liveSessionRoutes'));
+// Safe route loading with error handling to prevent path-to-regexp errors
+try {
+  const { loadAllRoutes } = require('./safe-route-loader');
+  loadAllRoutes(app);
+} catch (error) {
+  console.error('❌ Critical error loading routes:', error);
+  
+  // Fallback: Load routes individually with try-catch
+  const routeConfigs = [
+    { path: '/api/users', file: './routes/userRoutes' },
+    { path: '/api/schools', file: './routes/schoolRoutes' },
+    { path: '/api/school-documents', file: './routes/schoolDocumentRoutes' },
+    { path: '/api/catalog', file: './routes/catalogRoutes' },
+    { path: '/api/teachers', file: './routes/teacherRoutes' },
+    { path: '/api/students', file: './routes/studentRoutes' },
+    { path: '/api/templates', file: './routes/gameTemplateRoutes' },
+    { path: '/api/creations', file: './routes/gameCreationRoutes' },
+    { path: '/api/assignments', file: './routes/assignmentRoutes' },
+    { path: '/api/results', file: './routes/gameResultRoutes' },
+    { path: '/api/template-badges', file: './routes/templateBadgeRoutes' },
+    { path: '/api/leaderboard', file: './routes/leaderboardRoutes' },
+    { path: '/api/reporting', file: './routes/reportingRoutes' },
+    { path: '/api/staff', file: './routes/staffRoutes' },
+    { path: '/api/employees', file: './routes/employeeRoutes' },
+    // Important: mount resource routes before generic class routes to avoid guard conflicts
+    { path: '/api/classes', file: './routes/classResourceRoutes' },
+    { path: '/api/classes', file: './routes/classRoutes' },
+    { path: '/api/enrollments', file: './routes/enrollmentRoutes' },
+    { path: '/api/payments', file: './routes/paymentRoutes' },
+    { path: '/api/attendance', file: './routes/attendanceRoutes' },
+    { path: '/api/rooms', file: './routes/roomRoutes' },
+    { path: '/api/equipment', file: './routes/equipmentRoutes' },
+    { path: '/api/advertisements', file: './routes/advertisementRoutes' },
+    { path: '/api/finance', file: './routes/financeRoutes' },
+    { path: '/api/logs', file: './routes/logRoutes' },
+    { path: '/api/live-sessions', file: './routes/liveSessionRoutes' }
+  ];
+  
+  routeConfigs.forEach(({ path, file }) => {
+    try {
+      console.log(`🔄 Loading route: ${path}`);
+      app.use(path, require(file));
+      console.log(`✅ Successfully loaded: ${path}`);
+    } catch (routeError) {
+      console.error(`❌ Failed to load route ${path}:`, routeError.message);
+      
+      // Create a fallback route that returns an error
+      app.use(path, (req, res) => {
+        res.status(500).json({
+          error: 'Route unavailable',
+          message: `Route ${path} failed to load: ${routeError.message}`
+        });
+      });
+    }
+  });
+}
 
 // Centralized error handler: respect res.statusCode set by controllers; default to 500
 // Ensures thrown errors with prior res.status(...) don't become generic 500s
