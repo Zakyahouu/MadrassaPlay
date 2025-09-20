@@ -9,8 +9,13 @@ import {
   UserPlus,
   CheckCircle,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+import { generateStrongPassword, getPasswordStrength } from '../../utils/passwordGenerator';
+import CredentialsPopup from './CredentialsPopup';
 
 const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,6 +51,10 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [createdSchoolId, setCreatedSchoolId] = useState(null);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [createdSchool, setCreatedSchool] = useState(null);
+  const [createdManager, setCreatedManager] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const steps = [
     { number: 1, title: 'School Information', icon: Building },
@@ -55,6 +64,11 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   ];
 
   const getToken = () => JSON.parse(localStorage.getItem('user'))?.token;
+
+  const generatePassword = () => {
+    const newPassword = generateStrongPassword(12);
+    handleInputChange('managerData.password', newPassword);
+  };
 
   const validateStep = (step) => {
     const newErrors = {};
@@ -149,6 +163,8 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   };
 
   const handleInputChange = (field, value) => {
+    console.log('handleInputChange called:', field, value);
+    
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
@@ -164,7 +180,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         [field]: value
       }));
     }
-    
+
     // Clear errors for this field
     const errorKey = field.replace('.', '');
     if (errors[errorKey]) {
@@ -183,6 +199,8 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         contact: formData.contact,
         status: formData.status
       };
+      
+      console.log('School payload being sent:', schoolPayload);
 
       // Add trial configuration if status is trial
       if (formData.status === 'trial') {
@@ -201,6 +219,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       });
 
       const data = await response.json();
+      console.log('Server response:', data);
       if (response.ok && data && data._id) {
         setCreatedSchoolId(data._id);
         return data;
@@ -216,7 +235,9 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   };
 
   const createManager = async (schoolId) => {
-    if (formData.skipManager) return null;
+    console.log('createManager called with schoolId:', schoolId);
+    console.log('formData.skipManager:', formData.skipManager);
+    console.log('formData.managerData:', formData.managerData);
 
     try {
       const managerPayload = {
@@ -243,6 +264,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       });
 
       const data = await response.json();
+      console.log('Manager creation response:', response.status, data);
       
       if (!response.ok) {
         throw new Error(data.message || `Failed to create manager: ${response.status}`);
@@ -291,13 +313,20 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       }
 
       // Step 1: Create the school
+      console.log('Creating school with data:', formData);
       const school = await createSchool();
+      console.log('School created:', school);
       setCreatedSchoolId(school._id);
+      setCreatedSchool(school);
       
       // Step 2: Create manager if not skipped
+      let manager = null;
+      console.log('Manager creation check - skipManager:', formData.skipManager);
+      console.log('Manager data:', formData.managerData);
       if (!formData.skipManager) {
         try {
-        await createManager(school._id);
+          manager = await createManager(school._id);
+          setCreatedManager(manager);
         } catch (managerError) {
           // If manager creation fails, delete the school to prevent orphaned data
           console.error('Manager creation failed, rolling back school creation:', managerError);
@@ -318,9 +347,13 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         // The user will be redirected to the document management interface
       }
 
-      // Refresh the school list and close
-      onSchoolCreated();
-      onClose();
+      // Wait a moment to ensure all data is properly set
+      setTimeout(() => {
+        console.log('Final school data:', school);
+        console.log('Final manager data:', manager);
+        console.log('Final formData.skipManager:', formData.skipManager);
+        setShowCredentials(true);
+      }, 100);
     } catch (error) {
       setErrors({ general: error.message });
     } finally {
@@ -572,7 +605,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
               <h4 className="font-medium text-blue-800 mb-2">School Summary</h4>
               <div className="text-blue-700 text-sm space-y-1">
                 <p><strong>Name:</strong> {formData.name}</p>
-                <p><strong>Status:</strong> {formData.status} {formData.status === 'trial' && `(${formData.customTrialDays} days)`}</p>
+                <p><strong>Status:</strong> {formData.status?.toUpperCase()} {formData.status === 'trial' && `(${formData.customTrialDays} days)`}</p>
                 <p><strong>Email:</strong> {formData.contact.email || 'Not provided'}</p>
                 <p><strong>Documents:</strong> {formData.skipDocuments ? 'Will be uploaded later' : 'Will be uploaded after creation'}</p>
               </div>
@@ -660,15 +693,69 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    value={formData.managerData.password}
-                    onChange={(e) => handleInputChange('managerData.password', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.managerPassword ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Minimum 6 characters"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.managerData.password}
+                      onChange={(e) => handleInputChange('managerData.password', e.target.value)}
+                      className={`w-full px-3 py-2 pr-20 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.managerPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Minimum 6 characters"
+                    />
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generatePassword}
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="Generate strong password"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  {formData.managerData.password && (
+                    <div className="mt-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-600">Password strength:</span>
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              getPasswordStrength(formData.managerData.password).color === 'red' ? 'bg-red-500' :
+                              getPasswordStrength(formData.managerData.password).color === 'orange' ? 'bg-orange-500' :
+                              getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'bg-yellow-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ 
+                              width: `${(Object.values({
+                                length: formData.managerData.password.length >= 8,
+                                lowercase: /[a-z]/.test(formData.managerData.password),
+                                uppercase: /[A-Z]/.test(formData.managerData.password),
+                                numbers: /\d/.test(formData.managerData.password),
+                                symbols: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(formData.managerData.password)
+                              }).filter(Boolean).length / 5) * 100}%`
+                            }}
+                          />
+                        </div>
+                        <span className={`text-xs font-medium ${
+                          getPasswordStrength(formData.managerData.password).color === 'red' ? 'text-red-600' :
+                          getPasswordStrength(formData.managerData.password).color === 'orange' ? 'text-orange-600' :
+                          getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          {getPasswordStrength(formData.managerData.password).level}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {errors.managerPassword && <p className="text-red-500 text-sm mt-1">{errors.managerPassword}</p>}
                 </div>
 
@@ -728,9 +815,27 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
     }
   };
 
+  const handleCloseCredentials = () => {
+    setShowCredentials(false);
+    onSchoolCreated();
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+    <>
+      {/* Credentials Popup */}
+      <CredentialsPopup
+        isOpen={showCredentials}
+        onClose={handleCloseCredentials}
+        schoolData={createdSchool}
+        managerData={createdManager}
+        onDownloadPDF={() => console.log('PDF downloaded')}
+      />
+
+      {/* Main Wizard Modal - Only show when credentials popup is not open */}
+      {!showCredentials && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
           <div>
@@ -832,6 +937,8 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         </div>
       </div>
     </div>
+      )}
+    </>
   );
 };
 

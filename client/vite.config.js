@@ -2,35 +2,51 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/engines': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/uploads': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/badge-icons': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  // Determine the backend URL based on environment
+  const backendUrl = mode === 'production' 
+    ? 'http://72.60.133.119:5000'  // Your VPS IP
+    : 'http://localhost:5000';      // Local development
+
+  return {
+    plugins: [react()],
+    
+    server: {
+      host: '0.0.0.0',
+      port: 5173,
+      proxy: {
+        '/api': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+        '/engines': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+        '/uploads': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+        '/badge-icons': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+        '/school-documents': {
+          target: backendUrl,
+          changeOrigin: true,
+        },
+        '/socket.io': {
+          target: backendUrl,
+          changeOrigin: true,
+          ws: true, // Enable WebSocket proxying
+        },
       },
     },
-  },
-  // NEW: Add the optimizeDeps configuration
-  // This explicitly tells Vite to find and pre-bundle 'socket.io-client',
-  // which resolves the import error.
-  optimizeDeps: {
-    include: ['socket.io-client'],
-  },
+    // NEW: Add the optimizeDeps configuration
+    // This explicitly tells Vite to find and pre-bundle 'socket.io-client',
+    // which resolves the import error.
+    optimizeDeps: {
+      include: ['socket.io-client'],
+    },
+  }
 })

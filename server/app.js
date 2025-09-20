@@ -30,8 +30,25 @@ app.use(express.json());
 
 // Add CORS middleware
 const cors = require('cors');
+
+// Define allowed origins based on environment
+const getAllowedOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Production: Use CORS_ORIGIN or default to VPS IP
+    return process.env.CORS_ORIGIN || 'http://72.60.133.119';
+  } else {
+    // Development: Allow localhost and VPS for testing
+    return [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://0.0.0.0:5173',
+      process.env.CORS_ORIGIN || 'http://72.60.133.119'
+    ].filter(Boolean);
+  }
+};
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*', // allow from env or default to all
+  origin: getAllowedOrigins(),
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));

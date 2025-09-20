@@ -30,7 +30,13 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, firstName, lastName, email, password, role, school } = req.body;
+    const { name, firstName, lastName, email, password, role, school, address, phone1, phone2 } = req.body;
+    
+    console.log('Manager registration request:', { 
+      name, firstName, lastName, email, 
+      password: password ? '[PROVIDED]' : '[MISSING]', 
+      role, school, address, phone1, phone2 
+    });
 
     // Support both name (legacy) and firstName/lastName (new) formats
     const hasName = name || (firstName && lastName);
@@ -69,7 +75,20 @@ const registerUser = async (req, res) => {
       userData.school = school;
     }
 
+    // Add additional fields for managers
+    if (address) {
+      userData.address = address;
+    }
+    if (phone1) {
+      userData.phone1 = phone1;
+    }
+    if (phone2) {
+      userData.phone2 = phone2;
+    }
+
+    console.log('Creating user with data:', userData);
     const user = await User.create(userData);
+    console.log('User created successfully:', user);
 
     if (user) {
       // If user is a manager and has a school, add them to the school's managers array
@@ -93,17 +112,31 @@ const registerUser = async (req, res) => {
       }
 
       // If user is created, generate a token and send it back
-      res.status(201).json({
+      const userResponse = {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         school: user.school,
-  xp: user.xp,
-  level: user.level,
-  totalPoints: user.totalPoints,
+        xp: user.xp,
+        level: user.level,
+        totalPoints: user.totalPoints,
         token: generateToken(user._id), // Generate and include the token
-      });
+      };
+
+      // Include additional fields for managers
+      if (user.role === 'manager') {
+        userResponse.firstName = user.firstName;
+        userResponse.lastName = user.lastName;
+        userResponse.address = user.address;
+        userResponse.phone1 = user.phone1;
+        userResponse.phone2 = user.phone2;
+        userResponse.contact = user.contact;
+        // Include the original password for the credentials popup
+        userResponse.password = password;
+      }
+
+      res.status(201).json(userResponse);
     } else {
       res.status(400).json({ message: 'Invalid user data.' });
     }
