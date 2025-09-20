@@ -356,12 +356,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
 app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
 
-// 3. React build (production only)
+// 3. React build and SPA fallback (production only)
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
+  
+  // Serve React build
   app.use(express.static(clientBuildPath));
 
-  // 4. SPA fallback (React Router) - MUST BE LAST
+  // SPA fallback (React Router) - MUST BE LAST
   app.get('*', (req, res) => {
     console.log(`⚛️ [REACT] Fallback for: ${req.path}`);
     res.sendFile(path.join(clientBuildPath, 'index.html'));
