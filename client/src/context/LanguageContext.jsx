@@ -45,6 +45,7 @@ const translations = {
     
     // Common UI
     'dashboard': 'Tableau de Bord',
+    'manage-dashboard': 'Gérer le tableau de bord',
     'profile': 'Profil',
     'logout': 'Déconnexion',
     'search': 'Rechercher...',
@@ -170,6 +171,7 @@ const translations = {
     
     // Common UI
     'dashboard': 'لوحة التحكم',
+    'manage-dashboard': 'إدارة لوحة التحكم',
     'profile': 'الملف الشخصي',
     'logout': 'تسجيل الخروج',
     'search': 'بحث...',
@@ -266,10 +268,15 @@ const translations = {
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
     // Get language from localStorage or default to French
-    return localStorage.getItem('language') || 'fr';
+    const savedLanguage = localStorage.getItem('language');
+    console.log('Initial language from localStorage:', savedLanguage);
+    return savedLanguage || 'fr';
   });
 
-  const [isRTL, setIsRTL] = useState(language === 'ar');
+  const [isRTL, setIsRTL] = useState(() => {
+    const savedLanguage = localStorage.getItem('language');
+    return savedLanguage === 'ar';
+  });
   const [isChangingLanguage, setIsChangingLanguage] = useState(false);
 
   useEffect(() => {
@@ -280,24 +287,38 @@ export const LanguageProvider = ({ children }) => {
     // Update document direction
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
+    
+    // Debug logging
+    console.log('Language changed to:', language);
+    console.log('RTL mode:', language === 'ar');
+    console.log('Document direction:', document.documentElement.dir);
   }, [language]);
 
   const toggleLanguage = () => {
+    console.log('Toggling language from:', language);
     setIsChangingLanguage(true);
     
     // Add a small delay for smooth transition
     setTimeout(() => {
-      setLanguage(prev => prev === 'fr' ? 'ar' : 'fr');
+      const newLanguage = language === 'fr' ? 'ar' : 'fr';
+      console.log('Setting new language to:', newLanguage);
+      setLanguage(newLanguage);
       
       // Hide loading after language change is complete
       setTimeout(() => {
         setIsChangingLanguage(false);
+        console.log('Language change complete');
       }, 300);
     }, 200);
   };
 
   const t = (key) => {
-    return translations[language][key] || key;
+    const translation = translations[language]?.[key];
+    if (!translation) {
+      console.warn(`Translation missing for key "${key}" in language "${language}"`);
+      return key;
+    }
+    return translation;
   };
 
   const value = {

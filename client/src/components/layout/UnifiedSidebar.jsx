@@ -138,7 +138,7 @@ const UnifiedSidebar = ({
           {/* User Info */}
           <div className="p-4 border-b border-gray-200 transition-all duration-300 ease-in-out">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 min-w-0">
+              <div className={`flex items-center min-w-0 ${isRTL ? 'space-x-reverse space-x-3 flex-row-reverse' : 'space-x-3'}`}>
                 <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <Users className="w-5 h-5 text-white" />
                 </div>
@@ -188,7 +188,7 @@ const UnifiedSidebar = ({
                     }
                     setSidebarOpen(false);
                   }}
-                  className={`group relative w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${
+                  className={`group relative w-full flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'} px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${
                     isActive
                       ? `${getActiveColor()} border shadow-sm`
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
@@ -204,9 +204,15 @@ const UnifiedSidebar = ({
                   </span>
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    <div className={`absolute px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${
+                      isRTL ? 'right-full mr-2' : 'left-full ml-2'
+                    }`}>
                       {item.name}
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-r-0 border-t-4 border-b-4 border-transparent border-l-gray-900"></div>
+                      <div className={`absolute top-1/2 transform -translate-y-1/2 w-0 h-0 ${
+                        isRTL 
+                          ? 'right-0 border-r-4 border-l-0 border-t-4 border-b-4 border-transparent border-r-gray-900'
+                          : 'left-0 border-l-4 border-r-0 border-t-4 border-b-4 border-transparent border-l-gray-900'
+                      }`}></div>
                     </div>
                   )}
                 </button>
@@ -216,12 +222,12 @@ const UnifiedSidebar = ({
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200 transition-all duration-300 ease-in-out">
-            <div className="flex items-center space-x-3 text-sm text-gray-500 min-w-0">
+            <div className={`flex items-center text-sm text-gray-500 min-w-0 ${isRTL ? 'space-x-reverse space-x-3 flex-row-reverse' : 'space-x-3'}`}>
               <Bell className="w-4 h-4 flex-shrink-0" />
               <span className={`transition-all duration-300 ease-in-out ${
                 isCollapsed ? 'opacity-0 scale-95 w-0 overflow-hidden' : 'opacity-100 scale-100 w-auto'
               }`}>
-                Notifications
+                {t('notifications')}
               </span>
             </div>
           </div>
@@ -230,13 +236,17 @@ const UnifiedSidebar = ({
 
       {/* Floating expand button when collapsed */}
       {isCollapsed && (
-        <div className="fixed left-20 top-1/2 transform -translate-y-1/2 z-40 lg:block hidden">
+        <div className={`fixed top-1/2 transform -translate-y-1/2 z-40 lg:block hidden ${
+          isRTL ? 'right-20' : 'left-20'
+        }`}>
           <button
             onClick={() => setIsCollapsed(false)}
-            className="p-3 bg-blue-600 hover:bg-blue-700 border-2 border-blue-500 rounded-r-lg shadow-xl hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:scale-110 text-white"
+            className={`p-3 bg-blue-600 hover:bg-blue-700 border-2 border-blue-500 shadow-xl hover:shadow-2xl transition-all duration-200 ease-in-out transform hover:scale-110 text-white ${
+              isRTL ? 'rounded-l-lg' : 'rounded-r-lg'
+            }`}
             title="Expand sidebar"
           >
-            <ChevronRight className="w-5 h-5" />
+            {isRTL ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </button>
         </div>
       )}

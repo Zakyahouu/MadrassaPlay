@@ -62,13 +62,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
-// Serve uploaded media (icons/content assets)
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-// Serve badge icons
-app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
-// Serve school documents
-app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
+// Static file serving moved to server.js to ensure proper middleware order
+// This prevents React Router from intercepting engine files in production
 
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/schools', require('./routes/schoolRoutes'));

@@ -344,23 +344,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Serve static files in production ---
+// --- Serve static files ---
+// 1. Engines FIRST (critical - must be before React Router)
+app.use('/engines', (req, res, next) => {
+  console.log(`🔧 [ENGINE] Request for: ${req.path}`);
+  next();
+}, express.static(path.join(__dirname, 'public', 'engines')));
+
+// 2. Other static assets
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
+app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
+
+// 3. React build (production only)
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
-
-  // 1. Engines FIRST
-  app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
-
-  // 2. Other static assets
-  app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-  app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
-  app.use('/school-documents', express.static(path.join(__dirname, 'public', 'school-documents')));
-
-  // 3. React build
   app.use(express.static(clientBuildPath));
 
-  // 4. SPA fallback (React Router)
+  // 4. SPA fallback (React Router) - MUST BE LAST
   app.get('*', (req, res) => {
+    console.log(`⚛️ [REACT] Fallback for: ${req.path}`);
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }

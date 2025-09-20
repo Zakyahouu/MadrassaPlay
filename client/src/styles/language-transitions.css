@@ -56,10 +56,7 @@ button {
   transition: all 0.3s ease-in-out;
 }
 
-/* RTL specific adjustments */
-[dir="rtl"] .flex {
-  flex-direction: row-reverse;
-}
+/* RTL specific adjustments - removed global flex rule that was breaking layouts */
 
 [dir="rtl"] .space-x-4 > * + * {
   margin-left: 0;
@@ -74,6 +71,99 @@ button {
 [dir="rtl"] .space-x-3 > * + * {
   margin-left: 0;
   margin-right: 0.75rem;
+}
+
+/* RTL text alignment fixes */
+[dir="rtl"] .text-left {
+  text-align: right !important;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left !important;
+}
+
+/* RTL input alignment */
+[dir="rtl"] input {
+  text-align: right;
+}
+
+[dir="rtl"] textarea {
+  text-align: right;
+}
+
+/* RTL button alignment */
+[dir="rtl"] .justify-start {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .justify-end {
+  justify-content: flex-start;
+}
+
+/* RTL margin fixes */
+[dir="rtl"] .ml-auto {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0 !important;
+  margin-left: auto !important;
+}
+
+/* RTL padding fixes */
+[dir="rtl"] .pl-4 {
+  padding-left: 0 !important;
+  padding-right: 1rem !important;
+}
+
+[dir="rtl"] .pr-4 {
+  padding-right: 0 !important;
+  padding-left: 1rem !important;
+}
+
+/* RTL sidebar specific fixes */
+[dir="rtl"] .sidebar-rtl {
+  right: 0;
+  left: auto;
+  border-left: 1px solid #e5e7eb;
+  border-right: none;
+}
+
+[dir="rtl"] .sidebar-rtl .space-x-3 > * + * {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
+[dir="rtl"] .sidebar-rtl .space-x-reverse > * + * {
+  margin-right: 0;
+  margin-left: 0.75rem;
+}
+
+/* RTL navigation item fixes */
+[dir="rtl"] .sidebar-rtl button {
+  text-align: right;
+}
+
+/* RTL sidebar flex fixes - only for sidebar navigation items */
+[dir="rtl"] .sidebar-rtl .flex.items-center {
+  flex-direction: row-reverse;
+}
+
+/* Navigation buttons should always use row direction */
+[dir="rtl"] .sidebar-rtl button.flex {
+  flex-direction: row !important;
+}
+
+/* RTL tooltip fixes */
+[dir="rtl"] .sidebar-rtl .absolute.right-full {
+  right: 100%;
+  left: auto;
+}
+
+[dir="rtl"] .sidebar-rtl .absolute.left-full {
+  left: 100%;
+  right: auto;
 }
 
 /* Smooth icon transitions */
