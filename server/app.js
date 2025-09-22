@@ -47,8 +47,13 @@ const getAllowedOrigins = () => {
   }
 };
 
+const allowedOrigins = getAllowedOrigins();
+console.log('🌐 CORS Configuration:');
+console.log('  Allowed origins:', allowedOrigins);
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+
 app.use(cors({
-  origin: getAllowedOrigins(),
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));

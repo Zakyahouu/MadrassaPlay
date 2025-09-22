@@ -4,6 +4,7 @@ import {
   Plus, Edit, Trash2, X, Search, Loader, AlertTriangle, 
   Package, Filter, Eye, Users, Wrench, CheckCircle, XCircle, Clock
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const getUser = () => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } };
 const authConfig = () => ({ headers: { Authorization: `Bearer ${getUser()?.token}` } });
@@ -32,6 +33,7 @@ const getStateIcon = (state) => {
 };
 
 const EquipmentTab = () => {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -114,7 +116,7 @@ const EquipmentTab = () => {
                 " />
                 <input
                   type="text"
-                  placeholder="Search equipment..."
+                  placeholder={t('search-equipment')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="
@@ -160,7 +162,7 @@ const EquipmentTab = () => {
                 "
               >
                 <Plus className="w-4 h-4" />
-                Add Equipment
+{t('add-equipment')}
           </button>
         </div>
       </div>
@@ -327,9 +329,9 @@ const EquipmentTab = () => {
                 p-16 text-center
               ">
                 <Package className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No equipment found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-equipment-found')}</h3>
                 <p className="text-gray-500 mb-6">
-                  {search || filters.majorType ? 'No equipment match your search criteria.' : 'Get started by adding your first equipment.'}
+                  {search || filters.majorType ? t('no-equipment-match-search') : t('get-started-create-first-equipment')}
                 </p>
                 {!search && !filters.majorType && (
                   <button
@@ -639,7 +641,7 @@ const EquipmentModal = ({ mode, data, onClose, onSave }) => {
                 hover:bg-green-700 transition-all duration-200 font-medium
               "
             >
-              {mode === 'create' ? 'Add Equipment' : 'Update Equipment'}
+{mode === 'create' ? t('add-equipment') : t('update-equipment')}
             </button>
           </div>
         </form>

@@ -5,6 +5,7 @@ import {
   Clock, Star, Award, TrendingUp, Filter, Download, Mail, Phone, X,
   User, MapPin, Shield, AlertTriangle, Loader
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const API_BASE_URL = '/api/teachers';
@@ -35,6 +36,7 @@ const getCurrentUser = () => {
 };
 
 const TeachersTab = () => {
+  const { t } = useLanguage();
   const [teachers, setTeachers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -301,7 +303,7 @@ const TeachersTab = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search teachers..."
+                  placeholder={t('search-teachers')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-64"
@@ -325,7 +327,7 @@ const TeachersTab = () => {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-              Add Teacher
+{t('add-teacher')}
             </button>
           </div>
         </div>
@@ -471,12 +473,12 @@ const TeachersTab = () => {
                   <Users className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No teachers found
+                  {t('no-teachers-found')}
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {searchTerm || statusFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria.' 
-                    : 'Get started by adding your first teacher.'
+                    ? t('try-adjusting-search-filter') 
+                    : t('get-started-add-first-teacher')
                   }
                 </p>
                 {!searchTerm && statusFilter === 'all' && (

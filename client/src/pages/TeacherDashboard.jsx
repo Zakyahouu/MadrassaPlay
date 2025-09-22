@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 // Import layout components
 import UnifiedSidebar from '../components/layout/UnifiedSidebar';
@@ -19,6 +20,7 @@ import AdsBar from '../components/shared/AdsBar';
 
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const location = useLocation();
   // Persist active tab to avoid flicker/reset on remounts (e.g., StrictMode)
   const [activeTab, setActiveTab] = useState(() => {
@@ -54,16 +56,15 @@ const TeacherDashboard = () => {
   }, [location.search]);
 
   const navigationItems = [
-    { id: 'overview', name: 'Overview' },
-    { id: 'my-games', name: 'My Games' },
-    { id: 'create-game', name: 'Create Game' },
-    { id: 'live-sessions', name: 'Live Sessions' },
-    { id: 'assignments', name: 'Assignments' },
-  { id: 'resources', name: 'Resources' },
-    { id: 'timetable', name: 'Timetable' },
-  // Reports removed; entry points now inside Assignments and My Classes
-  { id: 'students', name: 'My Classes' },
-    { id: 'calendar', name: 'Calendar' }
+    { id: 'overview', name: t('overview') },
+    { id: 'my-games', name: t('my-games') },
+    { id: 'create-game', name: t('create-game') },
+    { id: 'live-sessions', name: t('live-sessions') },
+    { id: 'assignments', name: t('assignments') },
+    { id: 'resources', name: t('resources') },
+    { id: 'timetable', name: t('timetable') },
+    { id: 'students', name: t('my-classes') },
+    { id: 'calendar', name: t('calendar') }
   ];
 
   // Keep the active tab in session storage
@@ -91,8 +92,8 @@ const TeacherDashboard = () => {
         return <TeacherStudents />;
       case 'calendar':
         return <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Calendar</h2>
-          <p className="text-gray-600">Calendar and scheduling features coming soon...</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('calendar')}</h2>
+          <p className="text-gray-600">Fonctionnalités de calendrier et de planification bientôt disponibles...</p>
         </div>;
       default:
         return <TeacherOverview stats={stats} />;
@@ -104,7 +105,7 @@ const TeacherDashboard = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
               <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        <p className="mt-4 text-gray-600">{t('loading')} votre tableau de bord...</p>
       </div>
       </div>
     );

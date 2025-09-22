@@ -2,12 +2,14 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import { TemplateContext } from '../../context/TemplateContext';
 import { Joystick,Trash } from 'lucide-react';
 import LoadingState from '../shared/LoadingState';
 import EmptyState from '../shared/EmptyState';
 import StatusMessage from '../shared/StatusMessage';
 const AdminTestGames = () => {
+  const { t } = useLanguage();
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,7 +21,7 @@ const AdminTestGames = () => {
         const response = await axios.get('/api/creations');
         setCreations(response.data);
       } catch (err) {
-        setError('Failed to fetch test games');
+        setError(t('failed-fetch-test-games'));
       } finally {
         setLoading(false);
       }
@@ -28,23 +30,23 @@ const AdminTestGames = () => {
   }, [lastUpdate]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this test game?')) return;
+    if (!confirm(t('delete-test-game'))) return;
     try {
       await axios.delete(`/api/creations/${id}`);
       setCreations(prev => prev.filter(c => c._id !== id));
     } catch (err) {
-      setError('Failed to delete game');
+      setError(t('failed-delete-game'));
     }
   };
 
-  if (loading) return <LoadingState message="Loading test games..." />;
+  if (loading) return <LoadingState message={t('loading-test-games')} />;
   if (error) return <StatusMessage variant="error" message={error} onClose={() => setError(null)} />;
 
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
-        <h3 className="text-2xl font-bold text-gray-800">Test Games</h3>
+        <h3 className="text-2xl font-bold text-gray-800">{t('test-games')}</h3>
         <span className="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full">
           {creations.length}
         </span>

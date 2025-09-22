@@ -4,6 +4,7 @@ import {
   BookOpen, Building2, User, AlertTriangle, Loader, Download,
   CheckCircle, XCircle, ArrowRight, ChevronDown, ChevronRight
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
 import ClassCreationModal from './class/ClassCreationModal';
@@ -25,6 +26,7 @@ const getAuthToken = () => {
 };
 
 const ClassesTab = ({ onNavigateToAttendance }) => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +49,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
       
     const token = getAuthToken();
     if (!token) {
-      setError("Authentication token not found. Please log in.");
+      setError(t('auth-token-not-found'));
         setIsLoading(false);
         return;
       }
@@ -67,7 +69,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
     };
 
   const handleDelete = async (classId) => {
-    if (!window.confirm('Are you sure you want to delete this class?')) {
+    if (!window.confirm(t('confirm-delete-class'))) {
       return;
     }
 
@@ -77,10 +79,10 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
     try {
       await axios.delete(`${API_BASE_URL}/${classId}`, config);
       setClasses(classes.filter(c => c._id !== classId));
-      alert('Class deleted successfully.');
+      alert(t('class-deleted-successfully'));
     } catch (err) {
-      const message = err.response?.data?.message || "Failed to delete class.";
-      alert(`Error: ${message}`);
+      const message = err.response?.data?.message || t('failed-delete-class');
+      alert(`${t('error')}: ${message}`);
     }
   };
 
@@ -137,7 +139,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
   };
 
   const exportToCSV = () => {
-  const headers = ['Class Name', 'Teacher', 'Room', 'Schedule', 'Capacity', 'Enrolled', 'Status', 'Price (DZ)'];
+  const headers = [t('class-name'), t('teacher'), t('room'), t('schedule'), t('capacity'), t('enrolled'), t('status'), t('price-dz')];
     const csvData = filteredClasses.map(classItem => [
       classItem.name,
       `${classItem.teacherId?.firstName || ''} ${classItem.teacherId?.lastName || ''}`,
@@ -170,7 +172,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                  placeholder="Search by class name, teacher, or room..."
+                  placeholder={t('search-class-teacher-room')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-80"
@@ -206,7 +208,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-                Create Class
+{t('create-class')}
             </button>
             </div>
           </div>
@@ -234,19 +236,19 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Class Details
+                        {t('class-details')}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Schedule
+                        {t('schedule')}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Capacity & Enrollment
+                        {t('capacity-enrollment')}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Status
+                        {t('status')}
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">
-                        Actions
+                        {t('actions')}
                       </th>
                     </tr>
                   </thead>
@@ -340,14 +342,14 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                     <button
                               onClick={() => setEditClassId(classItem._id)}
                               className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition-colors"
-                              title="Edit Class"
+                              title={t('edit-class')}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                               onClick={() => handleDelete(classItem._id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete Class"
+                              title={t('delete-class')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -364,12 +366,12 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                   <BookOpen className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No classes found
+                  {t('no-classes-found')}
                 </h3>
                 <p className="text-gray-600 max-w-sm mx-auto">
                   {searchTerm 
-                    ? 'Try adjusting your search criteria.' 
-                    : 'Get started by creating your first class.'
+                    ? t('try-adjusting-search') 
+                    : t('get-started-create-first-class')
                   }
                 </p>
                 {!searchTerm && (
@@ -380,7 +382,7 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
                     }}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
-                    Create First Class
+{t('create-first-class')}
                   </button>
                 )}
               </div>
@@ -420,9 +422,9 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-lg font-semibold">{selectedClass.name}</div>
-                  <div className="text-sm text-gray-500">Manage attendance and payments</div>
+                  <div className="text-sm text-gray-500">{t('manage-attendance-payments')}</div>
                 </div>
-                <button onClick={() => setSelectedClass(null)} className="text-gray-600 hover:text-gray-800">Close</button>
+                <button onClick={() => setSelectedClass(null)} className="text-gray-600 hover:text-gray-800">{t('close')}</button>
               </div>
               <div className="space-y-6">
                 <div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 import { 
   BookOpen, GraduationCap, Languages, Briefcase, Activity, 
@@ -17,6 +18,7 @@ import OtherActivityForm from './catalog/OtherActivityForm';
 
 const CatalogTab = () => {
   const { user } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [catalog, setCatalog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +44,7 @@ const CatalogTab = () => {
       setCatalog(response.data);
     } catch (error) {
       console.error('Error fetching catalog:', error);
-      setError('Failed to load catalog data. Please try again.');
+      setError(t('failed-load-catalog-data'));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ const CatalogTab = () => {
   };
 
   const handleDeleteItem = async (type, itemId) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    if (!window.confirm(t('confirm-delete-item'))) return;
     
     try {
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
@@ -99,7 +101,7 @@ const CatalogTab = () => {
       setCatalog(response.data);
     } catch (error) {
       console.error(`Error deleting ${type}:`, error);
-      alert('Failed to delete item. Please try again.');
+      alert(t('failed-delete-item'));
     }
   };
 
@@ -524,11 +526,11 @@ const CatalogTab = () => {
   }
 
   const sections = [
-    { id: 'support-lessons', name: 'Support Lessons', icon: BookOpen, count: catalog?.supportLessons?.length || 0 },
-    { id: 'review-courses', name: 'Review Courses', icon: GraduationCap, count: catalog?.reviewCourses?.length || 0 },
-    { id: 'vocational-trainings', name: 'Vocational Trainings', icon: Briefcase, count: catalog?.vocationalTrainings?.length || 0 },
-    { id: 'languages', name: 'Languages', icon: Languages, count: catalog?.languages?.length || 0 },
-    { id: 'other-activities', name: 'Other Activities', icon: Activity, count: catalog?.otherActivities?.length || 0 },
+    { id: 'support-lessons', name: t('support-lessons'), icon: BookOpen, count: catalog?.supportLessons?.length || 0 },
+    { id: 'review-courses', name: t('review-courses'), icon: GraduationCap, count: catalog?.reviewCourses?.length || 0 },
+    { id: 'vocational-trainings', name: t('vocational-trainings'), icon: Briefcase, count: catalog?.vocationalTrainings?.length || 0 },
+    { id: 'languages', name: t('languages'), icon: Languages, count: catalog?.languages?.length || 0 },
+    { id: 'other-activities', name: t('other-activities'), icon: Activity, count: catalog?.otherActivities?.length || 0 },
   ];
 
   return (
@@ -536,8 +538,8 @@ const CatalogTab = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Skill Snap Catalog Management</h2>
-          <p className="text-gray-600">Manage all services and offerings for your school</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('skill-snap-catalog-management')}</h2>
+          <p className="text-gray-600">{t('manage-all-services-offerings')}</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -545,7 +547,7 @@ const CatalogTab = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search offerings..."
+              placeholder={t('search-offerings')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"

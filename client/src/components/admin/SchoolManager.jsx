@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import ManagerPanel from './ManagerPanel';
 import SchoolDocuments from './SchoolDocuments';
 import SchoolCreationWizard from './SchoolCreationWizard';
@@ -616,6 +617,7 @@ const SecureDeleteModal = ({ school, onConfirm, onCancel }) => {
 
 // --- Main SchoolManager Component ---
 const SchoolManager = () => {
+  const { t } = useLanguage();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -779,16 +781,16 @@ const SchoolManager = () => {
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
-          <h2 className="text-2xl font-bold text-gray-800">Schools</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{t('schools')}</h2>
           <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-            {filteredSchools.length}
+{filteredSchools.length}
           </span>
         </div>
         
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <input
             type="text"
-            placeholder="Search schools..."
+            placeholder="Rechercher des écoles..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
@@ -799,17 +801,17 @@ const SchoolManager = () => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           >
-            <option value="all">All Status</option>
-            <option value="trial">Trial</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="all">Tous les Statuts</option>
+            <option value="trial">Essai</option>
+            <option value="active">Actif</option>
+            <option value="inactive">Inactif</option>
           </select>
           
           <button
             onClick={() => setModal({ type: 'ADD_SCHOOL', data: null })}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2 whitespace-nowrap"
           >
-            <PlusIcon /> Add School
+            <PlusIcon /> Ajouter une École
           </button>
         </div>
       </div>
@@ -824,7 +826,7 @@ const SchoolManager = () => {
       {/* Schools Grid */}
       {filteredSchools.length === 0 ? (
         <div className="text-center py-10 text-gray-500">
-          {schools.length === 0 ? 'No schools found.' : 'No schools match your filters.'}
+          {schools.length === 0 ? 'Aucune école trouvée.' : 'Aucune école ne correspond à vos filtres.'}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">

@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import axios from 'axios';
 import { 
   LogOut, 
@@ -35,6 +36,7 @@ import { useToast } from '../components/shared/ToastProvider';
 // Main Student Dashboard Component
 const StudentDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
@@ -165,10 +167,10 @@ const StudentDashboard = () => {
   const stats = useMemo(() => {
     const hours = (summary.timeSpentMinutes || 0) / 60;
     return [
-      { title: 'Games Completed', value: String(summary.gamesCompleted), icon: Trophy, color: 'text-yellow-600', change: '' },
-      { title: 'Current Streak', value: `${summary.currentStreakDays} day${summary.currentStreakDays===1?'':'s'}`, icon: Flame, color: 'text-orange-600', change: '' },
-      { title: 'Total Points', value: String(summary.totalPoints), icon: Star, color: 'text-purple-600', change: '' },
-      { title: 'Time Spent', value: `${hours.toFixed(1)} hrs`, icon: Clock, color: 'text-blue-600', change: '' }
+      { title: 'Jeux Terminés', value: String(summary.gamesCompleted), icon: Trophy, color: 'text-yellow-600', change: '' },
+      { title: 'Série Actuelle', value: `${summary.currentStreakDays} jour${summary.currentStreakDays===1?'':'s'}`, icon: Flame, color: 'text-orange-600', change: '' },
+      { title: 'Points Totaux', value: String(summary.totalPoints), icon: Star, color: 'text-purple-600', change: '' },
+      { title: 'Temps Passé', value: `${hours.toFixed(1)} h`, icon: Clock, color: 'text-blue-600', change: '' }
     ];
   }, [summary]);
 
@@ -587,22 +589,22 @@ const StudentDashboard = () => {
       default:
         return (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h2>
-            <p className="text-gray-600">Welcome to your student dashboard</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('dashboard')}</h2>
+            <p className="text-gray-600">Bienvenue sur votre tableau de bord étudiant</p>
           </div>
         );
     }
   };
 
   const navigationItems = [
-    { id: 'overview', name: 'Overview' },
-    { id: 'assignments', name: 'My Assignments' },
-    { id: 'games', name: 'Games' },
-    { id: 'progress', name: 'Progress' },
-    { id: 'badges', name: 'Badges' },
-  { id: 'leaderboard', name: 'Leaderboard' },
-  { id: 'live', name: 'Live Sessions' },
-  { id: 'resources', name: 'Resources' }
+    { id: 'overview', name: t('overview') },
+    { id: 'assignments', name: t('my-assignments') },
+    { id: 'games', name: t('games') },
+    { id: 'progress', name: t('my-progress') },
+    { id: 'badges', name: t('badges') },
+    { id: 'leaderboard', name: 'Classement' },
+    { id: 'live', name: t('live-sessions') },
+    { id: 'resources', name: t('resources') }
   ];
 
   return (
@@ -612,7 +614,7 @@ const StudentDashboard = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 gap-3 sm:gap-4">
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Student Dashboard</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{t('dashboard')} Étudiant</h1>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4 w-full sm:w-auto">
               <button
@@ -620,22 +622,22 @@ const StudentDashboard = () => {
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-indigo-300 text-xs sm:text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors w-full sm:w-auto justify-center"
               >
                 <Megaphone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Announcements
+                Annonces
               </button>
               <button
                 onClick={() => { setActiveTab('overview'); setTimeout(()=>{ const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-purple-300 text-xs sm:text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors w-full sm:w-auto justify-center"
               >
                 <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Join Live
+                Rejoindre en Direct
               </button>
-              <span className="text-xs sm:text-sm text-gray-600">Welcome, {user?.name}</span>
+              <span className="text-xs sm:text-sm text-gray-600">Bienvenue, {user?.name}</span>
               <button
                 onClick={logout}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors w-full sm:w-auto justify-center"
               >
                 <LogOut className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Logout
+                {t('logout')}
               </button>
             </div>
           </div>

@@ -1,6 +1,16 @@
 // ✅ BREADCRUMB LOGS HAVE BEEN ADDED TO HELP DEBUG STARTUP
 console.log('✅ [1/5] Server script starting up...');
 
+// Load environment variables FIRST
+require('dotenv').config();
+
+// Debug environment variables
+console.log('🔍 Environment check:');
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+console.log('  PORT:', process.env.PORT);
+console.log('  CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('  MONGO_URI:', process.env.MONGO_URI ? 'Set' : 'Not set');
+
 const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app'); // Import the configured Express app

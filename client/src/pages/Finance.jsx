@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -19,6 +20,7 @@ import EmployeesTab from '../components/finance/EmployeesTab';
 
 const Finance = () => {
   const { user } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -31,16 +33,16 @@ const Finance = () => {
 
   // Month names
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
   ];
 
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: BarChart3, component: OverviewTab },
-    { id: 'teachers', name: 'Teachers', icon: Users, component: TeachersTab },
-    { id: 'employees', name: 'Employees', icon: Users, component: EmployeesTab },
-    { id: 'expenses', name: 'Expenses', icon: FileText, component: ExpensesTab },
-    { id: 'analytics', name: 'Analytics', icon: TrendingUp, component: AnalyticsTab }
+    { id: 'overview', name: t('overview'), icon: BarChart3, component: OverviewTab },
+    { id: 'teachers', name: t('teachers'), icon: Users, component: TeachersTab },
+    { id: 'employees', name: t('employees'), icon: Users, component: EmployeesTab },
+    { id: 'expenses', name: t('expenses'), icon: FileText, component: ExpensesTab },
+    { id: 'analytics', name: t('analytics'), icon: TrendingUp, component: AnalyticsTab }
   ];
 
   const handleTabChange = (tabId) => {
@@ -77,10 +79,10 @@ const Finance = () => {
               <DollarSign className="w-8 h-8 text-red-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No School Assigned
+              {t('no-school-assigned')}
             </h3>
             <p className="text-gray-500">
-              You need to be assigned to a school to access financial data.
+              {t('need-school-assignment-financial-data')}
             </p>
           </div>
         </div>
@@ -96,10 +98,10 @@ const Finance = () => {
               <activeTabData.icon className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeTabData.name} Tab
+              {activeTabData.name} {t('tab')}
             </h3>
             <p className="text-gray-500">
-              This feature will be available in the next phase.
+              {t('feature-available-next-phase')}
             </p>
           </div>
         </div>
@@ -130,15 +132,15 @@ const Finance = () => {
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Dashboard</span>
+                <span>{t('back-to-dashboard')}</span>
               </button>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Finance</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{t('finance')}</h1>
                 <p className="text-sm text-gray-500">
-                  Manage your school's financial data and transactions
+                  {t('manage-school-financial-data')}
                 </p>
               </div>
             </div>
@@ -177,7 +179,7 @@ const Finance = () => {
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
+                <span>{t('refresh')}</span>
               </button>
             </div>
           </div>

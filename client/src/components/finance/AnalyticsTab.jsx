@@ -27,7 +27,6 @@ import {
 import enhancedPdfExportService from '../../services/enhancedPdfExportService';
 import fallbackPdfExportService from '../../services/fallbackPdfExportService';
 import chartCaptureService from '../../services/chartCaptureService';
-import PDFExportTest from './PDFExportTest';
 
 const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const { user } = useContext(AuthContext);
@@ -527,13 +526,13 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">Error Loading Analytics</h3>
+            <h3 className="text-lg font-medium text-red-800">Erreur lors du chargement des analyses</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              Try Again
+              Réessayer
             </button>
           </div>
         </div>
@@ -543,9 +542,6 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   return (
     <div className="space-y-6">
-      {/* PDF Export Test - Remove this in production */}
-      <PDFExportTest />
-      
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
@@ -554,9 +550,9 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Financial Analytics Dashboard</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Tableau de Bord des Analyses Financières</h2>
               <p className="text-gray-600">
-                Comprehensive analysis for {monthData?.monthName || month} {year}
+                Analyse complète pour {monthData?.monthName || month} {year}
               </p>
             </div>
           </div>
@@ -572,7 +568,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               ) : (
                 <FileText className="w-4 h-4" />
               )}
-              <span>{exportingPDF ? 'Generating PDF...' : 'Export PDF'}</span>
+              <span>{exportingPDF ? 'Génération PDF...' : 'Exporter PDF'}</span>
             </button>
             
             <button
@@ -580,7 +576,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span>Export Excel</span>
+              <span>Exporter Excel</span>
             </button>
             
             <button
@@ -627,35 +623,35 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Key Metrics */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Key Performance Indicators</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Indicateurs de Performance Clés</h3>
             <div className="grid grid-cols-2 gap-4">
               <MetricCard
-                title="Total Income"
+                title="Revenus Totaux"
                 value={formatCurrency(monthData?.income || 0)}
                 icon={TrendingUp}
                 color="success"
-                subtitle={`${monthData?.breakdown?.studentIncome ? 'Students: ' + formatCurrency(monthData.breakdown.studentIncome) : ''} ${monthData?.breakdown?.manualIncome ? '| Manual: ' + formatCurrency(monthData.breakdown.manualIncome) : ''}`}
+                subtitle={`${monthData?.breakdown?.studentIncome ? 'Étudiants: ' + formatCurrency(monthData.breakdown.studentIncome) : ''} ${monthData?.breakdown?.manualIncome ? '| Manuel: ' + formatCurrency(monthData.breakdown.manualIncome) : ''}`}
               />
               <MetricCard
-                title="Total Expenses"
+                title="Dépenses Totales"
                 value={formatCurrency(monthData?.expenses || 0)}
                 icon={TrendingDown}
                 color="danger"
-                subtitle={`${monthData?.breakdown?.manualExpenses ? 'Manual: ' + formatCurrency(monthData.breakdown.manualExpenses) : ''} ${monthData?.breakdown?.teacherEarnings ? '| Teachers: ' + formatCurrency(monthData.breakdown.teacherEarnings) : ''}`}
+                subtitle={`${monthData?.breakdown?.manualExpenses ? 'Manuel: ' + formatCurrency(monthData.breakdown.manualExpenses) : ''} ${monthData?.breakdown?.teacherEarnings ? '| Enseignants: ' + formatCurrency(monthData.breakdown.teacherEarnings) : ''}`}
               />
               <MetricCard
-                title="Net Balance"
+                title="Solde Net"
                 value={formatCurrency(monthData?.net || 0)}
                 icon={DollarSign}
                 color={monthData?.net >= 0 ? 'success' : 'danger'}
-                subtitle={monthData?.net >= 0 ? 'Positive balance' : 'Negative balance'}
+                subtitle={monthData?.net >= 0 ? 'Solde positif' : 'Solde négatif'}
               />
               <MetricCard
-                title="Total Debts"
+                title="Dettes Totales"
                 value={formatCurrency(debtData?.totalDebt || 0)}
                 icon={AlertTriangle}
                 color="warning"
-                subtitle={`${debtData?.studentCount || 0} students | Avg: ${formatCurrency(debtData?.avgDebtPerStudent || 0)}`}
+                subtitle={`${debtData?.studentCount || 0} étudiants | Moy: ${formatCurrency(debtData?.avgDebtPerStudent || 0)}`}
               />
             </div>
           </div>

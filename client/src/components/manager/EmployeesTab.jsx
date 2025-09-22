@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Plus, Edit, Trash2, Eye, X, Shield } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const getUser = () => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } };
 const authConfig = () => { 
@@ -12,6 +13,7 @@ const authConfig = () => {
 };
 
 const EmployeesTab = () => {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -131,7 +133,7 @@ const EmployeesTab = () => {
               onClick={() => setModal({ open: true, mode: 'create', data: null })}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
             >
-              <Plus className="w-4 h-4" /> Add Employee
+              <Plus className="w-4 h-4" /> {t('add-employee')}
             </button>
           </div>
         </div>
@@ -144,7 +146,7 @@ const EmployeesTab = () => {
             <input 
               value={search} 
               onChange={(e)=>setSearch(e.target.value)} 
-              placeholder="Search by name, role, or phone..."
+              placeholder={t('search-by-name-role-phone')}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
             />
           </div>
@@ -210,7 +212,7 @@ const EmployeesTab = () => {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No employees found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-employees-found')}</h3>
             <p className="text-gray-500 mb-6">
               {search || filters.type || filters.role
                 ? 'Try adjusting your search or filter criteria'
@@ -223,7 +225,7 @@ const EmployeesTab = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Employee
+                {t('add-employee')}
               </button>
             )}
           </div>
@@ -768,7 +770,7 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
                 type="submit" 
                 className="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
               >
-                {mode === 'edit' ? 'Update Employee' : 'Add Employee'}
+{mode === 'edit' ? t('update-employee') : t('add-employee')}
               </button>
             )}
           </div>

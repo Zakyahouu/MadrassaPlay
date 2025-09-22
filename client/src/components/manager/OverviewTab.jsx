@@ -4,6 +4,7 @@ import {
   UserCheck, Building2, FileText, Search, Plus, Edit, Trash2, Eye,
   Clock, Star, Award, TrendingUp, Filter, Download, Mail, Phone
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import StatsCard from './shared/StatsCard';
 import QuickActionCard from './shared/QuickActionCard';
 import NotificationItem from './shared/NotificationItem'; 
@@ -12,7 +13,10 @@ import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
 import UnifiedCard from '../shared/UnifiedCard';
 
 // Overview Tab Component
-const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading }) => (
+const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading }) => {
+  const { t } = useLanguage();
+  
+  return (
   <div className="space-y-6">
     {/* Stats Cards */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -78,6 +82,7 @@ const OverviewTab = ({ stats, quickActions, notifications, setActiveTab, loading
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default OverviewTab;

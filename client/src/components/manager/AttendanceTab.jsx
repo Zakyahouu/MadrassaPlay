@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import { Calendar, Users, AlertTriangle, Search, Filter, UserCheck, QrCode } from 'lucide-react';
 import AttendanceRoster from './AttendanceRoster';
 import AttendanceStudentPopup from './AttendanceStudentPopup';
 
 const AttendanceTab = ({ initialClassId = '' }) => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ const AttendanceTab = ({ initialClassId = '' }) => {
         const { data } = await axios.get('/api/classes');
         setClasses(Array.isArray(data) ? data : []);
       } catch (e) {
-        setError(e?.response?.data?.message || 'Failed to load classes');
+        setError(e?.response?.data?.message || t('failed-load-classes'));
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,7 @@ const AttendanceTab = ({ initialClassId = '' }) => {
       setPopupEnrollments(Array.isArray(data.enrollments) ? data.enrollments : []);
       setPopupOpen(true);
     } catch (e) {
-      alert(e?.response?.data?.message || 'Student not found');
+      alert(e?.response?.data?.message || t('student-not-found'));
     } finally {
       setScanCode('');
     }
@@ -78,7 +80,7 @@ const AttendanceTab = ({ initialClassId = '' }) => {
       console.error('Search error:', e);
       setSearchResults([]);
       setShowSearchResults(false);
-      alert(e?.response?.data?.message || 'Search failed');
+      alert(e?.response?.data?.message || t('search-failed'));
     } finally {
       setSearchLoading(false);
     }
@@ -95,7 +97,7 @@ const AttendanceTab = ({ initialClassId = '' }) => {
       setShowSearchResults(false);
     } catch (e) {
       console.error('Error loading student data:', e);
-      alert('Failed to load student data');
+      alert(t('failed-load-student-data'));
     }
   };
 
@@ -116,149 +118,123 @@ const AttendanceTab = ({ initialClassId = '' }) => {
   }, []);
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <UserCheck className="w-6 h-6 text-blue-600" />
-        </div>
+      <div className="flex items-center gap-3">
+        <UserCheck className="w-6 h-6 text-gray-700" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
-          <p className="text-sm text-gray-600">Track and manage student attendance</p>
+          <h1 className="text-2xl font-medium text-gray-900">{t('attendance-management')}</h1>
+          <p className="text-sm text-gray-500">{t('track-manage-student-attendance')}</p>
         </div>
       </div>
 
       {/* Controls Panel */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Filter className="w-5 h-5 text-blue-600" />
-            Attendance Controls
-          </h2>
-        </div>
-        
+      <div className="bg-white border border-gray-200 rounded-lg">
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Class and Date Selection */}
-            <div className="lg:col-span-1 space-y-4">
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Select Class</label>
-                <div className="relative">
-                  <select
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer"
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    disabled={loading}
-                  >
-                    <option value="">Choose a class…</option>
-                    {classes
-                      .filter((c) => {
-                        if (!todayOnly) return true;
-                        const schedules = Array.isArray(c.schedules) ? c.schedules : [];
-                        const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-                        const today = days[new Date().getDay()];
-                        return schedules.some(s => s.dayOfWeek === today);
-                      })
-                      .map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('select-class')}</label>
+                <select
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">Choose a class…</option>
+                  {classes
+                    .filter((c) => {
+                      if (!todayOnly) return true;
+                      const schedules = Array.isArray(c.schedules) ? c.schedules : [];
+                      const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+                      const today = days[new Date().getDay()];
+                      return schedules.some(s => s.dayOfWeek === today);
+                    })
+                    .map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700">Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <input
+                  type="date"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
               </div>
 
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <input 
-                    id="todayOnly" 
-                    type="checkbox" 
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
-                    checked={todayOnly} 
-                    onChange={(e)=>setTodayOnly(e.target.checked)} 
-                  />
-                  <label htmlFor="todayOnly" className="text-sm font-medium text-gray-700">
-                    Show only classes with sessions today
-                  </label>
-                </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  id="todayOnly" 
+                  type="checkbox" 
+                  className="h-4 w-4 rounded border-gray-300 focus:ring-1 focus:ring-gray-400" 
+                  checked={todayOnly} 
+                  onChange={(e)=>setTodayOnly(e.target.checked)} 
+                />
+                <label htmlFor="todayOnly" className="text-sm text-gray-700">
+                  Show only classes with sessions today
+                </label>
               </div>
             </div>
 
             {/* Student Lookup Section */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Scan Code */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-blue-600" />
-                    Scan Student Code
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      placeholder="Scan or type student code…"
-                      className="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      value={scanCode}
-                      onChange={(e)=>setScanCode(e.target.value)}
-                      onKeyDown={(e)=>{ if (e.key==='Enter') openPopupFromScan(); }}
-                    />
-                    <button 
-                      onClick={openPopupFromScan} 
-                      className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
-                    >
-                      Open
-                    </button>
-                  </div>
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Scan Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <QrCode className="w-4 h-4" />
+                  {t('scan-student-code')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    placeholder={t('scan-type-student-code')}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    value={scanCode}
+                    onChange={(e)=>setScanCode(e.target.value)}
+                    onKeyDown={(e)=>{ if (e.key==='Enter') openPopupFromScan(); }}
+                  />
+                  <button 
+                    onClick={openPopupFromScan} 
+                    className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  >
+                    Open
+                  </button>
                 </div>
+              </div>
 
-                {/* Search Student */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Search className="w-4 h-4 text-green-600" />
-                    Search Student
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        placeholder="Name, email, or code…"
-                        className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                        value={searchQuery}
-                        onChange={(e)=>{
-                          setSearchQuery(e.target.value);
-                          if (!e.target.value.trim()) {
-                            setSearchResults([]);
-                            setShowSearchResults(false);
-                          }
-                        }}
-                        onKeyDown={(e)=>{ if (e.key==='Enter') searchStudents(); }}
-                      />
-                    </div>
-                    <button 
-                      onClick={searchStudents}
-                      disabled={searchLoading}
-                      className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {searchLoading ? 'Searching...' : 'Search'}
-                    </button>
-                  </div>
+              {/* Search Student */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Search className="w-4 h-4" />
+                  {t('search-student')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Name, email, or code…"
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    value={searchQuery}
+                    onChange={(e)=>{
+                      setSearchQuery(e.target.value);
+                      if (!e.target.value.trim()) {
+                        setSearchResults([]);
+                        setShowSearchResults(false);
+                      }
+                    }}
+                    onKeyDown={(e)=>{ if (e.key==='Enter') searchStudents(); }}
+                  />
+                  <button 
+                    onClick={searchStudents}
+                    disabled={searchLoading}
+                    className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 focus:outline-none focus:ring-1 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {searchLoading ? t('searching') : t('search')}
+                  </button>
                 </div>
               </div>
             </div>
@@ -268,76 +244,67 @@ const AttendanceTab = ({ initialClassId = '' }) => {
 
       {/* Search Results */}
       {showSearchResults && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Search className="w-5 h-5 text-blue-600" />
-                Search Results
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  {searchResults.length} found
-                </span>
-              </h2>
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSearchResults([]);
-                  setShowSearchResults(false);
-                }}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-white/50 rounded-lg transition-colors"
-              >
-                Clear
-              </button>
+        <div className="bg-white border border-gray-200 rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium text-gray-900">{t('search-results')}</h2>
+              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
+                {t('found', { count: searchResults.length })}
+              </span>
             </div>
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+                setShowSearchResults(false);
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Clear
+            </button>
           </div>
           <div className="p-6">
             {searchLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="ml-3 text-gray-600">Searching...</span>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-gray-700"></div>
+                <span className="ml-2 text-sm text-gray-600">{t('searching')}</span>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Students Found</h3>
-                <p className="text-gray-600">No students match your search criteria.</p>
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-lg font-medium text-gray-900 mb-1">{t('no-students-found')}</h3>
+                <p className="text-gray-500">{t('no-students-match-search')}</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {searchResults.map((student) => (
                   <div
                     key={student._id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer"
                     onClick={() => openStudentPopup(student)}
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-medium">
                         {student.firstName?.charAt(0)}{student.lastName?.charAt(0)}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-lg">
+                        <h3 className="font-medium text-gray-900">
                           {`${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name}
                         </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-3 text-sm text-gray-500">
                           {student.studentCode && (
                             <span className="flex items-center gap-1">
-                              <QrCode className="w-4 h-4" />
+                              <QrCode className="w-3 h-3" />
                               {student.studentCode}
                             </span>
                           )}
-                          {student.email && (
-                            <span>{student.email}</span>
-                          )}
+                          {student.email && <span>{student.email}</span>}
                         </div>
                       </div>
                     </div>
-                    <div className="text-blue-600">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 ))}
               </div>
@@ -348,38 +315,35 @@ const AttendanceTab = ({ initialClassId = '' }) => {
 
       {/* Content Area */}
       {loading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8">
           <div className="flex items-center justify-center gap-3 text-gray-600">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <Users className="w-5 h-5" />
-            <span className="font-medium">Loading classes…</span>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-gray-700"></div>
+            <span className="text-sm">Loading classes…</span>
           </div>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-white border border-red-200 rounded-lg p-6">
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-red-600" />
             <div>
-              <h3 className="font-semibold text-red-800">Error Loading Classes</h3>
+              <h3 className="font-medium text-red-800">{t('error-loading-classes')}</h3>
               <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
         </div>
       ) : !selectedClassId ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+        <div className="bg-white border border-gray-200 rounded-lg p-12">
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Class Selected</h3>
-            <p className="text-gray-600">Please select a class from the dropdown above to view and manage attendance.</p>
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-class-selected')}</h3>
+            <p className="text-gray-500">{t('please-select-class-dropdown')}</p>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-green-600" />
+        <div className="bg-white border border-gray-200 rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
               Attendance Roster
             </h2>
           </div>

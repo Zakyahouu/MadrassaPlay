@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Plus, 
   FileText, 
@@ -17,6 +18,7 @@ import {
 import AddTransactionModal from './AddTransactionModal';
 
 const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState([]);
   const [totals, setTotals] = useState({ income: 0, expense: 0, net: 0 });
   const [loadingData, setLoadingData] = useState(true);
@@ -28,18 +30,18 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Predefined categories
   const categories = [
-    'Rent',
-    'Electricity',
-    'Water',
-    'Internet',
-    'Insurance',
-    'Equipment',
-    'Maintenance',
-    'Supplies',
-    'Activities',
-    'Donations',
-    'Other Income',
-    'Other Expense'
+    t('rent'),
+    t('electricity'),
+    t('water'),
+    t('internet'),
+    t('insurance'),
+    t('equipment'),
+    t('maintenance'),
+    t('supplies'),
+    t('activities'),
+    t('donations'),
+    t('other-income'),
+    t('other-expense')
   ];
 
   // Fetch manual transactions
@@ -52,7 +54,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t('authentication-required'));
         return;
       }
 
@@ -70,7 +72,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
     } catch (err) {
       console.error('Error fetching transactions:', err);
-      setError(err.response?.data?.message || 'Failed to fetch transactions');
+      setError(err.response?.data?.message || t('failed-fetch-transactions'));
       setTotals({ income: 0, expense: 0, net: 0 });
     } finally {
       setLoadingData(false);
@@ -96,7 +98,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Handle delete transaction
   const handleDelete = async (transactionId) => {
-    if (!window.confirm('Are you sure you want to delete this transaction?')) {
+    if (!window.confirm(t('confirm-delete-transaction'))) {
       return;
     }
 
@@ -111,7 +113,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
     } catch (err) {
       console.error('Error deleting transaction:', err);
-      setError(err.response?.data?.message || 'Failed to delete transaction');
+      setError(err.response?.data?.message || t('failed-delete-transaction'));
     }
   };
 
@@ -152,7 +154,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading transactions...</p>
+          <p className="text-gray-500">{t('loading-transactions')}</p>
         </div>
       </div>
     );
@@ -164,13 +166,13 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">Error Loading Data</h3>
+            <h3 className="text-lg font-medium text-red-800">{t('error-loading-data')}</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              Try Again
+              {t('try-again')}
             </button>
           </div>
         </div>
@@ -188,9 +190,9 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <FileText className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Manual Transactions</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('manual-transactions')}</h2>
               <p className="text-sm text-gray-500">
-                {month} {year} - {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+                {month} {year} - {transactions.length} {t('transaction')}{transactions.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -201,7 +203,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Transaction</span>
+              <span>{t('add-transaction')}</span>
             </button>
             
             <button
@@ -210,7 +212,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t('refresh')}</span>
             </button>
           </div>
         </div>
@@ -222,7 +224,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
           <div className="flex items-center">
             <TrendingUp className="w-8 h-8 text-green-600 mr-3" />
             <div>
-              <p className="text-sm text-green-600 font-medium">Total Income</p>
+              <p className="text-sm text-green-600 font-medium">{t('total-income')}</p>
               <p className="text-2xl font-bold text-green-900">
                 {formatCurrency(totals?.income || 0)}
               </p>
@@ -234,7 +236,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
           <div className="flex items-center">
             <TrendingDown className="w-8 h-8 text-red-600 mr-3" />
             <div>
-              <p className="text-sm text-red-600 font-medium">Total Expenses</p>
+              <p className="text-sm text-red-600 font-medium">{t('total-expenses')}</p>
               <p className="text-2xl font-bold text-red-900">
                 {formatCurrency(totals?.expense || 0)}
               </p>
@@ -246,7 +248,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
           <div className="flex items-center">
             <DollarSign className="w-8 h-8 text-blue-600 mr-3" />
             <div>
-              <p className="text-sm text-blue-600 font-medium">Net Balance</p>
+              <p className="text-sm text-blue-600 font-medium">{t('net-balance')}</p>
               <p className={`text-2xl font-bold ${(totals?.net || 0) >= 0 ? 'text-blue-900' : 'text-red-900'}`}>
                 {formatCurrency(totals?.net || 0)}
               </p>
@@ -263,7 +265,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search transactions..."
+              placeholder={t('search-transactions')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
@@ -276,7 +278,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
-            <option value="all">All Categories</option>
+            <option value="all">{t('all-categories')}</option>
             {categories.map(category => (
               <option key={category} value={category}>{category}</option>
             ))}
@@ -288,9 +290,9 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
-            <option value="all">All Types</option>
-            <option value="income">Income</option>
-            <option value="expense">Expense</option>
+            <option value="all">{t('all-types')}</option>
+            <option value="income">{t('income')}</option>
+            <option value="expense">{t('expense')}</option>
           </select>
         </div>
       </div>
@@ -300,11 +302,11 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
         {filteredTransactions.length === 0 ? (
           <div className="p-8 text-center">
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Transactions Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-transactions-found')}</h3>
             <p className="text-gray-500">
               {searchTerm || categoryFilter !== 'all' || typeFilter !== 'all'
-                ? 'No transactions match your current filters.' 
-                : 'No manual transactions recorded for this month.'}
+                ? t('no-transactions-match-filters') 
+                : t('no-manual-transactions-recorded')}
             </p>
           </div>
         ) : (
@@ -313,28 +315,28 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    {t('date')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                    {t('category')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    {t('description')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                    {t('type')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
+                    {t('amount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Receipt #
+                    {t('receipt-number')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created By
+                    {t('created-by')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('actions')}
                   </th>
                 </tr>
               </thead>
@@ -373,7 +375,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                         ) : (
                           <TrendingDown className="w-3 h-3 mr-1" />
                         )}
-                        {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                        {transaction.type === 'income' ? t('income') : t('expense')}
                       </span>
                     </td>
                     
@@ -395,7 +397,7 @@ const ExpensesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                       <span className="text-sm text-gray-900">
                         {transaction.createdBy ? 
                           `${transaction.createdBy.firstName} ${transaction.createdBy.lastName}` : 
-                          'Unknown'
+                          t('unknown')
                         }
                       </span>
                     </td>

@@ -4,9 +4,11 @@ import {
   Target, MapPin, AlertTriangle, Loader, CheckCircle, XCircle,
   X, Save, Clock
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 
 const AdsTab = () => {
+  const { t } = useLanguage();
   useEffect(() => {
     fetchAds();
   }, []);
@@ -227,8 +229,8 @@ const AdsTab = () => {
                 <Megaphone className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Advertisements</h1>
-                <p className="text-gray-600">Manage announcements and promotional content</p>
+                <h1 className="text-2xl font-bold text-gray-900">{t('advertisements')}</h1>
+                <p className="text-gray-600">{t('manage-announcements-promotional')}</p>
               </div>
             </div>
             <button
@@ -236,7 +238,7 @@ const AdsTab = () => {
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-              Create Advertisement
+{t('create-advertisement')}
             </button>
           </div>
         </div>
@@ -257,8 +259,8 @@ const AdsTab = () => {
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Advertisement</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Target Audience</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('advertisement')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('target-audience')}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Location</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Start Date</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">End Date</th>
@@ -326,16 +328,16 @@ const AdsTab = () => {
                   <Megaphone className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No advertisements found
+                  {t('no-ads-found')}
                 </h3>
                 <p className="text-gray-600 max-w-sm mx-auto">
-                  Get started by creating your first advertisement to communicate with students and teachers.
+{t('get-started-create-first-advertisement')}
                 </p>
                 <button
                   onClick={() => openModal()}
                   className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                 >
-                  Create First Advertisement
+{t('create-first-advertisement')}
                 </button>
               </div>
             )}
@@ -349,7 +351,7 @@ const AdsTab = () => {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200 flex-shrink-0">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {editingAd ? 'Edit Advertisement' : 'Create Advertisement'}
+{editingAd ? t('edit-advertisement') : t('create-advertisement')}
                 </h2>
                 <button
                   onClick={closeModal}

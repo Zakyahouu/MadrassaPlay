@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import axios from 'axios';
 
 // Import layout components
@@ -18,6 +19,7 @@ import Overview from '../components/admin/Overview';
 
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState({
@@ -52,14 +54,14 @@ const AdminDashboard = () => {
   };
 
   const navigationItems = [
-    { id: 'overview', name: 'Overview' },
-    { id: 'schools', name: 'Schools' },
-    { id: 'games', name: 'Games' },
-    { id: 'template-games', name: 'Games by Template' },
-    { id: 'templates', name: 'Game Templates' },
-  { id: 'template-guide', name: 'Template Guide' },
-    { id: 'badges', name: 'Badges' },
-    { id: 'analytics', name: 'Analytics' }
+    { id: 'overview', name: t('overview') },
+    { id: 'schools', name: t('schools') },
+    { id: 'games', name: t('games') },
+    { id: 'template-games', name: t('template-games') },
+    { id: 'templates', name: t('templates') },
+    { id: 'template-guide', name: t('template-guide') },
+    { id: 'badges', name: t('badges') },
+    { id: 'analytics', name: t('analytics') }
   ];
 
   const renderContent = () => {

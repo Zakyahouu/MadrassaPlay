@@ -4,6 +4,7 @@ import {
   Plus, Edit, Trash2, X, Search, Loader, AlertTriangle, 
   Building2, Users, RefreshCw, Lightbulb
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const getUser = () => {
   try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
@@ -147,6 +148,7 @@ const generateNextRoomName = (existingRooms) => {
 };
 
 const RoomsTab = () => {
+  const { t } = useLanguage();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -226,7 +228,7 @@ const RoomsTab = () => {
                 " />
                 <input
                   type="text"
-                  placeholder="Search rooms..."
+                  placeholder={t('search-rooms')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="
@@ -250,7 +252,7 @@ const RoomsTab = () => {
               "
             >
               <Plus className="w-4 h-4" />
-              Add Room
+{t('add-room')}
         </button>
       </div>
       </div>
@@ -401,9 +403,9 @@ const RoomsTab = () => {
                 p-16 text-center
               ">
                 <Building2 className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No rooms found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-rooms-found')}</h3>
                 <p className="text-gray-500 mb-6">
-                  {search ? 'No rooms match your search criteria.' : 'Get started by creating your first room.'}
+                  {search ? t('no-rooms-match-search') : t('get-started-create-first-room')}
                 </p>
                 {!search && (
                   <button

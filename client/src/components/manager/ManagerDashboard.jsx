@@ -1,6 +1,7 @@
 // ManagerDashboard.jsx
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 import { 
   Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell, 
@@ -32,14 +33,15 @@ import TopNav from '../layout/TopNav';
 // Main Dashboard Component
 export const ManagerDashboard = () => {
   const { user, logout } = useContext(AuthContext);
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [stats, setStats] = useState([
-    { title: 'Total Students', value: '0', icon: Users, color: 'text-blue-600', change: 0 },
-    { title: 'Active Teachers', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
-    { title: 'Total Classes', value: '0', icon: BookOpen, color: 'text-purple-600', change: 0 },
-    { title: 'Total Staff', value: '0', icon: BarChart3, color: 'text-orange-600', change: 0 },
+    { title: t('total-students'), value: '0', icon: Users, color: 'text-blue-600', change: 0 },
+    { title: 'Enseignants Actifs', value: '0', icon: UserCheck, color: 'text-green-600', change: 0 },
+    { title: t('total-classes'), value: '0', icon: BookOpen, color: 'text-purple-600', change: 0 },
+    { title: 'Total Personnel', value: '0', icon: BarChart3, color: 'text-orange-600', change: 0 },
   ]);
   const [loading, setLoading] = useState(true);
   const [userPermissions, setUserPermissions] = useState({});
@@ -272,10 +274,10 @@ export const ManagerDashboard = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
             <Settings className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Management
+              {t('management')} {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
             </h3>
             <p className="text-gray-600">
-              This section is under development. Content for {activeTab} management will be displayed here.
+              {t('under-development')}. Le contenu pour la gestion {activeTab} sera affiché ici.
             </p>
           </div>
         );

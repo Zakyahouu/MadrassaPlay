@@ -5,6 +5,7 @@ import {
   Award, TrendingUp, BookOpen, CreditCard, Calendar, MapPin, FileText,
   QrCode, Building2, UserCheck
 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 import StudentProfilePopup from './StudentProfilePopup';
 import PaymentModal from '../payments/PaymentModal';
@@ -25,6 +26,7 @@ const getAuthToken = () => {
 };
 
 const StudentsTab = () => {
+  const { t } = useLanguage();
   const [students, setStudents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -478,7 +480,7 @@ const StudentsTab = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search by name, phone, or student code..."
+                  placeholder={t('search-by-name-phone-code')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-80"
@@ -523,7 +525,7 @@ const StudentsTab = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-              Add Student
+{t('add-student')}
             </button>
             </div>
           </div>
@@ -642,12 +644,12 @@ const StudentsTab = () => {
                   <Users className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No students found
+                  {t('no-students-found')}
                 </h3>
                 <p className="text-gray-600 max-w-sm mx-auto">
                   {searchTerm 
-                    ? 'Try adjusting your search criteria.' 
-                    : 'Get started by adding your first student.'
+                    ? t('try-adjusting-search') 
+                    : t('get-started-add-first-student')
                   }
                 </p>
                 {!searchTerm && (
@@ -655,7 +657,7 @@ const StudentsTab = () => {
                     onClick={() => openModal('add')}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
-                    Add First Student
+{t('add-first-student')}
                   </button>
                 )}
               </div>
@@ -670,7 +672,7 @@ const StudentsTab = () => {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                  {showEnrollmentStep ? 'Enroll Student' : `${modalContent.type} Student`}
+{showEnrollmentStep ? t('enroll-student') : `${t(modalContent.type)} ${t('student')}`}
                 </h2>
                 <button
                   onClick={closeModal}

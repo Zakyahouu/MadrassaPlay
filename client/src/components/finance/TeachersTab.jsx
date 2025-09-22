@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Users, 
   DollarSign, 
@@ -18,6 +19,7 @@ import PayoutModal from './PayoutModal';
 import TeacherDetailModal from './TeacherDetailModal';
 
 const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
+  const { t } = useLanguage();
   const [teachers, setTeachers] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +39,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t('authentication-required'));
         return;
       }
 
@@ -54,7 +56,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
     } catch (err) {
       console.error('Error fetching teacher payouts:', err);
-      setError(err.response?.data?.message || 'Failed to fetch teacher payout data');
+      setError(err.response?.data?.message || t('failed-fetch-teacher-payout-data'));
     } finally {
       setLoadingData(false);
     }
@@ -108,28 +110,28 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
           icon: CheckCircle, 
           color: 'text-green-600', 
           bgColor: 'bg-green-100',
-          text: 'Paid' 
+          text: t('paid') 
         };
       case 'partial':
         return { 
           icon: Clock, 
           color: 'text-yellow-600', 
           bgColor: 'bg-yellow-100',
-          text: 'Partial' 
+          text: t('partial') 
         };
       case 'pending':
         return { 
           icon: AlertTriangle, 
           color: 'text-red-600', 
           bgColor: 'bg-red-100',
-          text: 'Pending' 
+          text: t('pending') 
         };
       default:
         return { 
           icon: Clock, 
           color: 'text-gray-600', 
           bgColor: 'bg-gray-100',
-          text: 'Unknown' 
+          text: t('unknown') 
         };
     }
   };
@@ -146,7 +148,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading teacher payout data...</p>
+          <p className="text-gray-500">{t('loading-teacher-payout-data')}</p>
         </div>
       </div>
     );
@@ -158,13 +160,13 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">Error Loading Data</h3>
+            <h3 className="text-lg font-medium text-red-800">{t('error-loading-data')}</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              Try Again
+              {t('try-again')}
             </button>
           </div>
         </div>
@@ -182,9 +184,9 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Teacher Payouts</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('teacher-payouts')}</h2>
               <p className="text-sm text-gray-500">
-                {month} {year} - {teachers.length} teacher{teachers.length !== 1 ? 's' : ''}
+                {month} {year} - {teachers.length} {t('teacher')}{teachers.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -195,7 +197,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search teachers..."
+                placeholder={t('search-teachers')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-64"
@@ -208,10 +210,10 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="partial">Partial</option>
-              <option value="paid">Paid</option>
+              <option value="all">{t('all-status')}</option>
+              <option value="pending">{t('pending')}</option>
+              <option value="partial">{t('partial')}</option>
+              <option value="paid">{t('paid')}</option>
             </select>
             
             {/* Refresh Button */}
@@ -221,7 +223,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t('refresh')}</span>
             </button>
           </div>
         </div>
@@ -232,11 +234,11 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
         {filteredTeachers.length === 0 ? (
           <div className="p-8 text-center">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Teachers Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-teachers-found')}</h3>
             <p className="text-gray-500">
               {searchTerm || statusFilter !== 'all' 
-                ? 'No teachers match your current filters.' 
-                : 'No teacher payout data available for this month.'}
+                ? t('no-teachers-match-filters') 
+                : t('no-teacher-payout-data-available')}
             </p>
           </div>
         ) : (
@@ -245,28 +247,28 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Teacher
+                    {t('teacher')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Classes
+                    {t('classes')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Students Paid
+                    {t('students-paid')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Calculated Income
+                    {t('calculated-income')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Paid Amount
+                    {t('paid-amount')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Remaining
+                    {t('remaining')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('actions')}
                   </th>
                 </tr>
               </thead>
@@ -298,7 +300,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
                         <div className="flex items-center">
                           <BookOpen className="w-4 h-4 text-gray-400 mr-2" />
                           <span className="text-sm text-gray-900">
-                            {teacher.classes.length} class{teacher.classes.length !== 1 ? 'es' : ''}
+                            {teacher.classes.length} {t('class')}{teacher.classes.length !== 1 ? 'es' : ''}
                           </span>
                         </div>
                       </td>
@@ -346,7 +348,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
                             className="text-blue-600 hover:text-blue-900 flex items-center"
                           >
                             <Eye className="w-4 h-4 mr-1" />
-                            Details
+{t('details')}
                           </button>
                           
                           {teacher.totalRemainingDebt > 0 && (
@@ -355,7 +357,7 @@ const TeachersTab = ({ schoolId, year, month, onRefresh, loading }) => {
                               className="text-green-600 hover:text-green-900 flex items-center"
                             >
                               <DollarSign className="w-4 h-4 mr-1" />
-                              Pay
+{t('pay')}
                             </button>
                           )}
                         </div>

@@ -1,30 +1,33 @@
 import { Users, School, Plus, TrendingUp, Settings } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import UnifiedCard from '../shared/UnifiedCard';
 import UnifiedStatsCard from '../shared/UnifiedStatsCard';
 
 const Overview = ({ stats, loading, onNavigate }) => {
+  const { t } = useLanguage();
+  
   const statCards = [
     { 
-      title: 'Total Users', 
+      title: t('total-users'), 
       value: stats.totalUsers, 
       icon: Users, 
-      description: 'Platform utilization',
+      description: 'Utilisation de la plateforme',
       change: '+12%',
       changeType: 'positive'
     },
     { 
-      title: 'Total Schools', 
+      title: t('total-schools'), 
       value: stats.totalSchools, 
       icon: School, 
-      description: 'Registered institutions',
+      description: 'Institutions enregistrées',
       change: '+8%',
       changeType: 'positive'
     },
     { 
-      title: 'Game Templates', 
+      title: t('templates'), 
       value: stats.totalTemplates, 
       icon: Plus, 
-      description: 'Available templates',
+      description: 'Modèles disponibles',
       change: '+24%',
       changeType: 'positive'
     }
@@ -32,27 +35,27 @@ const Overview = ({ stats, loading, onNavigate }) => {
 
   const quickActions = [
     { 
-      title: 'Add New School', 
+      title: 'Ajouter une Nouvelle École', 
       icon: Plus, 
-      description: 'Register new educational institution',
+      description: 'Enregistrer une nouvelle institution éducative',
       action: 'schools'
     },
     { 
-      title: 'Add Game Template', 
+      title: 'Ajouter un Modèle de Jeu', 
       icon: Plus, 
-      description: 'Create new game template',
+      description: 'Créer un nouveau modèle de jeu',
       action: 'templates'
     },
     { 
-      title: 'View Analytics', 
+      title: 'Voir les Analyses', 
       icon: TrendingUp, 
-      description: 'Analyze platform performance',
+      description: 'Analyser les performances de la plateforme',
       action: 'analytics'
     },
     { 
-      title: 'Platform Settings', 
+      title: 'Paramètres de la Plateforme', 
       icon: Settings, 
-      description: 'Configure system settings',
+      description: 'Configurer les paramètres du système',
       action: 'settings',
       comingSoon: true,
     }
@@ -62,10 +65,10 @@ const Overview = ({ stats, loading, onNavigate }) => {
     <div className="space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">
-          Platform Overview
+          {t('platform-overview')}
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Monitor your platform's key metrics and manage core functionalities
+          Surveillez les métriques clés de votre plateforme et gérez les fonctionnalités principales
         </p>
       </div>
 
@@ -106,9 +109,9 @@ const Overview = ({ stats, loading, onNavigate }) => {
       <UnifiedCard>
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Quick Actions
+            Actions Rapides
           </h3>
-          <p className="text-sm text-gray-600">Streamline your workflow with one-click actions</p>
+          <p className="text-sm text-gray-600">Simplifiez votre flux de travail avec des actions en un clic</p>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -124,7 +127,7 @@ const Overview = ({ stats, loading, onNavigate }) => {
                 disabled={disabled}
               >
                 {disabled && (
-                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Coming Soon</span>
+                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Bientôt</span>
                 )}
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">

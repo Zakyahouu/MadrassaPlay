@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -18,6 +19,7 @@ import TransactionsTable from './TransactionsTable';
 import StudentPaymentDetailModal from './StudentPaymentDetailModal';
 
 const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
+  const { t } = useLanguage();
   const [financialData, setFinancialData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -37,7 +39,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t('authentication-required'));
         return;
       }
 
@@ -55,7 +57,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
     } catch (err) {
       console.error('Error fetching financial data:', err);
-      setError(err.response?.data?.message || 'Failed to fetch financial data');
+      setError(err.response?.data?.message || t('failed-fetch-financial-data'));
     } finally {
       setLoadingData(false);
     }
@@ -106,7 +108,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Handle freeze month
   const handleFreezeMonth = async () => {
-    if (!schoolId || !window.confirm(`Are you sure you want to freeze ${month}/${year}? This action cannot be undone.`)) {
+    if (!schoolId || !window.confirm(t('confirm-freeze-month', { month, year }))) {
       return;
     }
 
@@ -116,7 +118,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setFreezeError('Authentication required');
+        setFreezeError(t('authentication-required'));
         return;
       }
 
@@ -131,14 +133,14 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       if (response.data.success) {
         // Refresh data to show frozen status
         await fetchFinancialData();
-        alert('Month frozen successfully!');
+        alert(t('month-frozen-successfully'));
       } else {
-        setFreezeError(response.data.message || 'Failed to freeze month');
+        setFreezeError(response.data.message || t('failed-freeze-month'));
       }
 
     } catch (err) {
       console.error('Error freezing month:', err);
-      setFreezeError(err.response?.data?.message || 'Failed to freeze month');
+      setFreezeError(err.response?.data?.message || t('failed-freeze-month'));
     } finally {
       setFreezing(false);
     }
@@ -174,7 +176,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading financial data...</p>
+          <p className="text-gray-500">{t('loading-financial-data')}</p>
         </div>
       </div>
     );
@@ -186,13 +188,13 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">Error Loading Data</h3>
+            <h3 className="text-lg font-medium text-red-800">{t('error-loading-data')}</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              Try Again
+              {t('try-again')}
             </button>
           </div>
         </div>
@@ -223,12 +225,12 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 <p className={`text-sm font-medium ${
                   financialData.isFrozen ? 'text-blue-600' : 'text-green-600'
                 }`}>
-                  {financialData.isFrozen ? 'Summary Locked' : 'Live Calculation'}
+                  {financialData.isFrozen ? t('summary-locked') : t('live-calculation')}
                 </p>
                 {financialData.isFrozen && financialData.frozenAt && (
                   <p className="text-xs text-gray-500">
-                    Frozen on {formatDate(financialData.frozenAt)}
-                    {financialData.frozenBy && ` by ${financialData.frozenBy.firstName} ${financialData.frozenBy.lastName}`}
+                    {t('frozen-on')} {formatDate(financialData.frozenAt)}
+                    {financialData.frozenBy && ` ${t('by')} ${financialData.frozenBy.firstName} ${financialData.frozenBy.lastName}`}
                   </p>
                 )}
               </div>
@@ -244,12 +246,12 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
                   {freezing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Freezing...</span>
+                      <span>{t('freezing')}</span>
                     </>
                   ) : (
                     <>
                       <Snowflake className="w-4 h-4" />
-                      <span>Freeze Month</span>
+                      <span>{t('freeze-month')}</span>
                     </>
                   )}
                 </button>
@@ -261,7 +263,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
+                <span>{t('refresh')}</span>
               </button>
             </div>
           </div>
@@ -293,7 +295,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <div className="flex items-center">
               <Users className="w-8 h-8 text-green-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">Payments</p>
+                <p className="text-sm text-gray-500">{t('payments')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {financialData.paymentCount || 0}
                 </p>
@@ -305,7 +307,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <div className="flex items-center">
               <BookOpen className="w-8 h-8 text-purple-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">Teacher Earnings</p>
+                <p className="text-sm text-gray-500">{t('teacher-earnings')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {formatCurrency(financialData.teacherEarnings)}
                 </p>
@@ -317,7 +319,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <div className="flex items-center">
               <Calculator className="w-8 h-8 text-orange-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">Last Updated</p>
+                <p className="text-sm text-gray-500">{t('last-updated')}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {formatDate(financialData.lastCalculated)}
                 </p>
@@ -332,7 +334,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
-              Recent Transactions
+              {t('recent-transactions')}
             </h3>
             <button
               onClick={handleRefresh}
@@ -340,7 +342,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t('refresh')}</span>
             </button>
           </div>
         </div>

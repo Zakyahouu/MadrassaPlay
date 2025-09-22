@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Admin Template Badge Manager
 // Features:
@@ -22,6 +23,7 @@ const authHeaders = () => {
 };
 
 export default function BadgeManager() {
+  const { t } = useLanguage();
   // Data collections
   const [templates, setTemplates] = useState([]);
   const [allBadges, setAllBadges] = useState([]);

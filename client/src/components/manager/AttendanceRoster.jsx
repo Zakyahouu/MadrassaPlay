@@ -158,29 +158,29 @@ const AttendanceRoster = ({ classId, date }) => {
 
 	if (!classId) return (
 		<div className="flex flex-col items-center justify-center py-12 px-4">
-			<div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mb-4">
+			<div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
 				<svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
 				</svg>
 			</div>
-			<p className="text-gray-600 text-center font-medium">Select a class to view attendance roster</p>
-			<p className="text-gray-400 text-sm text-center mt-2">Choose a class from the sidebar to get started</p>
+			<p className="text-gray-700 text-center font-medium">Select a class to view attendance roster</p>
+			<p className="text-gray-500 text-sm text-center mt-2">Choose a class from the sidebar to get started</p>
 		</div>
 	);
 
 	if (loading) return (
 		<div className="flex flex-col items-center justify-center py-12 px-4">
 			<div className="relative">
-				<div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+				<div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
 			</div>
-			<p className="text-gray-600 font-medium mt-4">Loading attendance roster...</p>
-			<p className="text-gray-400 text-sm mt-1">Please wait while we fetch the data</p>
+			<p className="text-gray-700 font-medium mt-4">Loading attendance roster...</p>
+			<p className="text-gray-500 text-sm mt-1">Please wait while we fetch the data</p>
 		</div>
 	);
 
 	if (error) return (
 		<div className="flex flex-col items-center justify-center py-12 px-4">
-			<div className="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mb-4">
+			<div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
 				<svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
@@ -188,7 +188,7 @@ const AttendanceRoster = ({ classId, date }) => {
 			<p className="text-red-600 font-medium text-center">{error}</p>
 			<button 
 				onClick={fetchRoster}
-				className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm"
+				className="mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium text-sm"
 			>
 				Try Again
 			</button>
@@ -200,12 +200,12 @@ const AttendanceRoster = ({ classId, date }) => {
 			<div className="space-y-4">
 				{items.length === 0 && (
 					<div className="flex flex-col items-center justify-center py-16 px-4">
-						<div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
+						<div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
 							<svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
 							</svg>
 						</div>
-						<h3 className="text-lg font-semibold text-gray-700 mb-2">No Active Enrollments</h3>
+						<h3 className="text-lg font-medium text-gray-700 mb-2">No Active Enrollments</h3>
 						<p className="text-gray-500 text-center">There are currently no students enrolled in this class.</p>
 					</div>
 				)}
@@ -222,14 +222,14 @@ const AttendanceRoster = ({ classId, date }) => {
 					return (
 						<div 
 							key={eid} 
-							className={`group relative bg-white border border-gray-200 rounded-xl p-6 cursor-pointer transition-all duration-200 hover:border-blue-300 hover:shadow-lg ${isSaving ? 'opacity-75' : ''}`}
+							className={`group relative bg-white border border-gray-200 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-blue-300 hover:shadow-sm ${isSaving ? 'opacity-75' : ''}`}
 							onClick={(ev) => {
 								window.dispatchEvent(new CustomEvent('attendance:openStudentPopup', { detail: { student: it.student, enrollmentId: eid } }));
 							}}
 						>
 							{/* Saving overlay */}
 							{isSaving && (
-								<div className="absolute inset-0 bg-white bg-opacity-75 rounded-xl flex items-center justify-center z-10">
+								<div className="absolute inset-0 bg-white bg-opacity-75 rounded-lg flex items-center justify-center z-10">
 									<div className="flex items-center space-x-2">
 										<div className="w-4 h-4 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
 										<span className="text-sm text-blue-600 font-medium">Saving...</span>
@@ -241,26 +241,26 @@ const AttendanceRoster = ({ classId, date }) => {
 								{/* Student Info */}
 								<div className="flex-1">
 									<div className="flex items-center space-x-3 mb-3">
-										<div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+										<div className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center font-medium text-lg">
 											{it.student?.firstName?.charAt(0)}{it.student?.lastName?.charAt(0)}
 										</div>
 										<div>
-											<h3 className="font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
+											<h3 className="font-medium text-gray-900 text-lg">
 												{it.student?.firstName} {it.student?.lastName}
 											</h3>
-											<p className="text-gray-500 text-sm font-medium">{it.student?.studentCode}</p>
+											<p className="text-gray-500 text-sm">{it.student?.studentCode}</p>
 										</div>
 									</div>
 
 									{/* Status Badges */}
 									<div className="flex items-center gap-2 mb-4 overflow-x-auto">
 										{/* Balance Badge */}
-										<div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 whitespace-nowrap ${
+										<div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
 											balance > 0 
-												? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+												? 'bg-green-50 text-green-700 border border-green-200' 
 												: balance === 0 
-													? 'bg-gray-50 text-gray-600 border-gray-200' 
-													: 'bg-red-50 text-red-700 border-red-200'
+													? 'bg-gray-50 text-gray-600 border border-gray-200' 
+													: 'bg-red-50 text-red-700 border border-red-200'
 										}`}>
 											<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
@@ -270,7 +270,7 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Overdue Badge */}
 										{overdue && (
-											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-orange-50 text-orange-700 border-orange-200 whitespace-nowrap">
+											<div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap">
 												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 												</svg>
@@ -280,7 +280,7 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Pricing Model Badge */}
 										{it.pricingSnapshot?.paymentModel === 'per_cycle' && (
-											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-indigo-50 text-indigo-700 border-indigo-200 whitespace-nowrap">
+											<div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 whitespace-nowrap">
 												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 												</svg>
@@ -289,7 +289,7 @@ const AttendanceRoster = ({ classId, date }) => {
 										)}
 
 										{it.pricingSnapshot?.paymentModel === 'per_session' && typeof it.pricingSnapshot?.sessionPrice === 'number' && (
-											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap">
+											<div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap">
 												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
 												</svg>
@@ -299,7 +299,7 @@ const AttendanceRoster = ({ classId, date }) => {
 
 										{/* Last Payment Badge */}
 										{lastPay && (
-											<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border-2 bg-blue-50 text-blue-700 border-blue-200 whitespace-nowrap">
+											<div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200 whitespace-nowrap">
 												<svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
 												</svg>
@@ -312,19 +312,19 @@ const AttendanceRoster = ({ classId, date }) => {
 								{/* Action Buttons */}
 								<div className="flex items-center space-x-3 ml-6">
 									{/* Status Display */}
-									<div className={`px-4 py-2 rounded-full text-sm font-semibold border-2 ${
+									<div className={`w-32 text-center px-4 py-2 rounded-md text-sm font-medium ${
 										recentAction
-											? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse'
+											? 'bg-blue-50 text-blue-700 animate-pulse'
 											: shouldShowNotMarkedYet(it.todayStatus, date)
-												? 'bg-gray-50 text-gray-600 border-gray-200'
+												? 'bg-gray-50 text-gray-600'
 												: (it.todayStatus === 'present' 
-													? 'bg-green-50 text-green-700 border-green-200' 
-													: 'bg-red-50 text-red-700 border-red-200')
+													? 'bg-green-50 text-green-700' 
+													: 'bg-red-50 text-red-700')
 									}`}>
 										{recentAction 
 											? recentAction.action 
 											: shouldShowNotMarkedYet(it.todayStatus, date)
-												? 'Not Marked Yet'
+												? 'Non Marqué '
 												: it.todayStatus
 										}
 									</div>
@@ -334,10 +334,10 @@ const AttendanceRoster = ({ classId, date }) => {
 										<button 
 											disabled={isSaving} 
 											onClick={(e) => { e.stopPropagation(); mark(eid, 'present'); }} 
-											className={`inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
+											className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-md transition-all duration-200 ${
 												isSaving 
 													? 'opacity-50 cursor-not-allowed bg-green-600' 
-													: 'bg-green-600 hover:bg-green-700 hover:scale-105 active:scale-95'
+													: 'bg-green-600 hover:bg-green-700'
 											}`}
 										>
 											<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,10 +348,10 @@ const AttendanceRoster = ({ classId, date }) => {
 										<button 
 											disabled={isSaving} 
 											onClick={(e) => { e.stopPropagation(); mark(eid, 'absent'); }} 
-											className={`inline-flex items-center px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
+											className={`inline-flex items-center px-4 py-2 text-sm font-medium text-white rounded-md transition-all duration-200 ${
 												isSaving 
 													? 'opacity-50 cursor-not-allowed bg-red-600' 
-													: 'bg-red-600 hover:bg-red-700 hover:scale-105 active:scale-95'
+													: 'bg-red-600 hover:bg-red-700'
 											}`}
 										>
 											<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,7 +364,7 @@ const AttendanceRoster = ({ classId, date }) => {
 									{/* Payment Button */}
 									<button 
 										onClick={(e) => { e.stopPropagation(); openAddPayment(eid); }} 
-										className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 hover:border-blue-700 transition-all duration-200 hover:scale-105 active:scale-95"
+										className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-all duration-200"
 									>
 										<svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

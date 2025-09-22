@@ -1,6 +1,7 @@
 // client/src/components/admin/Analytics.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   LineChart,
   Line,
@@ -16,6 +17,7 @@ import {
 import { TrendingUp, Users, Activity, BarChart3 } from 'lucide-react';
 
 const Analytics = () => {
+  const { t } = useLanguage();
   // Pagination and search state for school breakdown
   const [userBreakdown, setUserBreakdown] = useState([]);
   const [loadingBreakdown, setLoadingBreakdown] = useState(true);
@@ -40,9 +42,9 @@ const Analytics = () => {
     currentPage * rowsPerPage
   );
   const [kpis, setKpis] = useState([
-    { id: 1, label: 'Total Users', value: '—', icon: <Users className="w-6 h-6 text-blue-500" /> },
-    { id: 2, label: 'Total Schools', value: '—', icon: <Activity className="w-6 h-6 text-green-500" /> },
-    { id: 3, label: 'Game Templates', value: '—', icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
+    { id: 1, label: t('total-users'), value: '—', icon: <Users className="w-6 h-6 text-blue-500" /> },
+    { id: 2, label: t('total-schools'), value: '—', icon: <Activity className="w-6 h-6 text-green-500" /> },
+    { id: 3, label: t('templates'), value: '—', icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
   ]);
 
   useEffect(() => {
