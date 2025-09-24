@@ -22,14 +22,16 @@
 		<div id="countdown" class="screen hidden"><div class="count">3</div></div>
 		<div id="play" class="screen hidden">
 			<div class="hud">
-				<span id="qIdx"></span>
-				<span id="timer"></span>
-				<span id="score"></span>
+				<div class="hud-left"><span id="timer"></span></div>
+				<div class="hud-center"><span id="qIdx"></span></div>
+				<div class="hud-right"><span id="score"></span></div>
 			</div>
-			<div id="question" class="question"></div>
-			<div id="options" class="options"></div>
+			<div class="question-card">
+				<div id="question" class="question"></div>
+			</div>
+			<div id="options" class="options-grid"></div>
 			<div id="explain" class="explain"></div>
-			<div class="actions"><button id="nextBtn" class="btn" disabled>Next</button></div>
+			<div class="progress-bar"><div id="progressFill"></div></div>
 		</div>
 		<div id="done" class="screen hidden">
 			<div class="logo">✅ Finished</div>

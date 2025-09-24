@@ -1,14 +1,9 @@
 {
 	"settings": {
 		"title": { "type": "text", "label": "Quiz title", "required": true },
-		"shuffleChoices": { "type": "boolean", "label": "Shuffle choices for each question", "default": true },
-		"timePerQuestion": {
-			"type": "select",
-			"label": "Time limit per question",
-			"options": ["0 - No timer", "10 - 10s", "20 - 20s", "30 - 30s"],
-			"default": "0 - No timer"
-		},
-		"showExplanations": { "type": "boolean", "label": "Show explanation after answer (if provided)", "default": true }
+	"shuffleChoices": { "type": "boolean", "label": "Shuffle choices for each question", "default": true },
+	"shuffleQuestions": { "type": "boolean", "label": "Shuffle order of questions", "default": false },
+	"showExplanations": { "type": "boolean", "label": "Show explanation after answer (if provided)", "default": true }
 	},
 	"content": {
 		"label": "Questions",
@@ -25,7 +20,8 @@
 				"options": ["A","B","C","D"],
 				"default": "A"
 			},
-			"explanation": { "type": "text", "label": "Explanation (shown if enabled)", "required": false }
+			"explanation": { "type": "text", "label": "Explanation (shown if enabled)", "required": false },
+			"timeLimit": { "type": "number", "label": "Time limit (seconds, 0 for no timer)", "default": 0 }
 		}
 	}
 }

@@ -1,3 +1,11 @@
+@keyframes shake {
+	0% { transform: translateX(0); }
+	20% { transform: translateX(-6px); }
+	40% { transform: translateX(6px); }
+	60% { transform: translateX(-6px); }
+	80% { transform: translateX(6px); }
+	100% { transform: translateX(0); }
+}
 *{box-sizing:border-box}
 body{margin:0}
 .container{max-width:900px;margin:0 auto;padding:24px;min-height:100vh;display:flex;align-items:center;justify-content:center}
