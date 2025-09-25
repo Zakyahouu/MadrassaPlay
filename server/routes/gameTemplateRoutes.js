@@ -7,8 +7,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 // Template bundle (zip) uploader – larger size, allow zip mimetypes
 const bundleUpload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for bundle
+  storage
 });
 // Media (images) uploader – strict mime filter
 const mediaUpload = multer({
