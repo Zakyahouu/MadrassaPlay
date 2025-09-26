@@ -25,7 +25,10 @@ import {
   ChevronLeft,
   ChevronRight,
   DollarSign,
-  Activity
+  Activity,
+  Box,
+  Tag,
+  FolderOpen
 } from 'lucide-react';
 
 const UnifiedSidebar = ({ 
@@ -51,7 +54,8 @@ const UnifiedSidebar = ({
           { id: 'templates', name: t('templates'), icon: Plus },
           { id: 'template-guide', name: t('template-guide'), icon: BookOpen },
           { id: 'badges', name: t('badges'), icon: Award },
-          { id: 'analytics', name: t('analytics'), icon: TrendingUp }
+          { id: 'analytics', name: t('analytics'), icon: TrendingUp },
+          { id: '3d-management', name: '3D Management', icon: Box }
         ];
       case 'manager':
         const managerItems = [
@@ -94,7 +98,8 @@ const UnifiedSidebar = ({
           { id: 'resources', name: t('resources'), icon: FileText },
           { id: 'timetable', name: t('timetable'), icon: Calendar },
           { id: 'students', name: t('my-classes'), icon: Users },
-          { id: 'calendar', name: t('calendar'), icon: Calendar }
+          { id: 'calendar', name: t('calendar'), icon: Calendar },
+          { id: '3d-library', name: '3D Model Library', icon: Box }
         ];
       default:
         return [

@@ -23,6 +23,7 @@ import TeacherLiveSessions from './components/teacher/TeacherLiveSessions';
 import TeacherLiveSessionSummary from './components/teacher/TeacherLiveSessionSummary';
 import ResultDetail from './components/teacher/ResultDetail';
 import Profile from './pages/Profile';
+import SharedModelViewer from './pages/SharedModelViewer';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -205,6 +206,12 @@ function App() {
                 <Profile />
               </ProtectedRoute>
             }
+          />
+
+          {/* Shared Model Viewer - Public route (no authentication required) */}
+          <Route
+            path="/shared/:authKey"
+            element={<SharedModelViewer />}
           />
         </Routes>
           </div>

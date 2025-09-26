@@ -17,6 +17,9 @@ import BadgeManager from '../components/admin/BadgeManager';
 import TemplateGuide from '../components/admin/TemplateGuide';
 import Overview from '../components/admin/Overview';
 
+// Import 3D Model components
+import Model3dManagement from '../components/admin/Model3dManagement';
+
 const AdminDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const { t } = useLanguage();
@@ -82,6 +85,8 @@ const AdminDashboard = () => {
         return <BadgeManager />;
       case 'analytics':
         return <Analytics />;
+      case '3d-management':
+        return <Model3dManagement />;
       default:
         return <Overview stats={stats} loading={loading} />;
     }

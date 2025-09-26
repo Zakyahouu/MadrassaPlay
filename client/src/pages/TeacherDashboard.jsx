@@ -18,6 +18,9 @@ import TemplateSelector from '../components/teacher/TemplateSelector';
 import Timetable from '../components/teacher/Timetable';
 import AdsBar from '../components/shared/AdsBar';
 
+// Import 3D Model Library component
+import Model3dLibrary from '../components/teacher/Model3dLibrary';
+
 const TeacherDashboard = () => {
   const { user, logout } = useContext(AuthContext);
   const { t } = useLanguage();
@@ -95,6 +98,8 @@ const TeacherDashboard = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('calendar')}</h2>
           <p className="text-gray-600">Fonctionnalités de calendrier et de planification bientôt disponibles...</p>
         </div>;
+      case '3d-library':
+        return <Model3dLibrary />;
       default:
         return <TeacherOverview stats={stats} />;
     }
