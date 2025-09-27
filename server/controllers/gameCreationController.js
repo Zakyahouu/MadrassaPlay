@@ -274,6 +274,102 @@ const getGameCreationById = asyncHandler(async (req, res) => {
 });
 
 
+// @desc    Update a game creation
+// @route   PUT /api/creations/:id
+// @access  Private/Owner
+const updateGameCreation = asyncHandler(async (req, res) => {
+  const { config, content, levelLabel, levelId } = req.body;
+  const creationId = req.params.id;
+
+  if (!config) {
+    res.status(400);
+    throw new Error('Missing config data.');
+  }
+
+  // Find the existing game creation
+  const existingCreation = await GameCreation.findById(creationId);
+  if (!existingCreation) {
+    res.status(404);
+    throw new Error('Game creation not found');
+  }
+
+  // Check ownership
+  if (String(existingCreation.owner) !== String(req.user._id) && req.user.role !== 'admin') {
+    res.status(403);
+    throw new Error('Not authorized to edit this game creation');
+  }
+
+  // Load template for validation
+  const template = await GameTemplate.findById(existingCreation.template);
+  if (!template) {
+    res.status(404);
+    throw new Error('Game template not found');
+  }
+
+  // Data processing for numbers (same as create)
+  const processedConfig = { ...config };
+  Object.entries(template.formSchema.settings).forEach(([key, schema]) => {
+    if (schema.type === 'number' && processedConfig[key] !== undefined) {
+      processedConfig[key] = Number(processedConfig[key]);
+    }
+  });
+
+  // Process content (same as create)
+  let processedContent = content || [];
+  if (Array.isArray(processedContent)) {
+    processedContent = processedContent.map(item => {
+      const processed = { ...item };
+      Object.entries(template.formSchema.content?.itemSchema || {}).forEach(([key, schema]) => {
+        if (schema.type === 'number' && processed[key] !== undefined) {
+          processed[key] = Number(processed[key]);
+        }
+      });
+      return processed;
+    });
+  }
+
+  // Validate image limits (same as create)
+  const maxImagesPerCreation = Number(template.manifest?.assets?.maxImagesPerCreation || 0);
+  if (maxImagesPerCreation > 0 && Array.isArray(processedContent)) {
+    const imageFieldTypes = new Set(['image','imageArray']);
+    const itemSchema = template.formSchema?.content?.itemSchema || {};
+    let imageCount = 0;
+    processedContent.forEach(item => {
+      Object.entries(itemSchema).forEach(([key, schema]) => {
+        if (imageFieldTypes.has(schema.type)) {
+          const val = item[key];
+          if (!val) return;
+          if (schema.type === 'image') imageCount += 1;
+          else if (schema.type === 'imageArray' && Array.isArray(val)) imageCount += val.length;
+        }
+      });
+    });
+    if (imageCount > maxImagesPerCreation) {
+      res.status(400);
+      throw new Error(`Too many images for this creation (max ${maxImagesPerCreation}).`);
+    }
+  }
+
+  // Update the game creation
+  const updatedCreation = await GameCreation.findByIdAndUpdate(
+    creationId,
+    {
+      config: processedConfig,
+      content: processedContent,
+      levelLabel: levelLabel || undefined,
+      levelId: levelId || undefined,
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (updatedCreation) {
+    res.json(updatedCreation);
+  } else {
+    res.status(400);
+    throw new Error('Failed to update game creation');
+  }
+});
+
 // @desc    Delete a game creation
 // @route   DELETE /api/creations/:id
 // @access  Private/Owner
@@ -309,5 +405,6 @@ module.exports = {
   createGameCreation,
   getMyGameCreations,
   getGameCreationById,
+  updateGameCreation,
   deleteGameCreation,
 };

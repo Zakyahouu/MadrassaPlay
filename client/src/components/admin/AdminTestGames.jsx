@@ -75,6 +75,11 @@ const AdminTestGames = () => {
                 )}
 
                 <div className="flex gap-2">
+                  <Link to={`/admin/edit-game/${creation._id}`} className="flex-1">
+                    <button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-colors">
+                      Edit
+                    </button>
+                  </Link>
                   <Link to={`/admin/play-game/${creation._id}`} className="flex-1">
                     <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-colors">
                       Play

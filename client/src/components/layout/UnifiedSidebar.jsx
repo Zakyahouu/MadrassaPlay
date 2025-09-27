@@ -55,7 +55,7 @@ const UnifiedSidebar = ({
           { id: 'template-guide', name: t('template-guide'), icon: BookOpen },
           { id: 'badges', name: t('badges'), icon: Award },
           { id: 'analytics', name: t('analytics'), icon: TrendingUp },
-          { id: '3d-management', name: '3D Management', icon: Box }
+          { id: '3d-management', name: '3D Management', icon: Box, isExternal: true }
         ];
       case 'manager':
         const managerItems = [
@@ -99,7 +99,7 @@ const UnifiedSidebar = ({
           { id: 'timetable', name: t('timetable'), icon: Calendar },
           { id: 'students', name: t('my-classes'), icon: Users },
           { id: 'calendar', name: t('calendar'), icon: Calendar },
-          { id: '3d-library', name: '3D Model Library', icon: Box }
+          { id: '3d-library', name: '3D Model Library', icon: Box, isExternal: true }
         ];
       default:
         return [
@@ -194,9 +194,13 @@ const UnifiedSidebar = ({
                     setSidebarOpen(false);
                   }}
                   className={`group relative w-full flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'} px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ease-in-out transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 ${
-                    isActive
-                      ? `${getActiveColor()} border shadow-sm`
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
+                    item.isExternal 
+                      ? isActive
+                        ? 'bg-slate-50 text-slate-700 border border-slate-200 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800 hover:shadow-sm'
+                      : isActive
+                        ? `${getActiveColor()} border shadow-sm`
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
                   }`}
                 >
                   <IconComponent className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ease-in-out ${
@@ -207,6 +211,13 @@ const UnifiedSidebar = ({
                   }`}>
                     {item.name}
                   </span>
+                  {item.isExternal && (
+                    <div className={`transition-all duration-300 ease-in-out ${
+                      isCollapsed ? 'opacity-0 scale-95 w-0 overflow-hidden' : 'opacity-100 scale-100 w-auto'
+                    }`}>
+                      <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                    </div>
+                  )}
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (
                     <div className={`absolute px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${

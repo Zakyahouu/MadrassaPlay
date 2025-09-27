@@ -8,6 +8,7 @@ const {
   createGameCreation, 
   getMyGameCreations,
   getGameCreationById, // 1. Import the new function
+  updateGameCreation,
   deleteGameCreation
 } = require('../controllers/gameCreationController');
 
@@ -23,6 +24,7 @@ router.route('/')
 // A GET request to /api/creations/:id will get a specific game creation.
 router.route('/:id')
   .get(protect, getGameCreationById)
+  .put(protect, updateGameCreation)
   .delete(protect, deleteGameCreation);
 
 

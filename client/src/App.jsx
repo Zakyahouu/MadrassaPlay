@@ -8,6 +8,7 @@ import LanguageTransitionOverlay from './components/shared/LanguageTransitionOve
 import './styles/language-transitions.css';
 
 // Import all our page and helper components
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -15,6 +16,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
 import Finance from './pages/Finance';
 import CreateGame from './pages/CreateGame';
+import EditGame from './pages/EditGame';
 import PlayGame from './pages/PlayGame';
 import ViewResults from './components/teacher/ViewResults';
 import HostLobby from './pages/HostLobby';
@@ -37,16 +39,19 @@ function App() {
           <div className="App">
             <LanguageTransitionOverlay />
             <Routes>
-          {/* Route 1: The Login Page */}
+          {/* Route 1: The Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Route 2: The Login Page */}
           <Route 
             path="/login" 
             element={user ? <RoleBasedRedirect /> : <Login />} 
           />
 
-          {/* Route 2: The Home/Redirect Page - redirects to login if not authenticated, or to appropriate dashboard if authenticated */}
-          <Route path="/" element={<RoleBasedRedirect />} />
+          {/* Route 3: Dashboard redirect for authenticated users */}
+          <Route path="/dashboard" element={<RoleBasedRedirect />} />
 
-          {/* Route 3: The Admin Dashboard */}
+          {/* Route 4: The Admin Dashboard */}
           <Route 
             path="/admin/dashboard" 
             element={
@@ -56,7 +61,7 @@ function App() {
             } 
           />
 
-          {/* Route 4: The Teacher Dashboard */}
+          {/* Route 5: The Teacher Dashboard */}
           <Route 
             path="/teacher/dashboard" 
             element={
@@ -66,7 +71,7 @@ function App() {
             } 
           />
 
-          {/* Route 5: The Student Dashboard */}
+          {/* Route 6: The Student Dashboard */}
           <Route 
             path="/student/dashboard" 
             element={
@@ -76,7 +81,7 @@ function App() {
             } 
           />
 
-          {/* Route 6: The Manager Dashboard */}
+          {/* Route 7: The Manager Dashboard */}
           <Route
             path="/manager/dashboard"
             element={
@@ -86,7 +91,7 @@ function App() {
             }
           />
 
-          {/* Route 6.1: The Finance Page (Manager only) */}
+          {/* Route 8: The Finance Page (Manager only) */}
           <Route
             path="/manager/finance"
             element={
@@ -96,7 +101,7 @@ function App() {
             }
           />
 
-          {/* Route 7: The Create Game Page */}
+          {/* Route 9: The Create Game Page */}
           <Route
             path="/teacher/create-game/:templateId"
             element={
@@ -106,7 +111,25 @@ function App() {
             }
           />
 
-          {/* Route 8: The Play Game Page */}
+          {/* Route 10: The Edit Game Page */}
+          <Route
+            path="/teacher/edit-game/:creationId"
+            element={
+              <ProtectedRoute>
+                <EditGame />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/edit-game/:creationId"
+            element={
+              <ProtectedRoute>
+                <EditGame />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route 11: The Play Game Page */}
           <Route
             path="/admin/play-game/:creationId"
             element={
@@ -132,7 +155,7 @@ function App() {
             }
           />
 
-          {/* Route 9: The View Results Page */}
+          {/* Route 12: The View Results Page */}
           <Route
             path="/teacher/results/:gameCreationId"
             element={
@@ -152,7 +175,7 @@ function App() {
             }
           />
 
-          {/* Route 10: The Host Lobby Page */}
+          {/* Route 13: The Host Lobby Page */}
           <Route
             path="/teacher/host-lobby/:gameCreationId"
             element={
@@ -170,7 +193,7 @@ function App() {
             }
           />
 
-          {/* Route 11: The Player Lobby Page */}
+          {/* Route 14: The Player Lobby Page */}
           <Route
             path="/student/lobby/:roomCode"
             element={

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { RefreshCcw, Play, Trash2, Filter, Gamepad2, Loader2 } from 'lucide-react';
+import { RefreshCcw, Play, Trash2, Filter, Gamepad2, Loader2, Edit } from 'lucide-react';
 import LoadingState from '../shared/LoadingState';
 import EmptyState from '../shared/EmptyState';
 import StatusMessage from '../shared/StatusMessage';
@@ -168,6 +168,11 @@ const AdminTemplateGames = () => {
                     <p className="text-xs text-gray-500">Created {new Date(g.createdAt).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link to={`/admin/edit-game/${g._id}`} state={{ templateId }}>
+                      <button className="inline-flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" aria-label={`Edit game ${g.name}`}>
+                        <Edit className="w-4 h-4" /> Edit
+                      </button>
+                    </Link>
                     <Link to={`/admin/play-game/${g._id}`} state={{ templateId }}>
                       <button className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label={`Play game ${g.name}`}>
                         <Play className="w-4 h-4" /> Play

@@ -1,6 +1,6 @@
 // client/src/components/admin/Model3dManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Edit, Trash2, AlertCircle, X } from 'lucide-react';
+import { Plus, Upload, Edit, Trash2, AlertCircle, X, Box } from 'lucide-react';
 import { adminApi, model3dHelpers } from '../../services/model3dService';
 import ModelCard from '../shared/ModelCard';
 import FilterDropdowns from '../shared/FilterDropdowns';
@@ -282,23 +282,40 @@ const Model3dManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">3D Management</h1>
-          <p className="text-gray-600">Manage 3D models, categories, and tags</p>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Upload className="w-5 h-5" />
-            <span>Upload Model</span>
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* External Service Banner */}
+      <div className="bg-blue-50 border-b-2 border-blue-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Box className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-blue-800">3D Model Service</h1>
+                <p className="text-sm text-blue-600">External 3D asset management platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 rounded-full border border-green-200">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs font-medium text-green-700">EXTERNAL SERVICE</span>
+              </div>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload Model</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
 
       {/* Error Message */}
       {error && (
@@ -308,175 +325,237 @@ const Model3dManagement = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'models', name: 'Models', count: models.length },
-            { id: 'categories', name: 'Categories', count: categories.length },
-            { id: 'tags', name: 'Tags', count: tags.length }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.name} ({tab.count})
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Content */}
-      {activeTab === 'models' && (
-        <div className="space-y-6">
-          {/* Filters */}
-          <FilterDropdowns
-            categories={categories}
-            tags={tags}
-            selectedCategory={selectedCategory}
-            selectedTag={selectedTag}
-            onCategoryChange={setSelectedCategory}
-            onTagChange={setSelectedTag}
-            onClearFilters={() => {
-              setSelectedCategory(null);
-              setSelectedTag(null);
-            }}
-          />
-
-          {/* Models Grid */}
-          {models.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No models found</h3>
-              <p className="text-gray-600 mb-4">Upload your first 3D model to get started.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {models.map((model) => (
-                <ModelCard
-                  key={model._id}
-                  model={model}
-                  onInspect={handleInspect}
-                  onEdit={(model) => handleEdit(model, 'model')}
-                  onDelete={(model) => handleDelete(model, 'model')}
-                  showAdminActions={true}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'categories' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Categories</h2>
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                setFormData({ name: '', description: '', color: '#3B82F6' });
-                setShowCategoryModal(true);
-              }}
-              className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Category</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((category) => (
-              <div key={category._id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{category.name}</h3>
-                    {category.description && (
-                      <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                    )}
-                  </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => handleEdit(category, 'category')}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(category, 'category')}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+          {/* Service Navigation */}
+          <div className="bg-white rounded-lg shadow-sm border border-blue-200">
+            <div className="px-6 py-4 border-b border-blue-100 bg-blue-50/30">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Asset Management</h2>
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-500">
+                    Service Status: <span className="text-green-600 font-medium">Online</span>
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
+            
+            <div className="px-6 py-4">
+              <div className="flex space-x-1 bg-blue-100 rounded-lg p-1">
+                {[
+                  { id: 'models', name: '3D Models', count: models.length, icon: Box },
+                  { id: 'categories', name: 'Categories', count: categories.length, icon: Plus },
+                  { id: 'tags', name: 'Tags', count: tags.length, icon: Plus }
+                ].map((tab) => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-white text-blue-700 shadow-sm'
+                          : 'text-blue-600 hover:text-blue-700 hover:bg-white/50'
+                      }`}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      <span>{tab.name}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        activeTab === tab.id 
+                          ? 'bg-blue-100 text-blue-600' 
+                          : 'bg-blue-200 text-blue-500'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
 
-      {activeTab === 'tags' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Tags</h2>
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                setFormData({ name: '', description: '', color: '#3B82F6' });
-                setShowTagModal(true);
-              }}
-              className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Tag</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tags.map((tag) => (
-              <div key={tag._id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center space-x-2">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: tag.color || '#3B82F6' }}
-                    ></div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{tag.name}</h3>
-                      {tag.description && (
-                        <p className="text-sm text-gray-600 mt-1">{tag.description}</p>
-                      )}
+          {/* Content Area */}
+          {activeTab === 'models' && (
+            <div className="bg-white rounded-lg shadow-sm border border-blue-200">
+              {/* Content Header */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">3D Model Library</h3>
+                    <p className="text-sm text-gray-500">Manage your 3D assets and resources</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-sm text-gray-500">
+                      {models.length} models available
                     </div>
                   </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => handleEdit(tag, 'tag')}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tag, 'tag')}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+
+              {/* Filters */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <FilterDropdowns
+                  categories={categories}
+                  tags={tags}
+                  selectedCategory={selectedCategory}
+                  selectedTag={selectedTag}
+                  onCategoryChange={setSelectedCategory}
+                  onTagChange={setSelectedTag}
+                  onClearFilters={() => {
+                    setSelectedCategory(null);
+                    setSelectedTag(null);
+                  }}
+                />
+              </div>
+
+              {/* Models Grid */}
+              <div className="p-6">
+                {models.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-xl flex items-center justify-center">
+                      <Box className="w-10 h-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No 3D models found</h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Start building your 3D asset library by uploading your first model.
+                    </p>
+                    <button
+                      onClick={() => setShowUploadModal(true)}
+                      className="inline-flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                    >
+                      <Upload className="w-5 h-5" />
+                      <span>Upload First Model</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {models.map((model) => (
+                      <ModelCard
+                        key={model._id}
+                        model={model}
+                        onInspect={handleInspect}
+                        onEdit={(model) => handleEdit(model, 'model')}
+                        onDelete={(model) => handleDelete(model, 'model')}
+                        showAdminActions={true}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'categories' && (
+            <div className="bg-white rounded-lg shadow-sm border border-green-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
+                <p className="text-sm text-gray-500">Organize your 3D models into categories</p>
+              </div>
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-lg font-medium text-gray-900">Categories</h2>
+                  <button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setFormData({ name: '', description: '', color: '#3B82F6' });
+                      setShowCategoryModal(true);
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Category</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categories.map((category) => (
+                    <div key={category._id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{category.name}</h3>
+                          {category.description && (
+                            <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEdit(category, 'category')}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(category, 'category')}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'tags' && (
+            <div className="bg-white rounded-lg shadow-sm border border-orange-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Tags</h3>
+                <p className="text-sm text-gray-500">Organize your 3D models with tags</p>
+              </div>
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-lg font-medium text-gray-900">Tags</h2>
+                  <button
+                    onClick={() => {
+                      setEditingItem(null);
+                      setFormData({ name: '', description: '', color: '#3B82F6' });
+                      setShowTagModal(true);
+                    }}
+                    className="flex items-center space-x-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Tag</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tags.map((tag) => (
+                    <div key={tag._id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: tag.color || '#3B82F6' }}
+                          ></div>
+                          <div>
+                            <h3 className="font-medium text-gray-900">{tag.name}</h3>
+                            {tag.description && (
+                              <p className="text-sm text-gray-600 mt-1">{tag.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleEdit(tag, 'tag')}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(tag, 'tag')}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* Upload Modal */}
       {showUploadModal && (
@@ -574,7 +653,7 @@ const Model3dManagement = () => {
                   <button
                     type="submit"
                     disabled={submitting || !uploadFile}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Uploading...' : 'Upload'}
                   </button>
@@ -633,7 +712,7 @@ const Model3dManagement = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
                   </button>
@@ -701,7 +780,7 @@ const Model3dManagement = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
                   </button>
@@ -802,7 +881,7 @@ const Model3dManagement = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
                     {submitting ? 'Updating...' : 'Update Model'}
                   </button>
@@ -813,16 +892,18 @@ const Model3dManagement = () => {
         </div>
       )}
 
-      {/* 3D Model Viewer Modal */}
-      <Model3dViewerModal
-        model={viewingModel}
-        isOpen={showViewerModal}
-        onClose={() => {
-          setShowViewerModal(false);
-          setViewingModel(null);
-        }}
-        showShareButton={false}
-      />
+          {/* 3D Model Viewer Modal */}
+          <Model3dViewerModal
+            model={viewingModel}
+            isOpen={showViewerModal}
+            onClose={() => {
+              setShowViewerModal(false);
+              setViewingModel(null);
+            }}
+            showShareButton={false}
+          />
+        </div>
+      </div>
     </div>
   );
 };

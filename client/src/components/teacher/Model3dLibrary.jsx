@@ -1,6 +1,6 @@
 // client/src/components/teacher/Model3dLibrary.jsx
 import React, { useState, useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Box } from 'lucide-react';
 import { teacherApi } from '../../services/model3dService';
 import ModelCard from '../shared/ModelCard';
 import FilterDropdowns from '../shared/FilterDropdowns';
@@ -92,72 +92,123 @@ const Model3dLibrary = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">3D Model Library</h1>
-        <p className="text-gray-600">Browse available 3D models</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* External Service Banner */}
+      <div className="bg-white border-b-2 border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Box className="w-6 h-6 text-gray-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">3D Model Library</h1>
+                <p className="text-sm text-gray-500">Browse and explore 3D assets</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-full">
+                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-600">EXTERNAL SERVICE</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-4 rounded-lg">
-          <AlertCircle className="w-5 h-5" />
-          <span>{error}</span>
-        </div>
-      )}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
 
-      {/* Filters */}
-      <FilterDropdowns
-        categories={categories}
-        tags={tags}
-        selectedCategory={selectedCategory}
-        selectedTag={selectedTag}
-        onCategoryChange={handleCategoryChange}
-        onTagChange={handleTagChange}
-        onClearFilters={handleClearFilters}
-      />
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-4 rounded-lg">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          )}
 
-      {/* Models Grid */}
-      {!Array.isArray(models) || models.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+          {/* Library Content */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Content Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Available 3D Models</h3>
+                  <p className="text-sm text-gray-500">Browse and explore 3D assets from the library</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm text-gray-500">
+                    {models.length} models available
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <FilterDropdowns
+                categories={categories}
+                tags={tags}
+                selectedCategory={selectedCategory}
+                selectedTag={selectedTag}
+                onCategoryChange={handleCategoryChange}
+                onTagChange={handleTagChange}
+                onClearFilters={handleClearFilters}
+              />
+            </div>
+
+            {/* Models Grid */}
+            <div className="p-6">
+              {!Array.isArray(models) || models.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <Box className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No 3D models available</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    {selectedCategory || selectedTag 
+                      ? 'No models match your current filters. Try adjusting your search criteria.' 
+                      : 'There are no 3D models available in the library yet. Check back later for new content.'
+                    }
+                  </p>
+                  {(selectedCategory || selectedTag) && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                    >
+                      <span>Clear Filters</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {models.map((model) => (
+                    <ModelCard
+                      key={model._id}
+                      model={model}
+                      onInspect={handleInspect}
+                      onShare={handleShare}
+                      showTeacherActions={true}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No models available</h3>
-          <p className="text-gray-600">
-            {selectedCategory || selectedTag 
-              ? 'No models match your current filters.' 
-              : 'There are no 3D models available in the library yet.'
-            }
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {models.map((model) => (
-            <ModelCard
-              key={model._id}
-              model={model}
-              onInspect={handleInspect}
-              onShare={handleShare}
-              showTeacherActions={true}
-            />
-          ))}
-        </div>
-      )}
 
-      {/* 3D Model Viewer Modal */}
-      <Model3dViewerModal
-        model={viewingModel}
-        isOpen={showViewerModal}
-        onClose={() => {
-          setShowViewerModal(false);
-          setViewingModel(null);
-        }}
-        showShareButton={true}
-      />
+          {/* 3D Model Viewer Modal */}
+          <Model3dViewerModal
+            model={viewingModel}
+            isOpen={showViewerModal}
+            onClose={() => {
+              setShowViewerModal(false);
+              setViewingModel(null);
+            }}
+            showShareButton={true}
+          />
+        </div>
+      </div>
     </div>
   );
 };

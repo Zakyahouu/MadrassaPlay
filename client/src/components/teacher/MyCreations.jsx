@@ -48,6 +48,13 @@ const MyCreations = () => {
 
   const actionButtons = [
     {
+      to: (id) => `/teacher/edit-game/${id}`,
+      label: 'Edit',
+      icon: '✏️',
+      style: 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:from-purple-600 hover:to-pink-700',
+      description: 'Edit game settings'
+    },
+    {
       to: (id) => `/teacher/host-lobby/${id}`,
       label: 'Host Live',
       icon: '🎪',
