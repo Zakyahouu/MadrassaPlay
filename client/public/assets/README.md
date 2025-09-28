@@ -5,12 +5,14 @@
 Place your assets in the `client/public/assets/` folder with the following naming convention:
 
 ### Screenshots (PNG format, 1920x1080 recommended)
-- `asset-1.png` - Teacher Dashboard screenshot
-- `asset-2.png` - Student playing game interface
-- `asset-3.png` - Analytics dashboard view
-- `asset-4.png` - Mobile app interface
-- `asset-5.png` - Class management view
-- `asset-6.png` - Parent portal interface
+- `asset-1.png` - Teacher Dashboard screenshot ✅
+- `asset-2.png` - Student playing game interface ✅
+- `asset-3.png` - Analytics dashboard view ✅
+- `asset-4.png` - Mobile app interface ✅
+- `asset-5.png` - Class management view ✅
+- `finance.png` - Finance management interface ✅
+- `model-3d.png` - 3D model management interface ✅
+- `3d.png` - 3D learning interface ✅
 
 ### Demo Videos (MP4 format, 1920x1080 recommended)
 - `asset-7.mp4` - Gameplay demonstration video
@@ -21,7 +23,7 @@ Place your assets in the `client/public/assets/` folder with the following namin
 - `asset-10.svg` - Game icon
 - `asset-11.svg` - Teacher icon
 - `asset-12.svg` - Student icon
-- `asset-13.svg` - Parent icon
+- `asset-13.svg` - Finance icon
 
 ## Asset Guidelines
 

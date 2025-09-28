@@ -445,7 +445,7 @@ const LandingPage = () => {
 
   const t = translations[language];
 
-  // Asset Placeholders (you'll add these images later)
+  // Asset Integration (using existing assets)
   const assets = {
     screenshots: {
       teacherDashboard: '/assets/asset-1.png', // Teacher dashboard screenshot
@@ -453,7 +453,9 @@ const LandingPage = () => {
       analytics: '/assets/asset-3.png', // Analytics dashboard
       mobileApp: '/assets/asset-4.png', // Mobile app interface
       classManagement: '/assets/asset-5.png', // Class management view
-      parentPortal: '/assets/asset-6.png' // Parent portal
+      finance: '/assets/finance.png', // Finance management (replacing parent portal)
+      model3d: '/assets/model-3d.png', // 3D model management
+      threeD: '/assets/3d.png' // 3D learning interface
     },
     demos: {
       gamePlay: '/assets/asset-7.mp4', // Gameplay video
@@ -464,7 +466,7 @@ const LandingPage = () => {
       gameIcon: '/assets/asset-10.svg', // Game icon
       teacherIcon: '/assets/asset-11.svg', // Teacher icon
       studentIcon: '/assets/asset-12.svg', // Student icon
-      parentIcon: '/assets/asset-13.svg' // Parent icon
+      financeIcon: '/assets/asset-13.svg' // Finance icon
     }
   };
 
@@ -516,13 +518,22 @@ const LandingPage = () => {
       features: ['Class organization', 'Student management', 'Attendance tracking']
     },
     {
-      id: 'parent-portal',
-      title: 'Parent Portal',
-      description: 'Keep parents informed about their child\'s progress',
-      image: assets.screenshots.parentPortal,
-      category: 'Communication',
-      stats: { parents: 89, reports: 156, satisfaction: '98%' },
-      features: ['Progress reports', 'Communication', 'Goal setting']
+      id: 'finance-management',
+      title: 'Finance Management',
+      description: 'Comprehensive financial tracking and payment management',
+      image: assets.screenshots.finance,
+      category: 'Finance',
+      stats: { payments: 156, revenue: '$12.5k', transactions: 89 },
+      features: ['Payment tracking', 'Financial reports', 'Revenue analytics']
+    },
+    {
+      id: 'model-3d',
+      title: '3D Model Management',
+      description: 'Interactive 3D learning models and educational content',
+      image: assets.screenshots.model3d,
+      category: '3D Learning',
+      stats: { models: 45, downloads: 234, engagement: '92%' },
+      features: ['3D model library', 'Interactive content', 'Educational simulations']
     }
   ];
 
@@ -1256,36 +1267,38 @@ const LandingPage = () => {
               {/* Screenshot Image */}
               <div className="relative bg-gray-100 min-h-[500px] flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-24 h-24 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                      {screenshotGallery[activeScreenshot].id === 'teacher-dashboard' && <Monitor className="w-12 h-12 text-gray-600" />}
-                      {screenshotGallery[activeScreenshot].id === 'student-game' && <Gamepad2 className="w-12 h-12 text-gray-600" />}
-                      {screenshotGallery[activeScreenshot].id === 'analytics' && <BarChart3 className="w-12 h-12 text-gray-600" />}
-                      {screenshotGallery[activeScreenshot].id === 'mobile-app' && <Smartphone className="w-12 h-12 text-gray-600" />}
-                      {screenshotGallery[activeScreenshot].id === 'class-management' && <Users className="w-12 h-12 text-gray-600" />}
-                      {screenshotGallery[activeScreenshot].id === 'parent-portal' && <UserCheck className="w-12 h-12 text-gray-600" />}
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      {screenshotGallery[activeScreenshot].title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {screenshotGallery[activeScreenshot].description}
-                    </p>
-                    <div className="text-sm text-gray-500">
-                      Asset: {screenshotGallery[activeScreenshot].image}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Live Stats Overlay */}
-                <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg">
-                  <div className="text-xs text-gray-600 mb-1">Live Stats</div>
-                  <div className="text-lg font-bold text-gray-900">
-                    {Object.entries(screenshotGallery[activeScreenshot].stats).map(([key, value]) => (
-                      <div key={key} className="text-sm">
-                        {key}: {value}
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img 
+                      src={screenshotGallery[activeScreenshot].image} 
+                      alt={screenshotGallery[activeScreenshot].title}
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    {/* Fallback placeholder */}
+                    <div className="text-center hidden">
+                      <div className="w-24 h-24 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        {screenshotGallery[activeScreenshot].id === 'teacher-dashboard' && <Monitor className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'student-game' && <Gamepad2 className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'analytics' && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'mobile-app' && <Smartphone className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'class-management' && <Users className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'finance-management' && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                        {screenshotGallery[activeScreenshot].id === 'model-3d' && <BookOpen className="w-12 h-12 text-gray-600" />}
                       </div>
-                    ))}
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                        {screenshotGallery[activeScreenshot].title}
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        {screenshotGallery[activeScreenshot].description}
+                      </p>
+                      <div className="text-sm text-gray-500">
+                        Asset: {screenshotGallery[activeScreenshot].image}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1342,14 +1355,26 @@ const LandingPage = () => {
                     : 'hover:shadow-md'
                 }`}
               >
-                <div className="aspect-video bg-gray-200 flex items-center justify-center">
-                  <div className="text-center">
+                <div className="aspect-video bg-gray-200 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={screenshot.image} 
+                    alt={screenshot.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to icon if image fails to load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  {/* Fallback icon */}
+                  <div className="text-center hidden w-full h-full items-center justify-center">
                     {screenshot.id === 'teacher-dashboard' && <Monitor className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
                     {screenshot.id === 'student-game' && <Gamepad2 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
                     {screenshot.id === 'analytics' && <BarChart3 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
                     {screenshot.id === 'mobile-app' && <Smartphone className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
                     {screenshot.id === 'class-management' && <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'parent-portal' && <UserCheck className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
+                    {screenshot.id === 'finance-management' && <BarChart3 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
+                    {screenshot.id === 'model-3d' && <BookOpen className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
                     <div className="text-xs text-gray-600">{screenshot.title}</div>
                   </div>
                 </div>
