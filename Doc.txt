@@ -3,7 +3,7 @@ first this project about platform where u can make games for students hosted by 
 
 The stack taken is mern, react next.js mongodb 
 
-#### Create the work folder i named this project madrassaplay, inside it had 2 folders, client and server,
+#### Create the work folder i named this project wajibet, inside it had 2 folders, client and server,
 front-end, back end.
 
 ### inside the server folder, open terminal and initialize the Node.js project

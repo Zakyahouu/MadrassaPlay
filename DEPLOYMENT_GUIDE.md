@@ -1,8 +1,8 @@
-# MadrassaPlay Platform - Complete Deployment Guide for Hostinger VPS
+# Wajibet Platform - Complete Deployment Guide for Hostinger VPS
 
 ## 📋 Project Overview
 
-**MadrassaPlay** is an educational gaming platform built with the MERN stack that allows teachers to create and host interactive games for students. The platform features real-time communication, multi-role user management, and comprehensive school administration.
+**Wajibet** is an educational gaming platform built with the MERN stack that allows teachers to create and host interactive games for students. The platform features real-time communication, multi-role user management, and comprehensive school administration.
 
 ### Tech Stack
 - **Frontend**: React 19.1.1 + Vite + Tailwind CSS
@@ -161,7 +161,7 @@ sudo chown -R $USER:$USER /var/www/madrassaplay
 ### 5.2 Clone Repository
 ```bash
 cd /var/www/madrassaplay
-git clone https://github.com/your-username/MadrassaPlay.git .
+git clone https://github.com/your-username/Wajibet.git .
 ```
 
 ### 5.3 Install Dependencies
@@ -384,6 +384,20 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+
+    # Proxy for 3D Model Service to avoid mixed content (HTTPS safe)
+    location /model3d/ {
+        proxy_pass http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 300s;
         proxy_connect_timeout 75s;
     }
@@ -796,6 +810,6 @@ app.get('/api/health', (req, res) => {
 
 ---
 
-**🎉 Congratulations! Your MadrassaPlay platform is now successfully deployed on Hostinger VPS!**
+**🎉 Congratulations! Your Wajibet platform is now successfully deployed on Hostinger VPS!**
 
 For any issues or questions, refer to the troubleshooting section or check the application logs using the provided commands.

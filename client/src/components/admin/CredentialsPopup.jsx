@@ -45,7 +45,7 @@ const CredentialsPopup = ({
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('MadrassaPlay', 20, 20);
+    doc.text('WajibET', 20, 20);
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
@@ -178,7 +178,7 @@ const CredentialsPopup = ({
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(128, 128, 128);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, yPosition);
-    doc.text('MadrassaPlay Educational Platform', pageWidth - 80, yPosition);
+    doc.text('WajibET Educational Platform', pageWidth - 80, yPosition);
     
     // Save the document
     const fileName = `school-credentials-${(schoolData?.name || 'school').replace(/\s/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;

@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // 3D Model Service configuration for sharing
-const MODEL3D_BASE_URL = 'http://localhost:3001';
+const MODEL3D_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'http://72.60.133.119:3001' 
+  : 'http://localhost:3001';
 
 // Create axios instance for 3D Model Service sharing
 const shareApi = axios.create({

@@ -284,7 +284,227 @@ const EditGame = () => {
                                             </div>
                                         );
                                     }
-                                    // Numbers with min/max
+                                    // Textarea
+                                    if (field.type === 'textarea') {
+                                        return (
+                                            <div key={key} className="group col-span-2">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <textarea
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    rows={field.rows || 4}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 resize-y"
+                                                    placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Color picker
+                                    if (field.type === 'color') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="color"
+                                                        value={settingsData[key] || '#000000'}
+                                                        onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                        className="h-12 w-20 rounded-xl border border-gray-200 cursor-pointer"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={settingsData[key] || '#000000'}
+                                                        onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                        pattern="^#[0-9A-Fa-f]{6}$"
+                                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 font-mono text-sm"
+                                                        placeholder="#000000"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    // Range slider
+                                    if (field.type === 'range') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <div className="flex items-center gap-4">
+                                                    <input
+                                                        type="range"
+                                                        value={settingsData[key] ?? field.default ?? field.min ?? 0}
+                                                        onChange={(e) => handleSettingsChange(key, Number(e.target.value))}
+                                                        min={field.min ?? 0}
+                                                        max={field.max ?? 100}
+                                                        step={field.step ?? 1}
+                                                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    />
+                                                    <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-center bg-gray-100 px-3 py-1 rounded-lg">
+                                                        {settingsData[key] ?? field.default ?? field.min ?? 0}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    // Date input
+                                    if (field.type === 'date') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    min={field.min}
+                                                    max={field.max}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // DateTime input
+                                    if (field.type === 'datetime-local' || field.type === 'datetime') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    min={field.min}
+                                                    max={field.max}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Time input
+                                    if (field.type === 'time') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    min={field.min}
+                                                    max={field.max}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Month input
+                                    if (field.type === 'month') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="month"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    min={field.min}
+                                                    max={field.max}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Week input
+                                    if (field.type === 'week') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="week"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    min={field.min}
+                                                    max={field.max}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // URL input
+                                    if (field.type === 'url') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    pattern={field.pattern}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    placeholder={field.placeholder || 'https://example.com'}
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Email input
+                                    if (field.type === 'email') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    pattern={field.pattern}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    placeholder={field.placeholder || 'example@email.com'}
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Tel input
+                                    if (field.type === 'tel') {
+                                        return (
+                                            <div key={key} className="group">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {field.label}
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    value={settingsData[key] ?? ''}
+                                                    onChange={(e) => handleSettingsChange(key, e.target.value)}
+                                                    required={field.required}
+                                                    pattern={field.pattern}
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    placeholder={field.placeholder || '+1234567890'}
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    // Numbers with min/max and default text
                                     return (
                                         <div key={key} className="group">
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -471,6 +691,118 @@ const EditGame = () => {
                                                             checked={!!item[key]}
                                                             onChange={(e) => handleContentChange(index, key, e.target.checked)}
                                                             className="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                                                        />
+                                                    ) : field.type === 'textarea' ? (
+                                                        <textarea
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            rows={field.rows || 4}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors resize-y"
+                                                            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                                                        />
+                                                    ) : field.type === 'color' ? (
+                                                        <div className="flex items-center gap-3">
+                                                            <input
+                                                                type="color"
+                                                                value={item[key] || '#000000'}
+                                                                onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                                className="h-12 w-20 rounded-lg border border-gray-200 cursor-pointer"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={item[key] || '#000000'}
+                                                                onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                                pattern="^#[0-9A-Fa-f]{6}$"
+                                                                className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors font-mono text-sm"
+                                                                placeholder="#000000"
+                                                            />
+                                                        </div>
+                                                    ) : field.type === 'range' ? (
+                                                        <div className="flex items-center gap-4">
+                                                            <input
+                                                                type="range"
+                                                                value={item[key] ?? field.default ?? field.min ?? 0}
+                                                                onChange={(e) => handleContentChange(index, key, Number(e.target.value))}
+                                                                min={field.min ?? 0}
+                                                                max={field.max ?? 100}
+                                                                step={field.step ?? 1}
+                                                                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-center bg-gray-100 px-3 py-1 rounded-lg">
+                                                                {item[key] ?? field.default ?? field.min ?? 0}
+                                                            </span>
+                                                        </div>
+                                                    ) : field.type === 'date' ? (
+                                                        <input
+                                                            type="date"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            min={field.min}
+                                                            max={field.max}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        />
+                                                    ) : (field.type === 'datetime-local' || field.type === 'datetime') ? (
+                                                        <input
+                                                            type="datetime-local"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            min={field.min}
+                                                            max={field.max}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        />
+                                                    ) : field.type === 'time' ? (
+                                                        <input
+                                                            type="time"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            min={field.min}
+                                                            max={field.max}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        />
+                                                    ) : field.type === 'month' ? (
+                                                        <input
+                                                            type="month"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            min={field.min}
+                                                            max={field.max}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        />
+                                                    ) : field.type === 'week' ? (
+                                                        <input
+                                                            type="week"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            min={field.min}
+                                                            max={field.max}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                        />
+                                                    ) : field.type === 'url' ? (
+                                                        <input
+                                                            type="url"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            pattern={field.pattern}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                            placeholder={field.placeholder || 'https://example.com'}
+                                                        />
+                                                    ) : field.type === 'email' ? (
+                                                        <input
+                                                            type="email"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            pattern={field.pattern}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                            placeholder={field.placeholder || 'example@email.com'}
+                                                        />
+                                                    ) : field.type === 'tel' ? (
+                                                        <input
+                                                            type="tel"
+                                                            value={item[key] || ''}
+                                                            onChange={(e) => handleContentChange(index, key, e.target.value)}
+                                                            pattern={field.pattern}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                            placeholder={field.placeholder || '+1234567890'}
                                                         />
                                                     ) : (
                                                         <input

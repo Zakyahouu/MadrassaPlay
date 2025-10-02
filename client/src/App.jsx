@@ -26,6 +26,7 @@ import TeacherLiveSessionSummary from './components/teacher/TeacherLiveSessionSu
 import ResultDetail from './components/teacher/ResultDetail';
 import Profile from './pages/Profile';
 import SharedModelViewer from './pages/SharedModelViewer';
+import FullScreenModelViewer from './pages/FullScreenModelViewer';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -235,6 +236,11 @@ function App() {
           <Route
             path="/shared/:authKey"
             element={<SharedModelViewer />}
+          />
+          {/* Full-screen 3D Model viewer (authenticated via underlying API token) */}
+          <Route
+            path="/viewer/:modelId"
+            element={<FullScreenModelViewer />}
           />
         </Routes>
           </div>

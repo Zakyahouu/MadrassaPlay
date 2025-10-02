@@ -1,182 +1,177 @@
 (function(){
-	let creation, settings, items=[], idx=0, score=0, timerIv, timeLeft=0, selected=null, selectedLabel=null;
-	const byId=(id)=>document.getElementById(id);
-	const screens={ready:byId('ready'),countdown:byId('countdown'),play:byId('play'),done:byId('done')};
-	const enterBtn=byId('enterBtn'); const qIdx=byId('qIdx'); const timer=byId('timer'); const scoreEl=byId('score');
-	const qEl=byId('question'); const opts=byId('options'); const explain=byId('explain'); const nextBtn=byId('nextBtn');
-	// instrumentation
-	let qStartMs = 0; const answers = [];
+	let creation, settings, items=[], idx=0, score=0, timerIv, qStartMs = 0;
+	const answers = [];
+	const byId = (id) => document.getElementById(id);
 
-	function show(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
-	function countdown(){ show('countdown'); let n=3; const c=document.querySelector('#countdown .count'); c.textContent=n; const iv=setInterval(()=>{ n--; c.textContent=n; if(n<=0){ clearInterval(iv); start(); } }, 800); }
-	function shuffle(a){ return a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(([_,v])=>v); }
+	// --- UPDATED Dynamic Theme Palettes (Based on your images) ---
+	const themes = [
+		{ bg: 1, color: '#ec4899' },  // Vibrant Pink (from 1.jpg)
+		{ bg: 2, color: '#ec4899' },  // Vibrant Pink
+		{ bg: 3, color: '#ec4899' },  // Vibrant Pink
+		{ bg: 4, color: '#3b82f6' },  // Royal Blue (from 4.jpg)
+		{ bg: 5, color: '#3b82f6' },  // Royal Blue
+		{ bg: 6, color: '#3b82f6' },  // Royal Blue
+		{ bg: 7, color: '#22c55e' },  // Leafy Green (from 7.jpg)
+		{ bg: 8, color: '#22c55e' },  // Leafy Green
+		{ bg: 9, color: '#22c55e' },  // Leafy Green
+		{ bg: 10, color: '#fb923c' }, // Academic Orange (from 10.jpg)
+		{ bg: 11, color: '#fb923c' }, // Academic Orange
+		{ bg: 12, color: '#f97316' }, // Fiery Orange (from 12.jpg)
+		{ bg: 13, color: '#f97316' }  // Fiery Orange
+	];
 
-	function secondsPerQuestion(){
-			// Use per-question timeLimit if present, else fallback to global setting
-			const it = current();
-			if (it && typeof it.timeLimit === 'number') return it.timeLimit;
-			const opt = String(settings?.timePerQuestion || '0 - No timer');
-			const m = opt.match(/^(\d+)/); return m? Number(m[1]) : 0;
-	}
+	// --- Element References ---
+	const screens = { ready: byId('ready-screen'), countdown: byId('countdown-screen'), play: byId('play-screen'), done: byId('done-screen') };
+	const enterBtn = byId('enter-btn');
+	const qIdxEl = byId('q-idx');
+	const timerTextEl = byId('timer-display').querySelector('.text');
+	const scoreTextEl = byId('score-display').querySelector('.text');
+	const qCard = byId('question-card');
+	const qEl = byId('question-text');
+	const optsGrid = byId('options-grid');
+	const explainEl = byId('explain-container');
+	const timerBorder = byId('timer-border');
+	const nextBtn = byId('next-btn');
+	
+	const show = (id) => { Object.values(screens).forEach(s => s.classList.add('hidden')); screens[id].classList.remove('hidden'); };
+	const shuffle = (a) => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(([_, v]) => v);
+	const stopTimer = () => { if (timerIv) { clearInterval(timerIv); timerIv = null; } };
 
-	function current(){ return items[idx]; }
+	const countdown = () => { 
+		show('countdown');
+		let n = 3;
+		const c = document.querySelector('#countdown-screen .count');
+		c.textContent = n;
+		const iv = setInterval(() => { n--; c.textContent = n; if (n <= 0) { clearInterval(iv); start(); } }, 800); 
+	};
+	
+	const render = () => {
+		const item = items[idx];
+		if (!item) { finish(); return; }
 
-	function render(){
-		const it=current(); if(!it){ finish(); return; }
-		// Background switching logic
-		const bgImages = [
-			'assets/Colorful Minimalism1.jpg', 'assets/Colorful Minimalism2.jpg', 'assets/Colorful Minimalism3.jpg',
-			'assets/Modern Abstract Shapes1.jpg', 'assets/Modern Abstract Shapes2.jpg', 'assets/Modern Abstract Shapes3.jpg',
-			'assets/Nature Inspiration1.jpg', 'assets/Nature Inspiration2.jpg', 'assets/Nature Inspiration3.jpg',
-			'assets/Playful School Theme1.jpg', 'assets/Playful School Theme2.jpg',
-			'assets/Space Adventure1.jpg', 'assets/Space Adventure2.jpg'
-		];
-		const bg = bgImages[Math.floor(Math.random()*bgImages.length)];
-		document.body.style.backgroundImage = `url('${bg}')`;
-		document.body.style.backgroundSize = 'cover';
-		document.body.style.backgroundPosition = 'center';
-		document.body.style.transition = 'background-image 0.5s';
-		qIdx.textContent = `${idx+1}/${items.length}`;
-		qEl.textContent = it.question;
-		scoreEl.textContent = `★ ${score}/${items.length}`;
-		explain.textContent = '';
-		nextBtn.disabled = true;
-		selected = null;
-	selectedLabel = null;
-		// build options list from available fields A-D; enforce single-selection radio-like
-		const rawOptions = [
-			['A', it.optionA], ['B', it.optionB], ['C', it.optionC], ['D', it.optionD]
-		].filter(([key, val])=> typeof val === 'string' && val.trim().length>0);
-		const options = (settings?.shuffleChoices!==false) ? shuffle(rawOptions) : rawOptions;
-		opts.innerHTML='';
-		// grid layout: if 3 options, center last one
-		if (options.length === 3) {
-			for (let i=0; i<2; i++) {
-				const [key,label]=options[i];
-				const btn=document.createElement('button');
-				btn.type='button'; btn.className='opt'; btn.textContent=label;
-				btn.onclick=()=> select(btn, key, it.correct);
-				opts.appendChild(btn);
-			}
-			// empty cell then centered third
-			const empty=document.createElement('div'); empty.style.visibility='hidden'; opts.appendChild(empty);
-			const [key,label]=options[2];
-			const btn=document.createElement('button');
-			btn.type='button'; btn.className='opt'; btn.textContent=label;
-			btn.onclick=()=> select(btn, key, it.correct);
-			opts.appendChild(btn);
+		stopTimer();
+		
+		// --- DYNAMIC THEME LOGIC ---
+		const defaultColor = '#3b82f6'; // Default blue
+		if (!settings.backgroundUrl) {
+			const bgIndex = (idx % 13) + 1;
+			document.body.style.backgroundImage = `url(assets/${bgIndex}.jpg)`;
+			const theme = themes.find(t => t.bg === bgIndex);
+			document.documentElement.style.setProperty('--primary-color', theme ? theme.color : defaultColor);
 		} else {
-			options.forEach(([key,label])=>{
-				const btn=document.createElement('button');
-				btn.type='button'; btn.className='opt'; btn.textContent=label;
-				btn.onclick=()=> select(btn, key, it.correct);
-				opts.appendChild(btn);
-			});
+			document.documentElement.style.setProperty('--primary-color', defaultColor);
 		}
-		// progress bar
-		const progressFill = document.getElementById('progressFill');
-		if (progressFill) progressFill.style.width = `${((idx+1)/items.length)*100}%`;
-		// set timer
-		const sec = secondsPerQuestion();
-		if (sec>0){
-			timeLeft = sec; timer.textContent = `⏱️ ${timeLeft}s`;
-			if (timerIv) clearInterval(timerIv);
-			timerIv = setInterval(()=>{
+
+		// Reset UI state for the new question
+		qIdxEl.textContent = `${idx + 1} / ${items.length}`;
+		explainEl.classList.add('hidden');
+		nextBtn.classList.add('hidden');
+		qEl.textContent = item.question;
+		
+		const optionsMap = { A: 'triangle', B: 'diamond', C: 'square', D: 'circle' };
+		const rawOptions = [['A', item.optionA], ['B', item.optionB], ['C', item.optionC], ['D', item.optionD]].filter(([_, val]) => val?.trim());
+		
+		optsGrid.innerHTML = '';
+		optsGrid.className = `options-grid ${rawOptions.length === 3 ? 'three-options' : ''}`;
+		
+		rawOptions.forEach(([key, label]) => {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'opt';
+			btn.textContent = label;
+			btn.setAttribute('data-key', key);
+			btn.setAttribute('data-shape', optionsMap[key]);
+			btn.onclick = () => lockAndReveal(key);
+			optsGrid.appendChild(btn);
+		});
+
+		// --- TIMER SETUP & BUG FIX ---
+		const sec = settings.timePerQuestion || 0;
+		if (sec > 0) {
+			let timeLeft = sec;
+			timerTextEl.textContent = `${timeLeft}s`;
+			
+			timerBorder.style.transition = 'none';
+			timerBorder.style.width = '100%';
+			void timerBorder.offsetWidth;
+			
+			timerBorder.style.transition = `width ${sec}s linear`;
+			timerBorder.style.width = '0%';
+			
+			timerIv = setInterval(() => {
 				timeLeft--;
-				timer.textContent = `⏱️ ${timeLeft}s`;
-				// Animate shake when time is low
-				const qCard = document.querySelector('.question-card');
-				if (qCard) {
-					if (timeLeft <= 3 && timeLeft > 0) {
-						qCard.style.animation = 'shake 0.3s';
-						qCard.addEventListener('animationend', ()=>{qCard.style.animation='';},{once:true});
-					} else {
-						qCard.style.animation = '';
-					}
-				}
-				if (timeLeft<=0){ clearInterval(timerIv); lockAndReveal(); }
+				timerTextEl.textContent = `${timeLeft}s`;
+				if (timeLeft <= 3 && timeLeft > 0) qCard.style.animation = 'shake 0.5s infinite';
+				if (timeLeft <= 0) lockAndReveal(null, true);
 			}, 1000);
-		} else { timer.textContent = ''; if (timerIv) clearInterval(timerIv); }
+		} else {
+			timerTextEl.textContent = '---';
+			timerBorder.style.width = '100%';
+		}
+		
 		qStartMs = Date.now();
-	}
+	};
 
-	function select(btn, key, correct){
-		// single selection
-		[...opts.children].forEach(b=> b.classList.remove('selected'));
-		btn.classList.add('selected');
-		selected = key;
-	selectedLabel = btn.textContent;
-	nextBtn.disabled = false;
-	// auto-advance after selection
-	setTimeout(()=>{ lockAndReveal(); }, 400);
-	}
+	const lockAndReveal = (selectedKey, timedOut = false) => {
+		stopTimer();
+		qCard.style.animation = '';
+		
+		const item = items[idx];
+		if (!item) return;
 
-	function lockAndReveal(){
-		const it=current(); if(!it) return;
-		if (timerIv) { clearInterval(timerIv); timerIv=null; }
-		// grade
-	const correctKey = String(it.correct||'A').toUpperCase();
-	const selectedKey = String(selected||'').toUpperCase();
-	const ok = selectedKey === correctKey;
-	const deltaMs = Math.max(0, Date.now() - (qStartMs || Date.now()));
-		if (ok) score++;
-	// record + emit live
-	answers.push({ index: idx, correct: ok, selectedText: String(selectedLabel||'').trim(), timeMs: deltaMs });
-	try { window.parent.postMessage({ type:'LIVE_ANSWER', payload:{ correct: ok, deltaMs, scoreDelta: ok?1:0, currentScore: score }}, '*'); } catch {}
-		// mark options
-		[...opts.children].forEach(b=>{
-			const isThis = b.classList.contains('selected');
-			// We can’t reverse-lookup key after shuffle, so compare by label text
-			const label = b.textContent;
-			const keyForBtn = ['A','B','C','D'].find(k=> it['option'+k]===label) || '';
-			if (keyForBtn.toUpperCase() === String(it.correct).toUpperCase()) b.classList.add('correct');
-			else if (isThis) b.classList.add('wrong');
+		const correctKey = String(item.correct || 'A').toUpperCase();
+		const ok = selectedKey && selectedKey.toUpperCase() === correctKey;
+		if (ok) {
+			score++;
+			scoreTextEl.textContent = score;
+			scoreTextEl.classList.add('pop');
+			scoreTextEl.addEventListener('animationend', () => scoreTextEl.classList.remove('pop'), { once: true });
+		}
+		
+		const deltaMs = Math.max(0, Date.now() - qStartMs);
+		window.parent.postMessage({ type:'LIVE_ANSWER', payload: { correct: ok, deltaMs, scoreDelta: ok ? 1 : 0, currentScore: score } }, '*');
+		answers.push({ index: idx, correct: ok, selectedKey: selectedKey || 'TIMEOUT', timeMs: deltaMs });
+
+		[...optsGrid.children].forEach(b => {
+			const key = b.getAttribute('data-key');
+			if (key.toUpperCase() === correctKey) b.classList.add('correct');
+			else if (key === selectedKey) b.classList.add('wrong');
 			b.disabled = true;
 		});
-	if (settings?.showExplanations && it.explanation){ explain.textContent = `Explanation: ${it.explanation}`; }
-	// Motivational message
-	const msg = document.createElement('div');
-	msg.className = 'motivate';
-	msg.textContent = ok ? 'Great job!' : 'Keep trying!';
-	explain.appendChild(msg);
-	// Sound effect hooks (simple, can be replaced with actual audio)
-	if (ok) { /* play correct sound */ }
-	else { /* play wrong sound */ }
-	nextBtn.disabled = false;
-	// auto-advance to next question after explanation
-	setTimeout(()=>{ idx++; render(); }, 1200);
-	}
 
-	nextBtn.onclick = ()=>{ if([...opts.children].some(b=>b.disabled)) { idx++; render(); } else { lockAndReveal(); } };
+		if (item.explanation) {
+			explainEl.innerHTML = `<strong>Explanation:</strong> ${item.explanation}`;
+			explainEl.classList.remove('hidden');
+		}
 
-	function start(){ show('play'); idx=0; score=0; render(); }
-	function finish(){
+		nextBtn.classList.remove('hidden');
+		nextBtn.onclick = () => {
+			idx++;
+			render();
+		};
+	};
+
+	const start = () => { show('play'); idx = 0; score = 0; scoreTextEl.textContent = score; render(); };
+	
+	const finish = () => {
 		show('done');
-		const total=items.length;
-		const summary=byId('summary');
-		summary.textContent = `You scored ${score} / ${total}`;
-		const totalTimeMs = answers.reduce((a,b)=> a + (Number(b.timeMs)||0), 0);
-		try { window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*'); } catch {}
-		window.parent.postMessage({ type:'GAME_COMPLETE', payload:{ gameCreationId: creation?._id, score, totalPossibleScore: total, answers }}, '*');
-	}
-
-	window.addEventListener('message', (e)=>{
-			if (e.data?.type==='INIT_GAME'){
-				const p=e.data.payload; creation=p; settings=p.config||{};
-				// normalize items from content
-				items = Array.isArray(p.content) ? p.content.map(q=>({
-					question: q.question?.trim()||'',
-					optionA: q.optionA?.trim()||'',
-					optionB: q.optionB?.trim()||'',
-					optionC: q.optionC?.trim()||'',
-					optionD: q.optionD?.trim()||'',
-					correct: (q.correct||'A').toUpperCase(),
-					explanation: q.explanation||'',
-					timeLimit: typeof q.timeLimit === 'number' ? q.timeLimit : 0
-				})) : [];
-				// Shuffle questions if enabled
-				if (settings?.shuffleQuestions) items = shuffle(items);
-				show('ready'); enterBtn.onclick = countdown;
+		stopTimer();
+		byId('summary-text').textContent = `You scored ${score} out of ${items.length}!`;
+		const totalTimeMs = answers.reduce((a, b) => a + (b.timeMs || 0), 0);
+		window.parent.postMessage({ type:'LIVE_FINISH', payload:{ totalTimeMs }}, '*');
+		window.parent.postMessage({ type:'GAME_COMPLETE', payload: { gameCreationId: creation?.gameCreationId || creation?._id, score, totalPossibleScore: items.length, answers }}, '*');
+	};
+	
+	window.addEventListener('message', (e) => {
+		if (e.data?.type === 'INIT_GAME') {
+			const p = e.data.payload;
+			creation = p;
+			settings = p.config || {};
+			items = Array.isArray(p.content) ? p.content : [];
+			if (settings.shuffleQuestions) items = shuffle(items);
+			if (items.length === 0) { byId('ready-screen').innerHTML = '<h2>Error: No questions provided.</h2>'; return; }
+			show('ready'); 
+			enterBtn.onclick = countdown;
 		}
 	});
 })();

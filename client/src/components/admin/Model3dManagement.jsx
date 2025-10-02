@@ -4,7 +4,7 @@ import { Plus, Upload, Edit, Trash2, AlertCircle, X, Box } from 'lucide-react';
 import { adminApi, model3dHelpers } from '../../services/model3dService';
 import ModelCard from '../shared/ModelCard';
 import FilterDropdowns from '../shared/FilterDropdowns';
-import Model3dViewerModal from '../shared/Model3dViewerModal';
+import { useNavigate } from 'react-router-dom';
 
 const Model3dManagement = () => {
   const [models, setModels] = useState([]);
@@ -26,8 +26,7 @@ const Model3dManagement = () => {
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [showModelEditModal, setShowModelEditModal] = useState(false);
   const [editingModel, setEditingModel] = useState(null);
-  const [showViewerModal, setShowViewerModal] = useState(false);
-  const [viewingModel, setViewingModel] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (model3dHelpers.isAuthenticated()) {
@@ -241,8 +240,7 @@ const Model3dManagement = () => {
   };
 
   const handleInspect = (model) => {
-    setViewingModel(model);
-    setShowViewerModal(true);
+    navigate(`/viewer/${model._id}`);
   };
 
   const handleChange = (e) => {
@@ -892,16 +890,7 @@ const Model3dManagement = () => {
         </div>
       )}
 
-          {/* 3D Model Viewer Modal */}
-          <Model3dViewerModal
-            model={viewingModel}
-            isOpen={showViewerModal}
-            onClose={() => {
-              setShowViewerModal(false);
-              setViewingModel(null);
-            }}
-            showShareButton={false}
-          />
+          {/* Full-screen viewer is used instead of modal */}
         </div>
       </div>
     </div>

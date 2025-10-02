@@ -1,4 +1,4 @@
-# MadrassaPlay Landing Page Assets
+# Wajibet Landing Page Assets
 
 ## Asset Structure
 
@@ -74,4 +74,4 @@ The landing page is already configured to use these assets. Once you add them to
 4. Add your actual platform screenshots and videos
 5. Test the interactive features and animations
 
-The landing page is now ready with Stripe-style dynamic presentation while maintaining your unique MadrassaPlay identity!
+The landing page is now ready with Stripe-style dynamic presentation while maintaining your unique Wajibet identity!

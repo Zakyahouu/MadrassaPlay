@@ -34,7 +34,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
       setError('');
       const response = await shareService.generateShareLink(modelId);
       setShareStatus(response.data);
-      setShowShareModal(true);
+      // Don't automatically show modal, let user click Share button to see it
     } catch (err) {
       console.error('Error generating share link:', err);
       setError(err.response?.data?.error || 'Failed to generate share link');
@@ -60,12 +60,36 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareStatus.shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Check if clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareStatus.shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Fallback for older browsers or non-HTTPS contexts
+        const textArea = document.createElement('textarea');
+        textArea.value = shareStatus.shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (fallbackErr) {
+          console.error('Fallback copy failed:', fallbackErr);
+          setError('Failed to copy link. Please copy manually.');
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
     } catch (err) {
       console.error('Error copying link:', err);
-      setError('Failed to copy link');
+      setError('Failed to copy link. Please copy manually.');
     }
   };
 
@@ -87,10 +111,18 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
   const isExpired = shareStatus?.expiresAt && new Date(shareStatus.expiresAt) < new Date();
   
 
+  const handleOpenModal = () => {
+    setShowShareModal(true);
+    // Refresh share status when opening modal
+    if (modelId) {
+      loadShareStatus();
+    }
+  };
+
   return (
     <>
       <button
-        onClick={() => setShowShareModal(true)}
+        onClick={handleOpenModal}
         disabled={isLoading}
         className={`inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >

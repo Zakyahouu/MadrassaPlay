@@ -2,12 +2,16 @@
 import axios from 'axios';
 
 // 3D Model Service configuration
-const MODEL3D_BASE_URL = 'http://localhost:3001';
+// In production, always go through Nginx at '/model3d' (HTTPS safe).
+// In dev, still point directly to local deep-3d-server.
+const MODEL3D_BASE_URL = import.meta.env.PROD
+  ? '/model3d'
+  : (import.meta.env.VITE_MODEL3D_BASE_URL || 'http://localhost:3001');
 
 // Create axios instance for 3D Model Service
 const model3dApi = axios.create({
   baseURL: MODEL3D_BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
 });
 
 // Request interceptor to add JWT token from existing auth

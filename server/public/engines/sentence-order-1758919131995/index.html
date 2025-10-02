@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentence Order</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="ready" class="screen">
+      <div class="logo">🔤 Sentence Order</div>
+      <button id="enterBtn" class="btn">Enter</button>
+    </div>
+    <div id="countdown" class="screen hidden"><div class="count">3</div></div>
+    <div id="play" class="screen hidden">
+      <div class="hud">
+        <span id="qIdx"></span>
+        <span id="tries"></span>
+        <span id="score"></span>
+      </div>
+      <div id="sequenceTemplate" class="template"></div>
+      <div id="blankSlots" class="slots"></div>
+      <div id="itemBank" class="bank"></div>
+      <div class="actions">
+        <button id="checkBtn" class="btn">Check Answer</button>
+        <button id="clearBtn" class="btn subtle">Clear All</button>
+      </div>
+    </div>
+    <div id="reveal" class="screen hidden">
+      <div class="logo">💡 Correct Answer</div>
+      <div id="correctAnswer" class="answer-display"></div>
+      <button id="nextBtn" class="btn">Next Question</button>
+    </div>
+    <div id="done" class="screen hidden">
+      <div class="logo">✅ Finished</div>
+      <div id="summary"></div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

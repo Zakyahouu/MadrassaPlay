@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Builder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="ready" class="screen">
+      <div class="logo">🔡 Word Builder</div>
+      <button id="enterBtn" class="btn">Enter</button>
+    </div>
+    <div id="countdown" class="screen hidden"><div class="count">3</div></div>
+    <div id="play" class="screen hidden">
+      <div class="hud">
+        <span id="wIdx"></span>
+        <span id="timer"></span>
+        <span id="attempts"></span>
+        <span id="score"></span>
+      </div>
+      <div id="hint" class="hint"></div>
+      <div id="wordPreview" class="word-preview">
+        <div class="preview-label">Word Preview:</div>
+        <div id="previewText" class="preview-text"></div>
+      </div>
+      <div id="dropZone" class="drop-zone">
+        <div id="dropLabel" class="drop-label">Drop letters here to build your word:</div>
+        <div id="assembled" class="assembled-letters"></div>
+      </div>
+      <div id="letterBank" class="letter-bank">
+        <div class="bank-label">Available Letters:</div>
+        <div id="bank" class="bank"></div>
+      </div>
+      <div class="actions">
+        <button id="clearBtn" class="btn subtle">Clear</button>
+        <button id="submitBtn" class="btn">Check Word</button>
+      </div>
+    </div>
+    <div id="correct" class="screen hidden">
+      <div class="logo">✅ Correct!</div>
+      <div id="definition" class="definition"></div>
+      <button id="nextBtn" class="btn">Next Word</button>
+    </div>
+    <div id="wrong" class="screen hidden">
+      <div class="logo">❌ Try Again</div>
+      <div id="wrongMsg" class="wrong-message"></div>
+      <button id="retryBtn" class="btn">Try Again</button>
+    </div>
+    <div id="done" class="screen hidden">
+      <div class="logo">🎉 Finished!</div>
+      <div id="summary"></div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

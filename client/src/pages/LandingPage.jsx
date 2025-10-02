@@ -1,13 +1,14 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+// Add these imports at the top
+import { useContext, useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import '../styles/landing-page.css';
 import { 
   Play, 
   Users, 
   BookOpen, 
   BarChart3, 
-  Shield, 
   Gamepad2,
   CheckCircle,
   ArrowRight,
@@ -15,33 +16,25 @@ import {
   X,
   Mail,
   Phone,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Star,
   Globe,
   Facebook,
   Linkedin,
-  Twitter,
-  Award,
-  Target,
+  Instagram,
+  Video,
+  Star,
   Zap,
-  Heart,
-  Brain,
-  Lightbulb,
-  ChevronDown,
-  HelpCircle,
-  MessageCircle,
-  Calendar,
-  Clock,
+  Eye,
+  Layers,
+  Target,
   TrendingUp,
-  UserCheck,
-  School,
-  GraduationCap,
-  BookMarked,
-  FileText,
-  Settings,
-  Download
+  Award,
+  Clock,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -49,738 +42,675 @@ const LandingPage = () => {
   const { user } = useContext(AuthContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(null);
-  const [language, setLanguage] = useState('fr'); // 'fr' for French, 'ar' for Arabic
-  const [activeDemo, setActiveDemo] = useState(0);
+  const [language, setLanguage] = useState('ar'); // Default to Arabic as per PDF
+  const [activeStep, setActiveStep] = useState(0);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [activeScreenshot, setActiveScreenshot] = useState(0);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const [liveStats, setLiveStats] = useState({
     students: 1247,
     teachers: 89,
-    schools: 23,
-    gamesPlayed: 15678
+    games: 156,
+    models3D: 234
   });
-  const [hoveredFeature, setHoveredFeature] = useState(null);
-  const [activeScreenshot, setActiveScreenshot] = useState(0);
-  const [navbarDropdown, setNavbarDropdown] = useState(null);
-  const threeRef = useRef(null);
-  const gameVisualizationRef = useRef(null);
-  const analyticsRef = useRef(null);
+  const threeViewerRef = useRef(null);
+  const heroVisualizationRef = useRef(null);
+  const heroRef = useRef(null);
+  const problemRef = useRef(null);
+  const featuresRef = useRef(null);
+  const viewer3DRef = useRef(null);
+  const howItWorksRef = useRef(null);
+  const testimonialsRef = useRef(null);
+  const screenshotsRef = useRef(null);
+  const audienceRef = useRef(null);
+  const ctaRef = useRef(null);
 
-  // Live Stats Animation (Stripe-style)
+  // Screenshot Gallery Data (from original)
+  const screenshotGallery = [
+    {
+      id: 'teacher-dashboard',
+      title: language === 'ar' ? 'لوحة تحكم المعلم' : 'Tableau de bord enseignant',
+      description: language === 'ar' ? 'مراقبة الفصل وتتبع تقدم الطلاب في الوقت الفعلي' : 'Surveillance de classe et suivi des progrès en temps réel',
+      image: '/assets/asset-1.png',
+      category: language === 'ar' ? 'إدارة' : 'Gestion',
+      stats: { students: 24, classes: 3, progress: '89%' },
+      features: [
+        language === 'ar' ? 'حالة الطلاب المباشرة' : 'Statut des élèves en direct',
+        language === 'ar' ? 'تتبع التقدم' : 'Suivi des progrès',
+        language === 'ar' ? 'إدارة الفصل' : 'Gestion de classe'
+      ]
+    },
+    {
+      id: 'student-game',
+      title: language === 'ar' ? 'تعلم الطالب' : 'Apprentissage étudiant',
+      description: language === 'ar' ? 'ألعاب تفاعلية وتجارب تعليمية جذابة' : 'Jeux interactifs et expériences d\'apprentissage engageantes',
+      image: '/assets/asset-2.png',
+      category: language === 'ar' ? 'تعلم' : 'Apprentissage',
+      stats: { games: 15, score: '92%', streak: language === 'ar' ? '7 أيام' : '7 jours' },
+      features: [
+        language === 'ar' ? 'ألعاب تفاعلية' : 'Jeux interactifs',
+        language === 'ar' ? 'تتبع التقدم' : 'Suivi des progrès',
+        language === 'ar' ? 'إنجازات' : 'Réalisations'
+      ]
+    },
+    {
+      id: 'analytics',
+      title: language === 'ar' ? 'لوحة التحليلات' : 'Tableau d\'analyse',
+      description: language === 'ar' ? 'رؤى شاملة ومقاييس الأداء' : 'Insights complets et métriques de performance',
+      image: '/assets/asset-3.png',
+      category: language === 'ar' ? 'رؤى' : 'Insights',
+      stats: { improvement: '+18%', engagement: '94%', completion: '87%' },
+      features: [
+        language === 'ar' ? 'مقاييس الأداء' : 'Métriques de performance',
+        language === 'ar' ? 'تحليلات التعلم' : 'Analyses d\'apprentissage',
+        language === 'ar' ? 'تقارير التقدم' : 'Rapports de progrès'
+      ]
+    },
+    {
+      id: 'mobile-app',
+      title: language === 'ar' ? 'تجربة الموبايل' : 'Expérience mobile',
+      description: language === 'ar' ? 'تعلم سلس على أي جهاز، في أي مكان' : 'Apprentissage fluide sur tout appareil',
+      image: '/assets/asset-4.png',
+      category: language === 'ar' ? 'موبايل' : 'Mobile',
+      stats: { downloads: '2.1k', rating: '4.8', users: '1.2k' },
+      features: [
+        language === 'ar' ? 'متعدد المنصات' : 'Multi-plateforme',
+        language === 'ar' ? 'وضع عدم الاتصال' : 'Mode hors ligne',
+        language === 'ar' ? 'إشعارات فورية' : 'Notifications push'
+      ]
+    },
+    {
+      id: 'class-management',
+      title: language === 'ar' ? 'إدارة الفصول' : 'Gestion de classe',
+      description: language === 'ar' ? 'تنظيم وإدارة فصول متعددة بكفاءة' : 'Organiser et gérer plusieurs classes efficacement',
+      image: '/assets/asset-5.png',
+      category: language === 'ar' ? 'تنظيم' : 'Organisation',
+      stats: { classes: 8, students: 156, attendance: '96%' },
+      features: [
+        language === 'ar' ? 'تنظيم الفصول' : 'Organisation des classes',
+        language === 'ar' ? 'إدارة الطلاب' : 'Gestion des élèves',
+        language === 'ar' ? 'تتبع الحضور' : 'Suivi de présence'
+      ]
+    },
+    {
+      id: 'finance-management',
+      title: language === 'ar' ? 'إدارة المالية' : 'Gestion financière',
+      description: language === 'ar' ? 'تتبع مالي شامل وإدارة المدفوعات' : 'Suivi financier complet et gestion des paiements',
+      image: '/assets/finance.png',
+      category: language === 'ar' ? 'مالية' : 'Finance',
+      stats: { payments: 156, revenue: '$12.5k', transactions: 89 },
+      features: [
+        language === 'ar' ? 'تتبع المدفوعات' : 'Suivi des paiements',
+        language === 'ar' ? 'تقارير مالية' : 'Rapports financiers',
+        language === 'ar' ? 'تحليلات الإيرادات' : 'Analyses de revenus'
+      ]
+    },
+    {
+      id: 'model-3d',
+      title: language === 'ar' ? 'إدارة النماذج 3D' : 'Gestion de modèles 3D',
+      description: language === 'ar' ? 'نماذج تعليمية ثلاثية الأبعاد تفاعلية ومحتوى تعليمي' : 'Modèles 3D interactifs et contenu éducatif',
+      image: '/assets/model-3d.png',
+      category: language === 'ar' ? 'تعلم 3D' : 'Apprentissage 3D',
+      stats: { models: 45, downloads: 234, engagement: '92%' },
+      features: [
+        language === 'ar' ? 'مكتبة نماذج 3D' : 'Bibliothèque de modèles 3D',
+        language === 'ar' ? 'محتوى تفاعلي' : 'Contenu interactif',
+        language === 'ar' ? 'محاكاة تعليمية' : 'Simulations éducatives'
+      ]
+    }
+  ];
+
+  // Auto-increment live stats
   useEffect(() => {
     const interval = setInterval(() => {
       setLiveStats(prev => ({
-        students: prev.students + Math.floor(Math.random() * 3),
-        teachers: prev.teachers + Math.floor(Math.random() * 2),
-        schools: prev.schools + Math.floor(Math.random() * 1),
-        gamesPlayed: prev.gamesPlayed + Math.floor(Math.random() * 15)
+        students: Math.min(prev.students + Math.floor(Math.random() * 3), 5000),
+        teachers: Math.min(prev.teachers + Math.floor(Math.random() * 2), 500),
+        games: Math.min(prev.games + Math.floor(Math.random() * 1), 300),
+        models3D: Math.min(prev.models3D + Math.floor(Math.random() * 2), 1000)
       }));
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Close dropdowns when clicking outside
+  // Auto-rotate testimonials
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
-        setNavbarDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const interval = setInterval(() => {
+      setActiveTestimonial(prev => (prev + 1) % 3);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Three.js Interactive 3D Learning Demo
+  // Auto-rotate how it works steps
   useEffect(() => {
-    if (!threeRef.current) return;
+    const interval = setInterval(() => {
+      setActiveStep(prev => (prev + 1) % 4);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, threeRef.current.clientWidth / threeRef.current.clientHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    
-    renderer.setSize(threeRef.current.clientWidth, threeRef.current.clientHeight);
-    renderer.setClearColor(0x000000, 0);
-    threeRef.current.appendChild(renderer.domElement);
+  // Handle navbar border on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    // Create a DNA-like helix structure
-    const helixGroup = new THREE.Group();
-    
-    // Create spheres along the helix
-    const sphereGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-    const materials = [
-      new THREE.MeshPhongMaterial({ color: 0x4F46E5 }),
-      new THREE.MeshPhongMaterial({ color: 0x06B6D4 }),
-      new THREE.MeshPhongMaterial({ color: 0x10B981 }),
-      new THREE.MeshPhongMaterial({ color: 0xF59E0B })
+  // Handle section animations
+  useEffect(() => {
+    const sections = [
+      { ref: heroRef, direction: 'left' },
+      { ref: problemRef, direction: 'right' },
+      { ref: featuresRef, direction: 'left' },
+      { ref: viewer3DRef, direction: 'right' },
+      { ref: howItWorksRef, direction: 'left' },
+      { ref: testimonialsRef, direction: 'right' },
+      { ref: screenshotsRef, direction: 'left' },
+      { ref: audienceRef, direction: 'right' },
+      { ref: ctaRef, direction: 'left' }
     ];
+    
+    const animatedSections = new Set();
+    
+    const observers = sections.map((section) => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !animatedSections.has(section.ref)) {
+              // Find the inner content div and animate only that
+              const contentDiv = entry.target.querySelector('.section-content');
+              if (contentDiv) {
+                contentDiv.style.transition = 'transform 1.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                contentDiv.style.transform = 'translateX(0)';
+                contentDiv.style.opacity = '1';
+              }
+              animatedSections.add(section.ref);
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+      
+      if (section.ref.current) {
+        // Find and set initial position on content only
+        const contentDiv = section.ref.current.querySelector('.section-content');
+        if (contentDiv) {
+          const initialTransform = section.direction === 'left' ? 'translateX(-50%)' : 'translateX(50%)';
+          contentDiv.style.transform = initialTransform;
+          contentDiv.style.opacity = '0';
+        }
+        observer.observe(section.ref.current);
+      }
+      return observer;
+    });
 
-    for (let i = 0; i < 50; i++) {
-      const angle = (i / 50) * Math.PI * 8;
-      const y = (i / 50) * 4 - 2;
-      const radius = 1;
-      
-      const sphere1 = new THREE.Mesh(sphereGeometry, materials[i % 4]);
-      sphere1.position.set(
-        Math.cos(angle) * radius,
-        y,
-        Math.sin(angle) * radius
-      );
-      helixGroup.add(sphere1);
-      
-      const sphere2 = new THREE.Mesh(sphereGeometry, materials[(i + 2) % 4]);
-      sphere2.position.set(
-        Math.cos(angle + Math.PI) * radius,
-        y,
-        Math.sin(angle + Math.PI) * radius
-      );
-      helixGroup.add(sphere2);
+    // Make hero section content visible immediately
+    if (heroRef.current) {
+      setTimeout(() => {
+        const heroContent = heroRef.current.querySelector('.section-content');
+        if (heroContent) {
+          heroContent.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
+          heroContent.style.transform = 'translateX(0)';
+          heroContent.style.opacity = '1';
+        }
+        animatedSections.add(heroRef);
+      }, 100);
     }
 
-    scene.add(helixGroup);
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
 
-    // Add lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // Enhanced 3D Viewer - Educational molecule/DNA visualization
+  useEffect(() => {
+    if (!threeViewerRef.current) return;
+
+    let animationId;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75, 
+      threeViewerRef.current.clientWidth / threeViewerRef.current.clientHeight, 
+      0.1, 
+      1000
+    );
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    
+    renderer.setSize(threeViewerRef.current.clientWidth, threeViewerRef.current.clientHeight);
+    renderer.setClearColor(0x000000, 0);
+    threeViewerRef.current.appendChild(renderer.domElement);
+
+    // Create educational 3D model (DNA-like structure)
+    const modelGroup = new THREE.Group();
+    
+    const sphereGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+    const materials = [
+      new THREE.MeshPhongMaterial({ color: 0x4F46E5, emissive: 0x4F46E5, emissiveIntensity: 0.2 }),
+      new THREE.MeshPhongMaterial({ color: 0x06B6D4, emissive: 0x06B6D4, emissiveIntensity: 0.2 }),
+      new THREE.MeshPhongMaterial({ color: 0x10B981, emissive: 0x10B981, emissiveIntensity: 0.2 }),
+      new THREE.MeshPhongMaterial({ color: 0xF59E0B, emissive: 0xF59E0B, emissiveIntensity: 0.2 })
+    ];
+
+    // Create double helix structure
+    for (let i = 0; i < 40; i++) {
+      const angle = (i / 40) * Math.PI * 6;
+      const y = (i / 40) * 5 - 2.5;
+      const radius = 1.2;
+      
+      const sphere1 = new THREE.Mesh(sphereGeometry, materials[i % 4]);
+      sphere1.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+      modelGroup.add(sphere1);
+      
+      const sphere2 = new THREE.Mesh(sphereGeometry, materials[(i + 2) % 4]);
+      sphere2.position.set(Math.cos(angle + Math.PI) * radius, y, Math.sin(angle + Math.PI) * radius);
+      modelGroup.add(sphere2);
+
+      // Connect atoms with lines
+      if (i % 5 === 0) {
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xcccccc, opacity: 0.3, transparent: true });
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+          sphere1.position,
+          sphere2.position
+        ]);
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        modelGroup.add(line);
+      }
+    }
+
+    scene.add(modelGroup);
+
+    // Enhanced lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     
-    const pointLight = new THREE.PointLight(0xffffff, 0.4);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    const pointLight1 = new THREE.PointLight(0x4F46E5, 1);
+    pointLight1.position.set(5, 5, 5);
+    scene.add(pointLight1);
+    
+    const pointLight2 = new THREE.PointLight(0x06B6D4, 0.8);
+    pointLight2.position.set(-5, -5, 5);
+    scene.add(pointLight2);
 
-    camera.position.z = 5;
+    camera.position.z = 6;
 
-    // Animation loop
+    // Animation with mouse interaction
+    let mouseX = 0;
+    let mouseY = 0;
+
+    const handleMouseMove = (event) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
     const animate = () => {
-      requestAnimationFrame(animate);
-      helixGroup.rotation.y += 0.01;
+      animationId = requestAnimationFrame(animate);
+      
+      modelGroup.rotation.y += 0.005;
+      modelGroup.rotation.x = mouseY * 0.3;
+      modelGroup.rotation.y += mouseX * 0.01;
+      
       renderer.render(scene, camera);
     };
     animate();
 
-    // Cleanup
+    // Handle resize
+    const handleResize = () => {
+      if (!threeViewerRef.current) return;
+      const width = threeViewerRef.current.clientWidth;
+      const height = threeViewerRef.current.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     return () => {
-      if (threeRef.current && renderer.domElement) {
-        threeRef.current.removeChild(renderer.domElement);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', handleResize);
+      if (animationId) cancelAnimationFrame(animationId);
+      if (threeViewerRef.current && renderer.domElement) {
+        threeViewerRef.current.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
   }, []);
 
-  // Game Visualization Component
-  const GameVisualization = () => {
-    const canvasRef = useRef(null);
+  // Lightweight Hero Background - CSS Gradient Dots Pattern
+  const HeroVisualization = () => {
+    return (
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Dots gradient background using CSS */}
+        <div className="absolute inset-0 dots-gradient-bg"></div>
 
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-      const particles = [];
-      for (let i = 0; i < 30; i++) {
-        particles.push({
-          x: Math.random() * canvas.offsetWidth,
-          y: Math.random() * canvas.offsetHeight,
-          radius: Math.random() * 3 + 1,
-          dx: (Math.random() - 0.5) * 2,
-          dy: (Math.random() - 0.5) * 2,
-          color: ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B'][Math.floor(Math.random() * 4)]
-        });
-      }
-
-      const animate = () => {
-        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-        
-        particles.forEach(particle => {
-          ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-          ctx.fillStyle = particle.color;
-          ctx.fill();
-
-          particle.x += particle.dx;
-          particle.y += particle.dy;
-
-          if (particle.x < 0 || particle.x > canvas.offsetWidth) particle.dx *= -1;
-          if (particle.y < 0 || particle.y > canvas.offsetHeight) particle.dy *= -1;
-        });
-
-        requestAnimationFrame(animate);
-      };
-      animate();
-    }, []);
-
-    return <canvas ref={canvasRef} className="w-full h-full" />;
+        {/* Subtle floating accent dots */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-2 h-2 bg-white/20 rounded-full animate-float-slow"></div>
+          <div className="absolute top-40 right-32 w-1.5 h-1.5 bg-white/15 rounded-full animate-float-medium"></div>
+          <div className="absolute bottom-32 left-40 w-2 h-2 bg-white/25 rounded-full animate-float-fast"></div>
+          <div className="absolute top-60 left-1/3 w-1.5 h-1.5 bg-white/30 rounded-full animate-float-slow"></div>
+          <div className="absolute bottom-40 right-20 w-2 h-2 bg-white/20 rounded-full animate-float-medium"></div>
+          <div className="absolute top-32 left-1/2 w-1 h-1 bg-white/25 rounded-full animate-float-fast"></div>
+          <div className="absolute bottom-20 left-1/4 w-1.5 h-1.5 bg-white/18 rounded-full animate-float-slow"></div>
+          <div className="absolute top-80 right-1/4 w-1 h-1 bg-white/22 rounded-full animate-float-medium"></div>
+          <div className="absolute bottom-60 right-1/3 w-2 h-2 bg-white/16 rounded-full animate-float-fast"></div>
+          <div className="absolute top-16 right-16 w-1.5 h-1.5 bg-white/28 rounded-full animate-float-slow"></div>
+          <div className="absolute bottom-16 left-16 w-1 h-1 bg-white/24 rounded-full animate-float-medium"></div>
+          <div className="absolute top-1/2 left-16 w-2 h-2 bg-white/19 rounded-full animate-float-fast"></div>
+        </div>
+      </div>
+    );
   };
 
-  // Analytics Visualization
-  const AnalyticsChart = () => {
-    const canvasRef = useRef(null);
-
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-      const data = [20, 45, 65, 80, 95, 110, 125, 140, 160, 185];
-      const maxData = Math.max(...data);
-      
-      let animationProgress = 0;
-
-      const animate = () => {
-        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-        
-        const barWidth = canvas.offsetWidth / data.length * 0.8;
-        const spacing = canvas.offsetWidth / data.length * 0.2;
-
-        data.forEach((value, index) => {
-          const barHeight = (value / maxData) * canvas.offsetHeight * 0.8 * animationProgress;
-          const x = index * (barWidth + spacing) + spacing / 2;
-          const y = canvas.offsetHeight - barHeight - 20;
-
-          const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
-          gradient.addColorStop(0, '#4F46E5');
-          gradient.addColorStop(1, '#06B6D4');
-
-          ctx.fillStyle = gradient;
-          ctx.fillRect(x, y, barWidth, barHeight);
-        });
-
-        if (animationProgress < 1) {
-          animationProgress += 0.02;
-          requestAnimationFrame(animate);
-        }
-      };
-      
-      setTimeout(animate, 500);
-    }, []);
-
-    return <canvas ref={canvasRef} className="w-full h-full" />;
-  };
-
-  // Translation Data
+  // Translation content matching PDF
   const translations = {
+    ar: {
+      nav: {
+        features: "المميزات",
+        how: "كيف يعمل",
+        testimonials: "آراء المستخدمين",
+        login: "تسجيل الدخول",
+        getStarted: "ابدأ الآن",
+        dashboard: "لوحة التحكم"
+      },
+      hero: {
+        title: "WajibET - التعليم أصبح أكثر متعة",
+        subtitle: "وواقعية مع WajibET",
+        description: "منصة تعليمية مبتكرة تجمع بين الألعاب التفاعلية والمجسمات ثلاثية الأبعاد، لتجعل الدروس تجربة مشوقة سواء في الفصل أو من المنزل.",
+        startFree: "ابدأ الآن",
+        watchDemo: "شاهد العرض التوضيحي"
+      },
+      problem: {
+        title: "لماذا WajibET؟",
+        subtitle: "التحديات التي يواجهها التعليم التقليدي وحلولنا المبتكرة",
+        issues: [
+          "الحصص التقليدية تسبب الملل وقلة التفاعل",
+          "الطلاب يحتاجون لطرق جديدة أكثر جذبًا",
+          "الأساتذة يبحثون عن أدوات بسيطة وفعالة",
+          "صعوبة متابعة تقدم الطلاب بشكل فوري",
+          "عدم وجود أدوات تفاعلية للمواد المعقدة"
+        ],
+        solution: "الحل المبتكر",
+        solutionText: "WajibET يجعل التعليم تجربة تفاعلية ممتعة بفضل تقنياتنا المتقدمة:",
+        solutionPoints: [
+          "ألعاب تعليمية محفزة مع نظام النقاط والشارات",
+          "عارض 3D Viewer مدمج يضيف الواقعية للدروس",
+          "متابعة فورية لنتائج الطلاب والتقدم",
+          "سهولة الاستخدام للمعلمين والطلاب على حد سواء",
+          "دعم جميع المواد الدراسية والمستويات التعليمية"
+        ],
+        stats: {
+          engagement: "+85%",
+          retention: "+92%",
+          satisfaction: "4.8/5"
+        }
+      },
+      features: {
+        title: "المزايا الرئيسية",
+        subtitle: "كل ما تحتاجه لتحويل التعليم إلى تجربة ممتعة",
+        list: [
+          {
+            title: "مكتبة قوالب ضخمة",
+            description: "مكتبة كبيرة من القوالب التعليمية الجاهزة"
+          },
+          {
+            title: "ألعاب تفاعلية",
+            description: "ألعاب تفاعلية حضوريًا أو عن بعد"
+          },
+          {
+            title: "تخصيص سهل",
+            description: "تخصيص سهل حسب المستوى والمادة"
+          },
+          {
+            title: "3D Viewer مدمج",
+            description: "عرض مجسمات ثلاثية الأبعاد (علوم، رياضيات، هندسة…)"
+          },
+          {
+            title: "متابعة فورية",
+            description: "متابعة نتائج الطلاب في الوقت الحقيقي"
+          }
+        ]
+      },
+      viewer3D: {
+        title: "التعلم كما لم تره من قبل",
+        subtitle: "3D Viewer داخل WajibET",
+        description: "اكتشف الأعضاء البشرية، الأشكال الهندسية، أو الظواهر العلمية في بيئة ثلاثية الأبعاد تفاعلية. الطلاب لا يقرأون فقط… بل يعيشون التجربة!",
+        capabilities: [
+          "تدوير وتكبير النماذج ثلاثية الأبعاد",
+          "استكشاف تفاصيل معقدة بسهولة",
+          "مناسب لجميع المواد الدراسية",
+          "واجهة بسيطة وسهلة الاستخدام"
+        ]
+      },
+      howItWorks: {
+        title: "كيف يعمل WajibET؟",
+        subtitle: "أربع خطوات بسيطة لتحويل طريقة التدريس",
+        steps: [
+          {
+            title: "اختر القالب",
+            description: "اختر القالب أو اللعبة التعليمية المناسبة"
+          },
+          {
+            title: "أضف النشاط",
+            description: "أضف نشاطًا تفاعليًا للطلاب"
+          },
+          {
+            title: "عزز بـ 3D",
+            description: "عزز التجربة باستخدام 3D Viewer"
+          },
+          {
+            title: "راقب النتائج",
+            description: "راقب النتائج والتقدم مباشرة"
+          }
+        ]
+      },
+      testimonials: {
+        title: "ماذا يقول المستخدمون؟",
+        subtitle: "تجارب حقيقية من معلمين وطلاب",
+        list: [
+          {
+            quote: "طلابي صاروا أكثر حماسًا للدروس",
+            author: "أستاذة سارة",
+            role: "معلمة علوم"
+          },
+          {
+            quote: "3D Viewer جعل شرح العلوم أسرع وأسهل",
+            author: "الأستاذ محمد",
+            role: "معلم فيزياء"
+          },
+          {
+            quote: "بسيط جدًا، حتى المعلمين الجدد يقدرون يستخدمونه",
+            author: "د. فاطمة",
+            role: "مديرة مدرسة"
+          }
+        ]
+      },
+      audience: {
+        title: "لمن صُمم WajibET؟",
+        subtitle: "حلول مصممة لكل فرد في المنظومة التعليمية",
+        groups: [
+          {
+            title: "المدارس والمؤسسات",
+            description: "منصة شاملة لإدارة العملية التعليمية"
+          },
+          {
+            title: "الأساتذة",
+            description: "أدوات تدريس حديثة وطرق جديدة للشرح"
+          },
+          {
+            title: "أولياء التلاميذ",
+            description: "دعم تعلم الأبناء من المنزل بسهولة"
+          }
+        ]
+      },
+      cta: {
+        title: "اجعل التعليم أكثر متعة مع WajibET اليوم!",
+        subtitle: "ابدأ مجانًا واكتشف الفرق",
+        button: "ابدأ الآن",
+        demo: "احجز عرضًا توضيحيًا"
+      },
+      footer: {
+        rights: "© EDZ Smart System. جميع الحقوق محفوظة",
+        contact: "تواصل معنا"
+      }
+    },
     fr: {
       nav: {
         features: "Fonctionnalités",
-        demo: "Démo",
-        pricing: "Tarifs",
-        faq: "FAQ",
+        how: "Comment ça marche",
+        testimonials: "Témoignages",
         login: "Connexion",
-        dashboard: "Tableau de bord",
-        profile: "Profil",
-        logout: "Déconnexion",
-        getStarted: "Commencer"
+        getStarted: "Commencer",
+        dashboard: "Tableau de bord"
       },
       hero: {
-        title: "Éducation",
-        subtitle: "Réimaginée",
-        description: "Transformez l'apprentissage avec des expériences interactives, des insights en temps réel et des outils qui rendent l'éducation engageante pour tous.",
-        startTrial: "Commencer l'essai gratuit",
+        title: "WajibET - L'éducation devient",
+        subtitle: "plus amusante et réaliste avec WajibET",
+        description: "Une plateforme éducative innovante qui combine jeux interactifs et modèles 3D pour transformer les cours en une expérience captivante, en classe ou à la maison.",
+        startFree: "Commencer maintenant",
         watchDemo: "Voir la démo"
       },
-      mission: {
-        title: "Notre Mission",
-        subtitle: "Transformer l'Éducation par la Technologie",
-        description: "MadrassaPlay existe pour combler le fossé entre l'éducation traditionnelle et les besoins d'apprentissage modernes. Nous croyons que l'apprentissage doit être engageant, interactif et accessible à tous, quel que soit leur parcours ou style d'apprentissage.",
-        values: [
+      problem: {
+        title: "Pourquoi WajibET ?",
+        subtitle: "Les défis de l'éducation traditionnelle et nos solutions innovantes",
+        issues: [
+          "Les cours traditionnels causent l'ennui et le manque d'interaction",
+          "Les élèves ont besoin de méthodes plus attrayantes",
+          "Les enseignants cherchent des outils simples et efficaces",
+          "Difficulté à suivre les progrès des élèves en temps réel",
+          "Absence d'outils interactifs pour les matières complexes"
+        ],
+        solution: "La solution innovante",
+        solutionText: "WajibET rend l'éducation une expérience interactive et amusante grâce à nos technologies avancées :",
+        solutionPoints: [
+          "Jeux éducatifs motivants avec système de points et badges",
+          "Visualiseur 3D intégré qui ajoute du réalisme aux leçons",
+          "Suivi instantané des résultats et progrès des élèves",
+          "Facilité d'utilisation pour les enseignants et élèves",
+          "Support de toutes les matières et niveaux scolaires"
+        ],
+        stats: {
+          engagement: "+85%",
+          retention: "+92%",
+          satisfaction: "4.8/5"
+        }
+      },
+      features: {
+        title: "Fonctionnalités principales",
+        subtitle: "Tout ce dont vous avez besoin pour transformer l'éducation",
+        list: [
           {
-            title: "Centré sur l'Étudiant",
-            description: "Chaque fonctionnalité est conçue en pensant au parcours d'apprentissage de l'étudiant"
+            title: "Grande bibliothèque",
+            description: "Large collection de modèles éducatifs prêts à l'emploi"
           },
           {
-            title: "Innovation d'Abord",
-            description: "Nous repoussons constamment les limites de la technologie éducative"
+            title: "Jeux interactifs",
+            description: "Jeux interactifs en présentiel ou à distance"
           },
           {
-            title: "Communauté",
-            description: "Construit par des éducateurs, pour des éducateurs, avec un retour continu"
+            title: "Personnalisation facile",
+            description: "Adaptation simple selon le niveau et la matière"
+          },
+          {
+            title: "Visualiseur 3D intégré",
+            description: "Affichage de modèles 3D (sciences, maths, géométrie…)"
+          },
+          {
+            title: "Suivi en temps réel",
+            description: "Suivez les résultats des élèves instantanément"
           }
         ]
       },
-      features: {
-        title: "Fonctionnalités qui comptent",
-        subtitle: "Chaque outil conçu avec un but. Chaque fonctionnalité construite pour l'impact.",
-        interactive: "Jeux Interactifs",
-        interactiveDesc: "Expériences d'apprentissage gamifiées",
-        management: "Gestion de Classe",
-        managementDesc: "Outils d'enseignant rationalisés",
-        content: "Contenu Intelligent",
-        contentDesc: "Matériaux d'apprentissage adaptatifs",
-        analytics: "Analytiques en Temps Réel",
-        analyticsDesc: "Insights de progrès instantanés"
+      viewer3D: {
+        title: "L'apprentissage comme vous ne l'avez jamais vu",
+        subtitle: "Visualiseur 3D dans WajibET",
+        description: "Découvrez les organes humains, les formes géométriques ou les phénomènes scientifiques dans un environnement 3D interactif. Les élèves ne lisent pas seulement… ils vivent l'expérience !",
+        capabilities: [
+          "Rotation et zoom des modèles 3D",
+          "Explorer facilement les détails complexes",
+          "Adapté à toutes les matières",
+          "Interface simple et facile à utiliser"
+        ]
       },
-      gamification: {
-        title: "Gamification & Apprentissage Amusant",
-        subtitle: "Rendez l'apprentissage addictif avec notre système de gamification complet qui garde les étudiants engagés et motivés.",
-        achievement: "Système de Réussite",
-        achievementDesc: "Les étudiants gagnent des badges et certificats pour compléter les défis et atteindre les jalons",
-        progress: "Suivi des Progrès",
-        progressDesc: "Barres de progrès visuelles et systèmes de niveaux qui motivent l'apprentissage continu",
-        feedback: "Retour en Temps Réel",
-        feedbackDesc: "Récompenses et retours instantanés qui gardent les étudiants engagés et motivés",
-        adaptive: "Défis Adaptatifs",
-        adaptiveDesc: "Ajustement de difficulté alimenté par l'IA qui assure un rythme d'apprentissage optimal"
-      },
-      audience: {
-        title: "Parfait pour Tous",
-        subtitle: "Solutions sur mesure pour chaque membre de la communauté éducative.",
-        schools: "Pour les Écoles",
-        schoolsSubtitle: "Gestion Éducative Complète",
-        teachers: "Pour les Enseignants",
-        teachersSubtitle: "Outils d'Enseignement Puissants",
-        students: "Pour les Étudiants",
-        studentsSubtitle: "Expérience d'Apprentissage Engageante",
-        parents: "Pour les Parents",
-        parentsSubtitle: "Restez Connecté & Informé"
-      },
-      success: {
-        title: "Histoires de Succès",
-        subtitle: "Résultats réels d'écoles réelles utilisant MadrassaPlay."
-      },
-      faq: {
-        title: "Questions Fréquemment Posées",
-        subtitle: "Tout ce que vous devez savoir sur MadrassaPlay."
-      },
-      cta: {
-        title: "Prêt à transformer l'éducation ?",
-        subtitle: "Rejoignez des milliers d'éducateurs utilisant déjà MadrassaPlay",
-        getStarted: "Commencer Gratuitement",
-        scheduleDemo: "Planifier une Démo"
-      }
-    },
-    ar: {
-      nav: {
-        features: "الميزات",
-        demo: "العرض التوضيحي",
-        pricing: "الأسعار",
-        faq: "الأسئلة الشائعة",
-        login: "تسجيل الدخول",
-        dashboard: "لوحة التحكم",
-        profile: "الملف الشخصي",
-        logout: "تسجيل الخروج",
-        getStarted: "ابدأ الآن"
-      },
-      hero: {
-        title: "التعليم",
-        subtitle: "مُعاد تصوره",
-        description: "حوّل التعلم بتجارب تفاعلية ورؤى فورية وأدوات تجعل التعليم جذاباً للجميع.",
-        startTrial: "ابدأ التجربة المجانية",
-        watchDemo: "شاهد العرض التوضيحي"
-      },
-      mission: {
-        title: "مهمتنا",
-        subtitle: "تحويل التعليم من خلال التكنولوجيا",
-        description: "MadrassaPlay موجود لسد الفجوة بين التعليم التقليدي واحتياجات التعلم الحديثة. نؤمن أن التعلم يجب أن يكون جذاباً وتفاعلياً ومتاحاً للجميع، بغض النظر عن خلفيتهم أو أسلوب تعلمهم.",
-        values: [
+      howItWorks: {
+        title: "Comment fonctionne WajibET ?",
+        subtitle: "Quatre étapes simples pour transformer l'enseignement",
+        steps: [
           {
-            title: "مرتكز على الطالب",
-            description: "كل ميزة مصممة مع التركيز على رحلة تعلم الطالب"
+            title: "Choisissez le modèle",
+            description: "Sélectionnez le modèle ou le jeu éducatif approprié"
           },
           {
-            title: "الابتكار أولاً",
-            description: "نحن ندفع باستمرار حدود التكنولوجيا التعليمية"
+            title: "Ajoutez l'activité",
+            description: "Ajoutez une activité interactive pour les élèves"
           },
           {
-            title: "مدفوعة بالمجتمع",
-            description: "مبني من قبل المعلمين، للمعلمين، مع ردود فعل مستمرة"
+            title: "Améliorez avec 3D",
+            description: "Enrichissez l'expérience avec le visualiseur 3D"
+          },
+          {
+            title: "Suivez les résultats",
+            description: "Surveillez les résultats et les progrès directement"
           }
         ]
       },
-      features: {
-        title: "الميزات المهمة",
-        subtitle: "كل أداة مصممة لغرض. كل ميزة مبنية للتأثير.",
-        interactive: "ألعاب تفاعلية",
-        interactiveDesc: "تجارب تعلم مدمجة بالألعاب",
-        management: "إدارة الفصل",
-        managementDesc: "أدوات معلم مبسطة",
-        content: "محتوى ذكي",
-        contentDesc: "مواد تعلم تكيفية",
-        analytics: "تحليلات فورية",
-        analyticsDesc: "رؤى تقدم فورية"
-      },
-      gamification: {
-        title: "التلعيب والتعلم الممتع",
-        subtitle: "اجعل التعلم مسبب للإدمان مع نظام التلعيب الشامل الذي يحافظ على تفاعل وتحفيز الطلاب.",
-        achievement: "نظام الإنجازات",
-        achievementDesc: "يكسب الطلاب شارات وشهادات لإكمال التحديات والوصول للمعالم",
-        progress: "تتبع التقدم",
-        progressDesc: "أشرطة تقدم بصرية وأنظمة مستويات تحفز التعلم المستمر",
-        feedback: "ردود فعل فورية",
-        feedbackDesc: "مكافآت وردود فعل فورية تحافظ على تفاعل وتحفيز الطلاب",
-        adaptive: "تحديات تكيفية",
-        adaptiveDesc: "تعديل صعوبة مدعوم بالذكاء الاصطناعي يضمن وتيرة تعلم مثالية"
+      testimonials: {
+        title: "Que disent les utilisateurs ?",
+        subtitle: "Expériences réelles d'enseignants et d'élèves",
+        list: [
+          {
+            quote: "Mes élèves sont devenus plus enthousiastes pour les cours",
+            author: "Professeur Sarah",
+            role: "Enseignante de sciences"
+          },
+          {
+            quote: "Le visualiseur 3D a rendu l'explication des sciences plus rapide et facile",
+            author: "Professeur Mohamed",
+            role: "Enseignant de physique"
+          },
+          {
+            quote: "Très simple, même les nouveaux enseignants peuvent l'utiliser",
+            author: "Dr. Fatima",
+            role: "Directrice d'école"
+          }
+        ]
       },
       audience: {
-        title: "مثالي للجميع",
-        subtitle: "حلول مخصصة لكل عضو في المجتمع التعليمي.",
-        schools: "للمدارس",
-        schoolsSubtitle: "إدارة تعليمية شاملة",
-        teachers: "للمعلمين",
-        teachersSubtitle: "أدوات تعليمية قوية",
-        students: "للطلاب",
-        studentsSubtitle: "تجربة تعلم جذابة",
-        parents: "للأولياء",
-        parentsSubtitle: "ابق متصلاً ومطلعاً"
-      },
-      success: {
-        title: "قصص النجاح",
-        subtitle: "نتائج حقيقية من مدارس حقيقية تستخدم MadrassaPlay."
-      },
-      faq: {
-        title: "الأسئلة الشائعة",
-        subtitle: "كل ما تحتاج لمعرفته عن MadrassaPlay."
+        title: "Pour qui est conçu WajibET ?",
+        subtitle: "Des solutions adaptées à chaque membre de la communauté éducative",
+        groups: [
+          {
+            title: "Écoles et institutions",
+            description: "Plateforme complète pour gérer le processus éducatif"
+          },
+          {
+            title: "Enseignants",
+            description: "Outils d'enseignement modernes et nouvelles méthodes"
+          },
+          {
+            title: "Parents",
+            description: "Soutenir facilement l'apprentissage des enfants à la maison"
+          }
+        ]
       },
       cta: {
-        title: "مستعد لتحويل التعليم؟",
-        subtitle: "انضم إلى آلاف المعلمين الذين يستخدمون MadrassaPlay بالفعل",
-        getStarted: "ابدأ مجاناً",
-        scheduleDemo: "جدولة عرض توضيحي"
+        title: "Rendez l'éducation plus amusante avec WajibET aujourd'hui !",
+        subtitle: "Commencez gratuitement et découvrez la différence",
+        button: "Commencer maintenant",
+        demo: "Réserver une démo"
+      },
+      footer: {
+        rights: "© EDZ Smart System. Tous droits réservés",
+        contact: "Contactez-nous"
       }
     }
   };
 
   const t = translations[language];
-
-  // Asset Integration (using existing assets)
-  const assets = {
-    screenshots: {
-      teacherDashboard: '/assets/asset-1.png', // Teacher dashboard screenshot
-      studentGame: '/assets/asset-2.png', // Student playing game
-      analytics: '/assets/asset-3.png', // Analytics dashboard
-      mobileApp: '/assets/asset-4.png', // Mobile app interface
-      classManagement: '/assets/asset-5.png', // Class management view
-      finance: '/assets/finance.png', // Finance management (replacing parent portal)
-      model3d: '/assets/model-3d.png', // 3D model management
-      threeD: '/assets/3d.png' // 3D learning interface
-    },
-    demos: {
-      gamePlay: '/assets/asset-7.mp4', // Gameplay video
-      teacherDemo: '/assets/asset-8.mp4', // Teacher workflow demo
-      studentExperience: '/assets/asset-9.mp4' // Student experience demo
-    },
-    icons: {
-      gameIcon: '/assets/asset-10.svg', // Game icon
-      teacherIcon: '/assets/asset-11.svg', // Teacher icon
-      studentIcon: '/assets/asset-12.svg', // Student icon
-      financeIcon: '/assets/asset-13.svg' // Finance icon
-    }
-  };
-
-  // Screenshot Gallery Data (Linear/Notion style)
-  const screenshotGallery = [
-    {
-      id: 'teacher-dashboard',
-      title: 'Teacher Dashboard',
-      description: 'Real-time class monitoring and student progress tracking',
-      image: assets.screenshots.teacherDashboard,
-      category: 'Management',
-      stats: { students: 24, classes: 3, progress: '89%' },
-      features: ['Live student status', 'Progress tracking', 'Class management']
-    },
-    {
-      id: 'student-game',
-      title: 'Student Learning',
-      description: 'Interactive games and engaging learning experiences',
-      image: assets.screenshots.studentGame,
-      category: 'Learning',
-      stats: { games: 15, score: '92%', streak: '7 days' },
-      features: ['Interactive games', 'Progress tracking', 'Achievements']
-    },
-    {
-      id: 'analytics',
-      title: 'Analytics Dashboard',
-      description: 'Comprehensive insights and performance metrics',
-      image: assets.screenshots.analytics,
-      category: 'Insights',
-      stats: { improvement: '+18%', engagement: '94%', completion: '87%' },
-      features: ['Performance metrics', 'Learning analytics', 'Progress reports']
-    },
-    {
-      id: 'mobile-app',
-      title: 'Mobile Experience',
-      description: 'Seamless learning on any device, anywhere',
-      image: assets.screenshots.mobileApp,
-      category: 'Mobile',
-      stats: { downloads: '2.1k', rating: '4.8', users: '1.2k' },
-      features: ['Cross-platform', 'Offline mode', 'Push notifications']
-    },
-    {
-      id: 'class-management',
-      title: 'Class Management',
-      description: 'Organize and manage multiple classes efficiently',
-      image: assets.screenshots.classManagement,
-      category: 'Organization',
-      stats: { classes: 8, students: 156, attendance: '96%' },
-      features: ['Class organization', 'Student management', 'Attendance tracking']
-    },
-    {
-      id: 'finance-management',
-      title: 'Finance Management',
-      description: 'Comprehensive financial tracking and payment management',
-      image: assets.screenshots.finance,
-      category: 'Finance',
-      stats: { payments: 156, revenue: '$12.5k', transactions: 89 },
-      features: ['Payment tracking', 'Financial reports', 'Revenue analytics']
-    },
-    {
-      id: 'model-3d',
-      title: '3D Model Management',
-      description: 'Interactive 3D learning models and educational content',
-      image: assets.screenshots.model3d,
-      category: '3D Learning',
-      stats: { models: 45, downloads: 234, engagement: '92%' },
-      features: ['3D model library', 'Interactive content', 'Educational simulations']
-    }
-  ];
-
-  // Dynamic Demo Content (Stripe-style)
-  const demoContent = [
-    {
-      id: 'teacher-dashboard',
-      title: t.features.management,
-      description: t.features.managementDesc,
-      image: assets.screenshots.teacherDashboard,
-      stats: {
-        label: 'Active Classes',
-        value: liveStats.schools,
-        change: '+12%'
-      },
-      features: ['Real-time monitoring', 'Student progress', 'Class management']
-    },
-    {
-      id: 'student-game',
-      title: t.features.interactive,
-      description: t.features.interactiveDesc,
-      image: assets.screenshots.studentGame,
-      stats: {
-        label: 'Games Played Today',
-        value: liveStats.gamesPlayed,
-        change: '+8%'
-      },
-      features: ['Interactive learning', 'Gamification', 'Progress tracking']
-    },
-    {
-      id: 'analytics',
-      title: t.features.analytics,
-      description: t.features.analyticsDesc,
-      image: assets.screenshots.analytics,
-      stats: {
-        label: 'Students Online',
-        value: liveStats.students,
-        change: '+15%'
-      },
-      features: ['Performance insights', 'Learning analytics', 'Progress reports']
-    }
-  ];
-
-  // Mission and About Data
-  const missionData = {
-    title: t.mission.title,
-    subtitle: t.mission.subtitle,
-    description: t.mission.description,
-    values: [
-      {
-        icon: <Heart className="w-8 h-8" />,
-        title: t.mission.values[0].title,
-        description: t.mission.values[0].description
-      },
-      {
-        icon: <Lightbulb className="w-8 h-8" />,
-        title: t.mission.values[1].title,
-        description: t.mission.values[1].description
-      },
-      {
-        icon: <Users className="w-8 h-8" />,
-        title: t.mission.values[2].title,
-        description: t.mission.values[2].description
-      }
-    ]
-  };
-
-  // Gamification Features
-  const gamificationFeatures = [
-    {
-      icon: <Award className="w-8 h-8" />,
-      title: t.gamification.achievement,
-      description: t.gamification.achievementDesc,
-      color: "from-yellow-400 to-orange-500"
-    },
-    {
-      icon: <Target className="w-8 h-8" />,
-      title: t.gamification.progress,
-      description: t.gamification.progressDesc,
-      color: "from-green-400 to-emerald-500"
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: t.gamification.feedback,
-      description: t.gamification.feedbackDesc,
-      color: "from-blue-400 to-cyan-500"
-    },
-    {
-      icon: <Brain className="w-8 h-8" />,
-      title: t.gamification.adaptive,
-      description: t.gamification.adaptiveDesc,
-      color: "from-purple-400 to-pink-500"
-    }
-  ];
-
-  // Success Stories
-  const successStories = [
-    {
-      quote: "MadrassaPlay transformed our school's engagement rates by 300%. Students actually look forward to learning now!",
-      author: "Dr. Sarah Ahmed",
-      role: "Principal",
-      school: "Al-Noor International School",
-      image: "SA",
-      stats: "300% engagement increase"
-    },
-    {
-      quote: "The 3D learning features made complex science concepts click for my students. Test scores improved dramatically.",
-      author: "Mr. Hassan Ali",
-      role: "Science Teacher",
-      school: "Riyadh Academy",
-      image: "HA",
-      stats: "85% test score improvement"
-    },
-    {
-      quote: "Finally, a platform that makes learning fun for my kids while giving me peace of mind about their progress.",
-      author: "Mrs. Fatima Al-Rashid",
-      role: "Parent",
-      school: "Dubai Modern School",
-      image: "FA",
-      stats: "Parent satisfaction: 98%"
-    }
-  ];
-
-  // FAQ Data
-  const faqData = [
-    {
-      question: "How does MadrassaPlay integrate with existing school systems?",
-      answer: "MadrassaPlay offers seamless integration with popular Learning Management Systems (LMS) and Student Information Systems (SIS). We provide APIs and direct integrations with platforms like Google Classroom, Microsoft Teams, and Canvas."
-    },
-    {
-      question: "What devices are supported for student access?",
-      answer: "MadrassaPlay works on all modern devices including tablets, smartphones, laptops, and desktop computers. Our responsive design ensures optimal experience across all screen sizes."
-    },
-    {
-      question: "How secure is student data on your platform?",
-      answer: "We take data security seriously. All data is encrypted in transit and at rest, we're GDPR and COPPA compliant, and we undergo regular security audits. Student privacy is our top priority."
-    },
-    {
-      question: "Can teachers create custom content and games?",
-      answer: "Absolutely! Our platform includes powerful content creation tools that allow teachers to build custom games, quizzes, and interactive lessons tailored to their curriculum and teaching style."
-    },
-    {
-      question: "What support is available for schools and teachers?",
-      answer: "We provide comprehensive support including video tutorials, live training sessions, dedicated account managers for larger schools, and 24/7 technical support for premium users."
-    },
-    {
-      question: "How does the pricing work for different school sizes?",
-      answer: "We offer flexible pricing based on the number of students and features needed. Small schools can start with our free tier, while larger institutions can choose from our Pro or Enterprise plans with volume discounts."
-    }
-  ];
-
-  // Audience-specific benefits
-  const audienceBenefits = [
-    {
-      icon: <School className="w-12 h-12" />,
-      title: t.audience.schools,
-      subtitle: t.audience.schoolsSubtitle,
-      benefits: [
-        "Centralized student and teacher management",
-        "Comprehensive analytics and reporting",
-        "Multi-campus support and administration",
-        "Integration with existing school systems",
-        "Custom branding and white-label options"
-      ],
-      color: "from-blue-500 to-blue-600"
-    },
-    {
-      icon: <GraduationCap className="w-12 h-12" />,
-      title: t.audience.teachers,
-      subtitle: t.audience.teachersSubtitle,
-      benefits: [
-        "Easy-to-use content creation tools",
-        "Real-time student progress monitoring",
-        "Automated grading and feedback systems",
-        "Collaborative lesson planning",
-        "Professional development resources"
-      ],
-      color: "from-green-500 to-green-600"
-    },
-    {
-      icon: <BookMarked className="w-12 h-12" />,
-      title: t.audience.students,
-      subtitle: t.audience.studentsSubtitle,
-      benefits: [
-        "Interactive games and challenges",
-        "Personalized learning paths",
-        "3D immersive experiences",
-        "Peer collaboration tools",
-        "Achievement and reward systems"
-      ],
-      color: "from-purple-500 to-purple-600"
-    },
-    {
-      icon: <UserCheck className="w-12 h-12" />,
-      title: t.audience.parents,
-      subtitle: t.audience.parentsSubtitle,
-      benefits: [
-        "Real-time progress tracking",
-        "Detailed performance reports",
-        "Communication with teachers",
-        "Learning goal setting",
-        "Safe and secure platform access"
-      ],
-      color: "from-orange-500 to-orange-600"
-    }
-  ];
-
-  const features = [
-    {
-      icon: <Gamepad2 className="w-6 h-6" />,
-      title: t.features.interactive,
-      description: t.features.interactiveDesc,
-      component: <GameVisualization />
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      title: t.features.management,
-      description: t.features.managementDesc,
-      component: (
-        <div className="flex items-center justify-center h-full">
-          <div className="grid grid-cols-3 gap-2">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg opacity-80" />
-            ))}
-          </div>
-        </div>
-      )
-    },
-    {
-      icon: <BookOpen className="w-6 h-6" />,
-      title: t.features.content,
-      description: t.features.contentDesc,
-      component: (
-        <div className="flex flex-col space-y-2 p-4">
-          <div className="h-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded w-3/4" />
-          <div className="h-2 bg-gradient-to-r from-green-400 to-green-600 rounded w-1/2" />
-          <div className="h-2 bg-gradient-to-r from-purple-400 to-purple-600 rounded w-5/6" />
-        </div>
-      )
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6" />,
-      title: t.features.analytics,
-      description: t.features.analyticsDesc,
-      component: <AnalyticsChart />
-    }
-  ];
 
   const handleGetStarted = () => {
     if (user) {
@@ -794,157 +724,82 @@ const LandingPage = () => {
     navigate('/login');
   };
 
-  const handleDashboard = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/login');
-    }
-  };
-
-  const handleProfile = () => {
-    if (user) {
-      navigate('/profile');
-    } else {
-      navigate('/login');
-    }
-  };
-
   return (
-    <div className={`min-h-screen bg-white ${language === 'ar' ? 'rtl' : 'ltr'}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-white ${language === 'ar' ? 'rtl font-arabic' : 'ltr'} md:scroll-smooth overflow-x-hidden md:scroll-snap-y-mandatory`} dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ scrollBehavior: 'smooth' }}>
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6">
+      <nav className={`fixed top-0 w-full bg-white/90 backdrop-blur-lg z-50 transition-transform duration-300 ${hasScrolled ? '-translate-y-full' : 'translate-y-0'} shadow-sm`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
+            {/* Logo */}
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-lg">W</span>
               </div>
-              <span className="font-semibold text-gray-900">MadrassaPlay</span>
+              <span className="font-bold text-xl text-gray-900">WajibET</span>
             </div>
 
-            <div className="hidden md:flex items-center space-x-6">
-              {/* Features Dropdown */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => setNavbarDropdown(navbarDropdown === 'features' ? null : 'features')}
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <span>{t.nav.features}</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                {navbarDropdown === 'features' && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <a href="#features" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">All Features</a>
-                    <a href="#demo" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Live Demo</a>
-                    <a href="#pricing" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Pricing</a>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">For Teachers</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">For Students</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">For Schools</a>
-                  </div>
-                )}
-              </div>
-
-              {/* Solutions Dropdown */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => setNavbarDropdown(navbarDropdown === 'solutions' ? null : 'solutions')}
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <span>Solutions</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                {navbarDropdown === 'solutions' && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">K-12 Education</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Higher Education</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Corporate Training</a>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Remote Learning</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Hybrid Learning</a>
-                  </div>
-                )}
-              </div>
-
-              {/* Resources Dropdown */}
-              <div className="relative dropdown-container">
-                <button
-                  onClick={() => setNavbarDropdown(navbarDropdown === 'resources' ? null : 'resources')}
-                  className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <span>Resources</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                {navbarDropdown === 'resources' && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <a href="#faq" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">FAQ</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Documentation</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Tutorials</a>
-                    <div className="border-t border-gray-100 my-2"></div>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Blog</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Case Studies</a>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Support</a>
-                  </div>
-                )}
-              </div>
-
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8 rtl:space-x-reverse">
+              <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+                {t.nav.features}
+              </a>
+              <a href="#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+                {t.nav.how}
+              </a>
+              <a href="#testimonials" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+                {t.nav.testimonials}
+              </a>
+              
               {/* Language Switcher */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setLanguage('fr')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    language === 'fr' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  FR
-                </button>
+              <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <button
                   onClick={() => setLanguage('ar')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     language === 'ar' 
-                      ? 'bg-blue-500 text-white' 
+                      ? 'bg-blue-600 text-white shadow-md' 
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   عربي
+                </button>
+                <button
+                  onClick={() => setLanguage('fr')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    language === 'fr' 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  FR
                 </button>
               </div>
               
               {user ? (
                 <>
                   <button
-                    onClick={handleDashboard}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                    onClick={() => navigate('/dashboard')}
+                    className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
                   >
                     {t.nav.dashboard}
                   </button>
                   <button
-                    onClick={handleProfile}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                    onClick={handleGetStarted}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-lg hover:shadow-lg transition-all font-medium"
                   >
-                    {t.nav.profile}
-                  </button>
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    {t.nav.logout}
+                    {t.nav.getStarted}
                   </button>
                 </>
               ) : (
                 <>
                   <button
                     onClick={handleLogin}
-                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                    className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
                   >
                     {t.nav.login}
                   </button>
                   <button
                     onClick={handleGetStarted}
-                    className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-lg hover:shadow-lg transition-all font-medium"
                   >
                     {t.nav.getStarted}
                   </button>
@@ -952,79 +807,69 @@ const LandingPage = () => {
               )}
             </div>
 
+            {/* Mobile Menu Button */}
             <button
-              className="md:hidden"
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
+        {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-100">
-            <div className="px-6 py-4 space-y-4">
-              <a href="#features" className="block text-gray-600">{t.nav.features}</a>
-              <a href="#demo" className="block text-gray-600">{t.nav.demo}</a>
-              <a href="#pricing" className="block text-gray-600">{t.nav.pricing}</a>
-              <a href="#faq" className="block text-gray-600">{t.nav.faq}</a>
+          <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+            <div className="px-4 py-4 space-y-3">
+              <a href="#features" className="block text-gray-700 hover:text-blue-600 font-medium py-2">
+                {t.nav.features}
+              </a>
+              <a href="#how-it-works" className="block text-gray-700 hover:text-blue-600 font-medium py-2">
+                {t.nav.how}
+              </a>
+              <a href="#testimonials" className="block text-gray-700 hover:text-blue-600 font-medium py-2">
+                {t.nav.testimonials}
+              </a>
               
-              {/* Mobile Language Switcher */}
-              <div className="flex items-center space-x-2 py-2">
-                <button
-                  onClick={() => setLanguage('fr')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    language === 'fr' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  FR
-                </button>
+              <div className="flex items-center space-x-2 rtl:space-x-reverse py-2">
                 <button
                   onClick={() => setLanguage('ar')}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    language === 'ar' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100 text-gray-600'
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${
+                    language === 'ar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
                   }`}
                 >
                   عربي
                 </button>
+                <button
+                  onClick={() => setLanguage('fr')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${
+                    language === 'fr' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  FR
+                </button>
               </div>
               
               {user ? (
-                <>
-                  <button
-                    onClick={handleDashboard}
-                    className="block w-full text-left text-gray-600"
-                  >
-                    {t.nav.dashboard}
-                  </button>
-                  <button
-                    onClick={handleProfile}
-                    className="block w-full text-left text-gray-600"
-                  >
-                    {t.nav.profile}
-                  </button>
-                  <button
-                    onClick={() => navigate('/login')}
-                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg"
-                  >
-                    {t.nav.logout}
-                  </button>
-                </>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium"
+                >
+                  {t.nav.dashboard}
+                </button>
               ) : (
                 <>
                   <button
                     onClick={handleLogin}
-                    className="block w-full text-left text-gray-600"
+                    className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium"
                   >
                     {t.nav.login}
                   </button>
                   <button
                     onClick={handleGetStarted}
-                    className="w-full bg-black text-white px-4 py-2 rounded-lg"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium"
                   >
                     {t.nav.getStarted}
                   </button>
@@ -1035,225 +880,471 @@ const LandingPage = () => {
         )}
       </nav>
 
-      {/* Hero Section with Live Stats */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h1 className={`text-5xl md:text-7xl font-bold text-gray-900 mb-8 leading-tight ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+      {/* Hero Section */}
+      <section ref={heroRef} className="relative min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 overflow-hidden md:scroll-snap-align-start">
+        {/* Optimized Background Animation */}
+        <div className="absolute inset-0">
+          <HeroVisualization />
+        </div>
+
+        <div className="section-content relative max-w-7xl mx-auto py-8 md:py-0">
+          <div className="text-center mb-12">
+            {/* Live Stats Badge */}
+            <div className="inline-flex items-center space-x-2 rtl:space-x-reverse bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium mb-8 animate-pulse">
+              <Sparkles className="w-4 h-4" />
+              <span>{liveStats.students.toLocaleString()} {language === 'ar' ? 'طالب نشط الآن' : 'étudiants actifs'}</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               {t.hero.title}
               <br />
-              <span className="text-gray-400">{t.hero.subtitle}</span>
+              <span className="text-indigo-600">
+                {t.hero.subtitle}
+              </span>
             </h1>
-            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+            
+            <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               {t.hero.description}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={handleGetStarted}
-                className="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
+                className="group bg-indigo-600 text-white px-8 py-4 rounded-xl hover:shadow-2xl hover:bg-indigo-700 transition-all duration-300 font-semibold text-lg flex items-center space-x-2 rtl:space-x-reverse"
               >
-                <span>{t.hero.startTrial}</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>{t.hero.startFree}</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
               </button>
-              <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg hover:border-gray-400 transition-colors">
-                {t.hero.watchDemo}
+              <button className="group border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all font-semibold text-lg flex items-center space-x-2 rtl:space-x-reverse">
+                <Play className="w-5 h-5" />
+                <span>{t.hero.watchDemo}</span>
               </button>
             </div>
           </div>
 
-          {/* Live Stats Dashboard (Stripe-style) */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-16">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {liveStats.students.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-600">Students Active</div>
-                <div className="text-xs text-green-600 mt-1">+12% from yesterday</div>
+          {/* Live Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <Users className="w-8 h-8 text-indigo-600" />
+                <span className="text-xs text-green-600 font-medium">+12%</span>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {liveStats.teachers}
-                </div>
-                <div className="text-sm text-gray-600">Teachers Online</div>
-                <div className="text-xs text-green-600 mt-1">+5% from yesterday</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {liveStats.students.toLocaleString()}
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {liveStats.schools}
-                </div>
-                <div className="text-sm text-gray-600">Schools Connected</div>
-                <div className="text-xs text-green-600 mt-1">+2 this week</div>
+              <div className="text-sm text-gray-600">{language === 'ar' ? 'طالب نشط' : 'Étudiants actifs'}</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <Award className="w-8 h-8 text-cyan-600" />
+                <span className="text-xs text-green-600 font-medium">+8%</span>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {liveStats.gamesPlayed.toLocaleString()}
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {liveStats.teachers}
+              </div>
+              <div className="text-sm text-gray-600">{language === 'ar' ? 'معلم' : 'Enseignants'}</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <Gamepad2 className="w-8 h-8 text-green-600" />
+                <span className="text-xs text-green-600 font-medium">+15%</span>
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {liveStats.games}
+              </div>
+              <div className="text-sm text-gray-600">{language === 'ar' ? 'لعبة تعليمية' : 'Jeux éducatifs'}</div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+              <div className="flex items-center justify-between mb-2">
+                <Layers className="w-8 h-8 text-amber-600" />
+                <span className="text-xs text-green-600 font-medium">+20%</span>
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">
+                {liveStats.models3D}
+              </div>
+              <div className="text-sm text-gray-600">{language === 'ar' ? 'مجسم 3D' : 'Modèles 3D'}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Problem & Solution Section */}
+      <section ref={problemRef} className="min-h-screen md:h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              {t.problem.title}
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              {t.problem.subtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+            {/* Problem Side */}
+            <div className="space-y-8">
+              <div className="bg-red-50 border-l-4 border-red-500 p-8 rounded-r-xl shadow-lg">
+                <div className="flex items-center mb-6">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4 rtl:ml-4 rtl:mr-0">
+                    <X className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-red-900">{language === 'ar' ? 'التحديات' : 'Les défis'}</h3>
                 </div>
-                <div className="text-sm text-gray-600">Games Played</div>
-                <div className="text-xs text-green-600 mt-1">+18% from yesterday</div>
+                <ul className="space-y-4">
+                  {t.problem.issues.map((issue, index) => (
+                    <li key={index} className="flex items-start space-x-3 rtl:space-x-reverse text-red-800">
+                      <X className="w-5 h-5 flex-shrink-0 mt-1" />
+                      <span className="leading-relaxed">{issue}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Problem Statistics */}
+              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                  {language === 'ar' ? 'إحصائيات المشكلة' : 'Statistiques du problème'}
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">70%</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'ملل الطلاب' : 'Élèves ennuyés'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">45%</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'انخفاض التفاعل' : 'Faible interaction'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">60%</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'صعوبة المتابعة' : 'Suivi difficile'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Solution Side */}
+            <div className="space-y-8">
+              <div className="bg-green-50 border-l-4 border-green-500 p-8 rounded-r-xl shadow-lg">
+                <div className="flex items-center mb-6">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 rtl:ml-4 rtl:mr-0">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-900">{t.problem.solution}</h3>
+                </div>
+                <ul className="space-y-4">
+                  {t.problem.solutionPoints.map((point, index) => (
+                    <li key={index} className="flex items-start space-x-3 rtl:space-x-reverse text-green-800">
+                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-1 text-green-600" />
+                      <span className="leading-relaxed font-medium">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Solution Statistics */}
+              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                  {language === 'ar' ? 'نتائج WajibET' : 'Résultats WajibET'}
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{t.problem.stats.engagement}</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'زيادة التفاعل' : 'Interaction +'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{t.problem.stats.retention}</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'تحسين الاحتفاظ' : 'Rétention +'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{t.problem.stats.satisfaction}</div>
+                    <div className="text-sm text-gray-600">
+                      {language === 'ar' ? 'رضا المستخدمين' : 'Satisfaction'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Dynamic Features Section (Stripe-style) */}
-      <section id="features" className="py-20 px-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
+      {/* Main Features Section */}
+      <section ref={featuresRef} id="features" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
               {t.features.title}
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               {t.features.subtitle}
             </p>
           </div>
-          
-          {/* Interactive Feature Tabs */}
-          <div className="mb-12">
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {demoContent.map((demo, index) => (
-                <button
-                  key={demo.id}
-                  onClick={() => setActiveDemo(index)}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                    activeDemo === index
-                      ? 'bg-black text-white shadow-lg'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  {demo.title}
-                </button>
-              ))}
-            </div>
 
-            {/* Active Demo Display */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
-                <div>
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl text-white">
-                      {demoContent[activeDemo].id === 'teacher-dashboard' && <Users className="w-6 h-6" />}
-                      {demoContent[activeDemo].id === 'student-game' && <Gamepad2 className="w-6 h-6" />}
-                      {demoContent[activeDemo].id === 'analytics' && <BarChart3 className="w-6 h-6" />}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900">{demoContent[activeDemo].title}</h3>
-                      <p className="text-gray-600">{demoContent[activeDemo].description}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Live Stats for Active Demo */}
-                  <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-3xl font-bold text-gray-900">
-                          {demoContent[activeDemo].stats.value.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-gray-600">{demoContent[activeDemo].stats.label}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-green-600">
-                          {demoContent[activeDemo].stats.change}
-                        </div>
-                        <div className="text-xs text-gray-500">vs yesterday</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Feature List */}
-                  <div className="space-y-3">
-                    {demoContent[activeDemo].features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-gray-700">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {t.features.list.map((feature, index) => (
+              <div 
+                key={index}
+                className="group bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-2xl hover:border-indigo-200 transition-all duration-300"
+              >
+                <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  {index === 0 && <BookOpen className="w-7 h-7 text-white" />}
+                  {index === 1 && <Gamepad2 className="w-7 h-7 text-white" />}
+                  {index === 2 && <Target className="w-7 h-7 text-white" />}
+                  {index === 3 && <Layers className="w-7 h-7 text-white" />}
+                  {index === 4 && <BarChart3 className="w-7 h-7 text-white" />}
                 </div>
-
-                {/* Demo Image/Video Placeholder */}
-                <div className="relative">
-                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Play className="w-8 h-8 text-gray-600" />
-                      </div>
-                      <p className="text-gray-600 font-medium">Demo: {demoContent[activeDemo].title}</p>
-                      <p className="text-sm text-gray-500 mt-2">Asset: {assets.screenshots.teacherDashboard}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Overlay Stats */}
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2">
-                    <div className="text-xs text-gray-600">Live Demo</div>
-                    <div className="text-sm font-semibold text-gray-900">
-                      {demoContent[activeDemo].stats.value.toLocaleString()}
-                    </div>
-                  </div>
-                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 3D Interactive Learning Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
+      {/* 3D Viewer Showcase Section */}
+      <section ref={viewer3DRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="section-content relative max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Text Content */}
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                3D Interactive Learning
+              <div className="inline-block bg-blue-500/20 backdrop-blur-sm text-blue-200 px-4 py-2 rounded-full text-sm font-medium mb-6">
+                {t.viewer3D.subtitle}
+              </div>
+              
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6 leading-tight">
+                {t.viewer3D.title}
               </h2>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Bring complex concepts to life with immersive 3D visualizations. 
-                From molecular structures to historical artifacts, make abstract ideas tangible.
+              
+              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+                {t.viewer3D.description}
               </p>
+
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Interactive 3D models</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Real-time manipulation</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Cross-platform support</span>
+                {t.viewer3D.capabilities.map((capability, index) => (
+                  <div key={index} className="flex items-start space-x-3 rtl:space-x-reverse">
+                    <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0 mt-1" />
+                    <span className="text-blue-100 text-lg">{capability}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleGetStarted}
+                className="mt-8 bg-white text-blue-900 px-8 py-4 rounded-xl hover:shadow-2xl transition-all font-semibold text-lg inline-flex items-center space-x-2 rtl:space-x-reverse group"
+              >
+                <span>{language === 'ar' ? 'جرب 3D Viewer الآن' : 'Essayer le visualiseur 3D'}</span>
+                <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+
+            {/* 3D Viewer Demo */}
+            <div className="relative">
+              <div className="aspect-square bg-white/10 backdrop-blur-sm rounded-3xl p-4 shadow-2xl border border-white/20">
+                <div ref={threeViewerRef} className="w-full h-full rounded-2xl" />
+              </div>
+              
+              {/* Floating Info Cards */}
+              <div className="absolute -top-6 -right-6 bg-white text-gray-900 px-4 py-3 rounded-xl shadow-lg">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <Zap className="w-5 h-5 text-yellow-500" />
+                  <span className="font-semibold">{language === 'ar' ? 'تفاعلي 100%' : 'Interactif 100%'}</span>
                 </div>
               </div>
-            </div>
-            <div className="h-96 bg-gray-50 rounded-2xl">
-              <div ref={threeRef} className="w-full h-full rounded-2xl" />
+              
+              <div className="absolute -bottom-6 -left-6 bg-white text-gray-900 px-4 py-3 rounded-xl shadow-lg">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <Eye className="w-5 h-5 text-blue-500" />
+                  <span className="font-semibold">{liveStats.models3D}+ {language === 'ar' ? 'مجسم' : 'modèles'}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Linear/Notion Style Screenshots Gallery */}
-      <section id="demo" className="py-20 px-6 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
+      {/* How It Works Section */}
+      <section ref={howItWorksRef} id="how-it-works" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              See it in action
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              {t.howItWorks.title}
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Real screenshots from real classrooms. Experience the platform through the eyes of teachers, students, and administrators.
+              {t.howItWorks.subtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {t.howItWorks.steps.map((step, index) => (
+              <div
+                key={index}
+                className={`relative bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${
+                  activeStep === index 
+                    ? 'border-indigo-500 shadow-2xl scale-105' 
+                    : 'border-gray-100 hover:border-indigo-200'
+                }`}
+              >
+                {/* Step Number */}
+                <div className={`absolute -top-4 ${language === 'ar' ? '-right-4' : '-left-4'} w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
+                  activeStep === index
+                    ? 'bg-indigo-600 animate-pulse'
+                    : 'bg-gray-400'
+                }`}>
+                  {index + 1}
+                </div>
+
+                {/* Icon */}
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 transition-all ${
+                  activeStep === index
+                    ? 'bg-indigo-600'
+                    : 'bg-gray-100'
+                }`}>
+                  {index === 0 && <BookOpen className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
+                  {index === 1 && <Target className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
+                  {index === 2 && <Layers className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
+                  {index === 3 && <TrendingUp className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{step.description}</p>
+
+                {/* Progress Indicator */}
+                {activeStep === index && (
+                  <div className="mt-6 h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-600 animate-pulse"></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Step Indicators */}
+          <div className="flex justify-center mt-12 space-x-3 rtl:space-x-reverse">
+            {t.howItWorks.steps.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveStep(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  activeStep === index
+                    ? 'bg-indigo-600 w-8'
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to step ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section ref={testimonialsRef} id="testimonials" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              {t.testimonials.title}
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {t.testimonials.subtitle}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {t.testimonials.list.map((testimonial, index) => (
+              <div
+                key={index}
+                className={`bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${
+                  activeTestimonial === index
+                    ? 'border-indigo-500 shadow-2xl scale-105'
+                    : 'border-gray-100 hover:border-indigo-200'
+                }`}
+              >
+                {/* Quote Icon */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex space-x-1 rtl:space-x-reverse">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <MessageSquare className="w-8 h-8 text-indigo-500 opacity-30" />
+                </div>
+
+                <blockquote className="text-gray-700 text-lg mb-6 leading-relaxed italic">
+                  "{testimonial.quote}"
+                </blockquote>
+
+                <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                  <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {testimonial.author.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-900">{testimonial.author}</div>
+                    <div className="text-sm text-gray-600">{testimonial.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Testimonial Indicators */}
+          <div className="flex justify-center mt-12 space-x-3 rtl:space-x-reverse">
+            {t.testimonials.list.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTestimonial(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  activeTestimonial === index
+                    ? 'bg-indigo-600 w-8'
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`View testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+      <section ref={screenshotsRef} className="min-h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-900 via-gray-900 to-gray-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto w-full">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-whitesmoke mb-4">
+              {language === 'ar' ? 'شاهد المنصة في العمل' : 'Voir la plateforme en action'}
+            </h2>
+            <p className="text-xl text-gray-200 max-w-2xl mx-auto">
+              {language === 'ar' 
+                ? 'لقطات حقيقية من فصول دراسية حقيقية. اختبر المنصة من خلال عيون المعلمين والطلاب والإداريين'
+                : 'Captures réelles de vraies salles de classe. Découvrez la plateforme à travers les yeux des enseignants, étudiants et administrateurs'
+              }
             </p>
           </div>
           
           {/* Screenshot Navigation Tabs */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             {screenshotGallery.map((screenshot, index) => (
               <button
                 key={screenshot.id}
                 onClick={() => setActiveScreenshot(index)}
                 className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
                   activeScreenshot === index
-                    ? 'bg-black text-white shadow-lg'
-                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-white/10 backdrop-blur-sm text-gray-200 hover:bg-white/20 border border-white/20'
                 }`}
               >
                 {screenshot.title}
@@ -1262,18 +1353,34 @@ const LandingPage = () => {
           </div>
 
           {/* Main Screenshot Display */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="relative">
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => setActiveScreenshot(prev => (prev - 1 + screenshotGallery.length) % screenshotGallery.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all duration-300"
+              aria-label="Previous screenshot"
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-700" />
+            </button>
+            <button
+              onClick={() => setActiveScreenshot(prev => (prev + 1) % screenshotGallery.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-all duration-300"
+              aria-label="Next screenshot"
+            >
+              <ChevronRight className="w-6 h-6 text-gray-700" />
+            </button>
+
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
               {/* Screenshot Image */}
-              <div className="relative bg-gray-100 min-h-[500px] flex items-center justify-center">
+              <div className="relative bg-gray-100 min-h-[400px] lg:min-h-[600px] flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center p-6 lg:p-8">
                     <img 
                       src={screenshotGallery[activeScreenshot].image} 
                       alt={screenshotGallery[activeScreenshot].title}
                       className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                       onError={(e) => {
-                        // Fallback to placeholder if image fails to load
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'block';
                       }}
@@ -1281,13 +1388,13 @@ const LandingPage = () => {
                     {/* Fallback placeholder */}
                     <div className="text-center hidden">
                       <div className="w-24 h-24 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        {screenshotGallery[activeScreenshot].id === 'teacher-dashboard' && <Monitor className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'student-game' && <Gamepad2 className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'analytics' && <BarChart3 className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'mobile-app' && <Smartphone className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'class-management' && <Users className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'finance-management' && <BarChart3 className="w-12 h-12 text-gray-600" />}
-                        {screenshotGallery[activeScreenshot].id === 'model-3d' && <BookOpen className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 0 && <Users className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 1 && <Gamepad2 className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 2 && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 3 && <Users className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 4 && <Users className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 5 && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                        {activeScreenshot === 6 && <Layers className="w-12 h-12 text-gray-600" />}
                       </div>
                       <h3 className="text-2xl font-bold text-gray-900 mb-2">
                         {screenshotGallery[activeScreenshot].title}
@@ -1296,7 +1403,7 @@ const LandingPage = () => {
                         {screenshotGallery[activeScreenshot].description}
                       </p>
                       <div className="text-sm text-gray-500">
-                        Asset: {screenshotGallery[activeScreenshot].image}
+                        {language === 'ar' ? 'ملف' : 'Fichier'}: {screenshotGallery[activeScreenshot].image}
                       </div>
                     </div>
                   </div>
@@ -1304,55 +1411,58 @@ const LandingPage = () => {
               </div>
 
               {/* Screenshot Details */}
-              <div className="p-8">
+              <div className="p-6 lg:p-10">
                 <div className="mb-6">
-                  <div className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                  <div className="inline-block bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
                     {screenshotGallery[activeScreenshot].category}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
                     {screenshotGallery[activeScreenshot].title}
                   </h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">
+                  <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
                     {screenshotGallery[activeScreenshot].description}
                   </p>
                 </div>
 
                 {/* Feature List */}
-                <div className="mb-8">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Key Features</h4>
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                    {language === 'ar' ? 'الميزات الرئيسية' : 'Fonctionnalités clés'}
+                  </h4>
                   <div className="space-y-3">
                     {screenshotGallery[activeScreenshot].features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-3">
+                      <div key={index} className="flex items-center space-x-3 rtl:space-x-reverse">
                         <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
+                        <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3 lg:gap-4">
                   {Object.entries(screenshotGallery[activeScreenshot].stats).map(([key, value]) => (
-                    <div key={key} className="text-center p-4 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-gray-900">{value}</div>
-                      <div className="text-sm text-gray-600 capitalize">{key}</div>
+                    <div key={key} className="text-center p-3 lg:p-4 bg-gray-50 rounded-lg">
+                      <div className="text-xl lg:text-2xl font-bold text-gray-900">{value}</div>
+                      <div className="text-xs lg:text-sm text-gray-600 capitalize">{key}</div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           </div>
+          </div>
 
           {/* Screenshot Thumbnails */}
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
             {screenshotGallery.map((screenshot, index) => (
               <button
                 key={screenshot.id}
                 onClick={() => setActiveScreenshot(index)}
                 className={`relative rounded-lg overflow-hidden transition-all duration-300 ${
                   activeScreenshot === index
-                    ? 'ring-2 ring-black shadow-lg'
-                    : 'hover:shadow-md'
+                    ? 'ring-2 ring-indigo-600 shadow-lg scale-100'
+                    : 'hover:shadow-md scale-50 opacity-40'
                 }`}
               >
                 <div className="aspect-video bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -1361,25 +1471,23 @@ const LandingPage = () => {
                     alt={screenshot.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      // Fallback to icon if image fails to load
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
                   {/* Fallback icon */}
-                  <div className="text-center hidden w-full h-full items-center justify-center">
-                    {screenshot.id === 'teacher-dashboard' && <Monitor className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'student-game' && <Gamepad2 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'analytics' && <BarChart3 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'mobile-app' && <Smartphone className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'class-management' && <Users className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'finance-management' && <BarChart3 className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    {screenshot.id === 'model-3d' && <BookOpen className="w-8 h-8 text-gray-500 mx-auto mb-2" />}
-                    <div className="text-xs text-gray-600">{screenshot.title}</div>
+                  <div className="text-center hidden w-full h-full items-center justify-center bg-gray-100">
+                    {index === 0 && <Users className="w-8 h-8 text-gray-500" />}
+                    {index === 1 && <Gamepad2 className="w-8 h-8 text-gray-500" />}
+                    {index === 2 && <BarChart3 className="w-8 h-8 text-gray-500" />}
+                    {index === 3 && <Users className="w-8 h-8 text-gray-500" />}
+                    {index === 4 && <Users className="w-8 h-8 text-gray-500" />}
+                    {index === 5 && <BarChart3 className="w-8 h-8 text-gray-500" />}
+                    {index === 6 && <Layers className="w-8 h-8 text-gray-500" />}
                   </div>
                 </div>
                 {activeScreenshot === index && (
-                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-indigo-600/20 flex items-center justify-center">
                     <CheckCircle className="w-6 h-6 text-white" />
                   </div>
                 )}
@@ -1388,337 +1496,144 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Simple pricing
-          </h2>
-          <p className="text-xl text-gray-600 mb-12">
-            Start free, scale as you grow
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-2xl p-8 border border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-              <p className="text-gray-600 mb-6">Perfect for trying out</p>
-              <div className="text-4xl font-bold text-gray-900 mb-6">$0</div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-sm">Up to 30 students</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-sm">Basic features</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-sm">Email support</span>
-                </li>
-              </ul>
-              <button className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:border-gray-400 transition-colors">
-                Start Free
-              </button>
-            </div>
-
-            <div className="bg-black rounded-2xl p-8 text-white relative">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-xs font-medium">
-                Most Popular
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Pro</h3>
-              <p className="text-gray-300 mb-6">For growing schools</p>
-              <div className="text-4xl font-bold mb-6">$9<span className="text-lg text-gray-300">/student/month</span></div>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  <span className="text-sm">Unlimited students</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  <span className="text-sm">All features including 3D</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  <span className="text-sm">Priority support</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  <span className="text-sm">Advanced analytics</span>
-                </li>
-              </ul>
-              <button
-                onClick={handleGetStarted}
-                className="w-full bg-white text-black py-3 rounded-lg hover:bg-gray-100 transition-colors font-medium"
-              >
-                Start Pro Trial
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About/Mission Section */}
-      <section className="py-20 px-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
+      {/* Audience Section */}
+      <section ref={audienceRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+        <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {missionData.title}
-            </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              {missionData.description}
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {missionData.values.map((value, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6">
-                  {value.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{value.title}</h3>
-                <p className="text-gray-600">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Gamification Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {t.gamification.title}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {t.gamification.subtitle}
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {gamificationFeatures.map((feature, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
-                <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center text-white mb-4`}>
-                  {feature.icon}
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600 text-sm">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Audience Benefits Section */}
-      <section className="py-20 px-6 bg-gray-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
               {t.audience.title}
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               {t.audience.subtitle}
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {audienceBenefits.map((audience, index) => (
-              <div key={index} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300">
-                <div className={`w-16 h-16 bg-gradient-to-br ${audience.color} rounded-2xl flex items-center justify-center text-white mb-6`}>
-                  {audience.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{audience.title}</h3>
-                <p className="text-gray-600 mb-6">{audience.subtitle}</p>
-                <ul className="space-y-3">
-                  {audience.benefits.map((benefit, benefitIndex) => (
-                    <li key={benefitIndex} className="flex items-start">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-3 mt-1 flex-shrink-0" />
-                      <span className="text-sm text-gray-600">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Success Stories Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {t.success.title}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {t.success.subtitle}
-            </p>
-          </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {successStories.map((story, index) => (
-              <div key={index} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
-                    {story.image}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{story.author}</h4>
-                    <p className="text-sm text-gray-600">{story.role}</p>
-                    <p className="text-xs text-gray-500">{story.school}</p>
-                  </div>
+            {t.audience.groups.map((group, index) => (
+              <div
+                key={index}
+                className="group bg-white rounded-2xl p-10 shadow-lg border border-gray-100 hover:shadow-2xl hover:border-indigo-200 transition-all duration-300 text-center"
+              >
+                <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                  {index === 0 && <Shield className="w-10 h-10 text-white" />}
+                  {index === 1 && <Users className="w-10 h-10 text-white" />}
+                  {index === 2 && <Users className="w-10 h-10 text-white" />}
                 </div>
-                <blockquote className="text-gray-700 italic mb-4">
-                  "{story.quote}"
-                </blockquote>
-                <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium inline-block">
-                  {story.stats}
-                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">{group.title}</h3>
+                <p className="text-gray-600 text-lg leading-relaxed">{group.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 px-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              {t.faq.title}
-            </h2>
-            <p className="text-xl text-gray-600">
-              {t.faq.subtitle}
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            {faqData.map((faq, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                <button
-                  className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  onClick={() => setFaqOpen(faqOpen === index ? null : index)}
-                >
-                  <span className="font-semibold text-gray-900">{faq.question}</span>
-                  <ChevronDown 
-                    className={`w-5 h-5 text-gray-500 transition-transform ${
-                      faqOpen === index ? 'rotate-180' : ''
-                    }`} 
-                  />
-                </button>
-                {faqOpen === index && (
-                  <div className="px-6 pb-4">
-                    <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-6 bg-black text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">
+      {/* Final CTA Section */}
+      <section ref={ctaRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white md:scroll-snap-align-start">
+        <div className="section-content max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-6 leading-tight">
             {t.cta.title}
           </h2>
-          <p className="text-xl text-gray-300 mb-8">
+          <p className="text-xl text-indigo-100 mb-10">
             {t.cta.subtitle}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
               onClick={handleGetStarted}
-              className="bg-white text-black px-8 py-4 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+              className="group bg-white text-indigo-600 px-10 py-5 rounded-xl hover:shadow-2xl transition-all duration-300 font-bold text-lg inline-flex items-center justify-center space-x-3 rtl:space-x-reverse"
             >
-              {t.cta.getStarted}
+              <span>{t.cta.button}</span>
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
             </button>
-            <button className="border border-gray-300 text-gray-300 px-8 py-4 rounded-lg hover:bg-gray-800 transition-colors">
-              {t.cta.scheduleDemo}
+            <button className="border-2 border-white text-white px-10 py-5 rounded-xl hover:bg-white hover:text-indigo-600 transition-all font-bold text-lg inline-flex items-center justify-center space-x-3 rtl:space-x-reverse">
+              <Clock className="w-6 h-6" />
+              <span>{t.cta.demo}</span>
             </button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 bg-gray-900 text-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">M</span>
+      <footer className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            {/* Brand */}
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse mb-6">
+                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xl">W</span>
                 </div>
-                <span className="font-semibold text-white">MadrassaPlay</span>
+                <span className="font-bold text-2xl">WajibET</span>
               </div>
-              <p className="text-gray-400 mb-4">
-                Transforming education through interactive learning and innovative technology.
+              <p className="text-gray-400 text-lg mb-6 leading-relaxed max-w-md">
+                {language === 'ar'
+                  ? 'منصة تعليمية مبتكرة تجمع بين الألعاب التفاعلية والمجسمات ثلاثية الأبعاد'
+                  : 'Plateforme éducative innovante combinant jeux interactifs et modèles 3D'
+                }
               </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <div className="mb-6">
+                <img
+                  src="/assets/qr-code.png"
+                  alt="QR Code"
+                  className="w-24 h-24 rounded-lg border border-gray-600"
+                />
+              </div>
+              <div className="flex space-x-4 rtl:space-x-reverse">
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-indigo-600 transition-colors" aria-label="Facebook">
                   <Facebook className="w-5 h-5" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Linkedin className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-indigo-600 transition-colors" aria-label="Instagram">
+                  <Instagram className="w-5 h-5" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Twitter className="w-5 h-5" />
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-indigo-600 transition-colors" aria-label="TikTok">
+                  <Video className="w-5 h-5" />
                 </a>
               </div>
             </div>
-            
+
+            {/* Contact */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
-                <li><a href="#demo" className="text-gray-400 hover:text-white transition-colors">Demo</a></li>
-                <li><a href="#pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Integrations</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">API</a></li>
+              <h4 className="font-bold text-lg mb-4">{t.footer.contact}</h4>
+              <ul className="space-y-3">
+                <li className="flex items-center space-x-3 rtl:space-x-reverse text-gray-400 hover:text-white transition-colors">
+                  <Mail className="w-5 h-5" />
+                  <span className="text-sm">edz_smartsystem@gmail.com</span>
+                </li>
+                <li className="flex items-center space-x-3 rtl:space-x-reverse text-gray-400 hover:text-white transition-colors">
+                  <Phone className="w-5 h-5" />
+                  <span className="text-sm">+213 795 54 44 83</span>
+                </li>
+                <li className="flex items-center space-x-3 rtl:space-x-reverse text-gray-400 hover:text-white transition-colors">
+                  <Globe className="w-5 h-5" />
+                  <span className="text-sm">www.wajibet.com</span>
+                </li>
               </ul>
             </div>
-            
+
+            {/* Quick Links */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li><a href="#faq" className="text-gray-400 hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Training</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Community</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-white mb-4">Contact</h4>
-              <ul className="space-y-2">
-                <li className="flex items-center text-gray-400">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span className="text-sm">support@madrassaplay.com</span>
-                </li>
-                <li className="flex items-center text-gray-400">
-                  <Phone className="w-4 h-4 mr-2" />
-                  <span className="text-sm">+1 (555) 123-4567</span>
-                </li>
-                <li className="flex items-center text-gray-400">
-                  <Globe className="w-4 h-4 mr-2" />
-                  <span className="text-sm">Available in 15+ languages</span>
-                </li>
+              <h4 className="font-bold text-lg mb-4">{language === 'ar' ? 'روابط سريعة' : 'Liens rapides'}</h4>
+              <ul className="space-y-3">
+                <li><a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.features}</a></li>
+                <li><a href="#how-it-works" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.how}</a></li>
+                <li><a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.testimonials}</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{language === 'ar' ? 'الدعم الفني' : 'Support technique'}</a></li>
               </ul>
             </div>
           </div>
-          
+
+          {/* Bottom Bar */}
           <div className="border-t border-gray-800 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="text-gray-400 text-sm mb-4 md:mb-0">
-                © 2025 MadrassaPlay. All rights reserved.
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <div className="text-gray-400 text-sm">
+                {t.footer.rights}
               </div>
-              <div className="flex items-center space-x-6 text-gray-400 text-sm">
-                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+              <div className="flex items-center space-x-6 rtl:space-x-reverse text-gray-400 text-sm">
+                <a href="#" className="hover:text-white transition-colors">
+                  {language === 'ar' ? 'سياسة الخصوصية' : 'Politique de confidentialité'}
+                </a>
+                <a href="#" className="hover:text-white transition-colors">
+                  {language === 'ar' ? 'الشروط والأحكام' : 'Conditions d\'utilisation'}
+                </a>
               </div>
             </div>
           </div>
@@ -1727,5 +1642,6 @@ const LandingPage = () => {
     </div>
   );
 };
+
 
 export default LandingPage;

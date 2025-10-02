@@ -1,4 +1,4 @@
-# Production Environment Variables for MadrassaPlay
+# Production Environment Variables for Wajibet
 # Copy this content to your server's .env file
 
 NODE_ENV=production

@@ -10,8 +10,9 @@ NODE_ENV=development
 PORT=5000
 
 # Database (use local MongoDB or Atlas)
+# Keep existing database name unless you plan to migrate data
 MONGO_URI=mongodb://localhost:27017/madrassaplay
-# OR for MongoDB Atlas:
+# OR for MongoDB Atlas (database name can remain 'madrassaplay'):
 # MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/madrassaplay?retryWrites=true&w=majority
 
 # JWT Configuration
@@ -157,7 +158,7 @@ nano .env.production
 cp .env.production .env
 
 # 4. Restart production
-pm2 restart madrassaplay-api
+pm2 restart wajibet-api
 ```
 
 ## 📝 **Notes**

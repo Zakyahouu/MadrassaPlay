@@ -11,15 +11,18 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      // Pick the correct backend URL
       const backendUrl = process.env.NODE_ENV === 'production'
-        ? 'http://72.60.133.119:5000'
-        : 'http://localhost:5000';
+      ? 'https://wajibet.com'     // frontend + backend same domain
+      : 'http://localhost:5000';
+    
+
 
       console.log('🔌 Connecting to Socket.IO:', backendUrl);
-
-      const newSocket = io(backendUrl, { transports: ['websocket'] });
-      setSocket(newSocket);
+      
+      const newSocket = io(backendUrl, {
+        path: '/socket.io/',        // go through Nginx proxy
+        transports: ['websocket']
+      });
 
       newSocket.on('connect', () => {
         console.log('✅ Socket connected:', newSocket.id);

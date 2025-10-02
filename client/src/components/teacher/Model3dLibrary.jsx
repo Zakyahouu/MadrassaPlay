@@ -4,7 +4,7 @@ import { AlertCircle, Box } from 'lucide-react';
 import { teacherApi } from '../../services/model3dService';
 import ModelCard from '../shared/ModelCard';
 import FilterDropdowns from '../shared/FilterDropdowns';
-import Model3dViewerModal from '../shared/Model3dViewerModal';
+import { useNavigate } from 'react-router-dom';
 
 const Model3dLibrary = () => {
   const [models, setModels] = useState([]);
@@ -14,8 +14,7 @@ const Model3dLibrary = () => {
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedTag, setSelectedTag] = useState(null);
-  const [showViewerModal, setShowViewerModal] = useState(false);
-  const [viewingModel, setViewingModel] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -61,8 +60,7 @@ const Model3dLibrary = () => {
   };
 
   const handleInspect = (model) => {
-    setViewingModel(model);
-    setShowViewerModal(true);
+    navigate(`/viewer/${model._id}`);
   };
 
   const handleShare = (model) => {
@@ -197,16 +195,7 @@ const Model3dLibrary = () => {
             </div>
           </div>
 
-          {/* 3D Model Viewer Modal */}
-          <Model3dViewerModal
-            model={viewingModel}
-            isOpen={showViewerModal}
-            onClose={() => {
-              setShowViewerModal(false);
-              setViewingModel(null);
-            }}
-            showShareButton={true}
-          />
+          {/* Full-screen viewer is used instead of modal */}
         </div>
       </div>
     </div>
