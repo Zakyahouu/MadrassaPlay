@@ -11,7 +11,7 @@ const MODEL3D_BASE_URL = import.meta.env.PROD
 // Create axios instance for 3D Model Service
 const model3dApi = axios.create({
   baseURL: MODEL3D_BASE_URL,
-  timeout: 60000,
+  timeout: 300000,
 });
 
 // Request interceptor to add JWT token from existing auth

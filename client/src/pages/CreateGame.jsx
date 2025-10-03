@@ -815,6 +815,122 @@ const CreateGame = () => {
                                                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
                                                             placeholder={field.placeholder || '+1234567890'}
                                                         />
+                                                    ) : field.type === 'array' ? (
+                                                        <div className="space-y-3">
+                                                            {/* Render existing array items */}
+                                                            {(Array.isArray(item[key]) ? item[key] : []).map((arrayItem, arrayIndex) => (
+                                                                <div key={arrayIndex} className="flex items-start gap-2">
+                                                                    {/* Simple itemType (text, number, etc) */}
+                                                                    {field.itemType && !field.itemSchema && (
+                                                                        field.itemType === 'textarea' ? (
+                                                                            <textarea
+                                                                                value={arrayItem || ''}
+                                                                                onChange={(e) => {
+                                                                                    const newArray = [...(Array.isArray(item[key]) ? item[key] : [])];
+                                                                                    newArray[arrayIndex] = e.target.value;
+                                                                                    handleContentChange(index, key, newArray);
+                                                                                }}
+                                                                                rows={field.rows || 3}
+                                                                                className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors resize-y"
+                                                                                placeholder={field.placeholder || `Enter ${field.label}`}
+                                                                            />
+                                                                        ) : (
+                                                                            <input
+                                                                                type={field.itemType === 'number' ? 'number' : 'text'}
+                                                                                value={arrayItem || ''}
+                                                                                onChange={(e) => {
+                                                                                    const newArray = [...(Array.isArray(item[key]) ? item[key] : [])];
+                                                                                    newArray[arrayIndex] = field.itemType === 'number' ? Number(e.target.value) : e.target.value;
+                                                                                    handleContentChange(index, key, newArray);
+                                                                                }}
+                                                                                className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg focus:border-indigo-400 focus:outline-none transition-colors"
+                                                                                placeholder={field.placeholder || `Enter ${field.label}`}
+                                                                            />
+                                                                        )
+                                                                    )}
+                                                                    
+                                                                    {/* Complex itemSchema (object with multiple fields) */}
+                                                                    {field.itemSchema && (
+                                                                        <div className="flex-1 grid gap-2 p-3 bg-white border border-gray-200 rounded-lg">
+                                                                            {Object.entries(field.itemSchema).map(([nestedKey, nestedField]) => (
+                                                                                <div key={nestedKey}>
+                                                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                                        {nestedField.label}
+                                                                                    </label>
+                                                                                    {nestedField.type === 'textarea' ? (
+                                                                                        <textarea
+                                                                                            value={(arrayItem && arrayItem[nestedKey]) || ''}
+                                                                                            onChange={(e) => {
+                                                                                                const newArray = [...(Array.isArray(item[key]) ? item[key] : [])];
+                                                                                                newArray[arrayIndex] = {
+                                                                                                    ...(arrayItem || {}),
+                                                                                                    [nestedKey]: e.target.value
+                                                                                                };
+                                                                                                handleContentChange(index, key, newArray);
+                                                                                            }}
+                                                                                            rows={nestedField.rows || 2}
+                                                                                            className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded focus:border-indigo-400 focus:bg-white focus:outline-none resize-y"
+                                                                                            placeholder={nestedField.placeholder || nestedField.label}
+                                                                                        />
+                                                                                    ) : (
+                                                                                        <input
+                                                                                            type={nestedField.type === 'number' ? 'number' : 'text'}
+                                                                                            value={(arrayItem && arrayItem[nestedKey]) || ''}
+                                                                                            onChange={(e) => {
+                                                                                                const newArray = [...(Array.isArray(item[key]) ? item[key] : [])];
+                                                                                                newArray[arrayIndex] = {
+                                                                                                    ...(arrayItem || {}),
+                                                                                                    [nestedKey]: nestedField.type === 'number' ? Number(e.target.value) : e.target.value
+                                                                                                };
+                                                                                                handleContentChange(index, key, newArray);
+                                                                                            }}
+                                                                                            className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded focus:border-indigo-400 focus:bg-white focus:outline-none"
+                                                                                            placeholder={nestedField.placeholder || nestedField.label}
+                                                                                        />
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {/* Remove button */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newArray = (Array.isArray(item[key]) ? item[key] : []).filter((_, i) => i !== arrayIndex);
+                                                                            handleContentChange(index, key, newArray);
+                                                                        }}
+                                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                                                                        title="Remove item"
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                            
+                                                            {/* Add new item button */}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const currentArray = Array.isArray(item[key]) ? item[key] : [];
+                                                                    let newItem;
+                                                                    if (field.itemType) {
+                                                                        newItem = field.itemType === 'number' ? 0 : '';
+                                                                    } else if (field.itemSchema) {
+                                                                        newItem = {};
+                                                                        Object.keys(field.itemSchema).forEach(k => {
+                                                                            newItem[k] = field.itemSchema[k].type === 'number' ? 0 : '';
+                                                                        });
+                                                                    } else {
+                                                                        newItem = '';
+                                                                    }
+                                                                    handleContentChange(index, key, [...currentArray, newItem]);
+                                                                }}
+                                                                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg hover:bg-gray-50 hover:border-indigo-400 transition-colors text-sm font-medium text-gray-600"
+                                                            >
+                                                                + Add {field.label || 'Item'}
+                                                            </button>
+                                                        </div>
                                                     ) : (
                                                         <input
                                                             type={field.type === 'number' ? 'number' : 'text'}

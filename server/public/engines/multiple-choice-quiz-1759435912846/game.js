@@ -1,10 +1,10 @@
 (function(){
 	let creation, settings, items=[], idx=0, score=0, timerIv, qStartMs = 0;
 	const answers = [];
-	let shuffledBackgrounds = []; // NEW: To hold the random order
 	const byId = (id) => document.getElementById(id);
+	let preloadedBackgrounds = [];
 
-	// --- Dynamic Theme Palettes for built-in backgrounds ---
+	// --- UPDATED Dynamic Theme Palettes (Based on your images) ---
 	const themes = [
 		{ bg: 1, color: '#ec4899' },  // Vibrant Pink (from 1.jpg)
 		{ bg: 2, color: '#ec4899' },  // Vibrant Pink
@@ -20,6 +20,15 @@
 		{ bg: 12, color: '#f97316' }, // Fiery Orange (from 12.jpg)
 		{ bg: 13, color: '#f97316' }  // Fiery Orange
 	];
+
+	// Preload all background images
+	const preloadBackgrounds = () => {
+		for (let i = 1; i <= 13; i++) {
+			const img = new Image();
+			img.src = `assets/${i}.jpeg`;
+			preloadedBackgrounds.push(img);
+		}
+	};
 
 	// --- Element References ---
 	const screens = { ready: byId('ready-screen'), countdown: byId('countdown-screen'), play: byId('play-screen'), done: byId('done-screen') };
@@ -50,13 +59,16 @@
 		const item = items[idx];
 		if (!item) { finish(); return; }
 
+		// Remove fade-out classes at the start of each render
+		qCard.classList.remove('fade-out');
+		optsGrid.classList.remove('fade-out');
+
 		stopTimer();
 		
 		// --- DYNAMIC THEME LOGIC ---
-		const defaultColor = '#3b82f6';
+		const defaultColor = '#3b82f6'; // Default blue
 		if (!settings.backgroundUrl) {
-			// MODIFIED: Use the pre-shuffled background order
-			const bgIndex = shuffledBackgrounds[idx % 13];
+			const bgIndex = (idx % 13) + 1;
 			document.body.style.backgroundImage = `url(assets/${bgIndex}.jpeg)`;
 			const theme = themes.find(t => t.bg === bgIndex);
 			document.documentElement.style.setProperty('--primary-color', theme ? theme.color : defaultColor);
@@ -148,22 +160,19 @@
 
 		nextBtn.classList.remove('hidden');
 		nextBtn.onclick = () => {
-			idx++;
-			render();
+			// Add fade-out effect before transitioning
+			qCard.classList.add('fade-out');
+			optsGrid.classList.add('fade-out');
+			
+			// Wait for transition to complete before rendering next question
+			setTimeout(() => {
+				idx++;
+				render();
+			}, 300); // Match CSS transition duration
 		};
 	};
 
-	const start = () => {
-		// NEW: Create and shuffle the background order for this game session
-		const backgroundIndexes = Array.from({ length: 13 }, (_, i) => i + 1);
-		shuffledBackgrounds = shuffle(backgroundIndexes);
-
-		show('play'); 
-		idx = 0; 
-		score = 0; 
-		scoreTextEl.textContent = score; 
-		render(); 
-	};
+	const start = () => { show('play'); idx = 0; score = 0; scoreTextEl.textContent = score; render(); };
 	
 	const finish = () => {
 		show('done');
@@ -182,6 +191,7 @@
 			items = Array.isArray(p.content) ? p.content : [];
 			if (settings.shuffleQuestions) items = shuffle(items);
 			if (items.length === 0) { byId('ready-screen').innerHTML = '<h2>Error: No questions provided.</h2>'; return; }
+			preloadBackgrounds(); // Preload all backgrounds
 			show('ready'); 
 			enterBtn.onclick = countdown;
 		}
