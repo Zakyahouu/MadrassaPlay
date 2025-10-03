@@ -542,8 +542,8 @@ const LandingPage = () => {
             description: "أدوات تدريس حديثة وطرق جديدة للشرح"
           },
           {
-            title: "أولياء التلاميذ",
-            description: "دعم تعلم الأبناء من المنزل بسهولة"
+            title: "التلاميذ", // changed from أولياء التلاميذ
+            description: "تدعم التلاميذ خلال مسارهم الدراسي" // changed from دعم تعلم الأبناء من المنزل بسهولة
           }
         ]
       },
@@ -692,8 +692,8 @@ const LandingPage = () => {
             description: "Outils d'enseignement modernes et nouvelles méthodes"
           },
           {
-            title: "Parents",
-            description: "Soutenir facilement l'apprentissage des enfants à la maison"
+            title: "Élèves", // changed for consistency
+            description: "Accompagne les élèves tout au long de leur parcours scolaire" // changed for consistency
           }
         ]
       },
@@ -881,7 +881,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 overflow-hidden md:scroll-snap-align-start">
+      <section ref={heroRef} className="relative min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 overflow-hidden md:scroll-snap-align-start">
         {/* Optimized Background Animation */}
         <div className="absolute inset-0">
           <HeroVisualization />
@@ -922,7 +922,7 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Live Stats Grid */}
+          {/* REMOVE: Hero stats grid
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between mb-2">
@@ -968,11 +968,12 @@ const LandingPage = () => {
               <div className="text-sm text-gray-600">{language === 'ar' ? 'مجسم 3D' : 'Modèles 3D'}</div>
             </div>
           </div>
+          */}
         </div>
       </section>
 
       {/* Problem & Solution Section */}
-      <section ref={problemRef} className="min-h-screen md:h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+      <section ref={problemRef} className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1082,7 +1083,7 @@ const LandingPage = () => {
       </section>
 
       {/* Main Features Section */}
-      <section ref={featuresRef} id="features" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={featuresRef} id="features" className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1115,7 +1116,7 @@ const LandingPage = () => {
       </section>
 
       {/* 3D Viewer Showcase Section */}
-      <section ref={viewer3DRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+      <section ref={viewer3DRef} className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden md:scroll-snap-align-start">
         {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full blur-3xl"></div>
@@ -1170,19 +1171,21 @@ const LandingPage = () => {
                 </div>
               </div>
               
+              {/* REMOVE: 235+ مجسم (floating info card in 3D Viewer section)
               <div className="absolute -bottom-6 -left-6 bg-white text-gray-900 px-4 py-3 rounded-xl shadow-lg">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <Eye className="w-5 h-5 text-blue-500" />
                   <span className="font-semibold">{liveStats.models3D}+ {language === 'ar' ? 'مجسم' : 'modèles'}</span>
                 </div>
               </div>
+              */}
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section ref={howItWorksRef} id="how-it-works" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={howItWorksRef} id="how-it-works" className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1256,7 +1259,7 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section ref={testimonialsRef} id="testimonials" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+      <section ref={testimonialsRef} id="testimonials" className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1321,7 +1324,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      <section ref={screenshotsRef} className="min-h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-900 via-gray-900 to-gray-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+      <section ref={screenshotsRef} className="min-h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-900 via-gray-900 to-gray-900 text-white relative overflow-hidden md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-whitesmoke mb-4">
@@ -1497,7 +1500,7 @@ const LandingPage = () => {
         </div>
       </section>
       {/* Audience Section */}
-      <section ref={audienceRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={audienceRef} className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1528,7 +1531,7 @@ const LandingPage = () => {
       </section>
 
       {/* Final CTA Section */}
-      <section ref={ctaRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white md:scroll-snap-align-start">
+      <section ref={ctaRef} className="min-h-screen md:h-screen pt-24 pb-24 mb-24 flex items-center px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white md:scroll-snap-align-start">
         <div className="section-content max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-bold mb-6 leading-tight">
             {t.cta.title}

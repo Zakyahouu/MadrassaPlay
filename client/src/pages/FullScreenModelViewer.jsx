@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import ThreeJSViewer from '../components/shared/ThreeJSViewer';
+import ShareButton from '../components/shared/ShareButton';
 import { teacherApi, adminApi } from '../services/model3dService';
 
 const FullScreenModelViewer = () => {
@@ -36,7 +37,7 @@ const FullScreenModelViewer = () => {
 
   return (
     <div className="fixed inset-0 bg-white">
-      <div className="absolute top-4 left-4 z-10">
+      <div className="absolute top-4 left-4 z-10 flex items-center space-x-2">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white/80 border border-gray-300 rounded-md hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -44,6 +45,15 @@ const FullScreenModelViewer = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </button>
+        
+        {/* Add Share Button */}
+        {model && (
+          <ShareButton 
+            modelId={modelId}
+            modelName={model.name || 'Untitled Model'} 
+            className="bg-white/80 hover:bg-white"
+          />
+        )}
       </div>
 
       <div className="absolute inset-0">
