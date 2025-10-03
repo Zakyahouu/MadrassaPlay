@@ -6,107 +6,69 @@ import { AuthContext } from './AuthContext';
 export const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
+  // expose both socket instance and a connected boolean so consumers can reliably
+  // know when it's safe to emit events
   const [socket, setSocket] = useState(null);
-  const [lobbyState, setLobbyState] = useState({
-    isConnected: false,
-    currentSession: null,
-    lobbyStatus: null,
-    error: null
-  });
+  const [connected, setConnected] = useState(false);
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
-    if (user) {
-      const backendUrl = process.env.NODE_ENV === 'production'
-        ? 'https://wajibet.com'
-        : 'http://localhost:5000';
-
-      console.log('🔌 Connecting to Socket.IO:', backendUrl);
-      
-      const newSocket = io(backendUrl, {
-        path: '/socket.io/',
-        transports: ['websocket'],
-        reconnection: true,
-        reconnectionAttempts: 5
-      });
-
-      // Connection events
-      newSocket.on('connect', () => {
-        console.log('✅ Socket connected:', newSocket.id);
-        setLobbyState(prev => ({ ...prev, isConnected: true, error: null }));
-        
-        try {
-          const role = user?.role;
-          const userId = user?._id;
-          if (role && userId) {
-            newSocket.emit('identify', { role, userId });
-            console.log('👤 Identified as:', role, userId);
-          }
-        } catch (err) {
-          console.error('❌ Identification failed:', err);
-        }
-        setSocket(newSocket);
-      });
-
-      // Lobby specific events
-      newSocket.on('lobby:joined', (sessionData) => {
-        console.log('🎮 Joined lobby:', sessionData);
-        setLobbyState(prev => ({
-          ...prev,
-          currentSession: sessionData,
-          lobbyStatus: 'joined'
-        }));
-      });
-
-      newSocket.on('lobby:status', (status) => {
-        console.log('📊 Lobby status:', status);
-        setLobbyState(prev => ({ ...prev, lobbyStatus: status }));
-      });
-
-      newSocket.on('game:starting', (gameData) => {
-        console.log('🎲 Game starting:', gameData);
-        setLobbyState(prev => ({ ...prev, lobbyStatus: 'starting' }));
-      });
-
-      // Error handling
-      newSocket.on('error', (error) => {
-        console.error('❌ Socket error:', error);
-        setLobbyState(prev => ({ ...prev, error: error.message }));
-      });
-
-      newSocket.on('disconnect', () => {
-        console.log('⚠️ Socket disconnected.');
-        setLobbyState(prev => ({
-          ...prev,
-          isConnected: false,
-          lobbyStatus: 'disconnected'
-        }));
+    if (!user) {
+      // if user signs out, ensure socket is cleared
+      setConnected(false);
+      if (socket) {
+        try { socket.disconnect(); } catch {};
         setSocket(null);
-      });
-
-      return () => {
-        console.log('🔌 Cleaning up socket connection');
-        newSocket.disconnect();
-        setSocket(null);
-        setLobbyState({
-          isConnected: false,
-          currentSession: null,
-          lobbyStatus: null,
-          error: null
-        });
-      };
+      }
+      return;
     }
+
+    const backendUrl = process.env.NODE_ENV === 'production'
+      ? 'https://wajibet.com'
+      : 'http://localhost:5000';
+
+    console.log('🔌 Connecting to Socket.IO:', backendUrl);
+
+    const newSocket = io(backendUrl, {
+      path: '/socket.io/',
+      transports: ['websocket']
+    });
+
+    // set socket right away so consumers can attach listeners immediately
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('✅ Socket connected:', newSocket.id);
+      setConnected(true);
+      try {
+        const role = user?.role;
+        const userId = user?._id;
+        if (role && userId) newSocket.emit('identify', { role, userId });
+      } catch (err) {
+        console.warn('identify emit failed', err);
+      }
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('⚠️ Socket disconnected.', reason);
+      setConnected(false);
+      // keep socket in state briefly so consumers can read last instance if needed
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.warn('⚠️ Socket connect_error', err && err.message);
+    });
+
+    return () => {
+      try { newSocket.disconnect(); } catch {}
+      setSocket(null);
+      setConnected(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const contextValue = {
-    socket,
-    ...lobbyState,
-    isTeacher: user?.role === 'teacher',
-    isStudent: user?.role === 'student'
-  };
-
   return (
-    <SocketContext.Provider value={contextValue}>
+    <SocketContext.Provider value={{ socket, connected }}>
       {children}
     </SocketContext.Provider>
   );

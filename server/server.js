@@ -45,14 +45,13 @@ setIO(io);
 console.log('✅ [2/5] Socket.IO initialized and shared.');
 
 // --- Main Socket.IO connection handler ---
-// You would require your main socket handler file here, for example:
-// require('./socket/socketHandler')(io);
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
+// Load the dedicated socket handler that wires app-level liveGames with Socket.IO
+try {
+  require('./socket/socketHandler')(io);
+  console.log('✅ [socket] socketHandler mounted');
+} catch (e) {
+  console.error('❌ [socket] failed to mount socketHandler', e);
+}
 
 // --- Asynchronous Start Function ---
 const startServer = async () => {
