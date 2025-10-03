@@ -7,7 +7,9 @@ import axios from 'axios';
 
 const PlayGame = () => {
   const { user } = useContext(AuthContext);
-  const socket = useContext(SocketContext);
+  const socketContext = useContext(SocketContext);
+  const socket = socketContext?.socket;
+  const socketConnected = socketContext?.connected;
   const navigate = useNavigate();
   const { creationId } = useParams();
   const location = useLocation();
@@ -60,21 +62,21 @@ const PlayGame = () => {
   useEffect(() => {
     const handleGameMessage = async (event) => {
       // Live progress from engine (optional but recommended for real-time leaderboard)
-    if (liveInfo?.roomCode && socket && event.data?.type === 'LIVE_ANSWER') {
+  if (liveInfo?.roomCode && socket && event.data?.type === 'LIVE_ANSWER') {
         try {
           const payload = event.data.payload || {};
           const correct = !!payload.correct;
           const deltaMs = Number.isFinite(Number(payload.deltaMs)) ? Number(payload.deltaMs) : 0;
       const scoreDelta = Number.isFinite(Number(payload.scoreDelta)) ? Number(payload.scoreDelta) : undefined;
       const currentScore = Number.isFinite(Number(payload.currentScore)) ? Number(payload.currentScore) : undefined;
-      socket.emit('live:answer', { roomCode: liveInfo.roomCode, userId: user?._id, correct, deltaMs, scoreDelta, currentScore });
+      try { socket.emit('live:answer', { roomCode: liveInfo.roomCode, userId: user?._id, correct, deltaMs, scoreDelta, currentScore }); } catch {}
         } catch {}
       }
       if (liveInfo?.roomCode && socket && event.data?.type === 'LIVE_FINISH') {
         try {
           const payload = event.data.payload || {};
           const totalTimeMs = Number.isFinite(Number(payload.totalTimeMs)) ? Number(payload.totalTimeMs) : undefined;
-          socket.emit('live:finish', { roomCode: liveInfo.roomCode, userId: user?._id, totalTimeMs });
+          try { socket.emit('live:finish', { roomCode: liveInfo.roomCode, userId: user?._id, totalTimeMs }); } catch {}
         } catch {}
       }
   if (event.data?.type === 'GAME_COMPLETE') {
@@ -162,7 +164,7 @@ const PlayGame = () => {
       if (Array.isArray(ranks)) setRanks(ranks);
     };
     socket.on('live:scoreboard', handleScoreboard);
-    return () => { socket.off('live:scoreboard', handleScoreboard); };
+    return () => { if (socket) socket.off('live:scoreboard', handleScoreboard); };
   }, [socket, liveInfo?.roomCode]);
 
   const handleIframeLoad = () => {

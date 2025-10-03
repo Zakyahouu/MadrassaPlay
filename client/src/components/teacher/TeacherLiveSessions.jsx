@@ -7,7 +7,9 @@ import { useToast } from '../shared/ToastProvider';
 
 const TeacherLiveSessions = () => {
   const navigate = useNavigate();
-  const socket = useContext(SocketContext);
+  const socketContext = useContext(SocketContext);
+  const socket = socketContext?.socket;
+  const socketConnected = socketContext?.connected;
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState('active');
@@ -57,7 +59,7 @@ const TeacherLiveSessions = () => {
       setActiveSessions(prev => prev.map(s => (String(s._id || s.id) === String(sessionId) ? { ...s, participantsCount } : s)));
     };
     socket.on('live:session-count', handleCount);
-    return () => { socket.off('live:session-count', handleCount); };
+    return () => { if (socket) socket.off('live:session-count', handleCount); };
   }, [socket]);
 
   const fetchActive = async () => {

@@ -6,45 +6,59 @@ import { AuthContext } from '../context/AuthContext';
 
 const PlayerLobby = () => {
   const { roomCode } = useParams();
-  const socket = useContext(SocketContext);
+  const socketContext = useContext(SocketContext);
+  const socket = socketContext?.socket;
+  const socketConnected = socketContext?.connected;
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
   // This useEffect hook listens for the game starting
   useEffect(() => {
-    if (socket) {
-      // Attempt to join the game room with full name from profile
-      const playerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || 'Player';
-      const userId = user?._id;
-      if (roomCode && userId) {
-        socket.emit('join-game', { roomCode, playerName, userId });
+    // Attempt to join the game room with full name from profile once socket is present
+    const playerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || 'Player';
+    const userId = user?._id;
+    const doJoin = () => {
+      if (roomCode && userId && socket) {
+        try { socket.emit('join-game', { roomCode, playerName, userId }); } catch {}
       }
-      // Listen for the 'game-started' event from the server
-  const handleGameStarted = ({ gameCreationId }) => {
-        console.log(`Player Lobby: Game starting! Navigating to play game: ${gameCreationId}`);
-        // Navigate the student to their play page and pass live room code
-        navigate(`/student/play-game/${gameCreationId}`, { state: { live: { roomCode } } });
-      };
+    };
 
-      socket.on('game-started', handleGameStarted);
-      const handleScoreboard = ({ ranks }) => {
-        console.log('Live scoreboard update (player):', ranks?.slice(0,5));
-      };
-      socket.on('live:scoreboard', handleScoreboard);
-      const handleJoinError = (msg) => {
-        setError(msg || 'Could not join this room.');
-      };
-      socket.on('join-error', handleJoinError);
-
-      // Clean up the event listener when the component unmounts
-      return () => {
-  socket.off('game-started', handleGameStarted);
-  socket.off('live:scoreboard', handleScoreboard);
-  socket.off('join-error', handleJoinError);
-      };
+    if (socket) {
+      doJoin();
+    } else if (socketContext && !socket && socketContext.connected === false) {
+      // socket exists but not connected yet — wait for connect
+      socketContext?.socket?.once?.('connect', doJoin);
     }
-  }, [socket, navigate]);
+
+    // Listen for server events
+    const handleGameStarted = ({ gameCreationId }) => {
+      console.log(`Player Lobby: Game starting! Navigating to play game: ${gameCreationId}`);
+      navigate(`/student/play-game/${gameCreationId}`, { state: { live: { roomCode } } });
+    };
+
+    const handleScoreboard = ({ ranks }) => {
+      console.log('Live scoreboard update (player):', ranks?.slice(0,5));
+    };
+
+    const handleJoinError = (msg) => {
+      setError(msg || 'Could not join this room.');
+    };
+
+    if (socket) {
+      socket.on('game-started', handleGameStarted);
+      socket.on('live:scoreboard', handleScoreboard);
+      socket.on('join-error', handleJoinError);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('game-started', handleGameStarted);
+        socket.off('live:scoreboard', handleScoreboard);
+        socket.off('join-error', handleJoinError);
+      }
+    };
+  }, [socket, socketContext, roomCode, user?._id, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-8 text-center">

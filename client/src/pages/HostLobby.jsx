@@ -7,7 +7,10 @@ import { useToast } from '../components/shared/ToastProvider';
 
 const HostLobby = () => {
   const { gameCreationId, sessionId } = useParams();
-  const socket = useContext(SocketContext);
+  const socketContext = useContext(SocketContext);
+  // SocketContext provides { socket, connected }
+  const socket = socketContext?.socket;
+  const socketConnected = socketContext?.connected;
   const navigate = useNavigate();
 
   const [roomCode, setRoomCode] = useState(null);
@@ -35,7 +38,18 @@ const HostLobby = () => {
           const creation = s.data?.session?.gameCreationId || gameCreationId;
           setSessionInfo(s.data?.session || null);
           if (!code || !creation) { navigate('/teacher/dashboard'); return; }
-          socket.emit('host-game', { code, sessionId, gameCreationId: creation });
+          // Emit immediately if connected, otherwise emit once we connect
+          try {
+            if (socketConnected) {
+              socket.emit('host-game', { code, sessionId, gameCreationId: creation });
+            } else if (socket) {
+              socket.once('connect', () => {
+                try { socket.emit('host-game', { code, sessionId, gameCreationId: creation }); } catch {}
+              });
+            }
+          } catch (err) {
+            console.warn('host-game emit failed', err);
+          }
         } else {
           // Fresh session: wait for user to confirm and optionally set a title
           setAwaitingCreate(true);
@@ -45,7 +59,7 @@ const HostLobby = () => {
       }
     })();
 
-    socket.on('room-created', (newRoomCode) => {
+      socket.on('room-created', (newRoomCode) => {
         console.log(`Lobby: Room created with code: ${newRoomCode}`);
         setRoomCode(newRoomCode);
       });
@@ -68,31 +82,38 @@ const HostLobby = () => {
           navigate(`/teacher/live-sessions/${sessionId}`);
         }
       };
-      socket.on('game-ended', handleGameEnded);
+  socket.on('game-ended', handleGameEnded);
 
       const handleScoreboard = ({ ranks }) => {
         setRanks(Array.isArray(ranks) ? ranks : []);
       };
-      socket.on('live:scoreboard', handleScoreboard);
+  socket.on('live:scoreboard', handleScoreboard);
 
     return () => {
       mounted = false;
       if (socket) {
         socket.off('room-created');
         socket.off('player-joined');
-  socket.off('game-started');
-  socket.off('game-ended', handleGameEnded);
-  socket.off('live:scoreboard', handleScoreboard);
+        socket.off('game-started');
+        socket.off('game-ended', handleGameEnded);
+        socket.off('live:scoreboard', handleScoreboard);
       }
     };
-  }, [socket, gameCreationId, sessionId, navigate]);
+  }, [socket, socketConnected, gameCreationId, sessionId, navigate]);
 
   // --- NEW: Function to handle starting the game ---
   const handleStartGame = () => {
-    if (socket && roomCode) {
-      // Tell the server to start the game for everyone in this room.
-      socket.emit('start-game', roomCode);
+    if (!roomCode) return;
+    if (!socket) {
+      toast('No socket connection. Refresh the page to reconnect.');
+      return;
     }
+    if (!socketConnected) {
+      toast('Waiting for realtime connection — please try again in a moment');
+      return;
+    }
+    // Tell the server to start the game for everyone in this room.
+    socket.emit('start-game', roomCode);
   };
   const handleEndGame = () => {
   if (!roomCode) return;
@@ -114,7 +135,20 @@ const HostLobby = () => {
       const { sessionId: newSessionId, code } = createRes.data || {};
       setSessionInfo({ _id: newSessionId, code, status: 'lobby', title: sessionTitle?.trim() || undefined });
       setAwaitingCreate(false);
-      socket.emit('host-game', { code, sessionId: newSessionId, gameCreationId });
+      try {
+        if (socketConnected) {
+          socket.emit('host-game', { code, sessionId: newSessionId, gameCreationId });
+        } else if (socket) {
+          socket.once('connect', () => {
+            try { socket.emit('host-game', { code, sessionId: newSessionId, gameCreationId }); } catch {}
+          });
+          toast('Connecting to realtime server — your room will become active once connected.');
+        } else {
+          toast('Unable to connect to realtime server. Refresh to retry.');
+        }
+      } catch (err) {
+        console.warn('Failed to emit host-game after create', err);
+      }
     } catch (e) {
       console.error('Failed to create lobby', e);
     }
@@ -256,7 +290,13 @@ const HostLobby = () => {
               <div className="flex items-center justify-end gap-2">
                 <button onClick={() => setConfirmEndOpen(false)} className="px-4 py-2 text-sm rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300">Cancel</button>
                 <button
-                  onClick={() => { setConfirmEndOpen(false); if (socket && roomCode) socket.emit('end-game', roomCode); }}
+                  onClick={() => {
+                    setConfirmEndOpen(false);
+                    if (!roomCode) return;
+                    if (!socket) { toast('No socket connection. Refresh to reconnect.'); return; }
+                    if (!socketConnected) { toast('Waiting for realtime connection — try again in a moment'); return; }
+                    socket.emit('end-game', roomCode);
+                  }}
                   className="px-4 py-2 text-sm rounded-md text-white bg-red-600 hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                 >End Game</button>
               </div>
