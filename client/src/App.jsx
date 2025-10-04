@@ -10,6 +10,7 @@ import './styles/language-transitions.css';
 // Import all our page and helper components
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import TutorialVideo from './pages/TutorialVideo';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
@@ -42,6 +43,9 @@ function App() {
             <Routes>
           {/* Route 1: The Landing Page */}
           <Route path="/" element={<LandingPage />} />
+          
+          {/* Tutorial Video Page */}
+          <Route path="/tutorial" element={<TutorialVideo />} />
 
           {/* Route 2: The Login Page */}
           <Route 

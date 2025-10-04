@@ -915,10 +915,15 @@ const LandingPage = () => {
                 <span>{t.hero.startFree}</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
               </button>
-              <button className="group border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all font-semibold text-lg flex items-center space-x-2 rtl:space-x-reverse">
+              <a 
+                href="/tutorial"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all font-semibold text-lg flex items-center space-x-2 rtl:space-x-reverse"
+              >
                 <Play className="w-5 h-5" />
                 <span>{t.hero.watchDemo}</span>
-              </button>
+              </a>
             </div>
           </div>
 
