@@ -1,4 +1,6 @@
 const { liveGames } = require('../realtimeState');
+const LiveParticipant = require('../models/LiveParticipant');
+const LiveSession = require('../models/LiveSession');
 
 module.exports = function(io) {
   if (!io) return;
@@ -33,11 +35,12 @@ module.exports = function(io) {
       } catch (e) { console.error('host-game handler failed', e); }
     });
 
-    socket.on('join-game', ({ roomCode, playerName, userId } = {}) => {
+    socket.on('join-game', async ({ roomCode, playerName, userId } = {}) => {
       try {
         const room = liveGames[roomCode];
         if (!room) { socket.emit('join-error', 'Room not found'); return; }
-        // add or update player
+        
+        // add or update player in memory
         const existing = room.players.find(p => String(p.userId) === String(userId));
         if (!existing) {
           const player = { id: socket.id, userId, name: playerName };
@@ -47,6 +50,62 @@ module.exports = function(io) {
           existing.name = playerName;
         }
         socket.join(roomCode);
+        
+        // ✅ Create or update LiveParticipant in database
+        if (room.sessionId && userId) {
+          try {
+            const User = require('../models/User');
+            const student = await User.findById(userId).select('firstName lastName').lean();
+            
+            // Find which class this student belongs to from the session's classes
+            const session = await LiveSession.findById(room.sessionId).select('classes').lean();
+            
+            let studentClassId = null;
+            if (session && session.classes && session.classes.length > 0) {
+              // Check if student is enrolled in any of the session's classes
+              const Enrollment = require('../models/Enrollment');
+              const enrollment = await Enrollment.findOne({
+                studentId: userId,
+                classId: { $in: session.classes },
+                status: 'active'
+              }).select('classId').lean();
+              
+              if (enrollment) {
+                studentClassId = enrollment.classId;
+              } else if (session.classes.length > 0) {
+                // Fallback: use first class if no enrollment found
+                studentClassId = session.classes[0];
+              }
+            }
+            
+            // Create or update participant record
+            await LiveParticipant.findOneAndUpdate(
+              { sessionId: room.sessionId, studentId: userId },
+              {
+                $set: {
+                  firstName: student?.firstName || playerName?.split(' ')[0] || 'Student',
+                  lastName: student?.lastName || playerName?.split(' ')[1] || '',
+                  classId: studentClassId,
+                  lastPingAt: new Date()
+                },
+                $setOnInsert: {
+                  joinedAt: new Date(),
+                  score: 0,
+                  correct: 0,
+                  wrong: 0,
+                  rawTimeMs: 0,
+                  effectiveTimeMs: 0
+                }
+              },
+              { upsert: true, new: true }
+            );
+            
+            console.log('[socket] LiveParticipant created/updated for', playerName, 'in session', room.sessionId);
+          } catch (e) {
+            console.error('[socket] Failed to create LiveParticipant:', e);
+          }
+        }
+        
         io.to(roomCode).emit('player-joined', room.players.slice());
         io.to(roomCode).emit('live:session-count', { sessionId: room.sessionId, participantsCount: room.players.length });
         console.log('[socket] player joined', playerName, '->', roomCode);
@@ -63,15 +122,183 @@ module.exports = function(io) {
       } catch (e) { console.error('start-game handler failed', e); }
     });
 
-    socket.on('end-game', (roomCode) => {
+    socket.on('end-game', async (roomCode) => {
       try {
         const room = liveGames[roomCode];
         if (!room) return;
+        
+        // Update session status in database
+        if (room.sessionId) {
+          try {
+            const session = await LiveSession.findById(room.sessionId);
+            if (session && session.status !== 'ended') {
+              session.status = 'ended';
+              session.endedAt = new Date();
+              if (!session.startedAt) session.startedAt = session.createdAt || new Date();
+              await session.save();
+              console.log('[socket] end-game -> session marked as ended:', room.sessionId);
+            }
+          } catch (e) {
+            console.error('[socket] Failed to update session status:', e);
+          }
+        }
+        
         io.to(roomCode).emit('game-ended', { sessionId: room.sessionId });
         // remove live game state
         try { delete liveGames[roomCode]; } catch {}
         console.log('[socket] end-game ->', roomCode);
       } catch (e) { console.error('end-game handler failed', e); }
+    });
+
+    // ✅ Handle live answer submissions from players
+    socket.on('live:answer', async ({ roomCode, userId, correct, deltaMs, scoreDelta, currentScore } = {}) => {
+      try {
+        const room = liveGames[roomCode];
+        if (!room || !room.sessionId) return;
+
+        console.log('[socket] live:answer ->', { roomCode, userId, correct, deltaMs, scoreDelta, currentScore });
+
+        // Update participant record
+        try {
+          const participant = await LiveParticipant.findOne({ 
+            sessionId: room.sessionId, 
+            studentId: userId 
+          });
+
+          if (participant) {
+            // Update stats
+            if (correct) {
+              participant.correct = (participant.correct || 0) + 1;
+            } else {
+              participant.wrong = (participant.wrong || 0) + 1;
+            }
+            
+            if (typeof currentScore === 'number') {
+              participant.score = currentScore;
+            } else if (typeof scoreDelta === 'number') {
+              participant.score = (participant.score || 0) + scoreDelta;
+            }
+
+            // Add time penalty for wrong answers (3 seconds per wrong)
+            const timePenaltyMs = correct ? 0 : 3000;
+            participant.effectiveTimeMs = (participant.effectiveTimeMs || 0) + deltaMs + timePenaltyMs;
+
+            await participant.save();
+
+            // Fetch all participants and calculate ranks
+            const allParticipants = await LiveParticipant.find({ 
+              sessionId: room.sessionId 
+            }).populate('studentId', 'name').lean();
+
+            const ranks = allParticipants
+              .map(p => ({
+                userId: String(p.studentId?._id || p.studentId),
+                name: p.studentId?.name || 'Unknown',
+                score: p.score || 0,
+                correct: p.correct || 0,
+                wrong: p.wrong || 0,
+                effectiveTimeMs: p.effectiveTimeMs || 0,
+                finishedAt: p.finishedAt
+              }))
+              .sort((a, b) => {
+                // Sort by score desc, then by time asc, then by wrong asc
+                if (b.score !== a.score) return b.score - a.score;
+                if (a.effectiveTimeMs !== b.effectiveTimeMs) return a.effectiveTimeMs - b.effectiveTimeMs;
+                return (a.wrong || 0) - (b.wrong || 0);
+              });
+
+            // Emit updated scoreboard to everyone in the room
+            io.to(roomCode).emit('live:scoreboard', { ranks });
+            console.log('[socket] live:scoreboard emitted ->', ranks.length, 'participants');
+          } else {
+            console.warn('[socket] live:answer - participant not found:', { sessionId: room.sessionId, userId });
+          }
+        } catch (e) {
+          console.error('[socket] Failed to update participant:', e);
+        }
+      } catch (e) {
+        console.error('[socket] live:answer handler failed', e);
+      }
+    });
+
+    // ✅ Handle when a player finishes the game
+    socket.on('live:finish', async ({ roomCode, userId, totalTimeMs } = {}) => {
+      try {
+        const room = liveGames[roomCode];
+        if (!room || !room.sessionId) return;
+
+        console.log('[socket] live:finish ->', { roomCode, userId, totalTimeMs });
+
+        // Mark participant as finished
+        try {
+          const participant = await LiveParticipant.findOne({ 
+            sessionId: room.sessionId, 
+            studentId: userId 
+          });
+
+          if (participant && !participant.finishedAt) {
+            participant.finishedAt = new Date();
+            if (typeof totalTimeMs === 'number') {
+              participant.effectiveTimeMs = totalTimeMs;
+            }
+            await participant.save();
+
+            // Check if all participants have finished
+            const allParticipants = await LiveParticipant.find({ 
+              sessionId: room.sessionId 
+            }).lean();
+
+            const allFinished = allParticipants.every(p => p.finishedAt);
+            const finishedCount = allParticipants.filter(p => p.finishedAt).length;
+
+            console.log('[socket] Participants finished:', finishedCount, '/', allParticipants.length);
+
+            // Emit final scoreboard
+            const ranks = allParticipants
+              .map(p => ({
+                userId: String(p.studentId),
+                name: p.studentId?.name || 'Unknown',
+                score: p.score || 0,
+                correct: p.correct || 0,
+                wrong: p.wrong || 0,
+                effectiveTimeMs: p.effectiveTimeMs || 0,
+                finishedAt: p.finishedAt
+              }))
+              .sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (a.effectiveTimeMs !== b.effectiveTimeMs) return a.effectiveTimeMs - b.effectiveTimeMs;
+                return (a.wrong || 0) - (b.wrong || 0);
+              });
+
+            io.to(roomCode).emit('live:scoreboard', { ranks });
+
+            // If all finished, auto-end the session after a short delay
+            if (allFinished) {
+              console.log('[socket] All participants finished! Auto-ending session in 3 seconds...');
+              setTimeout(async () => {
+                try {
+                  const session = await LiveSession.findById(room.sessionId);
+                  if (session && session.status !== 'ended') {
+                    session.status = 'ended';
+                    session.endedAt = new Date();
+                    if (!session.startedAt) session.startedAt = session.createdAt || new Date();
+                    await session.save();
+                  }
+                  io.to(roomCode).emit('game-ended', { sessionId: room.sessionId, autoEnded: true });
+                  delete liveGames[roomCode];
+                  console.log('[socket] Session auto-ended:', room.sessionId);
+                } catch (e) {
+                  console.error('[socket] Auto-end failed:', e);
+                }
+              }, 3000);
+            }
+          }
+        } catch (e) {
+          console.error('[socket] Failed to update participant finish:', e);
+        }
+      } catch (e) {
+        console.error('[socket] live:finish handler failed', e);
+      }
     });
 
     socket.on('disconnect', () => {

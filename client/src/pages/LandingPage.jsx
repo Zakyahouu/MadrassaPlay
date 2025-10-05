@@ -889,11 +889,6 @@ const LandingPage = () => {
 
         <div className="section-content relative max-w-7xl mx-auto py-8 md:py-0">
           <div className="text-center mb-12">
-            {/* Live Stats Badge */}
-            <div className="inline-flex items-center space-x-2 rtl:space-x-reverse bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium mb-8 animate-pulse">
-              <Sparkles className="w-4 h-4" />
-              <span>{liveStats.students.toLocaleString()} {language === 'ar' ? 'طالب نشط الآن' : 'étudiants actifs'}</span>
-            </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               {t.hero.title}
