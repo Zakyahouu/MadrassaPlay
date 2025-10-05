@@ -889,11 +889,6 @@ const LandingPage = () => {
 
         <div className="section-content relative max-w-7xl mx-auto py-8 md:py-0">
           <div className="text-center mb-12">
-            {/* Live Stats Badge */}
-            <div className="inline-flex items-center space-x-2 rtl:space-x-reverse bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium mb-8 animate-pulse">
-              <Sparkles className="w-4 h-4" />
-              <span>{liveStats.students.toLocaleString()} {language === 'ar' ? 'طالب نشط الآن' : 'étudiants actifs'}</span>
-            </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               {t.hero.title}
@@ -922,57 +917,12 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Live Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <Users className="w-8 h-8 text-indigo-600" />
-                <span className="text-xs text-green-600 font-medium">+12%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {liveStats.students.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">{language === 'ar' ? 'طالب نشط' : 'Étudiants actifs'}</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <Award className="w-8 h-8 text-cyan-600" />
-                <span className="text-xs text-green-600 font-medium">+8%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {liveStats.teachers}
-              </div>
-              <div className="text-sm text-gray-600">{language === 'ar' ? 'معلم' : 'Enseignants'}</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <Gamepad2 className="w-8 h-8 text-green-600" />
-                <span className="text-xs text-green-600 font-medium">+15%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {liveStats.games}
-              </div>
-              <div className="text-sm text-gray-600">{language === 'ar' ? 'لعبة تعليمية' : 'Jeux éducatifs'}</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
-              <div className="flex items-center justify-between mb-2">
-                <Layers className="w-8 h-8 text-amber-600" />
-                <span className="text-xs text-green-600 font-medium">+20%</span>
-              </div>
-              <div className="text-3xl font-bold text-gray-900 mb-1">
-                {liveStats.models3D}
-              </div>
-              <div className="text-sm text-gray-600">{language === 'ar' ? 'مجسم 3D' : 'Modèles 3D'}</div>
-            </div>
-          </div>
+          {/* Hero stats removed */}
         </div>
       </section>
 
       {/* Problem & Solution Section */}
-      <section ref={problemRef} className="min-h-screen md:h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+      <section ref={problemRef} className="min-h-screen md:h-screen pt-16 pb-20 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1082,7 +1032,7 @@ const LandingPage = () => {
       </section>
 
       {/* Main Features Section */}
-      <section ref={featuresRef} id="features" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={featuresRef} id="features" className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1115,7 +1065,7 @@ const LandingPage = () => {
       </section>
 
       {/* 3D Viewer Showcase Section */}
-      <section ref={viewer3DRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+      <section ref={viewer3DRef} className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 text-white relative overflow-hidden md:scroll-snap-align-start">
         {/* Decorative Elements */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full blur-3xl"></div>
@@ -1182,7 +1132,7 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works Section */}
-      <section ref={howItWorksRef} id="how-it-works" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={howItWorksRef} id="how-it-works" className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1256,7 +1206,7 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section ref={testimonialsRef} id="testimonials" className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
+      <section ref={testimonialsRef} id="testimonials" className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gray-50 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1321,7 +1271,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      <section ref={screenshotsRef} className="min-h-screen pt-16 pb-20 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-900 via-gray-900 to-gray-900 text-white relative overflow-hidden md:scroll-snap-align-start">
+      <section ref={screenshotsRef} className="min-h-screen pt-16 pb-20 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-900 via-gray-900 to-gray-900 text-white relative overflow-hidden md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-whitesmoke mb-4">
@@ -1497,7 +1447,7 @@ const LandingPage = () => {
         </div>
       </section>
       {/* Audience Section */}
-      <section ref={audienceRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
+      <section ref={audienceRef} className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 md:scroll-snap-align-start">
         <div className="section-content max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -1528,7 +1478,7 @@ const LandingPage = () => {
       </section>
 
       {/* Final CTA Section */}
-      <section ref={ctaRef} className="min-h-screen md:h-screen pt-16 flex items-center px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white md:scroll-snap-align-start">
+      <section ref={ctaRef} className="min-h-screen md:h-screen pt-16 mt-16 md:mt-24 flex items-center px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white md:scroll-snap-align-start">
         <div className="section-content max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-bold mb-6 leading-tight">
             {t.cta.title}
