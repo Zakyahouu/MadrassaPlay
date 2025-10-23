@@ -43,6 +43,11 @@ const translations = {
     'resources': 'Ressources',
     'calendar': 'Calendrier',
     'my-classes': 'Mes Classes',
+    'no-announcements': 'لا توجد إعلانات حتى الآن.',
+    'failed-to-load-announcements': 'فشل في تحميل الإعلانات.',
+    'write-announcement': 'اكتب إعلانًا...',
+    'post': 'نشر',
+    'failed-to-post-announcement': 'فشل في نشر الإعلان.',
     
     // Common UI
     'dashboard': 'Tableau de Bord',
@@ -316,6 +321,11 @@ const translations = {
     'leaderboard': 'Classement',
     'join-live': 'Rejoindre en Direct',
     'announcements': 'Annonces',
+  'no-announcements': 'Aucune annonce pour le moment.',
+  'failed-to-load-announcements': 'Échec du chargement des annonces.',
+  'write-announcement': 'Écrire une annonce...',
+  'post': 'Publier',
+  'failed-to-post-announcement': 'Échec de la publication de l\'annonce.',
     'games-completed': 'Jeux Terminés',
     'current-streak': 'Série Actuelle',
     'total-points': 'Points Totaux',

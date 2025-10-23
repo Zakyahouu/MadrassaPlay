@@ -90,6 +90,7 @@ const UnifiedSidebar = ({
         return managerItems;
       case 'teacher':
         return [
+          { id: 'announcements', name: t('announcements'), icon: Megaphone },
           { id: 'overview', name: t('overview'), icon: BarChart3 },
           { id: 'my-games', name: t('my-games'), icon: BookOpen },
           { id: 'create-game', name: t('create-game'), icon: Plus },

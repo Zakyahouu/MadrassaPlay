@@ -379,6 +379,7 @@ const EquipmentTab = () => {
 
 // Equipment Units Popup Component
 const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
+  const { t } = useLanguage();
   const [editingUnitId, setEditingUnitId] = useState(null);
   const [nameDrafts, setNameDrafts] = useState({});
   const [stateDrafts, setStateDrafts] = useState({});
@@ -548,6 +549,7 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
 };
 
 const EquipmentModal = ({ mode, data, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     majorType: data?.majorType || '',
     itemName: data?.itemName || '',
@@ -691,6 +693,7 @@ const UnitBadge = ({ itemId, unit, onUpdated }) => {
 };
 
 const UnitAdjuster = ({ item, onUpdated }) => {
+  const { t } = useLanguage();
   const [delta, setDelta] = useState(1);
   const adjust = async (d) => {
     try {

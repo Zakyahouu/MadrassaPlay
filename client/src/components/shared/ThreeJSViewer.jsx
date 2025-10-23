@@ -25,7 +25,8 @@ const ThreeJSViewer = ({ modelUrl, className = "w-full h-96" }) => {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    // Transparent background (no grey base)
+    scene.background = null;
     sceneRef.current = scene;
 
     // Camera setup
@@ -38,7 +39,7 @@ const ThreeJSViewer = ({ modelUrl, className = "w-full h-96" }) => {
     camera.position.set(5, 5, 5);
 
     // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -70,13 +71,7 @@ const ThreeJSViewer = ({ modelUrl, className = "w-full h-96" }) => {
     directionalLight.shadow.mapSize.height = 2048;
     scene.add(directionalLight);
 
-    // Add a ground plane for shadows
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Removed ground plane to avoid covering/overriding models
 
     // Add a fallback cube in case model doesn't load
     const fallbackGeometry = new THREE.BoxGeometry(1, 1, 1);

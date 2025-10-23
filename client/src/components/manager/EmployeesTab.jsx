@@ -304,6 +304,7 @@ const EmployeesTab = () => {
 };
 
 const EmployeeModal = ({ mode, data, onClose, onSave }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     name: data?.name || '',
     role: data?.role || '',

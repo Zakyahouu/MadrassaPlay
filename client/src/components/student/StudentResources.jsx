@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const StudentResources = () => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [resources, setResources] = useState([]);
@@ -79,15 +81,15 @@ const StudentResources = () => {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-3 sm:p-5">
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">Class Resources</h1>
-        <p className="text-indigo-700 text-sm">View and download files shared by your teachers</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">{t('class-resources')}</h1>
+        <p className="text-indigo-700 text-sm">{t('resources-description')}</p>
       </div>
 
       {/* Class Picker */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-indigo-100">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-sm text-gray-600 whitespace-nowrap">Class</label>
+            <label className="text-sm text-gray-600 whitespace-nowrap">{t('class')}</label>
             <select
               value={selectedClass}
               onChange={(e)=>setSelectedClass(e.target.value)}

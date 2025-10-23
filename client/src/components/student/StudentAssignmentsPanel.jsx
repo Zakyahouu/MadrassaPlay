@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import LoadingState from '../shared/LoadingState';
 import EmptyState from '../shared/EmptyState';
 
@@ -10,6 +11,7 @@ import EmptyState from '../shared/EmptyState';
  * Keeps original MyAssignments component untouched.
  */
 export default function StudentAssignmentsPanel() {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -105,18 +107,18 @@ export default function StudentAssignmentsPanel() {
       )}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-3 sm:p-5">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">My Assignments</h3>
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-extrabold text-indigo-900">{t('my-assignments')}</h3>
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-xs">
             <div className="flex gap-1 bg-white/70 backdrop-blur border border-indigo-100 rounded-lg p-1 overflow-x-auto">
-              <button onClick={()=>{setStatusFilter('all');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='all'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>All</button>
-              <button onClick={()=>{setStatusFilter('active');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='active'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Active</button>
-              <button onClick={()=>{setStatusFilter('dueSoon');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='dueSoon'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Due Soon</button>
-              <button onClick={()=>{setStatusFilter('upcoming');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='upcoming'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Upcoming</button>
-              <button onClick={()=>{setStatusFilter('completed');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='completed'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>Completed</button>
+              <button onClick={()=>{setStatusFilter('all');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='all'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>{t('all')}</button>
+              <button onClick={()=>{setStatusFilter('active');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='active'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>{t('active')}</button>
+              <button onClick={()=>{setStatusFilter('dueSoon');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='dueSoon'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>{t('due-soon')}</button>
+              <button onClick={()=>{setStatusFilter('upcoming');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='upcoming'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>{t('upcoming')}</button>
+              <button onClick={()=>{setStatusFilter('completed');setPage(1);}} className={`px-2 sm:px-3 py-1 rounded-md whitespace-nowrap ${statusFilter==='completed'?'bg-indigo-600 text-white':'hover:bg-indigo-50'}`}>{t('completed')}</button>
             </div>
             <div className="flex gap-1 bg-white/70 backdrop-blur border border-indigo-100 rounded-lg p-1">
               <select value={classFilter} onChange={e=>{setClassFilter(e.target.value);setPage(1);}} className="text-xs px-2 py-1 rounded-md focus:outline-none min-w-0">
-                <option value="all">All Classes</option>
+                <option value="all">{t('all-classes')}</option>
                 {classes.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
@@ -127,7 +129,7 @@ export default function StudentAssignmentsPanel() {
 
       {loading && (
         <div className="space-y-3">
-          <LoadingState message="Loading assignments…" />
+          <LoadingState message={t('loading-assignments')} />
           <div className="grid grid-cols-1 gap-3">
             {[...Array(3)].map((_,i)=> (
               <div key={i} className="p-5 rounded-2xl border bg-white animate-pulse">
@@ -142,7 +144,7 @@ export default function StudentAssignmentsPanel() {
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {!loading && !error && items.length === 0 && (
-        <EmptyState title="No assignments" message="No assignments match your filters." />
+        <EmptyState title={t('no-assignments')} message={t('no-assignments-match-filters')} />
       )}
 
       <div className="space-y-4">

@@ -18,6 +18,9 @@ import TemplateSelector from '../components/teacher/TemplateSelector';
 import Timetable from '../components/teacher/Timetable';
 import AdsBar from '../components/shared/AdsBar';
 
+// Lazy-load TeacherAnnouncements to avoid bundling CommonJS require in client bundle
+const TeacherAnnouncementsLazy = React.lazy(() => import('../components/teacher/TeacherAnnouncements'));
+
 // Import 3D Model Library component
 import Model3dLibrary from '../components/teacher/Model3dLibrary';
 
@@ -59,6 +62,7 @@ const TeacherDashboard = () => {
   }, [location.search]);
 
   const navigationItems = [
+    { id: 'announcements', name: t('announcements') },
     { id: 'overview', name: t('overview') },
     { id: 'my-games', name: t('my-games') },
     { id: 'create-game', name: t('create-game') },
@@ -77,6 +81,13 @@ const TeacherDashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'announcements':
+        // Use Suspense with the lazy-loaded TeacherAnnouncements
+        return (
+          <React.Suspense fallback={<div className="py-8 text-center">{t('loading')}...</div>}>
+            <TeacherAnnouncementsLazy />
+          </React.Suspense>
+        );
       case 'overview':
         return <TeacherOverview stats={stats} />;
       case 'my-games':

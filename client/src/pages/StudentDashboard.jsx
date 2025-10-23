@@ -28,6 +28,7 @@ import { Copy as CopyIcon } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import UnifiedCard from '../components/shared/UnifiedCard';
 import AdsBar from '../components/shared/AdsBar';
+import ClassAnnouncements from '../components/student/ClassAnnouncements';
 import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
 import StudentResources from '../components/student/StudentResources';
 import StudentBadges from '../components/student/StudentBadges';
@@ -58,6 +59,7 @@ const StudentDashboard = () => {
   const [mySchoolRank, setMySchoolRank] = useState(null);
   const [classOptions, setClassOptions] = useState([]);
   const [lbClassId, setLbClassId] = useState('');
+  const [currentClassId, setCurrentClassId] = useState('');
   const [classLeaders, setClassLeaders] = useState([]);
   const [myClassRank, setMyClassRank] = useState(null);
   // Join live state
@@ -216,6 +218,7 @@ const StudentDashboard = () => {
         setClassOptions(list);
         const initial = list[0]?._id || '';
         setLbClassId(prev => prev || initial);
+        if (!currentClassId && initial) setCurrentClassId(initial);
       } catch (e) {
         if (!mounted) return;
         setLbError('Failed to load leaderboard');
@@ -433,6 +436,17 @@ const StudentDashboard = () => {
                 </div>
               </UnifiedCard>
 
+              {/* Class Announcements (chat-like) */}
+              <div>
+                {currentClassId ? (
+                  <ClassAnnouncements classId={currentClassId} />
+                ) : (
+                  <UnifiedCard>
+                    <div className="text-sm text-gray-500">{t('no-class-selected')}</div>
+                  </UnifiedCard>
+                )}
+              </div>
+
               {/* Achievements */}
               <UnifiedCard>
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Achievements</h3>
@@ -459,6 +473,20 @@ const StudentDashboard = () => {
                   ))}
                 </div>
               </UnifiedCard>
+            </div>
+          </div>
+        );
+      case 'announcements':
+        // dedicated announcements page for students
+        return (
+          <div className="space-y-6">
+            <div className="max-w-4xl mx-auto w-full">
+              <div className="bg-white border rounded-2xl p-4">
+                <h2 className="text-lg font-semibold text-gray-900">{t('announcements')}</h2>
+                <div className="mt-4">
+                  <ClassAnnouncements classId={currentClassId} />
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -603,6 +631,7 @@ const StudentDashboard = () => {
     { id: 'progress', name: t('my-progress') },
     { id: 'badges', name: t('badges') },
     { id: 'leaderboard', name: 'Classement' },
+    { id: 'announcements', name: t('announcements') },
     { id: 'live', name: t('live-sessions') },
     { id: 'resources', name: t('resources') }
   ];

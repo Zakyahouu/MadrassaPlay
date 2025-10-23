@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Award, Lock } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* StudentBadges
  * Shows all template badges (earned + not yet earned) in a grid.
@@ -19,6 +20,7 @@ const tierColors = [
 ];
 
 export default function StudentBadges() {
+  const { t } = useLanguage();
   const [allBadges, setAllBadges] = useState([]);
   const [earned, setEarned] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,15 +97,15 @@ export default function StudentBadges() {
 
   const openModal = (badge) => { setSelected(badge); setModalOpen(true); };
 
-  if (loading) return <div className="text-sm text-gray-500">Loading badges…</div>;
-  if (!merged.length) return <div className="text-sm text-gray-500">No badges available yet.</div>;
+  if (loading) return <div className="text-sm text-gray-500">{t('loading-badges')}</div>;
+  if (!merged.length) return <div className="text-sm text-gray-500">{t('no-badges-yet')}</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div className="flex items-center gap-2">
-          <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2"><Award className="w-5 h-5 text-indigo-600" /> My Badges</h4>
-          <span className="text-xs text-gray-500">Earned {merged.filter(b=>b.earned).length}/{merged.length}</span>
+          <h4 className="font-semibold text-gray-900 text-lg flex items-center gap-2"><Award className="w-5 h-5 text-indigo-600" /> {t('my-badges')}</h4>
+          <span className="text-xs text-gray-500">{t('earned')} {merged.filter(b=>b.earned).length}/{merged.length}</span>
         </div>
         <div className="flex items-center gap-2 text-xs">
           {['all','earned','locked'].map(f => (

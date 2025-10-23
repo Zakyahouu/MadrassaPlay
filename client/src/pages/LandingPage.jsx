@@ -46,7 +46,6 @@ const LandingPage = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [activeScreenshot, setActiveScreenshot] = useState(0);
-  const [hasScrolled, setHasScrolled] = useState(false);
   const [liveStats, setLiveStats] = useState({
     students: 1247,
     teachers: 89,
@@ -189,80 +188,9 @@ const LandingPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle navbar border on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Removed on-scroll navbar animation
 
-  // Handle section animations
-  useEffect(() => {
-    const sections = [
-      { ref: heroRef, direction: 'left' },
-      { ref: problemRef, direction: 'right' },
-      { ref: featuresRef, direction: 'left' },
-      { ref: viewer3DRef, direction: 'right' },
-      { ref: howItWorksRef, direction: 'left' },
-      { ref: testimonialsRef, direction: 'right' },
-      { ref: screenshotsRef, direction: 'left' },
-      { ref: audienceRef, direction: 'right' },
-      { ref: ctaRef, direction: 'left' }
-    ];
-    
-    const animatedSections = new Set();
-    
-    const observers = sections.map((section) => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting && !animatedSections.has(section.ref)) {
-              // Find the inner content div and animate only that
-              const contentDiv = entry.target.querySelector('.section-content');
-              if (contentDiv) {
-                contentDiv.style.transition = 'transform 1.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                contentDiv.style.transform = 'translateX(0)';
-                contentDiv.style.opacity = '1';
-              }
-              animatedSections.add(section.ref);
-            }
-          });
-        },
-        { threshold: 0.2 }
-      );
-      
-      if (section.ref.current) {
-        // Find and set initial position on content only
-        const contentDiv = section.ref.current.querySelector('.section-content');
-        if (contentDiv) {
-          const initialTransform = section.direction === 'left' ? 'translateX(-50%)' : 'translateX(50%)';
-          contentDiv.style.transform = initialTransform;
-          contentDiv.style.opacity = '0';
-        }
-        observer.observe(section.ref.current);
-      }
-      return observer;
-    });
-
-    // Make hero section content visible immediately
-    if (heroRef.current) {
-      setTimeout(() => {
-        const heroContent = heroRef.current.querySelector('.section-content');
-        if (heroContent) {
-          heroContent.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
-          heroContent.style.transform = 'translateX(0)';
-          heroContent.style.opacity = '1';
-        }
-        animatedSections.add(heroRef);
-      }, 100);
-    }
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, []);
+  // Removed on-scroll section animations
 
   // Enhanced 3D Viewer - Educational molecule/DNA visualization
   useEffect(() => {
@@ -727,14 +655,16 @@ const LandingPage = () => {
   return (
     <div className={`min-h-screen bg-white ${language === 'ar' ? 'rtl font-arabic' : 'ltr'} md:scroll-smooth overflow-x-hidden md:scroll-snap-y-mandatory`} dir={language === 'ar' ? 'rtl' : 'ltr'} style={{ scrollBehavior: 'smooth' }}>
       {/* Navigation */}
-      <nav className={`fixed top-0 w-full bg-white/90 backdrop-blur-lg z-50 transition-transform duration-300 ${hasScrolled ? '-translate-y-full' : 'translate-y-0'} shadow-sm`}>
+      <nav className={`fixed top-0 w-full bg-white/90 backdrop-blur-lg z-50 shadow-sm`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-lg">W</span>
-              </div>
+              <img
+                src="/assets/Wajibet.png"
+                alt="wajibET logo"
+                className="w-10 h-10 rounded-xl object-cover shadow-lg"
+              />
               <span className="font-bold text-xl text-gray-900">WajibET</span>
             </div>
 
@@ -1562,9 +1492,11 @@ const LandingPage = () => {
             {/* Brand */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-3 rtl:space-x-reverse mb-6">
-                <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-xl">W</span>
-                </div>
+                <img
+                  src="/assets/Wajibet.png"
+                  alt="wajibET logo"
+                  className="w-12 h-12 rounded-xl object-cover shadow-lg"
+                />
                 <span className="font-bold text-2xl">WajibET</span>
               </div>
               <p className="text-gray-400 text-lg mb-6 leading-relaxed max-w-md">
