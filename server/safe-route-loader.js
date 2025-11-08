@@ -70,6 +70,7 @@ function loadAllRoutes(app) {
     { path: '/api/equipment', file: './routes/equipmentRoutes' },
     { path: '/api/advertisements', file: './routes/advertisementRoutes' },
   { path: '/api/announcements', file: './routes/announcementRoutes' },
+    { path: '/api/manager', file: './routes/managerRoutes' },
     { path: '/api/finance', file: './routes/financeRoutes' },
     { path: '/api/logs', file: './routes/logRoutes' },
     { path: '/api/live-sessions', file: './routes/liveSessionRoutes' }

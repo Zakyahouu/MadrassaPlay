@@ -15,6 +15,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
+import ManagerPasswordReset from './pages/ManagerPasswordReset';
 import Finance from './pages/Finance';
 import CreateGame from './pages/CreateGame';
 import EditGame from './pages/EditGame';
@@ -92,6 +93,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <ManagerDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/manager/password-reset"
+            element={
+              <ProtectedRoute>
+                <ManagerPasswordReset />
               </ProtectedRoute>
             }
           />
