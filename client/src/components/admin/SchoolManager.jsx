@@ -69,18 +69,18 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
         </div>
         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button 
-            onClick={onEdit} 
-            className="p-1.5 text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors"
-            title="Edit School"
-          >
-            <EditIcon />
-          </button>
-          <button 
             onClick={() => onChangeStatus(school)} 
             className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
             title="Change Status"
           >
             <SettingsIcon />
+          </button>
+          <button 
+            onClick={onEdit} 
+            className="p-1.5 text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors"
+            title="Edit School"
+          >
+            <EditIcon />
           </button>
           <button 
             onClick={onDelete} 

@@ -77,8 +77,8 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
     
     try {
-      await axios.delete(`${API_BASE_URL}/${classId}`, config);
-      setClasses(classes.filter(c => c._id !== classId));
+  await axios.delete(`${API_BASE_URL}/${classId}`, config);
+  setClasses(prev => prev.filter(c => c._id !== classId));
       alert(t('class-deleted-successfully'));
     } catch (err) {
       const message = err.response?.data?.message || t('failed-delete-class');
@@ -131,6 +131,9 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
   };
 
   const formatTime = (time) => {
+    if (!time || typeof time !== 'string') {
+      return '';
+    }
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -139,20 +142,88 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
   };
 
   const exportToCSV = () => {
-  const headers = [t('class-name'), t('teacher'), t('room'), t('schedule'), t('capacity'), t('enrolled'), t('status'), t('price-dz')];
-    const csvData = filteredClasses.map(classItem => [
-      classItem.name,
-      `${classItem.teacherId?.firstName || ''} ${classItem.teacherId?.lastName || ''}`,
-      classItem.roomId?.name || '',
-      `${getDayDisplay(classItem.schedule.dayOfWeek)} ${formatTime(classItem.schedule.startTime)}-${formatTime(classItem.schedule.endTime)}`,
-      classItem.capacity,
-      classItem.currentEnrollmentCount || 0,
-      classItem.status,
-      `${classItem.price} DZD`
-    ]);
-    
-    const csv = [headers, ...csvData].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    if (!filteredClasses.length) {
+      alert('There are no classes to export.');
+      return;
+    }
+
+    const escapeCsvValue = (value) => {
+      if (value === undefined || value === null) return '""';
+      const stringValue = String(value).replace(/"/g, '""');
+      return `"${stringValue}"`;
+    };
+
+    const formatSchedulesForCsv = (classItem) => {
+      const schedulesArray = Array.isArray(classItem.schedules) && classItem.schedules.length
+        ? classItem.schedules
+        : classItem.schedule
+          ? [classItem.schedule]
+          : [];
+
+      if (!schedulesArray.length) return '';
+
+      return schedulesArray.map((schedule) => {
+        if (!schedule) return '';
+        const day = schedule.dayOfWeek ? getDayDisplay(schedule.dayOfWeek) : '';
+        const start = schedule.startTime ? formatTime(schedule.startTime) : '';
+        const end = schedule.endTime ? formatTime(schedule.endTime) : '';
+        return `${day} ${start && end ? `${start} - ${end}` : ''}`.trim();
+      }).filter(Boolean).join(' | ');
+    };
+
+    const formatDate = (value) => {
+      if (!value) return '';
+      try {
+        return new Date(value).toLocaleDateString();
+      } catch (err) {
+        return value;
+      }
+    };
+
+    const headers = [
+      'Class Name',
+      'Catalog Item',
+      'Catalog Type',
+      'Level',
+      'Teacher',
+      'Teacher Email',
+      'Room',
+      'Schedules',
+      'Capacity',
+      'Enrolled',
+      'Status',
+      'Price (DZD)',
+      'Cycle (sessions)',
+      'Created At'
+    ];
+
+    const csvRows = filteredClasses.map((classItem) => {
+      const teacherFullName = `${classItem.teacherId?.firstName || ''} ${classItem.teacherId?.lastName || ''}`.trim();
+      const catalogName = classItem.catalogItem?.name || '';
+      const catalogType = classItem.catalogItem?.type || '';
+      const level = classItem.catalogItem?.level || classItem.level || '';
+
+      return [
+        classItem.name || '',
+        catalogName,
+        catalogType,
+        level,
+        teacherFullName,
+        classItem.teacherId?.email || '',
+        classItem.roomId?.name || '',
+        formatSchedulesForCsv(classItem),
+        classItem.capacity ?? '',
+        classItem.currentEnrollmentCount ?? '',
+        classItem.status || '',
+        typeof classItem.price === 'number' ? formatDZ(classItem.price) : (classItem.price ?? ''),
+        classItem.paymentCycle ?? '',
+        formatDate(classItem.createdAt)
+      ].map(escapeCsvValue).join(',');
+    });
+
+    const csvContent = [headers.map(escapeCsvValue).join(','), ...csvRows].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -396,18 +467,19 @@ const ClassesTab = ({ onNavigateToAttendance }) => {
             isOpen={isCreateModalOpen}
             editMode={!!editingClass}
             classData={editingClass}
+            existingClasses={classes}
             onClose={() => {
               setIsCreateModalOpen(false);
               setEditingClass(null);
             }}
             onSuccess={(updatedClass) => {
-              if (editingClass) {
-                // Update existing class in list
-                setClasses(classes.map(c => c._id === updatedClass._id ? updatedClass : c));
-              } else {
-                // Add new class to list
-                setClasses([updatedClass, ...classes]);
-              }
+              const isEditing = !!editingClass;
+              setClasses(prev => {
+                if (isEditing) {
+                  return prev.map(c => (c._id === updatedClass._id ? updatedClass : c));
+                }
+                return [updatedClass, ...prev];
+              });
               setIsCreateModalOpen(false);
               setEditingClass(null);
             }}

@@ -78,6 +78,19 @@ const createClass = asyncHandler(async (req, res) => {
     description
   } = req.body;
   
+  const trimmedName = typeof name === 'string' ? name.trim() : '';
+  if (!trimmedName) {
+    res.status(400);
+    throw new Error('Class name is required');
+  }
+
+  const existingName = await Class.findOne({ schoolId, name: trimmedName })
+    .collation({ locale: 'en', strength: 2 });
+  if (existingName) {
+    res.status(409);
+    throw new Error('A class with this name already exists');
+  }
+
   // Validate catalog item exists
   const schoolCatalog = await SchoolCatalog.findOne({ schoolId });
   if (!schoolCatalog) {
@@ -161,7 +174,7 @@ const createClass = asyncHandler(async (req, res) => {
 
   // Create class instance to check conflicts
   const newClass = new Class({
-      name,
+    name: trimmedName,
     schoolId,
     catalogItem,
     teacherId,
@@ -290,7 +303,26 @@ const updateClass = asyncHandler(async (req, res) => {
   }
   
   // Update other fields
-  if (name !== undefined) classItem.name = name;
+  if (name !== undefined) {
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    if (!trimmedName) {
+      res.status(400);
+      throw new Error('Class name is required');
+    }
+
+    const duplicate = await Class.findOne({
+      _id: { $ne: id },
+      schoolId,
+      name: trimmedName
+    }).collation({ locale: 'en', strength: 2 });
+
+    if (duplicate) {
+      res.status(409);
+      throw new Error('A class with this name already exists');
+    }
+
+    classItem.name = trimmedName;
+  }
   if (capacity !== undefined) classItem.capacity = capacity;
   if (enrollmentPeriod !== undefined) {
     classItem.enrollmentPeriod = {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, BookOpen, User, Building2, Calendar, Clock, Users, 
   CreditCard, DollarSign, AlertTriangle, CheckCircle, Loader,
@@ -7,6 +7,7 @@ import {
 import axios from 'axios';
 
 const API_BASE_URL = '/api/classes';
+const LEVEL_FILTER_TYPES = new Set(['supportLessons', 'reviewCourses']);
 
 const getAuthToken = () => {
   const userInfoString = localStorage.getItem('user');
@@ -20,12 +21,20 @@ const getAuthToken = () => {
   }
 };
 
-const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, classData = null }) => {
+const ClassCreationModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  editMode = false,
+  classData = null,
+  existingClasses = []
+}) => {
   const [step, setStep] = useState(1);
   const [activeSection, setActiveSection] = useState('catalog'); // For edit mode sections
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [conflictError, setConflictError] = useState(null);
+  const editingClassId = classData?._id || null;
   
   // Data fetching states
   const [catalogItems, setCatalogItems] = useState([]);
@@ -60,6 +69,33 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
 
   // Validation states
   const [validationErrors, setValidationErrors] = useState({});
+
+  const existingNameSet = useMemo(() => {
+    const set = new Set();
+    (existingClasses || []).forEach((cls) => {
+      if (!cls?.name) return;
+      if (editingClassId && cls._id === editingClassId) return;
+      set.add(cls.name.trim().toLowerCase());
+    });
+    return set;
+  }, [existingClasses, editingClassId]);
+
+  const generateUniqueName = useCallback((baseName = '') => {
+    const trimmed = baseName.trim();
+    if (!trimmed) return '';
+
+    if (!existingNameSet.has(trimmed.toLowerCase())) {
+      return trimmed;
+    }
+
+    let counter = 2;
+    let candidate = `${trimmed} (${counter})`;
+    while (existingNameSet.has(candidate.toLowerCase())) {
+      counter += 1;
+      candidate = `${trimmed} (${counter})`;
+    }
+    return candidate;
+  }, [existingNameSet]);
 
   // Edit mode sections configuration
   const editSections = [
@@ -199,8 +235,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
     }
 
     if (currentStep === 4) {
-      if (!formData.name) {
+      const trimmedName = (formData.name || '').trim();
+      if (!trimmedName) {
         errors.name = 'Class name is required';
+      } else if (existingNameSet.has(trimmedName.toLowerCase())) {
+        errors.name = 'A class with this name already exists';
       }
       if (!formData.price || formData.price < 0) {
         errors.price = 'Price must be greater than 0';
@@ -254,12 +293,20 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
   }, [formData.teacherId, formData.roomId, formData.schedules]);
 
   const handleCatalogItemSelect = (item) => {
-    setFormData(prev => ({
-      ...prev,
-      catalogItem: item,
-      name: item.name // Auto-populate class name
-    }));
-    setValidationErrors(prev => ({ ...prev, catalogItem: null }));
+    setFormData(prev => {
+      const trimmedPrevName = (prev.name || '').trim();
+      const previousAutoName = prev.catalogItem ? generateUniqueName(prev.catalogItem?.name || '') : '';
+      const hasCustomName = !!trimmedPrevName && (!prev.catalogItem || trimmedPrevName !== previousAutoName);
+      const shouldAutoName = !editMode && (!trimmedPrevName || !hasCustomName);
+      const nextName = shouldAutoName ? generateUniqueName(item?.name || '') : prev.name;
+
+      return {
+        ...prev,
+        catalogItem: item,
+        name: shouldAutoName ? nextName : prev.name
+      };
+    });
+    setValidationErrors(prev => ({ ...prev, catalogItem: null, name: null }));
   };
 
   const handleTeacherSelect = (teacherId) => {
@@ -322,9 +369,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
     const token = getAuthToken();
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
+    const trimmedName = (formData.name || '').trim();
+
     const payload = {
       ...formData,
-      name: formData.name.substring(0, 100), // Limit name to 100 characters
+      name: trimmedName.substring(0, 100), // Limit name to 100 characters
       catalogItem: {
         type: formData.catalogItem.type,
         itemId: formData.catalogItem._id
@@ -404,15 +453,28 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
         }
         sectionPayload = { schedules: formData.schedules };
         break;
-      case 'details':
+      case 'details': {
+        const trimmedName = (formData.name || '').trim();
+        if (!trimmedName) {
+          setError('Class name is required');
+          setIsLoading(false);
+          return;
+        }
+        if (existingNameSet.has(trimmedName.toLowerCase())) {
+          setError('A class with this name already exists');
+          setIsLoading(false);
+          return;
+        }
+
         sectionPayload = {
-          name: formData.name.substring(0, 100),
+          name: trimmedName.substring(0, 100),
           capacity: parseInt(formData.capacity) || 0,
           enrollmentPeriod: formData.enrollmentPeriod,
           description: formData.description,
           absenceRule: formData.absenceRule
         };
         break;
+      }
       case 'pricing':
         sectionPayload = {
           paymentCycle: formData.paymentCycle,
@@ -464,15 +526,52 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
   const [levelFilter, setLevelFilter] = useState('all'); // all | primary | middle | high_school
   const [searchCatalog, setSearchCatalog] = useState('');
   const [showCount, setShowCount] = useState(18);
+  const levelFilterDisabled = catalogType !== 'all' && !LEVEL_FILTER_TYPES.has(catalogType);
+
+  useEffect(() => {
+    if (levelFilterDisabled && levelFilter !== 'all') {
+      setLevelFilter('all');
+    }
+  }, [levelFilterDisabled, levelFilter]);
 
   const filteredCatalogItems = useMemo(() => {
     const q = (searchCatalog || '').toLowerCase();
+    const normalizedLevelFilter = levelFilter.toLowerCase();
+
     return (catalogItems || [])
-      .filter(it => (catalogType === 'all' ? true : it.type === catalogType))
-      .filter(it => (levelFilter === 'all' ? true : (it.level ? it.level === levelFilter : false)))
-      .filter(it => {
+      .filter((it) => (catalogType === 'all' ? true : it.type === catalogType))
+      .filter((it) => {
+        if (levelFilter === 'all') return true;
+
+        const itemLevel = (it.level || '').toLowerCase();
+
+        if (catalogType === 'all') {
+          if (!LEVEL_FILTER_TYPES.has(it.type)) {
+            return true;
+          }
+          return itemLevel === normalizedLevelFilter;
+        }
+
+        if (!LEVEL_FILTER_TYPES.has(catalogType)) {
+          return true;
+        }
+
+        return itemLevel === normalizedLevelFilter;
+      })
+      .filter((it) => {
         if (!q) return true;
-        const hay = [it.name, it.subject, it.field, it.specialty, it.language, it.activityType, it.activityName, it.grade, it.level, it.stream]
+        const hay = [
+          it.name,
+          it.subject,
+          it.field,
+          it.specialty,
+          it.language,
+          it.activityType,
+          it.activityName,
+          it.grade,
+          it.level,
+          it.stream
+        ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
@@ -535,7 +634,9 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
-                  className="p-2 border border-gray-300 rounded-md text-sm"
+                  disabled={levelFilterDisabled}
+                  title={levelFilterDisabled ? 'Level filter available for Support Lessons and Review Courses only' : undefined}
+                  className="p-2 border border-gray-300 rounded-md text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="all">All levels</option>
                   <option value="primary">Primary</option>
@@ -549,6 +650,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                   className="p-2 border border-gray-300 rounded-md text-sm md:col-span-2"
                 />
               </div>
+              {levelFilterDisabled && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Level filter is available for Support Lessons and Review Courses.
+                </p>
+              )}
             </div>
 
             {/* Catalog Grid */}
@@ -772,7 +878,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => {
+                    const { value } = e.target;
+                    setFormData(prev => ({ ...prev, name: value }));
+                    setValidationErrors(prev => ({ ...prev, name: null }));
+                  }}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -866,7 +976,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
           <div>
@@ -890,7 +1000,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
         </div>
 
         {editMode ? (
-          <>
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Section Tabs for Edit Mode */}
             <div className="bg-white border-b border-gray-200">
               <div className="flex overflow-x-auto px-6">
@@ -912,7 +1022,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
             </div>
 
             {/* Section Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            <div className="flex-1 p-6 overflow-y-auto">
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 mb-6">
                   <AlertTriangle className="text-red-500 w-5 h-5" />
@@ -925,9 +1035,9 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
               
               {renderSectionContent()}
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Progress Steps for Create Mode */}
             <div className="bg-white border-b border-gray-200">
               <div className="flex justify-between px-6 py-4">
@@ -964,7 +1074,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
             </div>
 
             {/* Wizard Content for Create Mode */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            <div className="flex-1 p-6 overflow-y-auto">
               {isLoading && step === 1 ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader className="animate-spin text-blue-500 mr-3" />
@@ -1011,7 +1121,9 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                       <select
                         value={levelFilter}
                         onChange={(e) => setLevelFilter(e.target.value)}
-                        className="p-2 border border-gray-300 rounded-md text-sm"
+                        disabled={levelFilterDisabled}
+                        title={levelFilterDisabled ? 'Level filter available for Support Lessons and Review Courses only' : undefined}
+                        className="p-2 border border-gray-300 rounded-md text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="all">All levels</option>
                         <option value="primary">Primary</option>
@@ -1025,6 +1137,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                         className="p-2 border border-gray-300 rounded-md text-sm md:col-span-2"
                       />
                     </div>
+                    {levelFilterDisabled && (
+                      <p className="mt-2 text-xs text-gray-500">
+                        Level filter is available for Support Lessons and Review Courses.
+                      </p>
+                    )}
                   </div>
 
                   {/* Catalog Grid */}
@@ -1308,7 +1425,11 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                       <input
                         type="text"
                         value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        onChange={(e) => {
+                          const { value } = e.target;
+                          setFormData(prev => ({ ...prev, name: value }));
+                          setValidationErrors(prev => ({ ...prev, name: null }));
+                        }}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Enter class name"
                       />
@@ -1464,7 +1585,7 @@ const ClassCreationModal = ({ isOpen, onClose, onSuccess, editMode = false, clas
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {/* Footer - only show for create mode */}
