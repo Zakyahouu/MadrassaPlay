@@ -176,9 +176,23 @@ const classSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['active', 'dropped', 'completed'],
+      enum: ['active', 'dropped', 'completed', 'suspended', 'transferred', 'withdrawn'],
       default: 'active'
-    }
+    },
+    endedAt: { type: Date },
+    notes: { type: String, trim: true },
+    history: [
+      {
+        status: {
+          type: String,
+          enum: ['active', 'dropped', 'completed', 'suspended', 'transferred', 'withdrawn']
+        },
+        at: { type: Date, default: Date.now },
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String, trim: true },
+        context: { type: mongoose.Schema.Types.Mixed }
+      }
+    ]
   }],
   
   // Session Tracking

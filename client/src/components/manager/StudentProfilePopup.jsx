@@ -3,7 +3,7 @@ import {
   User, Mail, Phone, MapPin, GraduationCap, QrCode, BookOpen, 
   CreditCard, Calendar, Clock, Star,
   Plus, Edit, Download, X, Building2, CheckCircle, XCircle,
-  AlertCircle, Clock as ClockIcon
+  AlertCircle, Clock as ClockIcon, History, ArrowLeftRight, PauseCircle, PlayCircle, FileText
 } from 'lucide-react';
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
@@ -42,6 +42,17 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [isEnrollLoading, setIsEnrollLoading] = useState(false);
   const [enrollError, setEnrollError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [actionModal, setActionModal] = useState({ type: null, enrollment: null });
+  const [actionForm, setActionForm] = useState({ reason: '', targetClassId: '' });
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [transferClasses, setTransferClasses] = useState([]);
+  const actionTitles = {
+    transfer: 'Transfer Enrollment',
+    suspend: 'Suspend Enrollment',
+    unenroll: 'Unenroll From Class'
+  };
 
   useEffect(() => {
     if (isOpen && student?._id) {
@@ -82,67 +93,246 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
 
   const fetchStudentData = async () => {
     setIsLoading(true);
+    setHistoryLoading(true);
     const token = getAuthToken();
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Use enriched enrollments endpoint that returns pricingSnapshot, schedules, and balance
-      const [enrollmentsRes, paymentsRes] = await Promise.all([
+      const historyPromise = axios
+        .get(`/api/students/${student._id}/history`, { ...config, params: { limit: 100 } })
+        .then((res) => res.data)
+        .catch((err) => {
+          console.error('Failed to fetch student history', err);
+          return { timeline: [] };
+        });
+
+      const debtPromise = axios
+        .get(`/api/payments/student-debt/${student._id}`, config)
+        .catch((err) => {
+          console.error('Failed to fetch student debt', err);
+          return null;
+        });
+
+      const [enrollmentsRes, paymentsRes, debtRes, historyData] = await Promise.all([
         axios.get(`/api/enrollments/student/${student._id}`, config),
-        axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
+        axios.get(`/api/students/${student._id}/payments`, config),
+        debtPromise,
+        historyPromise
       ]);
 
       const enrollList = Array.isArray(enrollmentsRes.data) ? enrollmentsRes.data : [];
-      const paymentList = Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : [];
+  const paymentList = Array.isArray(paymentsRes.data) ? paymentsRes.data : [];
       setEnrollments(enrollList);
       setPayments(paymentList);
-      // Compute aggregate debt from payments
-      const debtSum = paymentList.reduce((sum, p) => sum + (typeof p.debtDelta === 'number' ? p.debtDelta : 0), 0);
-      setTotalDebt(debtSum);
+  const fetchedDebt = debtRes?.data?.data?.debt;
+  setTotalDebt(Number.isFinite(fetchedDebt) ? fetchedDebt : 0);
+      setHistory(Array.isArray(historyData?.timeline) ? historyData.timeline : []);
     } catch (error) {
       console.error('Error fetching student data:', error);
-      // Use mock data for demo
-      setEnrollments([
-        {
-          _id: '1',
-          className: 'Math Support - Grade 5',
-          teacher: 'Ahmed Benali',
-          startDate: '2024-01-15',
-          sessionsCount: 10,
-          sessionsCompleted: 7,
-          totalAmount: 2000,
-          amountPaid: 2000,
-          status: 'active',
-          schedule: 'Monday, Wednesday 2:00 PM'
-        }
-      ]);
-      setPayments ([
-        {
-          _id: '1',
-          amount: 2000,
-          method: 'cash',
-          date: '2024-01-15',
-          description: 'Payment for Math Support - Grade 5',
-          status: 'completed'
-        }
-      ]);
+      setEnrollments([]);
+      setPayments([]);
+      setHistory([]);
     } finally {
       setIsLoading(false);
+      setHistoryLoading(false);
     }
   };
 
+  const loadTransferClasses = async () => {
+    try {
+      const token = getAuthToken();
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const { data } = await axios.get('/api/enrollments/available-classes', config);
+      setTransferClasses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load transfer classes', err);
+      setTransferClasses([]);
+      setActionError(err.response?.data?.message || 'Failed to load classes');
+    }
+  };
 
-  const unenroll = async (enrollmentId) => {
-    if (!enrollmentId) return;
+  const openActionModal = (type, enrollment) => {
+    setActionError('');
+    setActionForm({ reason: '', targetClassId: '' });
+    setActionModal({ type, enrollment });
+    if (type === 'transfer') {
+      loadTransferClasses();
+    }
+  };
+
+  const closeActionModal = () => {
+    setActionModal({ type: null, enrollment: null });
+    setTransferClasses([]);
+    setActionError('');
+  };
+
+  const submitAction = async (event) => {
+    event.preventDefault();
+    if (!actionModal?.type || !actionModal?.enrollment) return;
+    setActionError('');
+    setActionSubmitting(true);
+    const token = getAuthToken();
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
+    try {
+      if (actionModal.type === 'transfer') {
+        if (!actionForm.targetClassId) {
+          setActionError('Please select a target class');
+          setActionSubmitting(false);
+          return;
+        }
+        await axios.post(`/api/students/${student._id}/transfer`, {
+          fromEnrollmentId: actionModal.enrollment._id,
+          toClassId: actionForm.targetClassId,
+          reason: actionForm.reason?.trim() || undefined,
+        }, config);
+      } else if (actionModal.type === 'suspend') {
+        if (!actionForm.reason?.trim()) {
+          setActionError('Reason is required');
+          setActionSubmitting(false);
+          return;
+        }
+        await axios.post(`/api/students/${student._id}/suspend`, {
+          enrollmentId: actionModal.enrollment._id,
+          reason: actionForm.reason.trim(),
+        }, config);
+      } else if (actionModal.type === 'unenroll') {
+        await axios.post(`/api/students/${student._id}/unenroll`, {
+          enrollmentId: actionModal.enrollment._id,
+          reason: actionForm.reason?.trim() || undefined,
+        }, config);
+      }
+      closeActionModal();
+      await fetchStudentData();
+    } catch (err) {
+      console.error('Student action failed', err);
+      setActionError(err.response?.data?.message || 'Action failed');
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+
+  const handleUnsuspend = async (enrollment) => {
+    if (!enrollment?._id) return;
+    if (!window.confirm('Unsuspend this enrollment?')) return;
     setActionError('');
     try {
       const token = getAuthToken();
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`/api/enrollments/${enrollmentId}`, config);
+      await axios.post(`/api/students/${student._id}/unsuspend`, { enrollmentId: enrollment._id }, config);
       await fetchStudentData();
     } catch (err) {
-      setActionError(err.response?.data?.message || 'Failed to unenroll student');
+      setActionError(err.response?.data?.message || 'Failed to unsuspend enrollment');
     }
+  };
+
+  const openPrintableReceipt = (payment) => {
+    const printable = payment?.receiptMeta?.printable;
+    if (!printable) {
+      setActionError('Receipt data is not available for this payment.');
+      return;
+    }
+    const receiptWindow = window.open('', '_blank', 'width=720,height=900');
+    if (!receiptWindow) {
+      setActionError('Please allow pop-ups to view the receipt.');
+      return;
+    }
+    const issuedAt = printable?.issuedAt || payment?.receiptMeta?.issuedAt || payment?.createdAt;
+    const formattedDate = issuedAt ? new Date(issuedAt).toLocaleString() : new Date().toLocaleString();
+    const debtDelta = typeof printable?.payment?.debtDelta === 'number'
+      ? printable.payment.debtDelta
+      : (typeof payment?.debtDelta === 'number' ? payment.debtDelta : 0);
+    const debtImpactLabel = debtDelta > 0
+      ? 'School owes student'
+      : debtDelta < 0
+        ? 'Student owes school'
+        : 'No change';
+    const debtImpactDisplay = debtDelta > 0
+      ? `+${formatDZ(debtDelta)}`
+      : debtDelta < 0
+        ? `-${formatDZ(Math.abs(debtDelta))}`
+        : formatDZ(0);
+    const expectedPrice = printable?.payment?.expectedPrice ?? payment?.expectedPrice ?? payment?.amount ?? 0;
+    const amountTaken = printable?.payment?.taken ?? payment?.taken ?? payment?.amount ?? 0;
+    const paymentAmount = printable?.payment?.amount ?? payment?.amount ?? expectedPrice;
+    const html = `<!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <title>Receipt ${payment?.receiptNumber || ''}</title>
+        <style>
+          body { font-family: 'Inter', 'Segoe UI', sans-serif; padding: 32px; color: #111827; }
+          h1 { font-size: 20px; margin-bottom: 4px; }
+          .section { margin-top: 24px; }
+          .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+          .card { padding: 12px; border: 1px solid #E5E7EB; border-radius: 8px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+          th, td { text-align: left; padding: 8px; border-bottom: 1px solid #E5E7EB; }
+          .footer { margin-top: 32px; font-size: 12px; color: #6B7280; }
+        </style>
+      </head>
+      <body>
+        <h1>Payment Receipt</h1>
+        <p>Receipt #: <strong>${payment?.receiptNumber || 'N/A'}</strong></p>
+        <p>Date: ${formattedDate}</p>
+
+        <div class="section">
+          <div class="grid">
+            <div class="card">
+              <h3>School</h3>
+              <p>${printable?.school?.name || '—'}</p>
+              <p>${printable?.school?.contact?.address || ''}</p>
+              <p>${printable?.school?.contact?.phone || ''}</p>
+            </div>
+            <div class="card">
+              <h3>Student</h3>
+              <p>${printable?.student?.name || '—'} (${printable?.student?.code || '—'})</p>
+              <p>${printable?.student?.contact?.phone1 || ''}</p>
+            </div>
+            <div class="card">
+              <h3>Class</h3>
+              <p>${printable?.class?.name || '—'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Method</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${printable?.payment?.kind || 'Payment'}</td>
+                <td>${formatDZ(paymentAmount)}</td>
+                <td>${printable?.payment?.method || 'cash'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="card">
+            <h3>Financial Breakdown</h3>
+            <p>Expected price: <strong>${formatDZ(expectedPrice)}</strong></p>
+            <p>Amount received: <strong>${formatDZ(amountTaken)}</strong></p>
+            <p>Debt impact: <strong>${debtImpactDisplay}</strong> <span style="color:#6B7280">(${debtImpactLabel})</span></p>
+          </div>
+        </div>
+
+        <div class="footer">
+          Issued by ${printable?.cashier?.name || 'Manager'} (${printable?.cashier?.role || 'staff'})
+        </div>
+      </body>
+    </html>`;
+    receiptWindow.document.write(html);
+    receiptWindow.document.close();
+    receiptWindow.focus();
+    receiptWindow.print();
   };
 
   const markAttendance = async (enrollmentId, status) => {
@@ -185,13 +375,19 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   };
 
   const getEnrollmentStatusBadge = (status) => {
-    const colors = {
-      active: 'bg-green-100 text-green-800 border-green-200',
-      completed: 'bg-blue-100 text-blue-800 border-blue-200',
-      suspended: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200'
+    const badges = {
+      active: { label: 'Active', className: 'bg-green-100 text-green-800 border-green-200' },
+      paused: { label: 'Paused', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      suspended: { label: 'Suspended', className: 'bg-amber-100 text-amber-800 border-amber-200' },
+      withdrawn: { label: 'Withdrawn', className: 'bg-rose-100 text-rose-800 border-rose-200' },
+      completed: { label: 'Completed', className: 'bg-purple-100 text-purple-800 border-purple-200' },
+      transferred: { label: 'Transferred', className: 'bg-slate-100 text-slate-700 border-slate-200' },
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    if (badges[status]) return badges[status];
+    const label = typeof status === 'string'
+      ? status.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase())
+      : 'Status';
+    return { label, className: 'bg-gray-100 text-gray-800 border-gray-200' };
   };
 
   const getPaymentStatusBadge = (status) => {
@@ -217,6 +413,29 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
       return 0;
     }
   };
+
+  const historyActionStyles = {
+    enroll: { label: 'Enroll', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    unenroll: { label: 'Unenroll', className: 'bg-rose-50 text-rose-700 border-rose-200' },
+    transfer: { label: 'Transfer', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    suspend: { label: 'Suspend', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    unsuspend: { label: 'Unsuspend', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+    note: { label: 'Note', className: 'bg-gray-50 text-gray-700 border-gray-200' },
+  };
+
+  const getHistoryActionMeta = (action) => {
+    const fallbackLabel = typeof action === 'string'
+      ? action.replace(/_/g, ' ').replace(/^./, (ch) => ch.toUpperCase())
+      : 'Update';
+    return historyActionStyles[action] || {
+      label: fallbackLabel,
+      className: 'bg-slate-50 text-slate-700 border-slate-200',
+    };
+  };
+
+  const lifecycleStatuses = ['active', 'suspended', 'paused'];
+  const lifecycleEnrollments = (enrollments || []).filter((enrollment) => lifecycleStatuses.includes(enrollment.status));
+  const activeEnrollmentCount = (enrollments || []).filter((e) => e.status === 'active').length;
 
   const levelBadge = getEducationLevelBadge(student?.educationLevel);
 
@@ -279,6 +498,17 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
           </div>
         </div>
 
+        {actionError && !actionModal?.type && (
+          <div className="px-6 mt-3">
+            <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <span>{actionError}</span>
+              <button onClick={() => setActionError('')} className="text-rose-600 hover:text-rose-800">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Tabs */}
         <div className="bg-white border-b border-gray-200">
           <div className="border-b border-gray-200">
@@ -286,7 +516,8 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
               {[
                 { id: 'overview', name: 'Overview', icon: User },
                 { id: 'enrollments', name: 'Enrollments', icon: BookOpen },
-                { id: 'payments', name: 'Payment History', icon: CreditCard }
+                { id: 'payments', name: 'Payment History', icon: CreditCard },
+                { id: 'history', name: 'Progress', icon: History }
               ].map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -508,21 +739,25 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                           <BookOpen className="w-6 h-6 text-purple-600" />
                         </div>
                         <div className="text-3xl font-bold text-purple-900 mb-2">
-                          {enrollments.filter(e => e.status === 'active').length}
+                          {activeEnrollmentCount}
                         </div>
                         <p className="text-sm text-purple-700">Currently Enrolled</p>
                       </div>
 
                       {/* Total Debt */}
-                      <div className="bg-rose-50 border border-rose-200 rounded-lg p-6">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-rose-900">Total Debt</h3>
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-white text-rose-700 border border-rose-200">{totalDebt >= 0 ? 'Owed' : 'Credit'}</span>
+                          <h3 className="text-lg font-semibold text-emerald-900">Total Debt</h3>
+                          <span className={`px-2 py-0.5 text-xs rounded-full border ${totalDebt >= 0 ? 'bg-white text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                            {totalDebt >= 0 ? 'Credit' : 'Owed'}
+                          </span>
                         </div>
-                        <div className="text-3xl font-bold text-rose-900 mb-1">
+                        <div className={`text-3xl font-bold mb-1 ${totalDebt >= 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
                           {formatDZ(Math.abs(totalDebt))}
                         </div>
-                        <p className="text-sm text-rose-700">{totalDebt >= 0 ? 'Student owes school' : 'School owes student'}</p>
+                        <p className={`text-sm ${totalDebt >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          {totalDebt >= 0 ? 'School owes student' : 'Student owes school'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -531,7 +766,10 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                 {activeTab === 'enrollments' && (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-semibold">Active Enrollments</h3>
+                      <div>
+                        <h3 className="font-semibold">Class Enrollments</h3>
+                        <p className="text-xs text-gray-500">Active, paused, and suspended enrollments</p>
+                      </div>
                       <button
                         onClick={() => setShowEnrollModal(true)}
                         className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
@@ -541,73 +779,93 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                       </button>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {enrollments.filter(e => e.status === 'active').map((enrollment) => {
-                        const schedules = enrollment.classId?.schedules || [];
-                        const scheduleText = formatSchedule(schedules);
+                      {lifecycleEnrollments.map((enrollment) => {
+                        const classData = typeof enrollment.classId === 'object' ? enrollment.classId : enrollment.classData;
+                        const schedules = classData?.schedules || enrollment.schedules || [];
+                        const scheduleText = schedules.length ? formatSchedule(schedules) : (enrollment.schedule || 'Schedule unavailable');
+                        const className = classData?.name || enrollment.className || 'Class';
                         const isToday = isTodayClass(schedules);
-                        const balance = enrollment.balance || 0;
+                        const balanceValue = Number(enrollment.balance) || 0;
                         const snap = enrollment.pricingSnapshot || {};
                         const unitLabel = snap.paymentModel === 'per_cycle' ? 'cycles' : 'sessions';
-                        const sideBorder = balance > 0 ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-rose-500';
-                        const cardClasses = isToday
-                          ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 ring-2 ring-blue-300 shadow-lg'
-                          : 'border-gray-200 bg-white hover:shadow-md hover:border-gray-300';
-                        
+                        const statusMeta = getEnrollmentStatusBadge(enrollment.status);
+                        const isSuspended = enrollment.status === 'suspended';
+                        const canMarkAttendance = enrollment.status === 'active';
+                        const cardClasses = [
+                          'border rounded-lg p-4 transition-all duration-200',
+                          isToday
+                            ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 ring-2 ring-blue-300 shadow-lg'
+                            : 'border-gray-200 bg-white hover:shadow-md hover:border-gray-300',
+                          isSuspended ? 'bg-amber-50 border-amber-200 ring-1 ring-amber-200' : '',
+                        ].join(' ').trim();
+
                         return (
-                          <div 
-                            key={enrollment._id} 
-                            className={`border rounded-lg p-4 transition-all duration-200 ${cardClasses} ${sideBorder}`}
-                          >
+                          <div key={enrollment._id} className={cardClasses}>
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-medium text-gray-900 line-clamp-2">{enrollment.classId?.name}</h4>
-                              {isToday && (
-                                <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-medium shadow-sm animate-pulse">
-                                  Today
-                                </span>
-                              )}
+                              <h4 className="font-medium text-gray-900 line-clamp-2">{className}</h4>
+                              <div className="flex flex-col items-end gap-1">
+                                {statusMeta && (
+                                  <span className={`px-2 py-0.5 text-xs rounded-full border font-medium ${statusMeta.className}`}>
+                                    {statusMeta.label}
+                                  </span>
+                                )}
+                                {isToday && (
+                                  <span className="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-medium shadow-sm">
+                                    Today
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            
+
                             <div className="text-sm text-gray-600 mb-3 flex items-center gap-1">
                               <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
                               {scheduleText}
                             </div>
-                            
+
+                            {isSuspended && enrollment.suspension?.reason && (
+                              <div className="text-xs text-amber-800 bg-amber-100 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+                                {enrollment.suspension.reason}
+                              </div>
+                            )}
+
                             <div className={`rounded p-3 mb-3 ${isToday ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
                               <div className="flex items-center justify-between">
-                                  <div>
+                                <div>
                                   <div className="text-xs text-gray-500 uppercase tracking-wide">Balance</div>
                                   <div className={`font-semibold text-lg ${isToday ? 'text-blue-700' : 'text-gray-900'}`}>
-                                    {balance.toFixed(1)} <span className="text-sm font-normal text-gray-500">{unitLabel}</span>
+                                    {balanceValue.toFixed(1)} <span className="text-sm font-normal text-gray-500">{unitLabel}</span>
                                   </div>
-                                  </div>
-                                {balance <= 0 && (
+                                </div>
+                                {balanceValue <= 0 && (
                                   <span className="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 border border-rose-200">Debt</span>
                                 )}
-                                  </div>
-                                    </div>
+                              </div>
+                            </div>
 
                             <div className="flex gap-2 text-xs">
-                              <button 
-                                onClick={() => markAttendance(enrollment._id, 'present')}
+                              <button
+                                onClick={() => canMarkAttendance && markAttendance(enrollment._id, 'present')}
+                                disabled={!canMarkAttendance}
                                 title="Mark Present"
-                                className={`flex-1 h-9 px-3 py-2 text-white rounded-lg font-medium transition-colors ${isToday ? 'bg-green-600 hover:bg-green-700' : 'bg-green-600 hover:bg-green-700'}`}
+                                className={`flex-1 h-9 px-3 py-2 text-white rounded-lg font-medium transition-colors ${canMarkAttendance ? 'bg-green-600 hover:bg-green-700' : 'bg-green-400 cursor-not-allowed opacity-60'}`}
                               >
                                 <span className="inline-flex items-center gap-1">
                                   <CheckCircle className="w-4 h-4" />
                                   Present
                                 </span>
                               </button>
-                              <button 
-                                onClick={() => markAttendance(enrollment._id, 'absent')}
+                              <button
+                                onClick={() => canMarkAttendance && markAttendance(enrollment._id, 'absent')}
+                                disabled={!canMarkAttendance}
                                 title="Mark Absent"
-                                className={`flex-1 h-9 px-3 py-2 text-white rounded-lg font-medium transition-colors ${isToday ? 'bg-amber-500 hover:bg-amber-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                                className={`flex-1 h-9 px-3 py-2 text-white rounded-lg font-medium transition-colors ${canMarkAttendance ? 'bg-amber-500 hover:bg-amber-600' : 'bg-amber-300 cursor-not-allowed opacity-60'}`}
                               >
                                 <span className="inline-flex items-center gap-1">
                                   <XCircle className="w-4 h-4" />
                                   Absent
                                 </span>
                               </button>
-                              <button 
+                              <button
                                 onClick={() => {
                                   setSelectedEnrollment(enrollment);
                                   setShowPaymentModal(true);
@@ -618,9 +876,51 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                 <span className="inline-flex items-center gap-1">
                                   <CreditCard className="w-4 h-4" />
                                   Payment
-                                    </span>
+                                </span>
                               </button>
-                                  </div>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                              <button
+                                onClick={() => openActionModal('transfer', enrollment)}
+                                className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 font-medium"
+                              >
+                                <span className="inline-flex items-center gap-1 justify-center">
+                                  <ArrowLeftRight className="w-4 h-4" />
+                                  Transfer
+                                </span>
+                              </button>
+                              {enrollment.status === 'suspended' ? (
+                                <button
+                                  onClick={() => handleUnsuspend(enrollment)}
+                                  className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-medium"
+                                >
+                                  <span className="inline-flex items-center gap-1 justify-center">
+                                    <PlayCircle className="w-4 h-4" />
+                                    Unsuspend
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => openActionModal('suspend', enrollment)}
+                                  className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium"
+                                >
+                                  <span className="inline-flex items-center gap-1 justify-center">
+                                    <PauseCircle className="w-4 h-4" />
+                                    Suspend
+                                  </span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => openActionModal('unenroll', enrollment)}
+                                className="flex-1 min-w-[120px] px-3 py-2 rounded-lg border border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 font-medium"
+                              >
+                                <span className="inline-flex items-center gap-1 justify-center">
+                                  <XCircle className="w-4 h-4" />
+                                  Unenroll
+                                </span>
+                              </button>
+                            </div>
                             <div className="mt-3 text-xs text-gray-600">
                               {snap.paymentModel === 'per_session' && typeof snap.sessionPrice === 'number' && (
                                 <span>Per session: {formatDZ(snap.sessionPrice)}</span>
@@ -628,15 +928,15 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                               {snap.paymentModel === 'per_cycle' && typeof snap.cyclePrice === 'number' && typeof snap.cycleSize === 'number' && (
                                 <span>Cycle: {snap.cycleSize} sessions · {formatDZ(snap.cyclePrice)}</span>
                               )}
-                      </div>
+                            </div>
                           </div>
                         );
                       })}
-                      
-                      {enrollments.filter(e => e.status === 'active').length === 0 && (
+
+                      {lifecycleEnrollments.length === 0 && (
                         <div className="col-span-full text-center py-8 text-gray-500">
                           <div className="text-4xl mb-2">📚</div>
-                          <p>No active enrollments found</p>
+                          <p>No active, paused, or suspended enrollments</p>
                           <p className="text-sm">Click "Enroll" to add a new enrollment</p>
                         </div>
                       )}
@@ -660,6 +960,8 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Debt Impact</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -670,14 +972,27 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{typeof p.amount === 'number' ? formatDZ(p.amount) : ''}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900 capitalize">{p.method}</td>
                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                  <div className="flex items-center gap-2">
-                                    <span>{p.note || ''}</span>
-                                    {typeof p.debtDelta === 'number' && p.debtDelta !== 0 && (
-                                      <span className={`px-2 py-0.5 text-xs rounded-full border ${p.debtDelta > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                                        {p.debtDelta > 0 ? `(+${formatDZ(p.debtDelta)})` : `(-${formatDZ(Math.abs(p.debtDelta))})`}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <span>{p.note || ''}</span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  {typeof p.debtDelta === 'number' && p.debtDelta !== 0 ? (
+                                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold ${p.debtDelta > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                      <span>{p.debtDelta > 0 ? 'Credit' : 'Owed'}</span>
+                                      <span>{p.debtDelta > 0 ? `+${formatDZ(p.debtDelta)}` : `-${formatDZ(Math.abs(p.debtDelta))}`}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400">—</span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-900">
+                                  <button
+                                    onClick={() => openPrintableReceipt(p)}
+                                    disabled={!p?.receiptMeta?.printable}
+                                    className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm font-medium ${p?.receiptMeta?.printable ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50' : 'border-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                  >
+                                    <FileText className="w-4 h-4" />
+                                    View
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -685,6 +1000,66 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                         </table>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'history' && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Progress Timeline</h3>
+                      <span className="text-sm text-gray-500">{history.length} events</span>
+                    </div>
+
+                    {historyLoading ? (
+                      <div className="flex justify-center py-12">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                      </div>
+                    ) : history.length === 0 ? (
+                      <div className="text-center py-10 text-gray-500">
+                        <div className="text-4xl mb-2">🗒️</div>
+                        <p>No activity recorded yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {history.map((event) => {
+                          const actionMeta = getHistoryActionMeta(event.action);
+                          return (
+                            <div key={event.id} className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between flex-wrap gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${actionMeta.className}`}>
+                                      {actionMeta.label}
+                                    </span>
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {event.class?.name || 'Class not specified'}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {event.createdAt ? new Date(event.createdAt).toLocaleString() : ''}
+                                  </div>
+                                </div>
+
+                                <div className="text-sm text-gray-700">
+                                  <p className="text-gray-900 font-semibold">{event.summary}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    By {event.actorName || 'System'}
+                                    {event.actorRole ? ` · ${event.actorRole}` : ''}
+                                  </p>
+                                </div>
+
+                                {event.reason && (
+                                  <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                                    <span className="text-gray-500 text-xs uppercase tracking-wide">Reason</span>
+                                    <p className="text-gray-900 mt-1">{event.reason}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -827,6 +1202,79 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
         </div>
       </div>
     )}
+
+  {/* Lifecycle Action Modal */}
+  {actionModal?.type && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+      <form onSubmit={submitAction} className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{actionTitles[actionModal.type]}</h3>
+            <p className="text-sm text-gray-500">{actionModal?.enrollment?.className}</p>
+          </div>
+          <button type="button" onClick={closeActionModal} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {actionModal.type === 'transfer' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Class</label>
+              <select
+                value={actionForm.targetClassId}
+                onChange={(e) => setActionForm((prev) => ({ ...prev, targetClassId: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select class...</option>
+                {transferClasses
+                  .filter((c) => c._id !== (actionModal?.enrollment?.classId || actionModal?.enrollment?.class_id))
+                  .map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} · {c.paymentModel === 'per_session'
+                        ? `${typeof c.sessionPrice === 'number' ? formatDZ(c.sessionPrice) : 'N/A'} / session`
+                        : `${typeof c.cyclePrice === 'number' ? formatDZ(c.cyclePrice) : 'N/A'} per ${c.cycleSize || '?'} sessions`}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {(actionModal.type === 'suspend' || actionModal.type === 'unenroll' || actionModal.type === 'transfer') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reason / Notes</label>
+              <textarea
+                value={actionForm.reason}
+                onChange={(e) => setActionForm((prev) => ({ ...prev, reason: e.target.value }))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                rows={3}
+                placeholder={actionModal.type === 'suspend' ? 'Required' : 'Optional'}
+              />
+            </div>
+          )}
+
+          {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+        </div>
+
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={closeActionModal}
+            className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={actionSubmitting}
+            className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+          >
+            {actionSubmitting ? 'Processing...' : 'Confirm'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )}
 
   {/* Record Payment Modal */}
   {showPaymentModal && (

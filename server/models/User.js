@@ -112,6 +112,15 @@ const userSchema = new mongoose.Schema(
         return this.role === 'student';
       },
     },
+    studentStatusHistory: [
+      {
+        status: { type: String, enum: ['active', 'inactive', 'suspended'] },
+        at: { type: Date, default: Date.now },
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String, trim: true },
+        context: { type: mongoose.Schema.Types.Mixed }
+      }
+    ],
     studentCode: {
       type: String,
       // uniqueness is enforced via a compound index (school + studentCode)

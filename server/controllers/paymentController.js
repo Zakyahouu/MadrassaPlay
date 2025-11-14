@@ -5,11 +5,80 @@ const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const StudentFinancial = require('../models/StudentFinancial');
 const LoggingService = require('../services/loggingService');
+const School = require('../models/School');
+const ClassModel = require('../models/Class');
+const User = require('../models/User');
 
 // @desc    Create a cash payment record (aligned with new schema)
 // @route   POST /api/payments
 // @access  Private (Manager, Staff)
 const Enrollment = require('../models/Enrollment');
+
+async function generateReceiptNumber(schoolId) {
+  const dayKey = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const random = Math.floor(1000 + Math.random() * 9000);
+    const candidate = `RCPT-${dayKey}-${random}`;
+    const existing = await Payment.findOne({ schoolId, receiptNumber: candidate }).select('_id');
+    if (!existing) {
+      return candidate;
+    }
+  }
+  return `RCPT-${Date.now()}`;
+}
+
+async function buildReceiptMeta({ schoolId, enrollment, paymentPayload, actor }) {
+  const [schoolDoc, studentDoc, classDoc] = await Promise.all([
+    School.findById(schoolId).lean(),
+    User.findById(enrollment.studentId).select('firstName lastName studentCode contact').lean(),
+    ClassModel.findById(enrollment.classId).select('name schedules paymentModel sessionPrice cycleSize cyclePrice').lean(),
+  ]);
+
+  const issuedAt = new Date();
+  const printable = {
+    version: 1,
+    school: {
+      name: schoolDoc?.name,
+      contact: schoolDoc?.contact || null,
+    },
+    student: {
+      id: studentDoc?._id?.toString(),
+      name: `${studentDoc?.firstName || ''} ${studentDoc?.lastName || ''}`.trim(),
+      code: studentDoc?.studentCode,
+      contact: studentDoc?.contact || null,
+    },
+    class: {
+      id: classDoc?._id?.toString(),
+      name: classDoc?.name,
+      schedules: classDoc?.schedules || [],
+    },
+    enrollment: {
+      id: enrollment?._id?.toString(),
+      pricingSnapshot: enrollment?.pricingSnapshot || null,
+    },
+    payment: {
+      amount: paymentPayload.amount,
+      kind: paymentPayload.kind,
+      method: paymentPayload.method,
+      unitType: paymentPayload.unitType,
+      units: paymentPayload.units,
+      expectedPrice: paymentPayload.expectedPrice,
+      taken: paymentPayload.taken,
+      debtDelta: paymentPayload.debtDelta,
+    },
+    cashier: {
+      id: actor?._id?.toString(),
+      name: `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || actor?.name,
+      role: actor?.role,
+    }
+  };
+
+  return {
+    issuedAt,
+    issuedBy: actor?._id,
+    printable,
+  };
+}
 const createPayment = async (req, res) => {
   try {
     const { enrollmentId, amount, kind, note, idempotencyKey, unitType, units, expectedPrice, taken, debtDelta } = req.body || {};
@@ -67,6 +136,14 @@ const createPayment = async (req, res) => {
       debtDelta: typeof debtDelta === 'number' ? debtDelta : (Number.isFinite(paid) && Number.isFinite(parsedExpected) ? (paid - parsedExpected) : 0),
     };
     if (normalizedIdem) paymentPayload.idempotencyKey = normalizedIdem;
+    paymentPayload.receiptNumber = await generateReceiptNumber(schoolId);
+    paymentPayload.receiptMeta = await buildReceiptMeta({
+      schoolId,
+      enrollment,
+      paymentPayload,
+      actor: req.user,
+    });
+
     const payment = await Payment.create(paymentPayload);
 
     // Adjust enrollment balance automatically

@@ -1,9 +1,81 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const ClassModel = require('../models/Class');
-const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
 const Enrollment = require('../models/Enrollment');
 const LoggingService = require('../services/loggingService');
+const Payment = require('../models/Payment');
+const { applyDebtAdjustment } = require('../services/enrollmentFinanceService');
+const StudentLogService = require('../services/studentLogService');
+
+function sessionsToMonetaryValue(balance, snapshot = {}) {
+  const sessions = Number(balance) || 0;
+  if (sessions === 0) return 0;
+  const { paymentModel, sessionPrice, cycleSize, cyclePrice } = snapshot || {};
+  if (paymentModel === 'per_session' && typeof sessionPrice === 'number' && sessionPrice > 0) {
+    return sessions * sessionPrice;
+  }
+  if (paymentModel === 'per_cycle' && typeof cycleSize === 'number' && cycleSize > 0 && typeof cyclePrice === 'number' && cyclePrice > 0) {
+    return (sessions / cycleSize) * cyclePrice;
+  }
+  return sessions;
+}
+
+function monetaryValueToSessions(value, snapshot = {}) {
+  const amount = Number(value) || 0;
+  if (amount === 0) return 0;
+  const { paymentModel, sessionPrice, cycleSize, cyclePrice } = snapshot || {};
+  if (paymentModel === 'per_session' && typeof sessionPrice === 'number' && sessionPrice > 0) {
+    return amount / sessionPrice;
+  }
+  if (paymentModel === 'per_cycle' && typeof cycleSize === 'number' && cycleSize > 0 && typeof cyclePrice === 'number' && cyclePrice > 0) {
+    return (amount / cyclePrice) * cycleSize;
+  }
+  return amount;
+}
+
+function buildPricingSnapshotForClass(klass) {
+  if (!klass) throw new Error('Class not found');
+  let { paymentModel, sessionPrice, cyclePrice, cycleSize } = klass;
+  if (!paymentModel) {
+    if (typeof klass.price === 'number' && typeof klass.paymentCycle === 'number') {
+      paymentModel = 'per_cycle';
+      cyclePrice = klass.price;
+      cycleSize = klass.paymentCycle;
+    } else {
+      throw new Error('Class pricing not configured. Please update class pricing.');
+    }
+  }
+
+  if (paymentModel === 'per_session') {
+    if (typeof sessionPrice !== 'number') {
+      throw new Error('Class per-session price missing. Please update class pricing.');
+    }
+    return {
+      paymentModel,
+      sessionPrice,
+      cycleSize: undefined,
+      cyclePrice: undefined,
+    };
+  }
+
+  // per_cycle
+  if (typeof cyclePrice !== 'number') {
+    cyclePrice = typeof klass.price === 'number' ? klass.price : undefined;
+  }
+  if (typeof cycleSize !== 'number') {
+    cycleSize = typeof klass.paymentCycle === 'number' ? klass.paymentCycle : undefined;
+  }
+  if (typeof cyclePrice !== 'number' || typeof cycleSize !== 'number') {
+    throw new Error('Class cycle price/size missing. Please update class pricing.');
+  }
+  return {
+    paymentModel,
+    sessionPrice: undefined,
+    cycleSize,
+    cyclePrice,
+  };
+}
 
 // @desc    Get all students for a school (manager only)
 // @route   GET /api/students
@@ -311,27 +383,6 @@ const enrollStudent = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create Enrollment document first, to avoid partial state on failures
-  const Enrollment = require('../models/Enrollment');
-  
-  // Check if enrollment already exists (idempotent behavior)
-  const existingEnrollment = await Enrollment.findOne({ 
-    studentId: student._id,
-    classId: klass._id
-  });
-  if (existingEnrollment) {
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Student already enrolled (idempotent)',
-      class: klass,
-      enrollmentId: existingEnrollment._id,
-      pricingSnapshot: existingEnrollment.pricingSnapshot || pricingSnapshot,
-      className: klass.name,
-    });
-  }
-  
-  
   const pricingSnapshot = {
     paymentModel,
     sessionPrice: paymentModel === 'per_session' ? sessionPrice : undefined,
@@ -343,6 +394,26 @@ const enrollStudent = asyncHandler(async (req, res) => {
     legacyTotals = { totalSessions: cycleSize, totalAmount: cyclePrice, sessionsCompleted: 0, amountPaid: 0 };
   } else if (paymentModel === 'per_session') {
     legacyTotals = { totalSessions: 0, totalAmount: 0, sessionsCompleted: 0, amountPaid: 0 };
+  }
+
+  // Create Enrollment document first, to avoid partial state on failures
+  const Enrollment = require('../models/Enrollment');
+  
+  // Check if enrollment already exists (idempotent behavior)
+  const existingEnrollment = await Enrollment.findOne({ 
+    studentId: student._id,
+    classId: klass._id,
+    status: { $in: ['active', 'paused', 'suspended'] }
+  });
+  if (existingEnrollment) {
+    return res.status(200).json({
+      success: true,
+      message: 'Student already enrolled (idempotent)',
+      class: klass,
+      enrollmentId: existingEnrollment._id,
+      pricingSnapshot: existingEnrollment.pricingSnapshot || pricingSnapshot,
+      className: klass.name,
+    });
   }
 
   let enrollmentDoc;
@@ -395,6 +466,22 @@ const enrollStudent = asyncHandler(async (req, res) => {
     { studentId: student._id, classId: klass._id, enrollmentId: enrollmentDoc._id },
     { entityType: 'enrollment', entityId: enrollmentDoc._id }
   );
+
+  await StudentLogService.record({
+    schoolId: klass.schoolId,
+    studentId: student._id,
+    action: 'enroll',
+    summary: `Enrolled in ${klass.name}`,
+    details: {
+      enrollmentId: enrollmentDoc._id,
+      classId: klass._id,
+      pricingSnapshot,
+    },
+    enrollmentId: enrollmentDoc._id,
+    classId: klass._id,
+    actor: req.user,
+    tags: ['enroll'],
+  });
 
   res.status(201).json({
     success: true,
@@ -518,23 +605,711 @@ const getStudentPayments = asyncHandler(async (req, res) => {
     throw new Error('Student not found');
   }
 
-  // For now, return mock data. In a real implementation, you would:
-  // 1. Have a Payment model
-  // 2. Query payments where studentId matches
-  // 3. Include enrollment details
-  
-  const mockPayments = [
-    {
-      _id: '1',
-      amount: 2000,
-      method: 'cash',
-      date: '2024-01-15',
-      description: 'Payment for Math Support - Grade 5',
-      status: 'completed'
-    }
-  ];
+  const payments = await Payment.find({ schoolId, studentId: id })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate('classId', 'name')
+    .lean();
 
-  res.json(mockPayments);
+  res.json(payments);
+});
+
+// @desc    Unenroll student from a class and convert remaining balance into debt (school owes student)
+// @route   POST /api/students/:id/unenroll
+// @access  Private (Manager)
+const unenrollStudent = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to unenroll students');
+  }
+
+  const { id: studentId } = req.params;
+  const { enrollmentId, reason } = req.body || {};
+  if (!enrollmentId || !mongoose.isValidObjectId(enrollmentId)) {
+    res.status(400);
+    throw new Error('Valid enrollmentId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const enrollment = await Enrollment.findOne({ _id: enrollmentId, schoolId, studentId }).populate('classId', 'name');
+  if (!enrollment) {
+    res.status(404);
+    throw new Error('Enrollment not found');
+  }
+
+  if (!['active', 'paused', 'suspended'].includes(enrollment.status)) {
+    res.status(409);
+    throw new Error('Only active enrollments can be unenrolled');
+  }
+
+  const classId = enrollment.classId?._id || enrollment.classId;
+  const className = enrollment.classId?.name || 'class';
+  const remainingSessions = Number(enrollment.balance) || 0;
+  const refundableSessions = remainingSessions > 0 ? remainingSessions : 0;
+  const refundValue = refundableSessions > 0
+    ? sessionsToMonetaryValue(refundableSessions, enrollment.pricingSnapshot)
+    : 0;
+
+  enrollment.status = 'withdrawn';
+  enrollment.balance = 0;
+  enrollment.endedAt = new Date();
+  if (reason) {
+    const prefix = enrollment.notes ? `${enrollment.notes}\n` : '';
+    enrollment.notes = `${prefix}Unenrolled: ${reason}`;
+  }
+  await enrollment.save();
+
+  // Update class roster if entry exists
+  await ClassModel.updateOne(
+    { _id: classId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'withdrawn',
+        'enrolledStudents.$.endedAt': enrollment.endedAt,
+        'enrolledStudents.$.notes': reason || 'Unenrolled',
+      }
+    }
+  ).catch(() => null);
+
+  if (refundValue > 0) {
+    await applyDebtAdjustment({
+      schoolId,
+      studentId: student._id,
+      enrollmentId,
+      amount: refundValue,
+      kind: 'unenroll_refund',
+      note: reason,
+      by: req.user?._id,
+    });
+  }
+
+  await StudentLogService.record({
+    schoolId,
+    studentId: student._id,
+    action: 'unenroll',
+    summary: `Unenrolled from ${className}`,
+    details: {
+      enrollmentId,
+      classId,
+      balanceBefore: remainingSessions,
+      refundedSessions: refundableSessions,
+      refundValue,
+      finance: {
+        refundableSessions,
+        refundValue,
+        debtImpact: refundValue > 0 ? refundValue : 0,
+      },
+      reason,
+    },
+    enrollmentId,
+    classId,
+    actor: req.user,
+    tags: ['unenroll'],
+  });
+
+  await LoggingService.logManagerActivity(
+    req,
+    'student_unenroll',
+    `Unenrolled ${student.firstName} ${student.lastName} from ${className}`,
+    { studentId: student._id, enrollmentId, refundValue, refundedSessions: refundableSessions },
+    { entityType: 'enrollment', entityId: enrollmentId }
+  );
+
+  res.json({
+    success: true,
+    message: 'Student unenrolled successfully',
+    refundValue,
+    refundedSessions: refundableSessions,
+    enrollmentId,
+  });
+});
+
+// @desc    Transfer student between classes with balance recalculation
+// @route   POST /api/students/:id/transfer
+// @access  Private (Manager)
+const transferStudent = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to transfer students');
+  }
+
+  const { id: studentId } = req.params;
+  const { fromEnrollmentId, toClassId, reason } = req.body || {};
+  if (!fromEnrollmentId || !mongoose.isValidObjectId(fromEnrollmentId)) {
+    res.status(400);
+    throw new Error('fromEnrollmentId is required');
+  }
+  if (!toClassId || !mongoose.isValidObjectId(toClassId)) {
+    res.status(400);
+    throw new Error('toClassId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const [sourceEnrollment, targetClass] = await Promise.all([
+    Enrollment.findOne({ _id: fromEnrollmentId, schoolId, studentId }).populate('classId', 'name'),
+    ClassModel.findOne({ _id: toClassId, schoolId }),
+  ]);
+
+  if (!sourceEnrollment) {
+    res.status(404);
+    throw new Error('Source enrollment not found');
+  }
+  if (!targetClass) {
+    res.status(404);
+    throw new Error('Target class not found');
+  }
+  if (sourceEnrollment.classId?._id?.toString() === toClassId) {
+    res.status(400);
+    throw new Error('Student is already enrolled in this class');
+  }
+  if (!['active', 'paused', 'suspended'].includes(sourceEnrollment.status)) {
+    res.status(409);
+    throw new Error('Only active enrollments can be transferred');
+  }
+
+  const existingActive = await Enrollment.findOne({ schoolId, studentId, classId: toClassId, status: 'active' });
+  if (existingActive) {
+    res.status(409);
+    throw new Error('Student already has an active enrollment in the target class');
+  }
+
+  let targetSnapshot;
+  try {
+    targetSnapshot = buildPricingSnapshotForClass(targetClass);
+  } catch (error) {
+    res.status(400);
+    throw new Error(error.message);
+  }
+
+  const activeCount = await Enrollment.countDocuments({ schoolId, classId: toClassId, status: 'active' });
+  if (typeof targetClass.capacity === 'number' && activeCount >= targetClass.capacity) {
+    res.status(409);
+    throw new Error('Target class is at capacity');
+  }
+
+  const sourceClassName = sourceEnrollment.classId?.name || 'original class';
+  const remainingSessions = Number(sourceEnrollment.balance) || 0;
+  const transferValue = sessionsToMonetaryValue(remainingSessions, sourceEnrollment.pricingSnapshot);
+  const rawConvertedSessions = monetaryValueToSessions(transferValue, targetSnapshot);
+  const convertedSessions = Math.max(0, Number.isFinite(rawConvertedSessions)
+    ? Number(rawConvertedSessions.toFixed(4))
+    : 0);
+  const appliedValue = sessionsToMonetaryValue(convertedSessions, targetSnapshot);
+  const remainderValue = Number(((transferValue || 0) - (appliedValue || 0)).toFixed(2));
+  const debtDelta = Math.abs(remainderValue) >= 0.01 ? remainderValue : 0;
+  const sessionDelta = Number((remainingSessions - convertedSessions).toFixed(4));
+
+  const newEnrollment = await Enrollment.create({
+    schoolId,
+    studentId: student._id,
+    classId: toClassId,
+    status: 'active',
+    pricingSnapshot: targetSnapshot,
+  balance: convertedSessions,
+  });
+
+  // Update target class roster
+  const rosterUpdate = await ClassModel.updateOne(
+    { _id: toClassId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'active',
+        'enrolledStudents.$.enrolledAt': new Date(),
+        'enrolledStudents.$.endedAt': null,
+      }
+    }
+  );
+  const matched = rosterUpdate?.matchedCount ?? rosterUpdate?.n ?? 0;
+  if (!matched) {
+    await ClassModel.updateOne(
+      { _id: toClassId },
+      {
+        $push: {
+          enrolledStudents: {
+            studentId: student._id,
+            enrolledAt: new Date(),
+            status: 'active',
+          }
+        }
+      }
+    );
+  }
+
+  // Close out original enrollment
+  sourceEnrollment.status = 'transferred';
+  sourceEnrollment.balance = 0;
+  sourceEnrollment.endedAt = new Date();
+  if (reason) {
+    const prefix = sourceEnrollment.notes ? `${sourceEnrollment.notes}\n` : '';
+    sourceEnrollment.notes = `${prefix}Transferred: ${reason}`;
+  }
+  await sourceEnrollment.save();
+
+  const sourceClassId = sourceEnrollment.classId?._id || sourceEnrollment.classId;
+  await ClassModel.updateOne(
+    { _id: sourceClassId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'transferred',
+        'enrolledStudents.$.endedAt': sourceEnrollment.endedAt,
+        'enrolledStudents.$.notes': reason || 'Transferred',
+      }
+    }
+  ).catch(() => null);
+
+  if (Math.abs(debtDelta) >= 0.01) {
+    await applyDebtAdjustment({
+      schoolId,
+      studentId: student._id,
+      enrollmentId: newEnrollment._id,
+      amount: debtDelta,
+      kind: 'transfer_balance_adjustment',
+      note: `Transfer from ${sourceClassName} to ${targetClass.name}`,
+      by: req.user?._id,
+    });
+  }
+
+  await StudentLogService.record({
+    schoolId,
+    studentId: student._id,
+    action: 'transfer',
+    summary: `Transferred from ${sourceClassName} to ${targetClass.name}`,
+    details: {
+      fromEnrollmentId,
+      toEnrollmentId: newEnrollment._id,
+      fromClassId: sourceClassId,
+      toClassId,
+      transferredSessions: remainingSessions,
+      transferValue,
+      convertedSessions,
+      appliedValue,
+      remainderValue: debtDelta,
+      sessionDelta,
+      debtDelta,
+      finance: {
+        previousSessions: remainingSessions,
+        previousValue: transferValue,
+        newSessionsCredited: convertedSessions,
+        appliedValue,
+        remainderValue: debtDelta,
+        debtImpact: debtDelta,
+      },
+      reason,
+    },
+    enrollmentId: newEnrollment._id,
+    classId: toClassId,
+    actor: req.user,
+    tags: ['transfer'],
+  });
+
+  await LoggingService.logManagerActivity(
+    req,
+    'student_transfer',
+    `Transferred ${student.firstName} ${student.lastName} from ${sourceClassName} to ${targetClass.name}`,
+    {
+      studentId: student._id,
+      fromEnrollmentId,
+      toEnrollmentId: newEnrollment._id,
+      transferValue,
+      convertedSessions,
+      appliedValue,
+      remainderValue: debtDelta,
+      sessionDelta,
+      debtDelta,
+    },
+    { entityType: 'enrollment', entityId: newEnrollment._id }
+  );
+
+  res.json({
+    success: true,
+    message: 'Student transferred successfully',
+    newEnrollmentId: newEnrollment._id,
+    transferredSessions: remainingSessions,
+    transferValue,
+    convertedSessions,
+    debtDelta,
+    appliedValue,
+  });
+});
+
+// @desc    Suspend student enrollment
+// @route   POST /api/students/:id/suspend
+// @access  Private (Manager)
+const suspendStudent = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to suspend students');
+  }
+
+  const { id: studentId } = req.params;
+  const { enrollmentId, reason } = req.body || {};
+  if (!enrollmentId || !mongoose.isValidObjectId(enrollmentId)) {
+    res.status(400);
+    throw new Error('Valid enrollmentId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const enrollment = await Enrollment.findOne({ _id: enrollmentId, schoolId, studentId }).populate('classId', 'name');
+  if (!enrollment) {
+    res.status(404);
+    throw new Error('Enrollment not found');
+  }
+  if (enrollment.status === 'suspended') {
+    return res.json({
+      success: true,
+      message: 'Enrollment already suspended',
+      suspension: enrollment.suspension,
+    });
+  }
+
+  if (!['active', 'paused'].includes(enrollment.status)) {
+    res.status(409);
+    throw new Error('Only active enrollments can be suspended');
+  }
+
+  if (!reason || !reason.trim()) {
+    res.status(400);
+    throw new Error('Suspension reason is required');
+  }
+
+  const heldSessions = Number(enrollment.balance) || 0;
+  const holdValue = Math.abs(heldSessions) >= 0.001
+    ? sessionsToMonetaryValue(heldSessions, enrollment.pricingSnapshot)
+    : 0;
+
+  if (Math.abs(heldSessions) >= 0.001) {
+    enrollment.balance = 0;
+  }
+
+  enrollment.status = 'suspended';
+  enrollment.suspension = {
+    reason: reason || 'Suspended',
+    issuedAt: new Date(),
+    issuedBy: req.user?._id,
+    financialHold: Math.abs(heldSessions) >= 0.001
+      ? {
+          sessions: heldSessions,
+          value: holdValue,
+          note: reason,
+        }
+      : undefined,
+  };
+  await enrollment.save();
+
+  const classId = enrollment.classId?._id || enrollment.classId;
+  await ClassModel.updateOne(
+    { _id: classId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'suspended',
+        'enrolledStudents.$.notes': enrollment.suspension.reason,
+        'enrolledStudents.$.updatedAt': new Date(),
+      }
+    }
+  ).catch(() => null);
+
+  await StudentLogService.record({
+    schoolId,
+    studentId: student._id,
+    action: 'suspend',
+    summary: `Suspended from ${enrollment.classId?.name || 'class'}`,
+    details: {
+      enrollmentId,
+      classId,
+      heldSessions,
+      holdValue,
+      finance: Math.abs(heldSessions) >= 0.001 ? {
+        holdSessions: heldSessions,
+        holdValue,
+        debtImpact: 0,
+      } : undefined,
+      financeHold: Math.abs(heldSessions) >= 0.001 ? { sessions: heldSessions, value: holdValue } : undefined,
+      reason,
+    },
+    enrollmentId,
+    classId,
+    actor: req.user,
+    tags: ['suspend'],
+  });
+
+  await LoggingService.logManagerActivity(
+    req,
+    'student_suspend',
+    `Suspended ${student.firstName} ${student.lastName} from ${enrollment.classId?.name || 'class'}`,
+    { enrollmentId, reason },
+    { entityType: 'enrollment', entityId: enrollmentId }
+  );
+
+  res.json({
+    success: true,
+    message: 'Enrollment suspended',
+    suspension: enrollment.suspension,
+  });
+});
+
+// @desc    Unsuspend student enrollment
+// @route   POST /api/students/:id/unsuspend
+// @access  Private (Manager)
+const unsuspendStudent = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to unsuspend students');
+  }
+
+  const { id: studentId } = req.params;
+  const { enrollmentId } = req.body || {};
+  if (!enrollmentId || !mongoose.isValidObjectId(enrollmentId)) {
+    res.status(400);
+    throw new Error('Valid enrollmentId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const enrollment = await Enrollment.findOne({ _id: enrollmentId, schoolId, studentId }).populate('classId', 'name');
+  if (!enrollment) {
+    res.status(404);
+    throw new Error('Enrollment not found');
+  }
+  if (enrollment.status !== 'suspended') {
+    res.status(409);
+    throw new Error('Enrollment is not suspended');
+  }
+
+  const heldSessions = Number(enrollment.suspension?.financialHold?.sessions) || 0;
+  const holdValue = Number(enrollment.suspension?.financialHold?.value) || 0;
+
+  if (Math.abs(heldSessions) >= 0.001) {
+    enrollment.balance = Number(enrollment.balance || 0) + heldSessions;
+  }
+
+  enrollment.status = 'active';
+  enrollment.suspension = undefined;
+  await enrollment.save();
+
+  const classId = enrollment.classId?._id || enrollment.classId;
+  await ClassModel.updateOne(
+    { _id: classId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'active',
+        'enrolledStudents.$.updatedAt': new Date(),
+      },
+      $unset: {
+        'enrolledStudents.$.notes': '',
+      }
+    }
+  ).catch(() => null);
+
+  await StudentLogService.record({
+    schoolId,
+    studentId: student._id,
+    action: 'unsuspend',
+    summary: `Reactivated enrollment for ${enrollment.classId?.name || 'class'}`,
+    details: {
+      enrollmentId,
+      classId,
+      restoredSessions: heldSessions,
+      restoredValue: holdValue,
+      finance: Math.abs(heldSessions) >= 0.001 ? {
+        restoredSessions: heldSessions,
+        restoredValue: holdValue,
+        debtImpact: 0,
+      } : undefined,
+      financeHold: Math.abs(heldSessions) >= 0.001 ? { sessions: heldSessions, value: holdValue } : undefined,
+    },
+    enrollmentId,
+    classId,
+    actor: req.user,
+    tags: ['unsuspend'],
+  });
+
+  await LoggingService.logManagerActivity(
+    req,
+    'student_unsuspend',
+    `Unsuspended ${student.firstName} ${student.lastName} for ${enrollment.classId?.name || 'class'}`,
+    { enrollmentId },
+    { entityType: 'enrollment', entityId: enrollmentId }
+  );
+
+  res.json({
+    success: true,
+    message: 'Enrollment reactivated',
+    status: enrollment.status,
+  });
+});
+
+// @desc    Fetch student activity history (logs timeline)
+// @route   GET /api/students/:id/history
+// @access  Private (Manager)
+const getStudentHistory = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to view student history');
+  }
+
+  const { id: studentId } = req.params;
+  const { limit = 50, skip = 0 } = req.query;
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' })
+    .select('firstName lastName studentCode');
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const logs = await StudentLogService.list({ schoolId, studentId, limit, skip, excludeActions: ['payment'] });
+
+  const classIdSet = new Set();
+  const enrollmentIdSet = new Set();
+  const ensureId = (value) => {
+    if (!value) return null;
+    try {
+      return value.toString();
+    } catch (_) {
+      return null;
+    }
+  };
+
+  logs.items.forEach((log) => {
+    const { classId, enrollmentId, details = {} } = log;
+    const classCandidates = [classId, details.classId, details.fromClassId, details.toClassId];
+    classCandidates.forEach((candidate) => {
+      const id = ensureId(candidate);
+      if (id) classIdSet.add(id);
+    });
+
+    const enrollmentCandidates = [enrollmentId, details.enrollmentId, details.fromEnrollmentId, details.toEnrollmentId];
+    enrollmentCandidates.forEach((candidate) => {
+      const id = ensureId(candidate);
+      if (id) enrollmentIdSet.add(id);
+    });
+  });
+
+  const [classes, enrollments] = await Promise.all([
+    classIdSet.size
+      ? ClassModel.find({ _id: { $in: Array.from(classIdSet) } })
+          .select('name teacherId roomId catalogs')
+          .populate('teacherId', 'firstName lastName')
+          .populate('roomId', 'name')
+          .lean()
+      : [],
+    enrollmentIdSet.size
+      ? Enrollment.find({ _id: { $in: Array.from(enrollmentIdSet) } })
+          .select('classId status balance pricingSnapshot totalSessions sessionsCompleted')
+          .populate('classId', 'name teacherId')
+          .populate('classId.teacherId', 'firstName lastName')
+          .lean()
+      : [],
+  ]);
+
+  const classMap = new Map(
+    classes.map((clazz) => {
+      const teacher = clazz.teacherId;
+      const teacherName = teacher ? `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() : null;
+      return [clazz._id.toString(), {
+        id: clazz._id,
+        name: clazz.name,
+        teacherName: teacherName || null,
+        roomName: clazz.roomId?.name || null,
+      }];
+    })
+  );
+
+  const enrollmentMap = new Map(
+    enrollments.map((enrollment) => {
+      const classInfo = enrollment.classId && typeof enrollment.classId === 'object'
+        ? {
+            id: enrollment.classId._id,
+            name: enrollment.classId.name,
+            teacherName: enrollment.classId.teacherId
+              ? `${enrollment.classId.teacherId.firstName || ''} ${enrollment.classId.teacherId.lastName || ''}`.trim()
+              : null,
+          }
+        : null;
+      return [enrollment._id.toString(), {
+        id: enrollment._id,
+        status: enrollment.status,
+        balance: enrollment.balance,
+        class: classInfo,
+      }];
+    })
+  );
+
+  const findClassContext = (log) => {
+    const detail = log.details || {};
+    const candidates = [log.classId, detail.classId, detail.fromClassId, detail.toClassId];
+    for (const candidate of candidates) {
+      const ref = ensureId(candidate);
+      if (!ref) continue;
+      const info = classMap.get(ref);
+      if (info) return info;
+    }
+    const enrollmentRef = ensureId(log.enrollmentId || detail.enrollmentId);
+    if (enrollmentRef && enrollmentMap.has(enrollmentRef)) {
+      return enrollmentMap.get(enrollmentRef).class || null;
+    }
+    return null;
+  };
+
+  const extractReason = (log) => {
+    const detail = log.details || {};
+    return detail.reason || detail.notes || detail.note || null;
+  };
+
+  const timeline = logs.items.map((log) => {
+    const classContext = findClassContext(log);
+    return {
+      id: log._id,
+      action: log.action,
+      summary: log.summary,
+      class: classContext
+        ? {
+            id: classContext.id,
+            name: classContext.name,
+          }
+        : null,
+      actorName: log.actorName,
+      actorRole: log.actorRole,
+      createdAt: log.createdAt,
+      reason: extractReason(log),
+      tags: Array.isArray(log.tags) ? log.tags.filter(Boolean) : [],
+    };
+  });
+
+  res.json({
+    student: {
+      id: student._id,
+      name: `${student.firstName} ${student.lastName}`.trim(),
+      studentCode: student.studentCode,
+    },
+    timeline,
+    total: logs.total,
+    pageInfo: logs.pageInfo,
+  });
 });
 
 // @desc    Update student enrollment count
@@ -649,6 +1424,11 @@ module.exports = {
   deleteStudent,
   getStudentEnrollments,
   getStudentPayments,
+  unenrollStudent,
+  transferStudent,
+  suspendStudent,
+  unsuspendStudent,
+  getStudentHistory,
   updateEnrollmentCount,
   updateBalance,
   searchStudents,
