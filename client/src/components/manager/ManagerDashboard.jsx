@@ -20,6 +20,7 @@ import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
+import LandingPageSettings from './LandingPageSettings';
 import LogTab from './LogTab';
 import { Link } from 'react-router-dom';  
 import StatsCard from './shared/StatsCard';
@@ -194,6 +195,7 @@ export const ManagerDashboard = () => {
     { id: 'equipment', name: 'Équipement' },
     { id: 'catalog', name: 'Catalogue' },
     { id: 'ads', name: 'Publicités' },
+  { id: 'landing', name: 'Landing Page' },
     { id: 'reports', name: 'Rapports' },
     { id: 'finance', name: 'Finance' } // ✅ added to navigation
   ];
@@ -262,6 +264,9 @@ export const ManagerDashboard = () => {
         return <EquipmentTab />;
       case 'ads':
         return <AdsTab />;
+      case 'landing':
+        window.location.href = '/manager/landing-page-builder';
+        return null;
       case 'reports':
         return <ReportsTab />;
       case 'log':

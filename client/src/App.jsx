@@ -17,6 +17,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
 import ManagerPasswordReset from './pages/ManagerPasswordReset';
 import Finance from './pages/Finance';
+import LandingPageBuilder from './components/manager/LandingPageBuilder';
+import InquiriesManager from './components/manager/InquiriesManager';
 import CreateGame from './pages/CreateGame';
 import EditGame from './pages/EditGame';
 import PlayGame from './pages/PlayGame';
@@ -29,6 +31,8 @@ import ResultDetail from './components/teacher/ResultDetail';
 import Profile from './pages/Profile';
 import SharedModelViewer from './pages/SharedModelViewer';
 import FullScreenModelViewer from './pages/FullScreenModelViewer';
+import PublicSchoolPage from './pages/PublicSchoolPage';
+import PublicSchoolLandingPage from './pages/PublicSchoolLandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
@@ -112,6 +116,26 @@ function App() {
             element={
               <ProtectedRoute>
                 <Finance />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route 8.1: Landing Page Builder (Manager only) */}
+          <Route
+            path="/manager/landing-page-builder"
+            element={
+              <ProtectedRoute>
+                <LandingPageBuilder />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route 8.2: Inquiries Manager (Manager only) */}
+          <Route
+            path="/manager/inquiries"
+            element={
+              <ProtectedRoute>
+                <InquiriesManager />
               </ProtectedRoute>
             }
           />
@@ -251,6 +275,11 @@ function App() {
             path="/shared/:authKey"
             element={<SharedModelViewer />}
           />
+          
+          {/* Public School Landing Pages - Two routes for compatibility */}
+          <Route path="/school/:schoolId" element={<PublicSchoolLandingPage />} />
+          <Route path="/school/:schoolId/legacy" element={<PublicSchoolPage />} />
+          
           {/* Full-screen 3D Model viewer (authenticated via underlying API token) */}
           <Route
             path="/viewer/:modelId"

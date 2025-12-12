@@ -69,6 +69,7 @@ function loadAllRoutes(app) {
     { path: '/api/rooms', file: './routes/roomRoutes' },
     { path: '/api/equipment', file: './routes/equipmentRoutes' },
     { path: '/api/advertisements', file: './routes/advertisementRoutes' },
+  { path: '/api/public', file: './routes/publicRoutes' },
   { path: '/api/announcements', file: './routes/announcementRoutes' },
     { path: '/api/manager', file: './routes/managerRoutes' },
     { path: '/api/finance', file: './routes/financeRoutes' },

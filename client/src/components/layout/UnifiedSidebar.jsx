@@ -28,7 +28,8 @@ import {
   Activity,
   Box,
   Tag,
-  FolderOpen
+  FolderOpen,
+  Globe
 } from 'lucide-react';
 
 const UnifiedSidebar = ({ 
@@ -69,7 +70,8 @@ const UnifiedSidebar = ({
           { id: 'rooms', name: t('rooms'), icon: Building2 },
           { id: 'equipment', name: t('equipment'), icon: Package },
           { id: 'catalog', name: t('catalog'), icon: Package },
-          { id: 'ads', name: t('ads'), icon: Megaphone }
+          { id: 'ads', name: t('ads'), icon: Megaphone },
+          { id: 'landing', name: 'Landing Page Builder', icon: Globe }
         ];
 
         // Add conditional tabs based on permissions
