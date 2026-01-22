@@ -17,52 +17,47 @@ const protect = async (req, res, next) => {
       // and attach it to the request object so our controllers can access it
       req.user = await User.findById(decoded.id).select('-password').populate('school');
 
-      next(); // Move on to the next piece of middleware or the controller
+      return next(); // ✅ FIX: Added return to prevent further execution
     } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: 'Not authorized, token failed' });
+      console.error('Auth token verification failed:', error.message);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
-  }
+  // Only reaches here if no authorization header was present
+  return res.status(401).json({ message: 'Not authorized, no token' });
 };
 
 // Middleware to check for a specific role
 const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as an admin' });
+    return next();
   }
+  return res.status(403).json({ message: 'Not authorized as an admin' });
 };
 
 // Middleware to check for manager role
 const manager = (req, res, next) => {
   if (req.user && req.user.role === 'manager') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as a manager' });
+    return next();
   }
+  return res.status(403).json({ message: 'Not authorized as a manager' });
 };
 
 // Middleware to check for staff role
 const staff = (req, res, next) => {
   if (req.user && req.user.role === 'staff') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as staff' });
+    return next();
   }
+  return res.status(403).json({ message: 'Not authorized as staff' });
 };
 
 // Middleware to check for teacher role
 const teacher = (req, res, next) => {
   if (req.user && req.user.role === 'teacher') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as a teacher' });
+    return next();
   }
+  return res.status(403).json({ message: 'Not authorized as a teacher' });
 };
 
 // Middleware factory to authorize any of the specified roles
@@ -70,7 +65,7 @@ const authorize = (...roles) => (req, res, next) => {
   if (req.user && roles.includes(req.user.role)) {
     return next();
   }
-  res.status(403).json({ message: `Not authorized. Requires one of roles: ${roles.join(', ')}` });
+  return res.status(403).json({ message: `Not authorized. Requires one of roles: ${roles.join(', ')}` });
 };
 
 module.exports = { protect, admin, manager, staff, teacher, authorize };
