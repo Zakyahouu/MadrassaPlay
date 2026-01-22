@@ -225,11 +225,14 @@ const getPaymentById = async (req, res) => {
       return res.status(404).json({ message: 'Payment not found.' });
     }
 
-    // Authorization check (optional, depending on requirements)
-    // const schoolIdRaw = (req.user?.school && (req.user.school._id || req.user.school)) || null;
-    // if (payment.schoolId.toString() !== schoolIdRaw?.toString()) {
-    //   return res.status(403).json({ message: 'Not authorized to view this payment.' });
-    // }
+    // Authorization check - verify school ownership
+    const schoolIdRaw = req.user.school?._id || req.user.school;
+    if (!schoolIdRaw || !mongoose.isValidObjectId(schoolIdRaw)) {
+      return res.status(400).json({ message: 'User is not assigned to a school.' });
+    }
+    if (payment.schoolId.toString() !== schoolIdRaw.toString()) {
+      return res.status(403).json({ message: 'Not authorized to view this payment.' });
+    }
 
     res.status(200).json(payment);
   } catch (error) {
@@ -303,12 +306,42 @@ const updatePayment = async (req, res) => {
   try {
     const paymentId = req.params.id;
     const updates = req.body;
-    const payment = await Payment.findByIdAndUpdate(paymentId, updates, { new: true });
+
+    // Validate payment ID
+    if (!mongoose.isValidObjectId(paymentId)) {
+      return res.status(400).json({ message: 'Invalid payment ID.' });
+    }
+
+    // Get user's school
+    const schoolIdRaw = req.user?.school?._id || req.user?.school;
+    if (!schoolIdRaw) {
+      return res.status(400).json({ message: 'User is not assigned to a school.' });
+    }
+
+    // Find payment first to verify ownership
+    const payment = await Payment.findById(paymentId);
     if (!payment) {
       return res.status(404).json({ message: 'Payment not found.' });
     }
-    res.status(200).json(payment);
+
+    // ✅ Authorization check - verify payment belongs to user's school
+    if (payment.schoolId.toString() !== schoolIdRaw.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this payment.' });
+    }
+
+    // Prevent modifying critical fields that could break data integrity
+    const safeUpdates = { ...updates };
+    delete safeUpdates.schoolId;
+    delete safeUpdates.studentId;
+    delete safeUpdates.enrollmentId;
+    delete safeUpdates.classId;
+    delete safeUpdates.receiptNumber;
+    delete safeUpdates.createdAt;
+
+    const updatedPayment = await Payment.findByIdAndUpdate(paymentId, safeUpdates, { new: true });
+    res.status(200).json(updatedPayment);
   } catch (error) {
+    console.error('updatePayment error:', error.message);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
@@ -319,12 +352,35 @@ const updatePayment = async (req, res) => {
 const deletePayment = async (req, res) => {
   try {
     const paymentId = req.params.id;
-    const deleted = await Payment.findByIdAndDelete(paymentId);
-    if (!deleted) {
+
+    // Validate payment ID
+    if (!mongoose.isValidObjectId(paymentId)) {
+      return res.status(400).json({ message: 'Invalid payment ID.' });
+    }
+
+    // Get user's school
+    const schoolIdRaw = req.user?.school?._id || req.user?.school;
+    if (!schoolIdRaw) {
+      return res.status(400).json({ message: 'User is not assigned to a school.' });
+    }
+
+    // Find payment first to verify ownership
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
       return res.status(404).json({ message: 'Payment not found.' });
     }
+
+    // ✅ Authorization check - verify payment belongs to user's school
+    if (payment.schoolId.toString() !== schoolIdRaw.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this payment.' });
+    }
+
+    // Note: Consider reversing balance/debt changes here if needed
+    // For now, just delete the payment record
+    await Payment.findByIdAndDelete(paymentId);
     res.status(200).json({ message: 'Payment deleted successfully.' });
   } catch (error) {
+    console.error('deletePayment error:', error.message);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };

@@ -30,12 +30,12 @@ const getFinancialOverview = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // Use the aggregation service to get financial data
@@ -77,12 +77,12 @@ const getTransactions = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // Create date range for the month
@@ -178,12 +178,12 @@ const recalculateMonthlyData = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // Delete existing summary to force recalculation
@@ -219,12 +219,12 @@ const getTeacherPayouts = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // First, ensure we have payout records for all active teachers
@@ -320,26 +320,14 @@ const recordTeacherPayout = asyncHandler(async (req, res) => {
   const teacherIdObj = new mongoose.Types.ObjectId(teacherId);
   const classIdObj = new mongoose.Types.ObjectId(classId);
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const schoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
-  
-  // If no schoolId from user, try to get it from the first school in the database (for testing)
-  let schoolIdObj;
-  if (schoolId) {
-    schoolIdObj = new mongoose.Types.ObjectId(schoolId);
-  } else {
-    // Fallback: get the first school from the database
-    const School = require('../models/School');
-    const firstSchool = await School.findOne();
-    if (!firstSchool) {
-      return res.status(404).json({ message: 'No school found' });
-    }
-    schoolIdObj = firstSchool._id;
+  if (!schoolId) {
+    return res.status(403).json({ message: 'Access denied - no school assigned' });
   }
+  
+  const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
 
   try {
     // Find the teacher payout record
@@ -389,26 +377,14 @@ const getTeacherPayoutDetails = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const schoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
-  
-  // If no schoolId from user, try to get it from the first school in the database (for testing)
-  let schoolIdObj;
-  if (schoolId) {
-    schoolIdObj = new mongoose.Types.ObjectId(schoolId);
-  } else {
-    // Fallback: get the first school from the database
-    const School = require('../models/School');
-    const firstSchool = await School.findOne();
-    if (!firstSchool) {
-      return res.status(404).json({ message: 'No school found' });
-    }
-    schoolIdObj = firstSchool._id;
+  if (!schoolId) {
+    return res.status(403).json({ message: 'Access denied - no school assigned' });
   }
+  
+  const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
 
   try {
     // First, ensure we have payout records for this teacher
@@ -532,12 +508,12 @@ const getManualTransactions = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // Get manual transactions for the month
@@ -602,12 +578,12 @@ const addManualTransaction = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Amount must be greater than 0' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const transaction = await ManualTransaction.create({
@@ -657,12 +633,12 @@ const deleteManualTransaction = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
-    // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+    // Check if user has access to this school
     const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
     
-    // if (!userSchoolId || userSchoolId !== transaction.schoolId.toString()) {
-    //   return res.status(403).json({ message: 'Access denied to this transaction' });
-    // }
+    if (!userSchoolId || userSchoolId !== transaction.schoolId.toString()) {
+      return res.status(403).json({ message: 'Access denied to this transaction' });
+    }
 
     await ManualTransaction.findByIdAndDelete(id);
 
@@ -695,12 +671,12 @@ const freezeMonth = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Invalid year or month' });
   }
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     // Check if month is already frozen
@@ -749,12 +725,12 @@ const freezeMonth = asyncHandler(async (req, res) => {
 const getIncomeExpenseTrends = asyncHandler(async (req, res) => {
   const { schoolId, year, month } = req.params;
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
@@ -893,12 +869,12 @@ const getIncomeExpenseTrends = asyncHandler(async (req, res) => {
 const getTeacherPayoutDistribution = asyncHandler(async (req, res) => {
   const { schoolId, year, month } = req.params;
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
@@ -959,12 +935,12 @@ const getTeacherPayoutDistribution = asyncHandler(async (req, res) => {
 const getStudentDebtTrends = asyncHandler(async (req, res) => {
   const { schoolId, year, month } = req.params;
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
@@ -1039,12 +1015,12 @@ const getStudentDebtTrends = asyncHandler(async (req, res) => {
 const getExpenseCategories = asyncHandler(async (req, res) => {
   const { schoolId, year, month } = req.params;
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const schoolIdObj = new mongoose.Types.ObjectId(schoolId);
@@ -1093,12 +1069,12 @@ const getExpenseCategories = asyncHandler(async (req, res) => {
 const getEmployeeSalaryAnalytics = asyncHandler(async (req, res) => {
   const { schoolId, year, month } = req.params;
   
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   
-  // if (!userSchoolId || userSchoolId !== schoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
+  if (!userSchoolId || userSchoolId !== schoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
+  }
 
   try {
     const schoolIdObj = new mongoose.Types.ObjectId(schoolId);

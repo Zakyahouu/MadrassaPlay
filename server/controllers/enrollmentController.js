@@ -240,34 +240,53 @@ const deleteEnrollment = asyncHandler(async (req, res) => {
     throw new Error('Missing school context');
   }
 
+  // Use transaction to ensure all-or-nothing deletion
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const enrollment = await Enrollment.findOne({ _id: id, schoolId: schoolIdStr });
+    const enrollment = await Enrollment.findOne({ _id: id, schoolId: schoolIdStr }).session(session);
     if (!enrollment) {
+      await session.abortTransaction();
+      session.endSession();
       res.status(404);
       throw new Error('Enrollment not found');
     }
 
-  // Delete attendance and payments tied to this enrollment to free space
-  await Attendance.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id });
-  await Payment.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id });
+    // Delete attendance and payments tied to this enrollment
+    await Attendance.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id }).session(session);
+    await Payment.deleteMany({ schoolId: enrollment.schoolId, enrollmentId: enrollment._id }).session(session);
 
     // Remove student from class enrolledStudents array
-    await Class.findByIdAndUpdate(enrollment.classId, {
-      $pull: { enrolledStudents: { studentId: enrollment.studentId } }
-    });
+    await Class.findByIdAndUpdate(
+      enrollment.classId, 
+      { $pull: { enrolledStudents: { studentId: enrollment.studentId } } },
+      { session }
+    );
 
     // Update student enrollment count and status
-    const student = await User.findByIdAndUpdate(enrollment.studentId, {
-      $inc: { enrollmentCount: -1 }
-    }, { new: true });
+    const student = await User.findByIdAndUpdate(
+      enrollment.studentId, 
+      { $inc: { enrollmentCount: -1 } }, 
+      { new: true, session }
+    );
     if (student && (student.enrollmentCount || 0) <= 0) {
       student.enrollmentStatus = 'not_enrolled';
-      await student.save();
+      await student.save({ session });
     }
 
-    await enrollment.deleteOne();
+    await enrollment.deleteOne({ session });
+    
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+    
     res.json({ message: 'Enrollment deleted successfully' });
   } catch (err) {
+    // Abort transaction on any error
+    await session.abortTransaction();
+    session.endSession();
+    
     // Map common errors to friendly responses
     const msg = typeof err?.message === 'string' ? err.message : 'Failed to delete enrollment';
     if (/Cast to ObjectId failed|CastError/i.test(msg)) {

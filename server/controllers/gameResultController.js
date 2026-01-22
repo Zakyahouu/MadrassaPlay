@@ -212,12 +212,17 @@ const getAttemptHistory = async (req, res) => {
 };
 
 // @desc    Get all results for a specific game creation (with ownership + optional filters)
-// @route   GET /api/results/:gameCreationId?classId=&startDate=&endDate=
+// @route   GET /api/results/:gameCreationId?classId=&startDate=&endDate=&page=&limit=
 // @access  Private (Teacher/Admin/Manager)
 const getResultsForGame = async (req, res) => {
   try {
     const { gameCreationId } = req.params;
-    const { classId, startDate, endDate } = req.query;
+    const { classId, startDate, endDate, page = 1, limit = 100 } = req.query;
+    
+    // Enforce maximum limit to prevent memory issues
+    const maxLimit = Math.min(parseInt(limit) || 100, 500);
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const skip = (pageNum - 1) * maxLimit;
 
     // 1) Authorize access: teachers must own the game; admins/managers allowed
     const creation = await GameCreation.findById(gameCreationId).select('owner');
@@ -234,11 +239,11 @@ const getResultsForGame = async (req, res) => {
     const assignmentQuery = { gameCreations: gameCreationId };
     if (isTeacher) assignmentQuery.teacher = req.user._id;
     if (classId) assignmentQuery.classes = classId;
-    const assignments = await Assignment.find(assignmentQuery).select('_id');
+    const assignments = await Assignment.find(assignmentQuery).select('_id').limit(100);
     const assignmentIds = assignments.map(a => a._id);
 
     // If no matching assignments, return empty
-    if (assignmentIds.length === 0) return res.status(200).json([]);
+    if (assignmentIds.length === 0) return res.status(200).json({ results: [], total: 0, page: pageNum, limit: maxLimit });
 
     // 3) Build result query with optional date range
     const resultQuery = { gameCreation: gameCreationId, assignment: { $in: assignmentIds } };
@@ -248,11 +253,22 @@ const getResultsForGame = async (req, res) => {
       if (endDate) resultQuery.createdAt.$lte = new Date(endDate);
     }
 
+    // Get total count for pagination
+    const total = await GameResult.countDocuments(resultQuery);
+    
     const results = await GameResult.find(resultQuery)
       .populate('student', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(maxLimit);
 
-    res.status(200).json(results);
+    res.status(200).json({
+      results,
+      total,
+      page: pageNum,
+      limit: maxLimit,
+      pages: Math.ceil(total / maxLimit)
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
@@ -321,25 +337,49 @@ module.exports.getResultDetail = async (req, res) => {
 module.exports.getMyResultsSummary = async (req, res) => {
   try {
     const studentId = req.user._id;
-    // Count unique gameCreations with at least one counted result
-    const counted = await GameResult.find({ student: studentId, counted: true, isTest: false })
-      .select('gameCreation createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
-    const uniqueGames = new Set(counted.map(r => r.gameCreation.toString())).size;
+    const mongoose = require('mongoose');
+    
+    // Use aggregation for efficient counting without loading all docs
+    const [aggregateResult] = await GameResult.aggregate([
+      { 
+        $match: { 
+          student: new mongoose.Types.ObjectId(studentId), 
+          counted: true, 
+          isTest: false 
+        } 
+      },
+      {
+        $group: {
+          _id: null,
+          uniqueGames: { $addToSet: '$gameCreation' },
+          attemptCount: { $sum: 1 },
+          // Group by date for streak calculation
+          dates: { $addToSet: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } } }
+        }
+      },
+      {
+        $project: {
+          gamesCompleted: { $size: '$uniqueGames' },
+          attemptCount: 1,
+          dates: 1
+        }
+      }
+    ]);
+
+    const uniqueGames = aggregateResult?.gamesCompleted || 0;
+    const attempts = aggregateResult?.attemptCount || 0;
+    const daySet = new Set(aggregateResult?.dates || []);
 
     // Current streak: consecutive days with at least one counted result ending today
-    const daySet = new Set(counted.map(r => new Date(r.createdAt).toISOString().slice(0,10)));
     let streak = 0;
     let cursor = new Date();
-    // normalize to local date string compare by ISO date
-    for (;;) {
-      const iso = new Date(Date.UTC(cursor.getFullYear(), cursor.getMonth(), cursor.getDate())).toISOString().slice(0,10);
+    // Limit streak calculation to prevent infinite loops (max 365 days)
+    for (let i = 0; i < 365; i++) {
+      const iso = cursor.toISOString().slice(0, 10);
       if (daySet.has(iso)) {
         streak += 1;
         cursor.setDate(cursor.getDate() - 1);
       } else {
-        // allow skipping future days only; break when first missing day
         break;
       }
     }
@@ -350,7 +390,6 @@ module.exports.getMyResultsSummary = async (req, res) => {
 
     // Time spent: approximate sum of attempt durations if tracked; fallback to attempt count * 5min
     // We don't store duration, so approximate 5 minutes per counted attempt
-    const attempts = counted.length;
     const approxMinutes = attempts * 5;
 
     res.json({

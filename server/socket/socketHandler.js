@@ -1,28 +1,99 @@
 const { liveGames } = require('../realtimeState');
 const LiveParticipant = require('../models/LiveParticipant');
 const LiveSession = require('../models/LiveSession');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 module.exports = function(io) {
   if (!io) return;
 
+  // Socket.IO authentication middleware
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+      
+      if (!token) {
+        // Allow connection but mark as unauthenticated
+        // Some connections may be guest players in games
+        socket._authenticated = false;
+        socket._user = null;
+        console.log('[socket] unauthenticated connection', socket.id);
+        return next();
+      }
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('_id role school firstName lastName').lean();
+        
+        if (!user) {
+          socket._authenticated = false;
+          socket._user = null;
+          console.log('[socket] token valid but user not found', socket.id);
+          return next();
+        }
+
+        socket._authenticated = true;
+        socket._user = user;
+        console.log('[socket] authenticated', socket.id, user.role, user._id);
+        return next();
+      } catch (jwtError) {
+        // Invalid token - allow connection but mark as unauthenticated
+        socket._authenticated = false;
+        socket._user = null;
+        console.log('[socket] invalid token', socket.id, jwtError.message);
+        return next();
+      }
+    } catch (error) {
+      console.error('[socket] auth middleware error', error);
+      socket._authenticated = false;
+      socket._user = null;
+      return next();
+    }
+  });
+
   io.on('connection', (socket) => {
-    console.log('[socket] connected', socket.id);
+    console.log('[socket] connected', socket.id, 'authenticated:', socket._authenticated);
 
     socket.on('identify', (payload) => {
       try {
         const { role, userId } = payload || {};
-        socket._identified = { role, userId };
-        console.log('[socket] identify', socket.id, role, userId);
+        
+        // If socket is authenticated, verify the userId matches
+        if (socket._authenticated && socket._user) {
+          if (userId && userId !== socket._user._id.toString()) {
+            console.warn('[socket] identify userId mismatch - token user:', socket._user._id, 'claimed:', userId);
+            socket.emit('auth-error', 'User ID mismatch');
+            return;
+          }
+          // Use verified user data instead of client-provided data
+          socket._identified = { 
+            role: socket._user.role, 
+            userId: socket._user._id.toString(),
+            verified: true
+          };
+        } else {
+          // For unauthenticated connections, trust client data but mark as unverified
+          socket._identified = { role, userId, verified: false };
+        }
+        console.log('[socket] identify', socket.id, socket._identified);
       } catch (e) { console.warn('identify handler failed', e); }
     });
 
     socket.on('host-game', ({ code, sessionId, gameCreationId } = {}) => {
       try {
+        // Require authentication for hosting games
+        if (!socket._authenticated) {
+          socket.emit('host-error', 'Authentication required to host games');
+          console.warn('[socket] unauthenticated host-game attempt', socket.id);
+          return;
+        }
+        
         if (!code) return;
-        const room = liveGames[code] = liveGames[code] || { players: [], sessionId: null, gameCreationId: null, status: 'lobby' };
+        const room = liveGames[code] = liveGames[code] || { players: [], sessionId: null, gameCreationId: null, status: 'lobby', hostUserId: socket._user._id.toString() };
         room.sessionId = sessionId || room.sessionId;
         room.gameCreationId = gameCreationId || room.gameCreationId;
         room.status = 'lobby';
+        room.hostUserId = socket._user._id.toString();
         // join the socket to the room so emits can target it
         socket.join(code);
 
