@@ -1,8 +1,9 @@
 import React from 'react';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  AlertTriangle, 
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
   Calculator,
   ArrowUpRight,
   ArrowDownRight,
@@ -10,11 +11,12 @@ import {
 } from 'lucide-react';
 
 const FinancialCards = ({ data, formatCurrency }) => {
+  const { t } = useLanguage();
   if (!data) return null;
 
   const cards = [
     {
-      title: 'Total Income',
+      title: t.totalIncome,
       value: data.totalIncome,
       icon: DollarSign,
       color: 'green',
@@ -22,10 +24,10 @@ const FinancialCards = ({ data, formatCurrency }) => {
       iconColor: 'text-green-600',
       borderColor: 'border-green-200',
       textColor: 'text-green-700',
-      description: 'Student payments this month'
+      description: t.studentPaymentsThisMonth
     },
     {
-      title: 'Total Expenses',
+      title: t.totalExpenses,
       value: data.totalExpenses,
       icon: TrendingUp,
       color: 'red',
@@ -33,10 +35,10 @@ const FinancialCards = ({ data, formatCurrency }) => {
       iconColor: 'text-red-600',
       borderColor: 'border-red-200',
       textColor: 'text-red-700',
-      description: 'Manual expenses'
+      description: t.manualExpenses
     },
     {
-      title: 'Staff Salaries Paid',
+      title: t.staffSalariesPaid,
       value: data.totalStaffSalariesPaid || 0,
       icon: DollarSign,
       color: 'purple',
@@ -44,10 +46,10 @@ const FinancialCards = ({ data, formatCurrency }) => {
       iconColor: 'text-purple-600',
       borderColor: 'border-purple-200',
       textColor: 'text-purple-700',
-      description: `Only paid amounts - ${data.employeeCount || 0} Employees, ${data.teacherCount || 0} Teachers`
+      description: `${t.onlyPaidAmounts} - ${data.employeeCount || 0} ${t.employees}, ${data.teacherCount || 0} ${t.teachers}`
     },
     {
-      title: 'Total Debts',
+      title: t.totalDebts,
       value: data.totalDebts,
       icon: AlertTriangle,
       color: 'orange',
@@ -55,10 +57,10 @@ const FinancialCards = ({ data, formatCurrency }) => {
       iconColor: 'text-orange-600',
       borderColor: 'border-orange-200',
       textColor: 'text-orange-700',
-      description: 'Outstanding student debts'
+      description: t.outstandingStudentDebts
     },
     {
-      title: 'Net Balance',
+      title: t.netBalance,
       value: data.netBalance,
       icon: Calculator,
       color: data.netBalance >= 0 ? 'blue' : 'red',
@@ -66,17 +68,19 @@ const FinancialCards = ({ data, formatCurrency }) => {
       iconColor: data.netBalance >= 0 ? 'text-blue-600' : 'text-red-600',
       borderColor: data.netBalance >= 0 ? 'border-blue-200' : 'border-red-200',
       textColor: data.netBalance >= 0 ? 'text-blue-700' : 'text-red-700',
-      description: 'Income - Expenses - Teacher Payouts - Employee Salaries'
+      description: t.incomeExpensesCalculation
     }
   ];
 
   const getTrendIcon = (value) => {
+    const { t } = useLanguage();
     if (value > 0) return <ArrowUpRight className="w-4 h-4" />;
     if (value < 0) return <ArrowDownRight className="w-4 h-4" />;
     return <Minus className="w-4 h-4" />;
   };
 
   const getTrendColor = (value) => {
+    const { t } = useLanguage();
     if (value > 0) return 'text-green-600';
     if (value < 0) return 'text-red-600';
     return 'text-gray-600';
@@ -87,12 +91,12 @@ const FinancialCards = ({ data, formatCurrency }) => {
       {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositive = card.value >= 0;
-        const isDebt = card.title === 'Total Debts';
-        
+        const isDebt = card.title === t.totalDebts;
+
         return (
           <div
             key={index}
-            className={`${card.bgColor} ${card.borderColor} border rounded-lg p-6 hover:shadow-md transition-shadow`}
+            className={`${card.bgColor} ${card.borderColor} border rounded-xl p-6 hover:shadow-md transition-shadow`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-lg ${card.bgColor} ${card.borderColor} border`}>
@@ -102,7 +106,7 @@ const FinancialCards = ({ data, formatCurrency }) => {
                 {getTrendIcon(card.value)}
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h3 className={`text-sm font-medium ${card.textColor} opacity-80`}>
                 {card.title}
@@ -116,34 +120,34 @@ const FinancialCards = ({ data, formatCurrency }) => {
             </div>
 
             {/* Additional info for specific cards */}
-            {card.title === 'Total Income' && data.paymentCount && (
+            {card.title === t.totalIncome && data.paymentCount && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <p className="text-xs text-gray-600">
-                  {data.paymentCount} payment{data.paymentCount !== 1 ? 's' : ''} received
+                  {t.paymentReceived.replace('{count}', data.paymentCount).replace('{s}', data.paymentCount !== 1 ? 's' : '')}
                 </p>
               </div>
             )}
 
-            {card.title === 'Total Debts' && data.totalDebts !== 0 && (
+            {card.title === t.totalDebts && data.totalDebts !== 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <p className="text-xs text-orange-600">
-                  {data.totalDebts > 0 ? 'Students owe school' : 'School owes students'}
+                  {data.totalDebts > 0 ? t.studentsOweSchool : t.schoolOwesStudents}
                 </p>
               </div>
             )}
 
-            {card.title === 'Net Balance' && (
+            {card.title === t.netBalance && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <p className={`text-xs ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {isPositive ? 'Positive balance' : 'Negative balance'}
+                  {isPositive ? t.positiveBalance : t.negativeBalance}
                 </p>
               </div>
             )}
 
-            {card.title === 'Total Expenses' && data.totalExpenses === 0 && (
+            {card.title === t.totalExpenses && data.totalExpenses === 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <p className="text-xs text-gray-500">
-                  Manual expenses coming in Phase 2
+                  {t.manualExpensesPhase2}
                 </p>
               </div>
             )}

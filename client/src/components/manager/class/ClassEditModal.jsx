@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Loader, AlertTriangle, Calendar } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const getAuthToken = () => {
   const userInfoString = localStorage.getItem('user');
@@ -14,6 +15,7 @@ const getAuthToken = () => {
 };
 
 const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
+  const { t, isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [teachers, setTeachers] = useState([]);
@@ -61,8 +63,8 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
         const cyclePrice = data.cyclePrice || data.price || '';
         const sessionPrice = data.sessionPrice || '';
 
-        const startDate = data.enrollmentPeriod?.startDate ? new Date(data.enrollmentPeriod.startDate).toISOString().slice(0,10) : '';
-        const endDate = data.enrollmentPeriod?.endDate ? new Date(data.enrollmentPeriod.endDate).toISOString().slice(0,10) : '';
+        const startDate = data.enrollmentPeriod?.startDate ? new Date(data.enrollmentPeriod.startDate).toISOString().slice(0, 10) : '';
+        const endDate = data.enrollmentPeriod?.endDate ? new Date(data.enrollmentPeriod.endDate).toISOString().slice(0, 10) : '';
 
         setTeachers(Array.isArray(teach.data) ? teach.data : []);
         setRooms(Array.isArray(rms.data) ? rms.data : []);
@@ -82,7 +84,7 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
           schedules
         });
       } catch (e) {
-        setError(e?.response?.data?.message || 'Failed to load class');
+        setError(e?.response?.data?.message || t.failedToLoadClass || 'Failed to load class');
       } finally {
         setLoading(false);
       }
@@ -151,7 +153,7 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
       onSuccess?.(data);
       onClose?.();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to update class');
+      setError(e?.response?.data?.message || t.updateFailed || 'Failed to update class');
     } finally {
       setLoading(false);
     }
@@ -161,7 +163,7 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl">
         <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Edit Class</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t.editClass}</h3>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -179,7 +181,7 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
                 value={form.name}
-                onChange={(e)=>setForm(prev=>({ ...prev, name: e.target.value }))}
+                onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 required
               />
@@ -188,41 +190,41 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
                 value={form.status}
-                onChange={(e)=>setForm(prev=>({ ...prev, status: e.target.value }))}
+                onChange={(e) => setForm(prev => ({ ...prev, status: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="completed">Completed</option>
+                <option value="active">{t.active}</option>
+                <option value="inactive">{t.inactive}</option>
+                <option value="cancelled">{t.cancelled}</option>
+                <option value="completed">{t.completed}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.teacher}</label>
               <select
                 value={form.teacherId}
-                onChange={(e)=>setForm(prev=>({ ...prev, teacherId: e.target.value }))}
+                onChange={(e) => setForm(prev => ({ ...prev, teacherId: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
-                <option value="">Select teacher…</option>
+                <option value="">{t.chooseTeacher}</option>
                 {teachers.map(t => (
                   <option key={t._id} value={t._id}>{t.firstName} {t.lastName}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.room}</label>
               <select
                 value={form.roomId}
-                onChange={(e)=>setForm(prev=>({ ...prev, roomId: e.target.value }))}
+                onChange={(e) => setForm(prev => ({ ...prev, roomId: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
-                <option value="">Select room…</option>
+                <option value="">{t.chooseRoom}</option>
                 {rooms.map(r => (
-                  <option key={r._id} value={r._id}>{r.name} (Capacity {r.capacity})</option>
+                  <option key={r._id} value={r._id}>{r.name} ({t.capacity} {r.capacity})</option>
                 ))}
               </select>
             </div>
@@ -230,55 +232,55 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.capacity}</label>
               <input
                 type="number"
                 min={1}
                 value={form.capacity}
-                onChange={(e)=>setForm(prev=>({ ...prev, capacity: Number(e.target.value) }))}
+                onChange={(e) => setForm(prev => ({ ...prev, capacity: Number(e.target.value) }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment Start</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.enrollmentStart}</label>
               <input
                 type="date"
                 value={form.enrollmentPeriod.startDate}
-                onChange={(e)=>setForm(prev=>({ ...prev, enrollmentPeriod: { ...prev.enrollmentPeriod, startDate: e.target.value } }))}
+                onChange={(e) => setForm(prev => ({ ...prev, enrollmentPeriod: { ...prev.enrollmentPeriod, startDate: e.target.value } }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment End</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.enrollmentEnd}</label>
               <input
                 type="date"
                 value={form.enrollmentPeriod.endDate}
-                onChange={(e)=>setForm(prev=>({ ...prev, enrollmentPeriod: { ...prev.enrollmentPeriod, endDate: e.target.value } }))}
+                onChange={(e) => setForm(prev => ({ ...prev, enrollmentPeriod: { ...prev.enrollmentPeriod, endDate: e.target.value } }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Model</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.paymentModel || 'Payment Model'}</label>
             <select
               value={form.paymentModel}
-              onChange={(e)=>setForm(prev=>({ ...prev, paymentModel: e.target.value }))}
+              onChange={(e) => setForm(prev => ({ ...prev, paymentModel: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             >
-              <option value="per_session">Per session</option>
-              <option value="per_cycle">Per cycle</option>
+              <option value="per_session">{t.perSession || 'Per session'}</option>
+              <option value="per_cycle">{t.perCycle || 'Per cycle'}</option>
             </select>
             {form.paymentModel === 'per_session' ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Session Price (DZ)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.sessionPriceDz || 'Session Price (DZ)'}</label>
                   <input
                     type="number"
                     min={0}
                     step="0.01"
                     value={form.sessionPrice}
-                    onChange={(e)=>setForm(prev=>({ ...prev, sessionPrice: e.target.value }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, sessionPrice: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
@@ -286,23 +288,23 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Size (sessions)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.cycleSize || 'Cycle Size (sessions)'}</label>
                   <input
                     type="number"
                     min={1}
                     value={form.cycleSize}
-                    onChange={(e)=>setForm(prev=>({ ...prev, cycleSize: e.target.value }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, cycleSize: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cycle Price (DZ)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.cyclePriceDz || 'Cycle Price (DZ)'}</label>
                   <input
                     type="number"
                     min={0}
                     step="0.01"
                     value={form.cyclePrice}
-                    onChange={(e)=>setForm(prev=>({ ...prev, cyclePrice: e.target.value }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, cyclePrice: e.target.value }))}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
@@ -311,36 +313,36 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Schedules</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.schedules}</label>
             <div className="space-y-3">
               {form.schedules.map((s, idx) => (
                 <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Day</label>
+                    <label className="block text-xs text-gray-600 mb-1">{t.dayOfWeekSHORT || 'Day'}</label>
                     <select
                       value={s.dayOfWeek}
-                      onChange={(e)=>updateSchedule(idx, 'dayOfWeek', e.target.value)}
+                      onChange={(e) => updateSchedule(idx, 'dayOfWeek', e.target.value)}
                       className="w-full p-2.5 border border-gray-300 rounded-md"
                     >
-                      <option value="monday">Monday</option>
-                      <option value="tuesday">Tuesday</option>
-                      <option value="wednesday">Wednesday</option>
-                      <option value="thursday">Thursday</option>
-                      <option value="friday">Friday</option>
-                      <option value="saturday">Saturday</option>
-                      <option value="sunday">Sunday</option>
+                      <option value="monday">{t.mon}</option>
+                      <option value="tuesday">{t.tue}</option>
+                      <option value="wednesday">{t.wed}</option>
+                      <option value="thursday">{t.thu}</option>
+                      <option value="friday">{t.fri}</option>
+                      <option value="saturday">{t.sat}</option>
+                      <option value="sunday">{t.sun}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Start</label>
-                    <input type="time" value={s.startTime} onChange={(e)=>updateSchedule(idx, 'startTime', e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-md" />
+                    <label className="block text-xs text-gray-600 mb-1">{t.startTimeSHORT || 'Start'}</label>
+                    <input type="time" value={s.startTime} onChange={(e) => updateSchedule(idx, 'startTime', e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-md" />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">End</label>
-                    <input type="time" value={s.endTime} onChange={(e)=>updateSchedule(idx, 'endTime', e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-md" />
+                    <label className="block text-xs text-gray-600 mb-1">{t.endTimeSHORT || 'End'}</label>
+                    <input type="time" value={s.endTime} onChange={(e) => updateSchedule(idx, 'endTime', e.target.value)} className="w-full p-2.5 border border-gray-300 rounded-md" />
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => removeSchedule(idx)} className="px-3 py-2 border rounded-md hover:bg-gray-50">Remove</button>
+                    <button type="button" onClick={() => removeSchedule(idx)} className="px-3 py-2 border rounded-md hover:bg-gray-50">{t.remove}</button>
                     {idx === form.schedules.length - 1 && (
                       <button type="button" onClick={addSchedule} className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add</button>
                     )}
@@ -351,8 +353,8 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <input id="absenceRule" type="checkbox" className="h-4 w-4" checked={!!form.absenceRule} onChange={(e)=>setForm(prev=>({ ...prev, absenceRule: e.target.checked }))} />
-            <label htmlFor="absenceRule" className="text-sm text-gray-700">Absence affects payment</label>
+            <input id="absenceRule" type="checkbox" className="h-4 w-4" checked={!!form.absenceRule} onChange={(e) => setForm(prev => ({ ...prev, absenceRule: e.target.checked }))} />
+            <label htmlFor="absenceRule" className="text-sm text-gray-700">{t.absenceRule || 'Absence affects payment'}</label>
           </div>
 
           <div>
@@ -360,16 +362,16 @@ const ClassEditModal = ({ isOpen, classId, onClose, onSuccess }) => {
             <textarea
               rows={3}
               value={form.description}
-              onChange={(e)=>setForm(prev=>({ ...prev, description: e.target.value }))}
+              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Optional"
+              placeholder={t.optional || 'Optional'}
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
             <button type="submit" disabled={loading} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
-              {loading ? (<><Loader className="w-4 h-4 inline animate-spin mr-2"/>Saving...</>) : 'Save Changes'}
+              {loading ? (<><Loader className="w-4 h-4 inline animate-spin mr-2" />{t.saving}</>) : t.saveChanges}
             </button>
           </div>
         </form>

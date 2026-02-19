@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import { Play, Users, Clock, Plus, Eye, Settings, Trophy, Target, Activity, CheckCircle, Trash } from 'lucide-react';
+import { Play, Users, Clock, Plus, Eye, Settings, Trophy, Target, Activity, CheckCircle, Trash, } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { SocketContext } from '../../context/SocketContext';
 import { useToast } from '../shared/ToastProvider';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TeacherLiveSessions = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const TeacherLiveSessions = () => {
   const socket = socketContext?.socket;
   const socketConnected = socketContext?.connected;
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState('active');
 
@@ -65,13 +67,13 @@ const TeacherLiveSessions = () => {
   const fetchActive = async () => {
     try {
       setLoadingActive(true);
-  setErrorActive(null);
-  const { data } = await axios.get('/api/live-sessions', { params: { status: 'active' }, headers: authHeaders() });
+      setErrorActive(null);
+      const { data } = await axios.get('/api/live-sessions', { params: { status: 'active' }, headers: authHeaders() });
       setActiveSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
-  console.error('Failed to load active sessions', e);
-  setErrorActive('Failed to load active sessions');
-  toast('Failed to load active sessions');
+      console.error('Failed to load active sessions', e);
+      setErrorActive('Failed to load active sessions');
+      toast('Failed to load active sessions');
     } finally {
       setLoadingActive(false);
     }
@@ -80,13 +82,13 @@ const TeacherLiveSessions = () => {
   const fetchPast = async () => {
     try {
       setLoadingPast(true);
-  setErrorPast(null);
-  const { data } = await axios.get('/api/live-sessions', { params: { status: 'past' }, headers: authHeaders() });
+      setErrorPast(null);
+      const { data } = await axios.get('/api/live-sessions', { params: { status: 'past' }, headers: authHeaders() });
       setPastSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
-  console.error('Failed to load past sessions', e);
-  setErrorPast('Failed to load past sessions');
-  toast('Failed to load past sessions');
+      console.error('Failed to load past sessions', e);
+      setErrorPast('Failed to load past sessions');
+      toast('Failed to load past sessions');
     } finally {
       setLoadingPast(false);
     }
@@ -95,13 +97,13 @@ const TeacherLiveSessions = () => {
   const openNewModal = async () => {
     setShowNewModal(true);
     try {
-  const gamesRes = await axios.get('/api/creations', { headers: authHeaders() });
+      const gamesRes = await axios.get('/api/creations', { headers: authHeaders() });
       setGames(Array.isArray(gamesRes.data) ? gamesRes.data : (gamesRes.data?.creations || []));
       try {
-  const classesRes = await axios.get('/api/classes/teacher', { headers: authHeaders() });
+        const classesRes = await axios.get('/api/classes/teacher', { headers: authHeaders() });
         const cls = Array.isArray(classesRes.data) ? classesRes.data : (classesRes.data?.classes || []);
         setClasses(cls);
-      } catch {}
+      } catch { }
     } catch (e) {
       console.error('Failed to load lists for new session', e);
     }
@@ -125,17 +127,17 @@ const TeacherLiveSessions = () => {
         classIds: newForm.classIds,
         config: { timePenaltyPerWrongMs: 3000 },
       };
-  const res = await axios.post('/api/live-sessions', payload, { headers: authHeaders() });
-    setShowNewModal(false);
-  setNewForm({ title: '', gameCreationId: '', classIds: [] });
+      const res = await axios.post('/api/live-sessions', payload, { headers: authHeaders() });
+      setShowNewModal(false);
+      setNewForm({ title: '', gameCreationId: '', classIds: [] });
       fetchActive();
       setActiveTab('active');
       const code = res?.data?.code;
-  if (code) toast(`Lobby created. Code: ${code}`);
+      if (code) toast(`Lobby created. Code: ${code}`);
     } catch (e) {
-  console.error('Failed to create session', e);
-  const msg = e?.response?.data?.message || 'Failed to create session';
-	toast(msg);
+      console.error('Failed to create session', e);
+      const msg = e?.response?.data?.message || 'Failed to create session';
+      toast(msg);
     } finally {
       setCreating(false);
     }
@@ -147,23 +149,19 @@ const TeacherLiveSessions = () => {
 
   const endSession = async (id) => {
     try {
-  await axios.post(`/api/live-sessions/${id}/end`, null, { headers: authHeaders() });
+      await axios.post(`/api/live-sessions/${id}/end`, null, { headers: authHeaders() });
       setActionsOpenId(null);
       fetchActive();
       fetchPast();
-  toast('Session ended');
-  // Navigate to summary after a short delay so toast is visible
-  setTimeout(() => navigate(`/teacher/live-sessions/${id}`), 600);
+      toast('Session ended');
+      // Navigate to summary after a short delay so toast is visible
+      setTimeout(() => navigate(`/teacher/live-sessions/${id}`), 600);
     } catch (e) {
-  console.error('Failed to end session', e);
-  const msg = e?.response?.data?.message || 'Failed to end session';
-  toast(msg);
+      console.error('Failed to end session', e);
+      const msg = e?.response?.data?.message || 'Failed to end session';
+      toast(msg);
     }
   };
-
-  const deleteSession = async (id) => {
-    try {
-      await axios.delete(`/api/live-sessions/${id}`, { headers: authHeaders() });
 
   const openQuickResults = async (id, title) => {
     setQuickResults({ open: true, id, title, loading: true, error: null, ranks: [], session: null });
@@ -181,13 +179,18 @@ const TeacherLiveSessions = () => {
       toast(msg);
     }
   };
+
   const closeQuickResults = () => setQuickResults({ open: false, id: null, title: '', loading: false, error: null, ranks: [], session: null });
-  fetchPast();
-  toast('Session deleted');
+
+  const deleteSession = async (id) => {
+    try {
+      await axios.delete(`/api/live-sessions/${id}`, { headers: authHeaders() });
+      fetchPast();
+      toast('Session deleted');
     } catch (e) {
       console.error('Failed to delete session', e);
       const msg = e?.response?.data?.message || 'Failed to delete session';
-  toast(msg);
+      toast(msg);
     }
   };
 
@@ -215,7 +218,7 @@ const TeacherLiveSessions = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Live Sessions</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t.liveSessions}</h1>
           <p className="text-gray-600">Manage your real-time gaming sessions</p>
         </div>
         <button
@@ -223,77 +226,77 @@ const TeacherLiveSessions = () => {
           className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700"
         >
           <Plus className="w-4 h-4" />
-              {quickResults.open && (
-                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
-                    <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Quick Results {quickResults.title ? `- ${quickResults.title}` : ''}</h3>
-                      <button onClick={closeQuickResults} className="text-gray-500 hover:text-gray-700">✕</button>
-                    </div>
-                    <div className="p-6 space-y-4 max-h-[70vh] overflow-auto">
-                      {quickResults.loading && (
-                        <div className="text-sm text-gray-500">Loading…</div>
-                      )}
-                      {!quickResults.loading && quickResults.error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{quickResults.error}</div>
-                      )}
-                      {!quickResults.loading && !quickResults.error && (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <p className="text-xs text-gray-500">Participants</p>
-                              <p className="text-lg font-semibold">{quickResults.ranks.length}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Status</p>
-                              <p className="text-lg font-semibold capitalize">{quickResults.session?.status || '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Code</p>
-                              <p className="text-lg font-mono">{quickResults.session?.code || '—'}</p>
-                            </div>
-                          </div>
-                          {quickResults.ranks.length === 0 ? (
-                            <div className="text-sm text-gray-600">No results recorded.</div>
-                          ) : (
-                            <div className="overflow-x-auto">
-                              <table className="min-w-full text-sm">
-                                <thead className="bg-gray-100 text-gray-700">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left">#</th>
-                                    <th className="px-3 py-2 text-left">Name</th>
-                                    <th className="px-3 py-2 text-left">Score</th>
-                                    <th className="px-3 py-2 text-left">Time</th>
-                                    <th className="px-3 py-2 text-left">Wrong</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {quickResults.ranks.slice(0, 10).map((r, i) => (
-                                    <tr key={`${r.studentId || r.userId || i}`} className="border-t border-gray-100">
-                                      <td className="px-3 py-2">{i + 1}</td>
-                                      <td className="px-3 py-2">{[r.firstName, r.lastName].filter(Boolean).join(' ') || r.name || r.userId || '—'}</td>
-                                      <td className="px-3 py-2">{r.score ?? 0}</td>
-                                      <td className="px-3 py-2">{Number.isFinite(r.effectiveTimeMs) ? `${Math.round(r.effectiveTimeMs/100)/10}s` : '—'}</td>
-                                      <td className="px-3 py-2">{r.wrong ?? 0}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              {quickResults.ranks.length > 10 && (
-                                <div className="text-xs text-gray-500 mt-2">Showing top 10 of {quickResults.ranks.length}</div>
-                              )}
-                            </div>
-                          )}
-                          <div className="flex items-center justify-end gap-2 pt-2">
-                            <button onClick={() => { const id = quickResults.id; closeQuickResults(); navigate(`/teacher/live-sessions/${id}`); }} className="px-3 py-2 text-sm rounded-md border">Open Full Summary</button>
-                            <button onClick={closeQuickResults} className="px-3 py-2 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700">Close</button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
+          {quickResults.open && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Quick Results {quickResults.title ? `- ${quickResults.title}` : ''}</h3>
+                  <button onClick={closeQuickResults} className="text-gray-500 hover:text-gray-700">✕</button>
                 </div>
-              )}
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-auto">
+                  {quickResults.loading && (
+                    <div className="text-sm text-gray-500">Loading…</div>
+                  )}
+                  {!quickResults.loading && quickResults.error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{quickResults.error}</div>
+                  )}
+                  {!quickResults.loading && !quickResults.error && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Participants</p>
+                          <p className="text-lg font-semibold">{quickResults.ranks.length}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">{t.status}</p>
+                          <p className="text-lg font-semibold capitalize">{quickResults.session?.status || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Code</p>
+                          <p className="text-lg font-mono">{quickResults.session?.code || '—'}</p>
+                        </div>
+                      </div>
+                      {quickResults.ranks.length === 0 ? (
+                        <div className="text-sm text-gray-600">No results recorded.</div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-gray-100 text-gray-700">
+                              <tr>
+                                <th className="px-3 py-2 text-left">#</th>
+                                <th className="px-3 py-2 text-left">{t.fullName || "Name"}</th>
+                                <th className="px-3 py-2 text-left">Score</th>
+                                <th className="px-3 py-2 text-left">Time</th>
+                                <th className="px-3 py-2 text-left">Wrong</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {quickResults.ranks.slice(0, 10).map((r, i) => (
+                                <tr key={`${r.studentId || r.userId || i}`} className="border-t border-gray-100">
+                                  <td className="px-3 py-2">{i + 1}</td>
+                                  <td className="px-3 py-2">{[r.firstName, r.lastName].filter(Boolean).join(' ') || r.name || r.userId || '—'}</td>
+                                  <td className="px-3 py-2">{r.score ?? 0}</td>
+                                  <td className="px-3 py-2">{Number.isFinite(r.effectiveTimeMs) ? `${Math.round(r.effectiveTimeMs / 100) / 10}s` : '—'}</td>
+                                  <td className="px-3 py-2">{r.wrong ?? 0}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {quickResults.ranks.length > 10 && (
+                            <div className="text-xs text-gray-500 mt-2">Showing top 10 of {quickResults.ranks.length}</div>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-end gap-2 pt-2">
+                        <button onClick={() => { const id = quickResults.id; closeQuickResults(); navigate(`/teacher/live-sessions/${id}`); }} className="px-3 py-2 text-sm rounded-md border">Open Full Summary</button>
+                        <button onClick={closeQuickResults} className="px-3 py-2 text-sm rounded-md bg-purple-600 text-white hover:bg-purple-700">Close</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <span>New Session</span>
         </button>
       </div>
@@ -302,21 +305,19 @@ const TeacherLiveSessions = () => {
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('active')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'active'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'active'
+              ? 'border-purple-500 text-purple-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
           >
             Active Sessions ({activeSessions.length})
           </button>
           <button
             onClick={() => setActiveTab('past')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'past'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'past'
+              ? 'border-purple-500 text-purple-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
           >
             Past Sessions ({pastSessions.length})
           </button>
@@ -328,7 +329,7 @@ const TeacherLiveSessions = () => {
           {loadingActive && (
             <div className="space-y-2">
               <div className="text-sm text-gray-500">Loading active sessions…</div>
-              {[...Array(2)].map((_,i)=> (
+              {[...Array(2)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
                   <div className="h-5 w-1/3 bg-gray-200 rounded mb-2" />
                   <div className="h-3 w-2/3 bg-gray-100 rounded" />
@@ -377,11 +378,10 @@ const TeacherLiveSessions = () => {
                           Started {startedAt}
                         </span>
                         {difficulty && (
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+                          <span className={`px-2 py-1 rounded-full text-xs ${difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
                             difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
+                              'bg-red-100 text-red-700'
+                            }`}>
                             {difficulty}
                           </span>
                         )}
@@ -439,7 +439,7 @@ const TeacherLiveSessions = () => {
           {loadingPast && (
             <div className="space-y-2">
               <div className="text-sm text-gray-500">Loading past sessions…</div>
-              {[...Array(2)].map((_,i)=> (
+              {[...Array(2)].map((_, i) => (
                 <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
                   <div className="h-5 w-1/3 bg-gray-200 rounded mb-2" />
                   <div className="h-3 w-2/3 bg-gray-100 rounded" />
@@ -484,11 +484,10 @@ const TeacherLiveSessions = () => {
                           </span>
                         )}
                         {difficulty && (
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+                          <span className={`px-2 py-1 rounded-full text-xs ${difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
                             difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
+                              'bg-red-100 text-red-700'
+                            }`}>
                             {difficulty}
                           </span>
                         )}
@@ -500,11 +499,10 @@ const TeacherLiveSessions = () => {
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700 border border-gray-200"><Users className="w-3.5 h-3.5" /> {participants}</span>
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-indigo-50 text-indigo-700 border border-indigo-200">Avg {avgScore === '—' ? '—' : `${avgScore}%`}</span>
                       {difficulty && (
-                        <span className={`px-2 py-1 rounded-full text-xs border ${
-                          difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' :
+                        <span className={`px-2 py-1 rounded-full text-xs border ${difficulty === 'Easy' ? 'bg-green-50 text-green-700 border-green-200' :
                           difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                          'bg-red-50 text-red-700 border-red-200'
-                        }`}>
+                            'bg-red-50 text-red-700 border-red-200'
+                          }`}>
                           {difficulty}
                         </span>
                       )}
@@ -690,7 +688,7 @@ const TeacherLiveSessions = () => {
         </div>
       )}
 
-  {/* Toasts handled globally by ToastProvider */}
+      {/* Toasts handled globally by ToastProvider */}
     </div>
   );
 };

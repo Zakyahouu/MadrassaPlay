@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLanguage } from '../../context/LanguageContext';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  AlertTriangle, 
+import {
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
   Calculator,
   RefreshCw,
   Calendar,
@@ -32,32 +32,32 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
   // Fetch financial overview data
   const fetchFinancialData = async () => {
     if (!schoolId) return;
-    
+
     try {
       setLoadingData(true);
       setError(null);
-      
+
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError(t('authentication-required'));
+        setError(t.authenticationRequired);
         return;
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       // Fetch overview data
       const overviewResponse = await axios.get(
         `/api/finance/overview/${schoolId}/${year}/${month}`,
         config
       );
-      
+
       if (overviewResponse.data.success) {
         setFinancialData(overviewResponse.data.data);
       }
-      
+
     } catch (err) {
       console.error('Error fetching financial data:', err);
-      setError(err.response?.data?.message || t('failed-fetch-financial-data'));
+      setError(err.response?.data?.message || t.failedFetchFinancialData);
     } finally {
       setLoadingData(false);
     }
@@ -66,23 +66,23 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
   // Fetch transactions data
   const fetchTransactions = async () => {
     if (!schoolId) return;
-    
+
     try {
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) return;
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       // Fetch transactions
       const transactionsResponse = await axios.get(
         `/api/finance/student-payments/${schoolId}/${year}/${month}`,
         config
       );
-      
+
       if (transactionsResponse.data.success) {
         setTransactions(transactionsResponse.data.data.transactions);
       }
-      
+
     } catch (err) {
       console.error('Error fetching transactions:', err);
     }
@@ -108,7 +108,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Handle freeze month
   const handleFreezeMonth = async () => {
-    if (!schoolId || !window.confirm(t('confirm-freeze-month', { month, year }))) {
+    if (!schoolId || !window.confirm(t.confirmFreezeMonth.replace('{month}', month).replace('{year}', year))) {
       return;
     }
 
@@ -118,12 +118,12 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setFreezeError(t('authentication-required'));
+        setFreezeError(t.authenticationRequired);
         return;
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       const response = await axios.post(
         `/api/finance/freeze/${schoolId}/${year}/${month}`,
         {},
@@ -133,14 +133,14 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       if (response.data.success) {
         // Refresh data to show frozen status
         await fetchFinancialData();
-        alert(t('month-frozen-successfully'));
+        alert(t.monthFrozenSuccessfully);
       } else {
-        setFreezeError(response.data.message || t('failed-freeze-month'));
+        setFreezeError(response.data.message || t.failedFreezeMonth);
       }
 
     } catch (err) {
       console.error('Error freezing month:', err);
-      setFreezeError(err.response?.data?.message || t('failed-freeze-month'));
+      setFreezeError(err.response?.data?.message || t.failedFreezeMonth);
     } finally {
       setFreezing(false);
     }
@@ -176,7 +176,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">{t('loading-financial-data')}</p>
+          <p className="text-gray-500">{t.loadingFinancialData}</p>
         </div>
       </div>
     );
@@ -188,13 +188,13 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">{t('error-loading-data')}</h3>
+            <h3 className="text-lg font-medium text-red-800">{t.errorLoadingData}</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              {t('try-again')}
+              {t.tryAgain}
             </button>
           </div>
         </div>
@@ -209,9 +209,8 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                financialData.isFrozen ? 'bg-blue-100' : 'bg-green-100'
-              }`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${financialData.isFrozen ? 'bg-blue-100' : 'bg-green-100'
+                }`}>
                 {financialData.isFrozen ? (
                   <Lock className="w-6 h-6 text-blue-600" />
                 ) : (
@@ -222,20 +221,19 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 <h2 className="text-xl font-semibold text-gray-900">
                   {financialData.monthName} {financialData.year}
                 </h2>
-                <p className={`text-sm font-medium ${
-                  financialData.isFrozen ? 'text-blue-600' : 'text-green-600'
-                }`}>
-                  {financialData.isFrozen ? t('summary-locked') : t('live-calculation')}
+                <p className={`text-sm font-medium ${financialData.isFrozen ? 'text-blue-600' : 'text-green-600'
+                  }`}>
+                  {financialData.isFrozen ? t.summaryLocked : t.liveCalculation}
                 </p>
                 {financialData.isFrozen && financialData.frozenAt && (
                   <p className="text-xs text-gray-500">
-                    {t('frozen-on')} {formatDate(financialData.frozenAt)}
-                    {financialData.frozenBy && ` ${t('by')} ${financialData.frozenBy.firstName} ${financialData.frozenBy.lastName}`}
+                    {t.frozenOn} {formatDate(financialData.frozenAt)}
+                    {financialData.frozenBy && ` ${t.by} ${financialData.frozenBy.firstName} ${financialData.frozenBy.lastName}`}
                   </p>
                 )}
               </div>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-3">
               {!financialData.isFrozen && !isCurrentMonth() && (
                 <button
@@ -246,28 +244,28 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
                   {freezing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>{t('freezing')}</span>
+                      <span>{t.freezing}</span>
                     </>
                   ) : (
                     <>
                       <Snowflake className="w-4 h-4" />
-                      <span>{t('freeze-month')}</span>
+                      <span>{t.freezeMonth}</span>
                     </>
                   )}
                 </button>
               )}
-              
+
               <button
                 onClick={handleRefresh}
                 disabled={loading}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>{t('refresh')}</span>
+                <span>{t.refresh}</span>
               </button>
             </div>
           </div>
-          
+
           {/* Freeze Error */}
           {freezeError && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3">
@@ -282,7 +280,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       {/* Financial Summary Cards */}
       {financialData && (
-        <FinancialCards 
+        <FinancialCards
           data={financialData}
           formatCurrency={formatCurrency}
         />
@@ -295,31 +293,31 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <div className="flex items-center">
               <Users className="w-8 h-8 text-green-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">{t('payments')}</p>
+                <p className="text-sm text-gray-500">{t.payments}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {financialData.paymentCount || 0}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center">
               <BookOpen className="w-8 h-8 text-purple-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">{t('teacher-earnings')}</p>
+                <p className="text-sm text-gray-500">{t.teacherEarnings}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {formatCurrency(financialData.teacherEarnings)}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center">
               <Calculator className="w-8 h-8 text-orange-600 mr-3" />
               <div>
-                <p className="text-sm text-gray-500">{t('last-updated')}</p>
+                <p className="text-sm text-gray-500">{t.lastUpdated}</p>
                 <p className="text-lg font-semibold text-gray-900">
                   {formatDate(financialData.lastCalculated)}
                 </p>
@@ -334,7 +332,7 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">
-              {t('recent-transactions')}
+              {t.recentTransactions}
             </h3>
             <button
               onClick={handleRefresh}
@@ -342,12 +340,12 @@ const OverviewTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>{t('refresh')}</span>
+              <span>{t.refresh}</span>
             </button>
           </div>
         </div>
-        
-        <TransactionsTable 
+
+        <TransactionsTable
           transactions={transactions}
           formatCurrency={formatCurrency}
           formatDate={formatDate}

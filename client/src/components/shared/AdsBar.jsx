@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Simple in-memory cache to avoid repeated network calls on re-mounts
 // Keyed by role, expires after 5 minutes
@@ -8,6 +9,7 @@ const adsCache = {};
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const AdsBar = ({ userRole, schoolId }) => {
+  const { t } = useLanguage();
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ const AdsBar = ({ userRole, schoolId }) => {
             <button
               onClick={() => setIndex(i => (i - 1 + ads.length) % ads.length)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-              aria-label="Previous announcement"
+              aria-label={t.previous}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -100,8 +102,8 @@ const AdsBar = ({ userRole, schoolId }) => {
                 {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
                 <img
                   src={current.bannerImageUrl}
-                  alt="Announcement banner"
-                  className="w-full h-56 object-cover"
+                  alt={t.announcements}
+                  className="w-full h-56 object-contain"
                   loading="lazy"
                 />
               </div>
@@ -113,7 +115,7 @@ const AdsBar = ({ userRole, schoolId }) => {
             <button
               onClick={() => setIndex(i => (i + 1) % ads.length)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-              aria-label="Next announcement"
+              aria-label={t.next}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -136,5 +138,3 @@ function getAuthToken() {
 }
 
 export default AdsBar;
-
-

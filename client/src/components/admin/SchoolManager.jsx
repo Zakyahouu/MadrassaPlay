@@ -45,12 +45,13 @@ const StatusBadge = ({ status }) => {
 
 // --- Enhanced SchoolCard Component ---
 const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, onViewDocuments }) => {
+  const { t } = useLanguage();
   const formatDate = (date) => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString();
   };
 
-  const isTrialExpiring = school.status === 'trial' && school.trialExpiresAt && 
+  const isTrialExpiring = school.status === 'trial' && school.trialExpiresAt &&
     new Date(school.trialExpiresAt) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   return (
@@ -62,36 +63,36 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
             <StatusBadge status={school.status} />
             {isTrialExpiring && (
               <span className="text-xs text-red-600 font-medium">
-                Trial expires {formatDate(school.trialExpiresAt)}
+                {t.trialExpires} {formatDate(school.trialExpiresAt)}
               </span>
             )}
           </div>
         </div>
         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-            onClick={() => onChangeStatus(school)} 
+          <button
+            onClick={() => onChangeStatus(school)}
             className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
             title="Change Status"
           >
             <SettingsIcon />
           </button>
-          <button 
-            onClick={onEdit} 
+          <button
+            onClick={onEdit}
             className="p-1.5 text-yellow-600 hover:bg-yellow-100 rounded-md transition-colors"
-            title="Edit School"
+            title={t.editSchool}
           >
             <EditIcon />
           </button>
-          <button 
-            onClick={onDelete} 
+          <button
+            onClick={onDelete}
             className="p-1.5 text-red-600 hover:bg-red-100 rounded-md transition-colors"
-            title="Delete School"
+            title={t.deleteSchool}
           >
             <TrashIcon />
           </button>
         </div>
       </div>
-      
+
       <div className="space-y-2 text-sm text-gray-600 mb-4">
         <div className="flex items-center gap-2">
           <EmailIcon />
@@ -114,7 +115,7 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
             <span>
-              Trial: {formatDate(school.createdAt)} - {formatDate(school.trialExpiresAt)}
+              {t.trial}: {formatDate(school.createdAt)} - {formatDate(school.trialExpiresAt)}
             </span>
           </div>
         )}
@@ -124,7 +125,7 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="16,12 12,8 8,12"></polyline>
             </svg>
-            <span>Active since: {formatDate(school.subscriptionStartDate)}</span>
+            <span>{t.activeSince}: {formatDate(school.subscriptionStartDate)}</span>
           </div>
         )}
       </div>
@@ -136,26 +137,26 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
             className="bg-gray-100 text-gray-700 text-xs px-3 py-1.5 rounded-full hover:bg-blue-100 hover:text-blue-800 transition-colors font-semibold flex items-center gap-2"
           >
             <UserIcon />
-            <span>{school.managers?.length || 0} managers</span>
+            <span>{school.managers?.length || 0} {t.managers}</span>
           </button>
-          
+
           <button
             onClick={onViewDocuments}
             className="bg-purple-100 text-purple-700 text-xs px-3 py-1.5 rounded-full hover:bg-purple-200 hover:text-purple-800 transition-colors font-semibold flex items-center gap-2"
             title="Manage Documents"
           >
             <DocumentIcon />
-            <span>Documents</span>
+            <span>{t.schoolDocuments || 'Documents'}</span>
           </button>
         </div>
-        
+
         {school.status === 'trial' && (
           <button
             onClick={() => onChangeStatus(school)}
             className="text-xs text-yellow-600 hover:text-yellow-800 font-medium hover:underline"
             title="Extend trial or upgrade to active"
           >
-            Extend Trial
+            {t.extendTrial}
           </button>
         )}
       </div>
@@ -165,6 +166,7 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
 
 // --- Enhanced School Form Component ---
 const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     _id: schoolToEdit?._id || null,
     name: schoolToEdit?.name || '',
@@ -220,99 +222,99 @@ const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <h3 className="text-xl font-bold text-gray-800 mb-4">{title}</h3>
-      
+
       {/* School Information */}
       <div className="space-y-4">
-        <h4 className="font-semibold text-gray-700 border-b pb-2">School Information</h4>
+        <h4 className="font-semibold text-gray-700 border-b pb-2">{t.schoolInformation}</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            name="name" 
-            value={form.name} 
-            onChange={handleChange} 
-            placeholder="School Name *" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-            required 
+          <input
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            placeholder={t.schoolName + " *"}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            required
           />
-          <input 
-            name="commercialRegistryNo" 
-            value={form.commercialRegistryNo} 
-            onChange={handleChange} 
-            placeholder="Commercial Registry No *" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-            required 
+          <input
+            name="commercialRegistryNo"
+            value={form.commercialRegistryNo}
+            onChange={handleChange}
+            placeholder={t.commercialRegistryNo + " *"}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            required
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            name="email" 
-            value={form.email} 
-            onChange={handleChange} 
-            placeholder="Email *" 
-            type="email" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-            required 
+          <input
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder={t.email + " *"}
+            type="email"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            required
           />
-          <input 
-            name="phone1" 
-            value={form.phone1} 
-            onChange={handleChange} 
-            placeholder="Primary Phone *" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-            required 
+          <input
+            name="phone1"
+            value={form.phone1}
+            onChange={handleChange}
+            placeholder={t.managerPrimaryPhone + " *"}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            required
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            name="phone2" 
-            value={form.phone2} 
-            onChange={handleChange} 
-            placeholder="Secondary Phone" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+          <input
+            name="phone2"
+            value={form.phone2}
+            onChange={handleChange}
+            placeholder={t.managerSecondaryPhone}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
-          <input 
-            name="address" 
-            value={form.address} 
-            onChange={handleChange} 
-            placeholder="Address *" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-            required 
+          <input
+            name="address"
+            value={form.address}
+            onChange={handleChange}
+            placeholder={t.address + " *"}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+            required
           />
         </div>
       </div>
 
       {/* Social Links */}
       <div className="space-y-4">
-        <h4 className="font-semibold text-gray-700 border-b pb-2">Social Links</h4>
+        <h4 className="font-semibold text-gray-700 border-b pb-2">{t.socialLinks || 'Social Links'}</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            name="socialLinks.website" 
-            value={form.socialLinks.website} 
-            onChange={handleChange} 
-            placeholder="Website URL" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+          <input
+            name="socialLinks.website"
+            value={form.socialLinks.website}
+            onChange={handleChange}
+            placeholder={t.websiteUrl}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
-          <input 
-            name="socialLinks.facebook" 
-            value={form.socialLinks.facebook} 
-            onChange={handleChange} 
-            placeholder="Facebook URL" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+          <input
+            name="socialLinks.facebook"
+            value={form.socialLinks.facebook}
+            onChange={handleChange}
+            placeholder={t.facebookUrl}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input 
-            name="socialLinks.twitter" 
-            value={form.socialLinks.twitter} 
-            onChange={handleChange} 
-            placeholder="Twitter URL" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+          <input
+            name="socialLinks.twitter"
+            value={form.socialLinks.twitter}
+            onChange={handleChange}
+            placeholder={t.twitterUrl}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
-          <input 
-            name="socialLinks.instagram" 
-            value={form.socialLinks.instagram} 
-            onChange={handleChange} 
-            placeholder="Instagram URL" 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+          <input
+            name="socialLinks.instagram"
+            value={form.socialLinks.instagram}
+            onChange={handleChange}
+            placeholder={t.instagramUrl}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
         </div>
       </div>
@@ -320,80 +322,80 @@ const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
       {/* Manager Information (only for new schools) */}
       {!schoolToEdit && (
         <div className="space-y-4">
-          <h4 className="font-semibold text-gray-700 border-b pb-2">Initial Manager</h4>
+          <h4 className="font-semibold text-gray-700 border-b pb-2">{t.initialManager}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input 
-              name="manager.name" 
-              value={form.manager.name} 
-              onChange={handleChange} 
-              placeholder="Manager Name *" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-              required 
+            <input
+              name="manager.name"
+              value={form.manager.name}
+              onChange={handleChange}
+              placeholder={t.managerName + " *"}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              required
             />
-            <input 
-              name="manager.email" 
-              value={form.manager.email} 
-              onChange={handleChange} 
-              placeholder="Manager Email *" 
-              type="email" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-              required 
+            <input
+              name="manager.email"
+              value={form.manager.email}
+              onChange={handleChange}
+              placeholder={t.managerEmail + " *"}
+              type="email"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              required
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input 
-              name="manager.password" 
-              value={form.manager.password} 
-              onChange={handleChange} 
-              placeholder="Manager Password *" 
-              type="password" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-              required 
+            <input
+              name="manager.password"
+              value={form.manager.password}
+              onChange={handleChange}
+              placeholder={t.managerPassword + " *"}
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              required
             />
-            <input 
-              name="manager.address" 
-              value={form.manager.address} 
-              onChange={handleChange} 
-              placeholder="Manager Address *" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-              required 
+            <input
+              name="manager.address"
+              value={form.manager.address}
+              onChange={handleChange}
+              placeholder={t.managerAddress + " *"}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              required
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input 
-              name="manager.phone1" 
-              value={form.manager.phone1} 
-              onChange={handleChange} 
-              placeholder="Manager Primary Phone *" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
-              required 
+            <input
+              name="manager.phone1"
+              value={form.manager.phone1}
+              onChange={handleChange}
+              placeholder={t.managerPrimaryPhone + " *"}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
+              required
             />
-            <input 
-              name="manager.phone2" 
-              value={form.manager.phone2} 
-              onChange={handleChange} 
-              placeholder="Manager Secondary Phone" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" 
+            <input
+              name="manager.phone2"
+              value={form.manager.phone2}
+              onChange={handleChange}
+              placeholder={t.managerSecondaryPhone}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
             />
           </div>
         </div>
       )}
 
       <div className="flex gap-3 pt-6">
-        <button 
-          type="button" 
-          onClick={onClose} 
+        <button
+          type="button"
+          onClick={onClose}
           className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           disabled={loading}
         >
-          Cancel
+          {t.cancel}
         </button>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-colors disabled:opacity-50"
           disabled={loading}
         >
-          {loading ? 'Saving...' : (schoolToEdit ? 'Update' : 'Create')}
+          {loading ? t.loading : (schoolToEdit ? t.update : t.create)}
         </button>
       </div>
     </form>
@@ -402,6 +404,7 @@ const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
 
 // --- Status Change Modal ---
 const StatusChangeModal = ({ school, onSave, onClose }) => {
+  const { t } = useLanguage();
   const [newStatus, setNewStatus] = useState(school.status);
   const [trialExtensionDays, setTrialExtensionDays] = useState(30);
   const [loading, setLoading] = useState(false);
@@ -411,19 +414,19 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
     setLoading(true);
     try {
       let additionalData = {};
-      
+
       // If extending trial or setting to trial, calculate new expiration date
       if (newStatus === 'trial') {
         const newExpirationDate = new Date();
         newExpirationDate.setDate(newExpirationDate.getDate() + trialExtensionDays);
         additionalData.trialExpiresAt = newExpirationDate.toISOString();
       }
-      
+
       // If setting to active, set subscription start date
       if (newStatus === 'active') {
         additionalData.subscriptionStartDate = new Date().toISOString();
       }
-      
+
       await onSave(school._id, newStatus, additionalData);
     } catch (error) {
       console.error('Status update error:', error);
@@ -440,37 +443,37 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">Change School Status</h3>
+      <h3 className="text-xl font-bold text-gray-800 mb-4">{t.changeSchoolStatus}</h3>
       <p className="text-gray-600 mb-4">
-        Changing the status of <strong>{school.name}</strong>
+        {t.changeSchoolStatus} <strong>{school.name}</strong>
       </p>
-      
+
       {school.status === 'trial' && school.trialExpiresAt && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
           <p className="text-yellow-700 text-sm">
-            <strong>Current Trial:</strong> Expires on {formatDate(school.trialExpiresAt)}
+            <strong>{t.currentTrial}:</strong> {t.expiresOn || 'Expires on'} {formatDate(school.trialExpiresAt)}
           </p>
         </div>
       )}
-      
+
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">New Status</label>
+        <label className="block text-sm font-medium text-gray-700">{t.newStatus}</label>
         <select
           value={newStatus}
           onChange={(e) => setNewStatus(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
           required
         >
-          <option value="trial">Trial</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="trial">{t.trial}</option>
+          <option value="active">{t.active}</option>
+          <option value="inactive">{t.inactive}</option>
         </select>
       </div>
 
       {newStatus === 'trial' && (
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            {school.status === 'trial' ? 'Extend Trial by (Days)' : 'Trial Duration (Days)'}
+            {school.status === 'trial' ? t.extendTrialByDays : t.trialDurationDays}
           </label>
           <input
             type="number"
@@ -482,7 +485,7 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
             required
           />
           <p className="text-sm text-gray-600">
-            {school.status === 'trial' ? 'New expiration date' : 'Trial will expire on'}: {' '}
+            {school.status === 'trial' ? t.newExpirationDate : t.trialWillExpireOn}: {' '}
             {new Date(Date.now() + trialExtensionDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
           </p>
         </div>
@@ -491,7 +494,7 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
       {newStatus === 'active' && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <p className="text-green-700 text-sm">
-            ✅ School will be activated with full access. Subscription will start today.
+            ✅ {t.schoolActivationMessage}
           </p>
         </div>
       )}
@@ -499,26 +502,26 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
       {newStatus === 'inactive' && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
           <p className="text-red-700 text-sm">
-            ⚠️ Setting status to "Inactive" will prevent all users from this school from logging in.
+            ⚠️ {t.schoolInactivationWarning}
           </p>
         </div>
       )}
 
       <div className="flex gap-3 pt-4">
-        <button 
-          type="button" 
-          onClick={onClose} 
+        <button
+          type="button"
+          onClick={onClose}
           className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           disabled={loading}
         >
           Cancel
         </button>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
           disabled={loading}
         >
-          {loading ? 'Updating...' : 'Update Status'}
+          {loading ? t.updating : t.updateStatus}
         </button>
       </div>
     </form>
@@ -527,6 +530,7 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
 
 // --- Secure Delete Modal Component ---
 const SecureDeleteModal = ({ school, onConfirm, onCancel }) => {
+  const { t } = useLanguage();
   const [confirmText, setConfirmText] = useState('');
   const [countdown, setCountdown] = useState(10);
   const [canDelete, setCanDelete] = useState(false);
@@ -554,35 +558,35 @@ const SecureDeleteModal = ({ school, onConfirm, onCancel }) => {
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
           <TrashIcon />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Delete School</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t.deleteSchool}</h3>
         <p className="text-sm text-gray-500">
-          This action cannot be undone. This will permanently delete the school and all associated data.
+          {t.deleteSchoolWarning}
         </p>
       </div>
 
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <h4 className="font-semibold text-red-800 mb-2">⚠️ This will delete:</h4>
+        <h4 className="font-semibold text-red-800 mb-2">⚠️ {t.deleteWarningList}</h4>
         <ul className="text-sm text-red-700 space-y-1">
-          <li>• The school: <strong>{school.name}</strong></li>
-          <li>• All managers and their accounts</li>
-          <li>• All teachers and their accounts</li>
-          <li>• All students and their accounts</li>
-          <li>• All classes, rooms, and equipment</li>
-          <li>• All game creations and results</li>
-          <li>• All assignments and attendance records</li>
+          <li>• {t.school}: <strong>{school.name}</strong></li>
+          <li>• {t.managers} {t.andTheirAccounts}</li>
+          <li>• {t.teachers} {t.andTheirAccounts}</li>
+          <li>• {t.students} {t.andTheirAccounts}</li>
+          <li>• {t.allClassesRoomsEquipment}</li>
+          <li>• {t.allGameCreationsResults}</li>
+          <li>• {t.allAssignmentsAttendance}</li>
         </ul>
       </div>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Type the school name <span className="font-bold text-red-600">{school.name}</span> to confirm:
+            {t.typeSchoolNameConfirm} <span className="font-bold text-red-600">{school.name}</span> {t.toConfirm}:
           </label>
           <input
             type="text"
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
-            placeholder="Enter school name"
+            placeholder={t.enterSchoolName}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
           />
         </div>
@@ -590,25 +594,25 @@ const SecureDeleteModal = ({ school, onConfirm, onCancel }) => {
         {!canDelete && (
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Please wait <span className="font-bold text-red-600">{countdown}</span> seconds before you can delete
+              {t.pleaseWait} <span className="font-bold text-red-600">{countdown}</span> {t.secondsBeforeDelete}
             </p>
           </div>
         )}
       </div>
 
       <div className="flex gap-3">
-        <button 
-          onClick={onCancel} 
+        <button
+          onClick={onCancel}
           className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
         >
-          Cancel
+          {t.cancel}
         </button>
-        <button 
-          onClick={onConfirm} 
+        <button
+          onClick={onConfirm}
           disabled={!isValidConfirm}
           className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isValidConfirm ? 'Delete Forever' : 'Enter school name above'}
+          {isValidConfirm ? t.deleteForever : (t.enterSchoolName + '...')}
         </button>
       </div>
     </div>
@@ -665,7 +669,7 @@ const SchoolManager = () => {
   // CRUD Handlers
   const handleSaveSchool = async (formData) => {
     const isEditing = !!formData._id;
-    
+
     try {
       if (isEditing) {
         // Update existing school
@@ -679,14 +683,14 @@ const SchoolManager = () => {
           commercialRegistryNo: formData.commercialRegistryNo,
           socialLinks: formData.socialLinks
         };
-        
+
         const { data: updatedSchool } = await axios.put(`/api/schools/${formData._id}`, payload, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
-        
+
         setSchools(prev => prev.map(s => s._id === formData._id ? updatedSchool : s));
         setModal({ type: null, data: null });
-        
+
         // Force refresh to ensure we have latest data
         await fetchSchools();
       } else {
@@ -694,10 +698,10 @@ const SchoolManager = () => {
         const { data: newSchool } = await axios.post('/api/schools', formData, {
           headers: { Authorization: `Bearer ${getToken()}` }
         });
-        
+
         setSchools(prev => [...prev, newSchool]);
       }
-      
+
       setModal({ type: null, data: null });
     } catch (err) {
       console.error("Save operation failed:", err);
@@ -707,19 +711,19 @@ const SchoolManager = () => {
 
   const handleStatusChange = async (schoolId, newStatus, additionalData = {}) => {
     try {
-      const updatePayload = { 
+      const updatePayload = {
         status: newStatus,
         ...additionalData
       };
-      
-      const { data: updatedSchool } = await axios.put(`/api/schools/${schoolId}`, 
-        updatePayload, 
+
+      const { data: updatedSchool } = await axios.put(`/api/schools/${schoolId}`,
+        updatePayload,
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );
-      
+
       setSchools(prev => prev.map(s => s._id === schoolId ? updatedSchool : s));
       setModal({ type: null, data: null });
-      
+
       // Refresh the school list to ensure we have the latest data
       await fetchSchools();
     } catch (err) {
@@ -733,7 +737,7 @@ const SchoolManager = () => {
       await axios.delete(`/api/schools/${schoolId}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
-      
+
       setSchools(prev => prev.filter(s => s._id !== schoolId));
       setModal({ type: null, data: null });
     } catch (err) {
@@ -781,21 +785,21 @@ const SchoolManager = () => {
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
-          <h2 className="text-2xl font-bold text-gray-800">{t('schools')}</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{t.schools}</h2>
           <span className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
-{filteredSchools.length}
+            {filteredSchools.length}
           </span>
         </div>
-        
+
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <input
             type="text"
-            placeholder="Rechercher des écoles..."
+            placeholder={t.searchSchools + "..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
           />
-          
+
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -806,7 +810,7 @@ const SchoolManager = () => {
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select>
-          
+
           <button
             onClick={() => setModal({ type: 'ADD_SCHOOL', data: null })}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all shadow-sm hover:shadow-md flex items-center gap-2 whitespace-nowrap"
@@ -848,46 +852,46 @@ const SchoolManager = () => {
       {modal.type && modal.type !== 'ADD_SCHOOL' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <button 
-              onClick={() => setModal({ type: null, data: null })} 
+            <button
+              onClick={() => setModal({ type: null, data: null })}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
             >
               <CloseIcon />
             </button>
-            
+
             {modal.type === 'EDIT_SCHOOL' && (
-              <SchoolForm 
-                title="Edit School" 
-                schoolToEdit={modal.data} 
-                onSave={handleSaveSchool} 
-                onClose={() => setModal({ type: null, data: null })} 
+              <SchoolForm
+                title={t.editSchool}
+                schoolToEdit={modal.data}
+                onSave={handleSaveSchool}
+                onClose={() => setModal({ type: null, data: null })}
               />
             )}
-            
+
             {modal.type === 'CHANGE_STATUS' && (
-              <StatusChangeModal 
-                school={modal.data} 
-                onSave={handleStatusChange} 
-                onClose={() => setModal({ type: null, data: null })} 
+              <StatusChangeModal
+                school={modal.data}
+                onSave={handleStatusChange}
+                onClose={() => setModal({ type: null, data: null })}
               />
             )}
-            
+
             {modal.type === 'VIEW_MANAGERS' && (
-              <ManagerPanel 
-                schoolId={modal.data._id} 
+              <ManagerPanel
+                schoolId={modal.data._id}
                 schoolName={modal.data.name}
                 onClose={() => setModal({ type: null, data: null })}
               />
             )}
-            
+
             {modal.type === 'VIEW_DOCUMENTS' && (
-              <SchoolDocuments 
-                schoolId={modal.data._id} 
+              <SchoolDocuments
+                schoolId={modal.data._id}
                 schoolName={modal.data.name}
                 onClose={() => setModal({ type: null, data: null })}
               />
             )}
-            
+
             {modal.type === 'DELETE_SCHOOL' && (
               <SecureDeleteModal
                 school={modal.data}

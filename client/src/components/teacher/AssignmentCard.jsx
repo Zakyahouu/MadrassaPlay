@@ -1,5 +1,6 @@
 import React from 'react';
-import { FileText, Calendar, Users, CheckCircle, Eye, Edit, Trash2, XCircle, Flag } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { FileText, Calendar, Users, CheckCircle, Eye, Edit, Trash2, XCircle, Flag, BarChart3 } from 'lucide-react';
 
 // Unified assignment card UI for teacher views
 // Props:
@@ -29,12 +30,11 @@ export default function AssignmentCard({ assignment, summary, onView, onEdit, on
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-bold text-gray-900">{a.title}</h3>
-              <span className={`text-xs uppercase tracking-wide px-3 py-1 rounded-full font-medium ${
-                status==='active' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                status==='upcoming' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                status==='canceled' ? 'bg-red-100 text-red-800 border border-red-200' :
-                status==='completed' ? 'bg-gray-100 text-gray-800 border border-gray-200' : 'bg-green-100 text-green-800 border border-green-200'
-              }`}>{status}</span>
+              <span className={`text-xs uppercase tracking-wide px-3 py-1 rounded-full font-medium ${status === 'active' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                status === 'upcoming' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                  status === 'canceled' ? 'bg-red-100 text-red-800 border border-red-200' :
+                    status === 'completed' ? 'bg-gray-100 text-gray-800 border border-gray-200' : 'bg-green-100 text-green-800 border border-green-200'
+                }`}>{status}</span>
             </div>
             <div className="flex items-center space-x-6 text-sm text-gray-600 mb-3">
               <span className="flex items-center">
@@ -68,8 +68,8 @@ export default function AssignmentCard({ assignment, summary, onView, onEdit, on
               <p className="text-xs text-gray-500 font-medium">Completed</p>
               {summary && summary.totalStudents > 0 && (
                 <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-purple-500 h-1.5 rounded-full transition-all duration-300" 
+                  <div
+                    className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
                     style={{ width: `${(summary.submittedCount / summary.totalStudents) * 100}%` }}
                   ></div>
                 </div>
@@ -80,12 +80,16 @@ export default function AssignmentCard({ assignment, summary, onView, onEdit, on
             <button onClick={onView} className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors" title="View Details">
               <Eye className="w-5 h-5" />
             </button>
+            {/* New Analytics Button */}
+            <Link to={`/analytics/assignment/${a._id}`} className="p-3 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors" title="View Analytics">
+              <BarChart3 className="w-5 h-5" />
+            </Link>
             {onEdit && (
               <button onClick={onEdit} className="p-3 text-purple-600 hover:bg-purple-50 rounded-xl transition-colors" title="Edit Assignment">
                 <Edit className="w-5 h-5" />
               </button>
             )}
-            {onCancel && (status==='upcoming' || status==='active') && (
+            {onCancel && (status === 'upcoming' || status === 'active') && (
               <button onClick={onCancel} className="p-3 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Cancel Assignment">
                 <XCircle className="w-5 h-5" />
               </button>
@@ -98,7 +102,7 @@ export default function AssignmentCard({ assignment, summary, onView, onEdit, on
           </div>
         </div>
       </div>
-      {status==='active' && (
+      {status === 'active' && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
           <p className="text-xs text-blue-700 font-medium">
             <span className="font-semibold">Note:</span> Active assignments can only be canceled while completion is below 50%.

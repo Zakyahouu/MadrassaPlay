@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell, 
+import {
+  Users, BookOpen, GraduationCap, Calendar, BarChart3, Settings, Bell,
   UserCheck, Building2, FileText, Search, Plus, Edit, Trash2, Eye,
   Clock, Star, Award, TrendingUp, Filter, Download, Mail, Phone, X,
-  User, MapPin, Shield, AlertTriangle, Loader
+  User, MapPin, Shield, AlertTriangle, Loader, ChevronDown
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
@@ -15,7 +15,7 @@ const getAuthToken = () => {
   if (!userInfoString) {
     return null;
   }
-  
+
   try {
     const userInfo = JSON.parse(userInfoString);
     return userInfo && userInfo.token ? userInfo.token : null;
@@ -147,7 +147,7 @@ const TeachersTab = () => {
     }
     const config = { headers: { Authorization: `Bearer ${token}` } };
     // Client-side required validation
-    const required = ['firstName','lastName','email','username','phone1'];
+    const required = ['firstName', 'lastName', 'email', 'username', 'phone1'];
     const missing = required.filter((k) => !formData[k] || !String(formData[k]).trim());
     if (modalContent.type === 'add' && (!formData.password || !String(formData.password).trim())) {
       missing.push('password');
@@ -267,7 +267,7 @@ const TeachersTab = () => {
       const fullName = `${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.name || '';
       const phone1 = teacher.contact?.phone1 || teacher.phone || '';
       const phone2 = teacher.contact?.phone2 || '';
-      const matchesSearch = !term || 
+      const matchesSearch = !term ||
         fullName.toLowerCase().includes(term) ||
         phone1.toLowerCase().includes(term) ||
         phone2.toLowerCase().includes(term);
@@ -296,38 +296,38 @@ const TeachersTab = () => {
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border">
+        <div className="card-base p-4">
           <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted-light w-4 h-4" />
                 <input
                   type="text"
-                  placeholder={t('search-teachers')}
+                  placeholder={t.searchTeachers}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors w-full sm:w-64"
+                  className="pl-10 pr-4 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors w-full sm:w-64"
                 />
               </div>
-              
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="employed">Employed</option>
-                  <option value="freelance">Freelance</option>
-                  <option value="retired">Retired</option>
-                </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              >
+                <option value="all">{t.allStatuses}</option>
+                <option value="employed">{t.employed}</option>
+                <option value="freelance">{t.freelance}</option>
+                <option value="retired">{t.retired}</option>
+              </select>
             </div>
-            
-            <button 
+
+            <button
               onClick={() => openModal('add')}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-{t('add-teacher')}
+              {t.addTeacher}
             </button>
           </div>
         </div>
@@ -336,13 +336,13 @@ const TeachersTab = () => {
         {isLoading ? (
           <div className="flex justify-center items-center bg-white rounded-lg p-8 shadow-sm border">
             <Loader className="animate-spin text-blue-500 mr-3" />
-            <span className="text-gray-600">Loading teachers...</span>
+            <span className="text-gray-600">{t.loadingTeachers}</span>
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
             <AlertTriangle className="text-red-500 w-5 h-5" />
             <div>
-              <h3 className="font-medium text-red-800">Error</h3>
+              <h3 className="font-medium text-red-800">{t.error}</h3>
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
@@ -351,25 +351,25 @@ const TeachersTab = () => {
             {/* Teacher Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTeachers.map((teacher) => (
-                <div 
-                  key={teacher._id} 
-                  className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow"
+                <div
+                  key={teacher._id}
+                  className="card-base p-4 hover:shadow-md transition-shadow"
                 >
                   {/* Card Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-semibold">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-semibold">
                         {(teacher.firstName?.[0] || teacher.name?.[0] || '?').toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-text-main-light">
                           {`${teacher.firstName || ''} ${teacher.lastName || ''}`.trim() || teacher.name}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">
-                          {Array.isArray(teacher.activities) && teacher.activities.length
-                              ? `${teacher.activities.length} activities`
-                            : 'No activities'}
+                          <span className="text-xs text-text-muted-light">
+                            {Array.isArray(teacher.activities) && teacher.activities.length
+                              ? `${teacher.activities.length} ${t.nActivities}`
+                              : t.noActivities}
                           </span>
                         </div>
                       </div>
@@ -377,86 +377,40 @@ const TeachersTab = () => {
                     {getStatusPill(teacher.status)}
                   </div>
 
-                  {/* Card Content - Grouped Information */}
+                  {/* Card Content - Compact Information */}
                   <div className="space-y-3 mb-4">
-                    {/* Personal Info Group */}
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Personal Info</span>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1.5" title={t.yearsExperience}>
+                        <Award className="w-4 h-4 text-amber-500" />
+                        <span>{teacher.experience || 0} {t.years}</span>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Award className="w-3 h-3 text-amber-500" />
-                          <span>{teacher.experience || 0} years experience</span>
-                    </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="w-3 h-3 text-blue-500" />
-                          <span className="truncate">{teacher.email}</span>
+                      <div className="flex items-center gap-1.5" title={t.activities}>
+                        <BookOpen className="w-4 h-4 text-blue-500" />
+                        <span>{Array.isArray(teacher.activities) ? teacher.activities.length : 0} {t.activities}</span>
                       </div>
                     </div>
-                        </div>
 
-                    {/* Contact Info Group */}
-                    {(teacher.contact?.phone1 || teacher.phone || teacher.contact?.phone2) && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Phone className="w-4 h-4 text-gray-500" />
-                          <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Contact</span>
-                        </div>
-                        <div className="space-y-2">
-                          {(teacher.contact?.phone1 || teacher.phone) && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Phone className="w-3 h-3 text-green-500" />
-                              <span>{teacher.contact?.phone1 || teacher.phone}</span>
-                      </div>
-                    )}
-                    {teacher.contact?.phone2 && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Phone className="w-3 h-3 text-green-500" />
-                              <span>{teacher.contact?.phone2}</span>
-                        </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Activities Group */}
-                    {Array.isArray(teacher.activities) && teacher.activities.length > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <BookOpen className="w-4 h-4 text-gray-500" />
-                          <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Activities</span>
-                        </div>
-                        <div className="space-y-1">
-                          {teacher.activities.slice(0, 2).map((activity, index) => (
-                            <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                              <span className="truncate">{activityTypeLabel(activity.type)}</span>
-                            </div>
-                          ))}
-                          {teacher.activities.length > 2 && (
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                              <span>+{teacher.activities.length - 2} more</span>
-                            </div>
-                          )}
-                        </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span className="truncate">{teacher.email}</span>
+                    </div>
+                    {(teacher.contact?.phone1 || teacher.phone) && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>{teacher.contact?.phone1 || teacher.phone}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 pt-3 border-t border-gray-100">
-                    <button 
-                      onClick={() => openModal('view', teacher)} 
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded text-sm hover:bg-blue-100 transition-colors"
+                  <div className="flex gap-2 pt-3 border-t border-border-light">
+                    <button
+                      onClick={() => openModal('view', teacher)}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-sm hover:bg-primary/20 transition-colors"
                     >
-                      <Eye className="w-3 h-3" />
-                      View
-                    </button>
-                    <button 
-                      onClick={() => openModal('delete', teacher)} 
+                      <Eye className="w-3 h-3" />{t.view}</button>
+                    <button
+                      onClick={() => openModal('delete', teacher)}
                       className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -468,25 +422,25 @@ const TeachersTab = () => {
 
             {/* Empty State */}
             {filteredTeachers.length === 0 && (
-              <div className="text-center bg-white rounded-lg p-8 shadow-sm border">
+              <div className="text-center card-base p-8">
                 <div className="w-16 h-16 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
                   <Users className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {t('no-teachers-found')}
+                  {t.noTeachersFound}
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  {searchTerm || statusFilter !== 'all' 
-                    ? t('try-adjusting-search-filter') 
-                    : t('get-started-add-first-teacher')
+                  {searchTerm || statusFilter !== 'all'
+                    ? t.tryAdjustingSearchFilter
+                    : t.getStartedAddFirstTeacher
                   }
                 </p>
                 {!searchTerm && statusFilter === 'all' && (
-                  <button 
+                  <button
                     onClick={() => openModal('add')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="btn-primary mt-4"
                   >
-                    Add First Teacher
+                    {t.addFirstTeacher}
                   </button>
                 )}
               </div>
@@ -496,287 +450,305 @@ const TeachersTab = () => {
 
         {/* Enhanced Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="
-              bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] 
-              overflow-hidden shadow-2xl border border-white/20
-            ">
+          <div className="fixed inset-0 z-[50] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+
               {/* Modal Header */}
-              <div className="
-                flex items-center justify-between p-6 
-                bg-gradient-to-r from-slate-50 to-blue-50 
-                border-b border-slate-200
-              ">
-                <h2 className="text-2xl font-bold text-slate-900 capitalize">
-                  {modalContent.type} Teacher
-                </h2>
-                <button 
-                  onClick={closeModal} 
-                  className="
-                    p-2 text-slate-400 hover:text-slate-600 
-                    hover:bg-white rounded-xl transition-all
-                  "
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-md ${modalContent.type === 'delete' ? 'bg-red-50 text-red-600' : 'bg-primary/10 text-primary'}`}>
+                    {modalContent.type === 'add' && <Plus className="w-5 h-5" />}
+                    {modalContent.type === 'edit' && <Edit className="w-5 h-5" />}
+                    {modalContent.type === 'view' && <Eye className="w-5 h-5" />}
+                    {modalContent.type === 'delete' && <Trash2 className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {modalContent.type === 'add' && t.addNewTeacher}
+                      {modalContent.type === 'edit' && t.editTeacher}
+                      {modalContent.type === 'view' && t.teacherDetails}
+                      {modalContent.type === 'delete' && t.deleteTeacher}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {modalContent.type === 'add' && t.enterTeacherDetails}
+                      {modalContent.type === 'edit' && t.updateTeacherDetails}
+                      {modalContent.type === 'view' && t.viewTeacherInfo}
+                      {modalContent.type === 'delete' && t.confirmDeleteAction}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="flex-1 overflow-y-auto p-6">
                 {modalContent.type === 'view' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Name</label>
-                        <p className="text-lg font-medium text-slate-900">{`${modalContent.data.firstName || ''} ${modalContent.data.lastName || ''}`.trim() || modalContent.data.name}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Email</label>
-                        <p className="text-lg font-medium text-slate-900">{modalContent.data.email}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Experience</label>
-                        <p className="text-lg font-medium text-slate-900">{modalContent.data.experience} years</p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Status</label>
-                        <div className="pt-1">{getStatusPill(modalContent.data.status)}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Phone 1</label>
-                        <p className="text-lg font-medium text-slate-900">{modalContent.data.contact?.phone1 || modalContent.data.phone || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Phone 2</label>
-                        <p className="text-lg font-medium text-slate-900">{modalContent.data.contact?.phone2 || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Address</label>
-                        <p className="text-lg font-medium text-slate-900">{modalContent.data.contact?.address || 'N/A'}</p>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Banking</label>
-                        <p className="text-sm text-slate-900">CCP: {modalContent.data.banking?.ccp || '—'}</p>
-                        <p className="text-sm text-slate-900">Bank Account: {modalContent.data.banking?.bankAccount || '—'}</p>
-                      </div>
-                      <div className="space-y-1 md:col-span-2">
-                        <label className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Activities</label>
-                        <div className="text-slate-800 text-sm space-y-2">
-                          {Array.isArray(modalContent.data.activities) && modalContent.data.activities.length ? (
-                            modalContent.data.activities.map((act, idx) => (
-                              <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div className="font-semibold mb-2">{activityTypeLabel(act.type)}</div>
-                                <ul className="list-disc ml-5 space-y-1">
-                                  {(act.items || []).map((it, i) => (
-                                    <li key={i} className="text-slate-700">
-                                      {itemLabel(act.type, it)}
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-slate-500">No activities</p>
-                          )}
+                  <div className="space-y-8">
+                    {/* Basic Info Section */}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-2 mb-4">
+                        {t.basicInfo}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.fullName}</span>
+                          <div className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            {`${modalContent.data.firstName || ''} ${modalContent.data.lastName || ''}`.trim() || modalContent.data.name}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.status}</span>
+                          <div>{getStatusPill(modalContent.data.status)}</div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.experience}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <Award className="w-4 h-4 text-amber-500" />
+                            {modalContent.data.experience || 0} {t.years}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.email}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            {modalContent.data.email}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center pt-6 border-t border-slate-200">
-                      <button
-                        onClick={() => openModal('edit', modalContent.data)}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={closeModal} 
-                        className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium"
-                      >
-                        Close
-                      </button>
+
+                    {/* Contact Info Section */}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-2 mb-4">
+                        {t.contactInfo}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.primaryPhone}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            {modalContent.data.contact?.phone1 || modalContent.data.phone || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.secondaryPhone}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            {modalContent.data.contact?.phone2 || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.address}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            {modalContent.data.contact?.address || 'N/A'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Banking Section */}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-2 mb-4">
+                        {t.banking}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-1">CCP</span>
+                          <span className="font-mono font-medium text-gray-900">{modalContent.data.banking?.ccp || '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-1">{t.bankAccountPlaceholder || 'RIB'}</span>
+                          <span className="font-mono font-medium text-gray-900">{modalContent.data.banking?.bankAccount || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Activities Section */}
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-2 mb-4 flex items-center justify-between">
+                        <span>{t.activities}</span>
+                        <span className="text-xs normal-case font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          {Array.isArray(modalContent.data.activities) ? modalContent.data.activities.length : 0} items
+                        </span>
+                      </h3>
+                      <div className="space-y-3">
+                        {Array.isArray(modalContent.data.activities) && modalContent.data.activities.length > 0 ? (
+                          modalContent.data.activities.map((act, idx) => (
+                            <div key={idx} className="p-4 bg-white border border-gray-200 rounded-lg hover:border-primary/30 transition-colors">
+                              <div className="font-semibold text-primary mb-2 flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                {activityTypeLabel(act.type)}
+                              </div>
+                              <ul className="space-y-1.5">
+                                {(act.items || []).map((it, i) => (
+                                  <li key={i} className="text-sm text-gray-700 flex items-start gap-2 pl-4 border-l-2 border-gray-100">
+                                    <span>{itemLabel(act.type, it)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                            <p className="text-gray-500">{t.noActivities}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {(modalContent.type === 'add' || modalContent.type === 'edit') && (
-                  <form 
-                    onSubmit={(e) => { e.preventDefault(); handleSave(); }} 
-                    className="space-y-6"
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+                    className="space-y-8"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">First Name *</label>
-                        <input 
-                          required 
-                          value={formData.firstName || ''} 
-                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} 
-                          placeholder="Enter first name"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Last Name *</label>
-                        <input 
-                          required 
-                          value={formData.lastName || ''} 
-                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} 
-                          placeholder="Enter last name"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address *</label>
-                        <input 
-                          required 
-                          type="email" 
-                          value={formData.email || ''} 
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-                          placeholder="Enter email address"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Username *</label>
-                        <input 
-                          required
-                          value={formData.username || ''} 
-                          onChange={(e) => setFormData({ ...formData, username: e.target.value })} 
-                          placeholder="Enter username"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      
-                      {modalContent.type === 'add' && (
-                        <div>
-                          <label className="block text-sm font-semibold text-slate-700 mb-2">Password *</label>
-                          <input 
-                            required 
-                            type="password" 
-                            value={formData.password || ''} 
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
-                            placeholder="Enter password"
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                    {/* Basic Info Group */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-2">
+                        {t.basicInfo}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-gray-700">{t.firstName} <span className="text-red-500">*</span></label>
+                          <input
+                            required
+                            value={formData.firstName || ''}
+                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            placeholder="e.g. John"
+                            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                           />
                         </div>
-                      )}
-                      
-                      {/* Activities (compact, last step) */}
-                      <div className="md:col-span-2">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-slate-700">Activities (last step)</label>
-                          <button
-                            type="button"
-                            onClick={async () => { await loadCatalogIfNeeded(); setPickerOpen(true); }}
-                            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            Choose activities
-                          </button>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-gray-700">{t.lastName} <span className="text-red-500">*</span></label>
+                          <input
+                            required
+                            value={formData.lastName || ''}
+                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                            placeholder="e.g. Doe"
+                            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
                         </div>
-                        {/* Summary chips */}
-                        <div className="flex flex-wrap gap-2">
-                          {['supportLessons','reviewCourses','vocationalTrainings','languages','otherActivities']
-                            .map((t) => ({ t, items: formData.activitiesSelection?.[t] || [] }))
-                            .filter(({ items }) => items.length)
-                            .map(({ t, items }) => (
-                              <span key={t} className="px-2.5 py-1 text-xs rounded-full bg-slate-100 border border-slate-200 text-slate-700">
-                                {activityTypeLabel(t)}: {items.length}
-                              </span>
-                            ))}
-                          {(!formData.activitiesSelection || Object.values(formData.activitiesSelection).every(arr => !arr || arr.length === 0)) && (
-                            <span className="text-sm text-slate-500">No activities selected yet.</span>
-                          )}
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-gray-700">{t.email} <span className="text-red-500">*</span></label>
+                          <input
+                            required
+                            type="email"
+                            value={formData.email || ''}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="john.doe@example.com"
+                            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-gray-700">{t.username} <span className="text-red-500">*</span></label>
+                          <input
+                            required
+                            value={formData.username || ''}
+                            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                            placeholder="johndoe"
+                            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            {modalContent.type === 'add' ? (t.password || 'Password') : (t.newPassword || 'New Password')}
+                            {modalContent.type === 'add' && <span className="text-red-500"> *</span>}
+                          </label>
+                          <input
+                            required={modalContent.type === 'add'}
+                            type="password"
+                            value={formData.password || ''}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder={modalContent.type === 'add' ? "••••••••••••" : "Leave blank to keep current"}
+                            className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.phone || 'PRIMARY PHONE'} *</label>
+                          <input
+                            required
+                            value={formData.phone1 || ''}
+                            onChange={(e) => setFormData({ ...formData, phone1: e.target.value })}
+                            placeholder="+1 (555) 000-0000"
+                            className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.yearsExperience || 'EXPERIENCE'} *</label>
+                          <div className="relative">
+                            <select
+                              required
+                              value={formData.yearsExperience ?? formData.experience ?? 0}
+                              onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
+                              className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent appearance-none"
+                            >
+                              <option value="0">0 Years</option>
+                              <option value="1">1 Year</option>
+                              <option value="2">2 Years</option>
+                              <option value="5">5+ Years</option>
+                              <option value="10">10+ Years</option>
+                            </select>
+                            <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2 py-4 border-b border-gray-100 mb-2">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-900">Activities (last step)</h4>
+                              <p className="text-xs text-gray-400 italic">
+                                {buildActivitiesPayload().length} activities selected.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => { await loadCatalogIfNeeded(); setPickerOpen(true); }}
+                              className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-primary" />
+                              Choose activities
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.address || 'ADDRESS'}</label>
+                          <input
+                            value={formData.address || ''}
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                            placeholder="Enter physical address"
+                            className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                          />
                         </div>
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Experience (years) *</label>
-                        <input 
-                          required 
-                          type="number" 
-                          min="0"
-                          value={formData.yearsExperience ?? formData.experience ?? 0} 
-                          onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })} 
-                          placeholder="Years of experience"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Phone 1 *</label>
-                        <input 
-                          required
-                          value={formData.phone1 || ''} 
-                          onChange={(e) => setFormData({ ...formData, phone1: e.target.value })} 
-                          placeholder="Primary phone number"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Phone 2 (optional)</label>
-                        <input 
-                          value={formData.phone2 || ''} 
-                          onChange={(e) => setFormData({ ...formData, phone2: e.target.value })} 
-                          placeholder="Secondary phone number"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Address (optional)</label>
-                        <input 
-                          value={formData.address || ''} 
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })} 
-                          placeholder="Enter address"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Status</label>
-                        <select 
-                          value={formData.status || 'employed'} 
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })} 
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+
+                      <div className="flex justify-end items-center gap-6 pt-8 mt-4">
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          className="text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
                         >
-                          <option value="employed">Employed</option>
-                          <option value="freelance">Freelance</option>
-                          <option value="retired">Retired</option>
-                        </select>
+                          {t.cancel || 'Cancel'}
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg active:scale-95"
+                        >
+                          {modalContent.type === 'edit' ? (t.update || 'Update Teacher') : (t.createTeacher || 'Create Teacher')}
+                        </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">CCP (optional)</label>
-                        <input 
-                          value={formData.ccp || ''} 
-                          onChange={(e) => setFormData({ ...formData, ccp: e.target.value })} 
-                          placeholder="CCP number"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Bank Account (optional)</label>
-                        <input 
-                          value={formData.bankAccount || ''} 
-                          onChange={(e) => setFormData({ ...formData, bankAccount: e.target.value })} 
-                          placeholder="Bank account"
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
-                      <button 
-                        type="button" 
-                        onClick={closeModal} 
-                        className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        type="submit" 
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-                      >
-                        Save Changes
-                      </button>
                     </div>
                   </form>
                 )}
@@ -794,19 +766,17 @@ const TeachersTab = () => {
                         This action cannot be undone.
                       </p>
                     </div>
-                    
+
                     <div className="flex justify-end gap-3 pt-6 border-t border-slate-200">
-                      <button 
-                        onClick={closeModal} 
+                      <button
+                        onClick={closeModal}
                         className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium"
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        onClick={handleDelete} 
+                      >{t.cancel}</button>
+                      <button
+                        onClick={handleDelete}
                         className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium"
                       >
-                        Delete Teacher
+                        {t.deleteTeacher}
                       </button>
                     </div>
                   </div>
@@ -831,7 +801,7 @@ const TeachersTab = () => {
                 ) : (
                   <>
                     <div className="flex gap-2 flex-wrap mb-4">
-                      {['supportLessons','reviewCourses','vocationalTrainings','languages','otherActivities'].map((t) => (
+                      {['supportLessons', 'reviewCourses', 'vocationalTrainings', 'languages', 'otherActivities'].map((t) => (
                         <button
                           key={t}
                           onClick={() => setPickerTab(t)}

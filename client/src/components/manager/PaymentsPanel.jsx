@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PaymentsPanel = ({ classId }) => {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [amount, setAmount] = useState('');
   const [kind, setKind] = useState('pay_sessions');
@@ -75,7 +77,7 @@ const PaymentsPanel = ({ classId }) => {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-600">Amount</label>
+          <label className="block text-xs text-gray-600">{t.amount}</label>
           <input type="number" min="0" className="border rounded px-2 py-1" value={amount} onChange={(e)=>setAmount(e.target.value)} required />
         </div>
         <button disabled={loading || !enrollmentId} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">{loading ? 'Saving…' : 'Add Payment'}</button>

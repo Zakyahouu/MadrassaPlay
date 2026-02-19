@@ -1,8 +1,10 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ToastContext = createContext({ toast: () => {} });
 
 export const ToastProvider = ({ children }) => {
+  const { t } = useLanguage();
   const [toasts, setToasts] = useState([]);
 
   const toast = useCallback((message, opts = {}) => {

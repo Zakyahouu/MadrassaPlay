@@ -43,7 +43,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError(t('authentication-required'));
+        setError(t.authenticationRequired);
         return;
       }
 
@@ -57,7 +57,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
     } catch (err) {
       console.error('Error fetching employees:', err);
-      setError(err.response?.data?.message || t('failed-fetch-employees'));
+      setError(err.response?.data?.message || t.failedFetchEmployees);
     } finally {
       setLoadingData(false);
     }
@@ -100,7 +100,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Handle delete employee
   const handleDeleteEmployee = async (employeeId) => {
-    if (!window.confirm(t('confirm-archive-employee'))) {
+    if (!window.confirm(t.confirmArchiveEmployee)) {
       return;
     }
 
@@ -114,11 +114,11 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       
       // Refresh the list
       await fetchEmployees();
-      alert(t('employee-archived-successfully'));
+      alert(t.employeeArchivedSuccessfully);
 
     } catch (err) {
       console.error('Error deleting employee:', err);
-      alert(err.response?.data?.message || t('failed-delete-employee'));
+      alert(err.response?.data?.message || t.failedDeleteEmployee);
     }
   };
 
@@ -169,7 +169,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">{t('loading-employees')}</p>
+          <p className="text-gray-500">{t.loadingEmployees}</p>
         </div>
       </div>
     );
@@ -181,13 +181,13 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="flex items-center">
           <AlertTriangle className="w-6 h-6 text-red-600 mr-3" />
           <div>
-            <h3 className="text-lg font-medium text-red-800">{t('error-loading-employees')}</h3>
+            <h3 className="text-lg font-medium text-red-800">{t.errorLoadingEmployees}</h3>
             <p className="text-red-600 mt-1">{error}</p>
             <button
               onClick={handleRefresh}
               className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
-              {t('try-again')}
+              {t.tryAgain}
             </button>
           </div>
         </div>
@@ -205,9 +205,9 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <Users className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">{t('employee-management')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t.employeeManagement}</h2>
               <p className="text-sm text-gray-500">
-                {t('manage-non-teacher-staff-salaries')}
+                {t.manageNonTeacherStaffSalaries}
               </p>
             </div>
           </div>
@@ -218,7 +218,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <Plus className="w-4 h-4" />
-              <span>{t('add-employee')}</span>
+              <span>{t.addEmployee}</span>
             </button>
             
             <button
@@ -227,7 +227,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>{t('refresh')}</span>
+              <span>{t.refresh}</span>
             </button>
           </div>
         </div>
@@ -241,7 +241,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder={t('search-employees')}
+                placeholder={t.searchEmployees}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -256,9 +256,9 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">{t('all-status')}</option>
-              <option value="active">{t('active')}</option>
-              <option value="inactive">{t('inactive')}</option>
+              <option value="all">{t.allStatus}</option>
+              <option value="active">{t.active}</option>
+              <option value="inactive">{t.inactive}</option>
             </select>
           </div>
         </div>
@@ -271,22 +271,22 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('employee')}
+                  {t.employee}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('role')}
+                  {t.role}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('salary')}
+                  {t.salary}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('hire-date')}
+                  {t.hireDate}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('status')}
+                  {t.status}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('actions')}
+                  {t.actions}
                 </th>
               </tr>
             </thead>
@@ -341,14 +341,14 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                       <button
                         onClick={() => handleViewDetails(employee)}
                         className="text-blue-600 hover:text-blue-900"
-                        title={t('view-details')}
+                        title={t.viewDetails}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEditEmployee(employee)}
                         className="text-indigo-600 hover:text-indigo-900"
-                        title={t('edit-employee')}
+                        title={t.editEmployee}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -356,7 +356,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                         <button
                           onClick={() => handlePaySalary(employee)}
                           className="text-green-600 hover:text-green-900"
-                          title={t('pay-salary')}
+                          title={t.paySalary}
                         >
                           <DollarSign className="w-4 h-4" />
                         </button>
@@ -364,7 +364,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                       <button
                         onClick={() => handleDeleteEmployee(employee._id)}
                         className="text-red-600 hover:text-red-900"
-                        title={t('archive-employee')}
+                        title={t.archiveEmployee}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -379,11 +379,11 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
         {filteredEmployees.length === 0 && (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-employees-found')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t.noEmployeesFound}</h3>
             <p className="text-gray-500 mb-4">
               {searchTerm || statusFilter !== 'all' 
-                ? t('try-adjusting-search-filter')
-                : t('get-started-add-first-employee')
+                ? t.tryAdjustingSearchFilter
+                : t.getStartedAddFirstEmployee
               }
             </p>
             {!searchTerm && statusFilter === 'all' && (
@@ -392,7 +392,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
-{t('add-employee')}
+{t.addEmployee}
               </button>
             )}
           </div>

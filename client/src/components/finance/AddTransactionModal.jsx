@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { 
-  X, 
-  DollarSign, 
-  Calendar, 
-  FileText, 
+
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  X,
+  DollarSign,
+  Calendar,
+  FileText,
   Tag,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
 
 const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     type: 'expense',
     category: '',
@@ -24,18 +27,18 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
 
   // Predefined categories
   const categories = [
-    'Rent',
-    'Electricity',
-    'Water',
-    'Internet',
-    'Insurance',
-    'Equipment',
-    'Maintenance',
-    'Supplies',
-    'Activities',
-    'Donations',
-    'Other Income',
-    'Other Expense'
+    t.rent,
+    t.electricity,
+    t.water,
+    t.internet,
+    t.insurance,
+    t.equipment,
+    t.maintenance,
+    t.supplies,
+    t.activities,
+    t.donations,
+    t.otherIncome,
+    t.otherExpense
   ];
 
   // Handle form input changes
@@ -45,7 +48,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (error) setError('');
   };
@@ -53,15 +56,15 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.category || !formData.description || !formData.amount) {
-      setError('Please fill in all required fields');
+      setError(t.fillRequiredFields);
       return;
     }
 
     if (parseFloat(formData.amount) <= 0) {
-      setError('Amount must be greater than 0');
+      setError(t.amountGreaterThanZero);
       return;
     }
 
@@ -71,12 +74,12 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
 
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t.authenticationRequired);
         return;
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       const response = await axios.post('/api/finance/transactions/add', {
         schoolId,
         type: formData.type,
@@ -90,12 +93,12 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
       if (response.data.success) {
         onSuccess();
       } else {
-        setError(response.data.message || 'Failed to add transaction');
+        setError(response.data.message || t.failedToAddTransaction);
       }
 
     } catch (err) {
       console.error('Error adding transaction:', err);
-      setError(err.response?.data?.message || 'Failed to add transaction');
+      setError(err.response?.data?.message || t.failedToAddTransaction);
     } finally {
       setLoading(false);
     }
@@ -105,7 +108,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         ></div>
@@ -120,8 +123,8 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                   <FileText className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">Add Transaction</h3>
-                  <p className="text-sm text-gray-500">Record a new income or expense</p>
+                  <h3 className="text-lg font-medium text-gray-900">{t.addTransaction}</h3>
+                  <p className="text-sm text-gray-500">{t.recordIncomeExpense}</p>
                 </div>
               </div>
               <button
@@ -147,7 +150,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transaction Type *
+                  {t.transactionType} *
                 </label>
                 <div className="flex space-x-4">
                   <label className="flex items-center">
@@ -159,7 +162,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                       onChange={handleChange}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">Expense</span>
+                    <span className="text-sm text-gray-700">{t.expense}</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -170,7 +173,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                       onChange={handleChange}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">Income</span>
+                    <span className="text-sm text-gray-700">{t.income}</span>
                   </label>
                 </div>
               </div>
@@ -178,7 +181,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
+                  {t.category} *
                 </label>
                 <div className="relative">
                   <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -189,7 +192,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
                     required
                   >
-                    <option value="">Select a category</option>
+                    <option value="">{t.selectCategory}</option>
                     {categories.map(category => (
                       <option key={category} value={category}>{category}</option>
                     ))}
@@ -200,13 +203,13 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
+                  {t.description} *
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Enter transaction description..."
+                  placeholder={t.enterDescription}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   rows={3}
                   required
@@ -216,7 +219,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Amount */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount (DZD) *
+                  {t.amount} (DZD) *
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -237,14 +240,14 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Receipt Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Receipt Number
+                  {t.receiptNumber}
                 </label>
                 <input
                   type="text"
                   name="receiptNumber"
                   value={formData.receiptNumber}
                   onChange={handleChange}
-                  placeholder="Optional receipt number"
+                  placeholder={t.optionalReceiptNumber}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
@@ -252,7 +255,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
               {/* Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date *
+                  {t.date} *
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -273,9 +276,7 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                   type="button"
                   onClick={onClose}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
+                >{t.cancel}</button>
                 <button
                   type="submit"
                   disabled={loading}
@@ -284,12 +285,12 @@ const AddTransactionModal = ({ schoolId, onClose, onSuccess }) => {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Adding...
+                      {t.adding}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Add Transaction
+                      {t.addTransaction}
                     </>
                   )}
                 </button>

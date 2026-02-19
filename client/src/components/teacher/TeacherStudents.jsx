@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Search, Trophy, Shuffle, X } from 'lucide-react';
 import { useToast } from '../shared/ToastProvider';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TeacherStudents = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,13 +29,14 @@ const TeacherStudents = () => {
   };
   const spinTimer = useRef(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     let mounted = true;
-  (async () => {
+    (async () => {
       try {
-    const axios = (await import('axios')).default;
-    const res = await axios.get('/api/classes/teacher', { headers: authHeaders() });
+        const axios = (await import('axios')).default;
+        const res = await axios.get('/api/classes/teacher', { headers: authHeaders() });
         if (!mounted) return;
         const opts = [{ id: 'all', name: 'All Classes' }, ...res.data.map(c => ({ id: c._id, name: c.name }))];
         setClasses(opts);
@@ -45,11 +47,11 @@ const TeacherStudents = () => {
 
   useEffect(() => {
     let mounted = true;
-  (async () => {
+    (async () => {
       if (selectedClass === 'all') { setStudents([]); return; }
       try {
         const axios = (await import('axios')).default;
-    const res = await axios.get(`/api/classes/${selectedClass}/students`, { headers: authHeaders() });
+        const res = await axios.get(`/api/classes/${selectedClass}/students`, { headers: authHeaders() });
         if (!mounted) return;
         setStudents(res.data.students || []);
         setWheelPool((res.data.students || []).map(s => s.id));
@@ -61,12 +63,12 @@ const TeacherStudents = () => {
   // Fetch class performance summary when a class is selected
   useEffect(() => {
     let mounted = true;
-  (async () => {
+    (async () => {
       if (selectedClass === 'all') { setPerfItems([]); return; }
       setPerfLoading(true);
       try {
         const axios = (await import('axios')).default;
-    const res = await axios.get(`/api/reporting/classes/${selectedClass}/performance`, { headers: authHeaders() });
+        const res = await axios.get(`/api/reporting/classes/${selectedClass}/performance`, { headers: authHeaders() });
         if (!mounted) return;
         setPerfItems(res.data?.items || []);
       } catch (_) {
@@ -86,16 +88,16 @@ const TeacherStudents = () => {
   // we display the fetched list as-is to avoid relying on a missing class field.
   const filteredStudents = selectedClass === 'all'
     ? students.filter(student => {
-        const name = (student.name || '').toLowerCase();
-        const email = (student.email || '').toLowerCase();
-        const q = (searchTerm || '').toLowerCase();
-        return name.includes(q) || email.includes(q);
-      })
+      const name = (student.name || '').toLowerCase();
+      const email = (student.email || '').toLowerCase();
+      const q = (searchTerm || '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    })
     : students;
 
   const leaderboard = [...students]
     .map(s => ({ ...s, xp: s.xp || 0, level: s.level || 1 }))
-    .sort((a,b) => (b.xp||0) - (a.xp||0))
+    .sort((a, b) => (b.xp || 0) - (a.xp || 0))
     .slice(0, 10);
 
   const openHistory = async (student) => {
@@ -135,7 +137,7 @@ const TeacherStudents = () => {
     const n = parts.length;
     if (n === 0) return 'conic-gradient(#eee 0deg 360deg)';
     const slice = 360 / n;
-    const palette = ['#fde68a','#bfdbfe','#c7d2fe','#fbcfe8','#fecaca','#bbf7d0','#a7f3d0','#fdba74','#fca5a5','#f5d0fe'];
+    const palette = ['#fde68a', '#bfdbfe', '#c7d2fe', '#fbcfe8', '#fecaca', '#bbf7d0', '#a7f3d0', '#fdba74', '#fca5a5', '#f5d0fe'];
     const stops = parts.map((_, i) => {
       const start = i * slice;
       const end = (i + 1) * slice;
@@ -173,8 +175,8 @@ const TeacherStudents = () => {
       if (spinTimer.current) clearTimeout(spinTimer.current);
       spinTimer.current = setTimeout(() => {
         setWheelLastPick(pickId);
-        const winnerName = students.find(s=>s.id===pickId)?.name || 'Student';
-        try { toast(`Winner: ${winnerName}`); } catch {}
+        const winnerName = students.find(s => s.id === pickId)?.name || 'Student';
+        try { toast(`Winner: ${winnerName}`); } catch { }
         if (wheelMode === 'elimination') {
           setWheelPool(p => p.filter(id => id !== pickId));
         }
@@ -239,15 +241,15 @@ const TeacherStudents = () => {
             <p className="text-sm text-gray-500">Interactive tools for engaging your students</p>
           </div>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={()=>{setWheelOpen(true); setWheelMode('normal');}} 
+            <button
+              onClick={() => { setWheelOpen(true); setWheelMode('normal'); }}
               className="px-4 py-2 text-sm font-medium rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors flex items-center gap-2"
             >
-              <Shuffle className="w-4 h-4"/> 
+              <Shuffle className="w-4 h-4" />
               Luck Wheel
             </button>
-            <button 
-              onClick={()=>{setWheelOpen(true); setWheelMode('elimination');}} 
+            <button
+              onClick={() => { setWheelOpen(true); setWheelMode('elimination'); }}
               className="px-4 py-2 text-sm font-medium rounded-lg border border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
             >
               Elimination Mode
@@ -274,12 +276,11 @@ const TeacherStudents = () => {
           {leaderboard.map((s, i) => (
             <div key={s.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                  i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white' :
-                  i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-white' :
-                  i === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
-                  'bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700'
-                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${i === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white' :
+                    i === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-white' :
+                      i === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
+                        'bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700'
+                  }`}>
                   {i < 3 ? '🏆' : i + 1}
                 </div>
                 <div>
@@ -322,25 +323,25 @@ const TeacherStudents = () => {
       {/* Enhanced Students List */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-          <h2 className="text-xl font-bold text-gray-900">Students ({selectedClass==='all' ? filteredStudents.length : students.length})</h2>
+          <h2 className="text-xl font-bold text-gray-900">Students ({selectedClass === 'all' ? filteredStudents.length : students.length})</h2>
           <p className="text-sm text-gray-500 mt-1">Manage and track student progress</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Student</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">{t.student}</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">{t.status}</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">{t.actions}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {(selectedClass==='all' ? filteredStudents : students).map((student) => (
+              {(selectedClass === 'all' ? filteredStudents : students).map((student) => (
                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-sm">
-                        <span className="text-white font-bold text-sm">{(student.name||'??').slice(0,2).toUpperCase()}</span>
+                        <span className="text-white font-bold text-sm">{(student.name || '??').slice(0, 2).toUpperCase()}</span>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-semibold text-gray-900">{student.name}</div>
@@ -349,18 +350,17 @@ const TeacherStudents = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                      (student.status || 'active') === 'active' 
-                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${(student.status || 'active') === 'active'
+                        ? 'bg-green-100 text-green-800 border border-green-200'
                         : 'bg-gray-100 text-gray-800 border border-gray-200'
-                    }`}>
+                      }`}>
                       {student.status || 'active'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {selectedClass !== 'all' && (
-                      <button 
-                        onClick={()=>openHistory(student)} 
+                      <button
+                        onClick={() => openHistory(student)}
                         className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
                       >
                         View History
@@ -385,11 +385,11 @@ const TeacherStudents = () => {
                   <h3 className="text-xl font-bold text-gray-900">Performance History</h3>
                   <p className="text-sm text-gray-600 mt-1">{selectedStudent ? `${selectedStudent.name}'s results and progress` : 'Student performance analytics'}</p>
                 </div>
-                <button 
-                  onClick={()=>setHistoryOpen(false)} 
+                <button
+                  onClick={() => setHistoryOpen(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 rounded-lg transition-colors"
                 >
-                  <X className="w-6 h-6"/>
+                  <X className="w-6 h-6" />
                 </button>
               </div>
             </div>
@@ -401,7 +401,7 @@ const TeacherStudents = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
                   <span className="ml-3 text-gray-600">Loading performance data...</span>
                 </div>
-              ) : historyData && (historyData.assignments||[]).length === 0 && (historyData.attendance||[]).length === 0 && (historyData.payments||[]).length === 0 ? (
+              ) : historyData && (historyData.assignments || []).length === 0 && (historyData.attendance || []).length === 0 && (historyData.payments || []).length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,7 +413,7 @@ const TeacherStudents = () => {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {(historyData.assignments||[]).map(a => (
+                  {(historyData.assignments || []).map(a => (
                     <div key={a.assignmentId} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
                         <h4 className="text-lg font-semibold text-gray-900">{a.title}</h4>
@@ -445,26 +445,25 @@ const TeacherStudents = () => {
                                 </div>
                               </div>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              g.bestPercentage >= 80 ? 'bg-green-100 text-green-700' :
-                              g.bestPercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
+                            <div className={`px-3 py-1 rounded-full text-xs font-medium ${g.bestPercentage >= 80 ? 'bg-green-100 text-green-700' :
+                                g.bestPercentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                              }`}>
                               {g.bestPercentage >= 80 ? 'Excellent' :
-                               g.bestPercentage >= 60 ? 'Good' : 'Needs Improvement'}
+                                g.bestPercentage >= 60 ? 'Good' : 'Needs Improvement'}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   ))}
-                  {(historyData.attendance||[]).length > 0 && (
+                  {(historyData.attendance || []).length > 0 && (
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
                         <h4 className="text-lg font-semibold text-gray-900">Attendance</h4>
                       </div>
                       <div className="p-4 space-y-2">
-                        {(historyData.attendance||[]).map((a, idx) => (
+                        {(historyData.attendance || []).map((a, idx) => (
                           <div key={idx} className="flex items-center justify-between p-3 rounded-lg border bg-white">
                             <div className="text-sm text-gray-800">{new Date(a.date).toLocaleDateString()}</div>
                             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${a.status === 'present' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
@@ -475,13 +474,13 @@ const TeacherStudents = () => {
                       </div>
                     </div>
                   )}
-                  {(historyData.payments||[]).length > 0 && (
+                  {(historyData.payments || []).length > 0 && (
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
                         <h4 className="text-lg font-semibold text-gray-900">Payments</h4>
                       </div>
                       <div className="p-4 space-y-2">
-                        {(historyData.payments||[]).map((p) => (
+                        {(historyData.payments || []).map((p) => (
                           <div key={p._id} className="flex items-center justify-between p-3 rounded-lg border bg-white">
                             <div>
                               <div className="text-sm font-medium text-gray-900">{p.kind === 'pay_cycles' ? 'Cycle purchase' : 'Session purchase'}</div>
@@ -502,7 +501,7 @@ const TeacherStudents = () => {
               )}
             </div>
           </div>
-          <div className="flex-1" onClick={()=>setHistoryOpen(false)} />
+          <div className="flex-1" onClick={() => setHistoryOpen(false)} />
         </div>
       )}
 
@@ -515,7 +514,7 @@ const TeacherStudents = () => {
                 <h3 className="text-lg font-semibold">Luck Wheel</h3>
                 <p className="text-xs text-gray-500">Mode: {wheelMode === 'elimination' ? 'Elimination' : 'Normal'}</p>
               </div>
-              <button onClick={()=>setWheelOpen(false)} className="p-2 text-gray-500 hover:text-gray-700"><X className="w-4 h-4"/></button>
+              <button onClick={() => setWheelOpen(false)} className="p-2 text-gray-500 hover:text-gray-700"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 space-y-3">
               <div className="text-xs text-gray-500">Students in wheel: {wheelPool.length}</div>
@@ -531,7 +530,7 @@ const TeacherStudents = () => {
                   >
                     {/* Wheel background */}
                     <div className="absolute inset-0 rounded-full shadow-sm border border-gray-200"
-                         style={{ background: buildWheelGradient(wheelParticipants) }} />
+                      style={{ background: buildWheelGradient(wheelParticipants) }} />
                     {/* Labels */}
                     {wheelParticipants.map((p, i) => {
                       const n = wheelParticipants.length || 1;
@@ -564,12 +563,12 @@ const TeacherStudents = () => {
                 </div>
               </div>
               <div className="text-center text-sm text-gray-500">
-                {wheelSpinning ? 'Spinning…' : (wheelLastPick ? `Winner: ${students.find(s=>s.id===wheelLastPick)?.name || 'Student'}` : 'Ready')}
+                {wheelSpinning ? 'Spinning…' : (wheelLastPick ? `Winner: ${students.find(s => s.id === wheelLastPick)?.name || 'Student'}` : 'Ready')}
               </div>
               <div className="flex items-center gap-2">
-                <button disabled={wheelSpinning || winnerModal.open || wheelPool.length===0} onClick={rollWheel} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50 disabled:opacity-50">Spin</button>
+                <button disabled={wheelSpinning || winnerModal.open || wheelPool.length === 0} onClick={rollWheel} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50 disabled:opacity-50">Spin</button>
                 {wheelMode === 'elimination' && (
-                  <button onClick={()=>setWheelPool(students.map(s=>s.id))} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50">Reset Pool</button>
+                  <button onClick={() => setWheelPool(students.map(s => s.id))} className="px-3 py-1.5 text-sm rounded-md border bg-white hover:bg-gray-50">Reset Pool</button>
                 )}
               </div>
             </div>

@@ -43,33 +43,33 @@ const ManagerPasswordReset = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">{t('password-reset') || 'Password Reset'}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t.passwordResetTitle}</h2>
         </div>
 
         <div className="bg-white border rounded-2xl p-4 shadow-sm space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-gray-600">Role</label>
-              <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} className="w-full mt-1 px-3 py-2 border rounded-md">
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="staff">Staff</option>
+              <label className="text-xs text-gray-600">{t.role}</label>
+              <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="w-full mt-1 px-3 py-2 border rounded-md">
+                <option value="student">{t.student}</option>
+                <option value="teacher">{t.teacher}</option>
+                <option value="staff">{t.staff}</option>
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs text-gray-600">Search</label>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="name or email" className="w-full mt-1 px-3 py-2 border rounded-md" />
+              <label className="text-xs text-gray-600">{t.search}</label>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t.searchNameOrEmail} className="w-full mt-1 px-3 py-2 border rounded-md" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1">
-              <label className="text-xs text-gray-600">Users</label>
+              <label className="text-xs text-gray-600">{t.users || t.user}</label>
               <div className="mt-1 border rounded-md p-2 h-64 overflow-auto">
-                {loading && <div className="text-sm text-gray-500">Loading…</div>}
-                {!loading && users.length === 0 && <div className="text-sm text-gray-500">No users found</div>}
+                {loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+                {!loading && users.length === 0 && <div className="text-sm text-gray-500">{t.noUsersFound}</div>}
                 {!loading && users.map(u => (
-                  <div key={u._id} className={`p-2 rounded-md cursor-pointer ${selectedUser===u._id?'bg-indigo-50 border border-indigo-100':''}`} onClick={()=>setSelectedUser(u._id)}>
+                  <div key={u._id} className={`p-2 rounded-md cursor-pointer ${selectedUser === u._id ? 'bg-indigo-50 border border-indigo-100' : ''}`} onClick={() => setSelectedUser(u._id)}>
                     <div className="text-sm font-medium text-gray-900">{u.name || `${u.firstName || ''} ${u.lastName || ''}`}</div>
                     <div className="text-xs text-gray-500">{u.email || u.studentCode || ''}</div>
                   </div>
@@ -79,11 +79,11 @@ const ManagerPasswordReset = () => {
 
             <div className="md:col-span-2">
               <div className="p-3 border rounded-md">
-                {!selectedUser && <div className="text-sm text-gray-500">Select a user to reset password</div>}
+                {!selectedUser && <div className="text-sm text-gray-500">{t.selectUserToReset}</div>}
                 {selectedUser && (
                   <div>
-                    <div className="mb-3 text-sm text-gray-700">Reset password for: <span className="font-medium">{(users.find(x=>x._id===selectedUser)?.name)||selectedUser}</span></div>
-                    <ResetPasswordForm onSubmit={handleReset} submitLabel="Reset password" />
+                    <div className="mb-3 text-sm text-gray-700">{t.resetPasswordFor}: <span className="font-medium">{(users.find(x => x._id === selectedUser)?.name) || selectedUser}</span></div>
+                    <ResetPasswordForm onSubmit={handleReset} submitLabel={t.resetPasswordAction} />
                   </div>
                 )}
               </div>

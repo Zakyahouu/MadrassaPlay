@@ -5,6 +5,7 @@ import LoadingState from '../shared/LoadingState';
 import EmptyState from '../shared/EmptyState';
 import { Copy as CopyIcon } from 'lucide-react';
 import { useToast } from '../shared/ToastProvider';
+import { useLanguage } from '../../context/LanguageContext';
 
 const formatMs = (ms) => {
   if (!Number.isFinite(ms)) return '—';
@@ -111,7 +112,7 @@ export default function TeacherLiveSessionSummary() {
                   <thead className="bg-gray-100 text-gray-700">
                     <tr>
                       <th className="px-3 py-2 text-left">#</th>
-                      <th className="px-3 py-2 text-left">Name</th>
+                      <th className="px-3 py-2 text-left">{t.fullName || "Name"}</th>
                       <th className="px-3 py-2 text-left">Score</th>
                       <th className="px-3 py-2 text-left">Time</th>
                       <th className="px-3 py-2 text-left">Wrong</th>

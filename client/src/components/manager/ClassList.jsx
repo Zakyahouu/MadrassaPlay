@@ -1,8 +1,10 @@
 // ClassList.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ClassList = () => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,17 +28,17 @@ const ClassList = () => {
 
   return (
     <div className="p-6">
-      <h3 className="text-xl font-bold mb-4">Classes</h3>
+      <h3 className="text-xl font-bold mb-4">{t.classes}</h3>
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="py-2">Name</th>
+            <th className="py-2">{t.name}</th>
             <th className="py-2">Teacher</th>
             <th className="py-2">Schedule</th>
             <th className="py-2">Subject</th>
             <th className="py-2">Level</th>
             <th className="py-2">Payment Rule</th>
-            <th className="py-2">Students</th>
+            <th className="py-2">{t.students}</th>
           </tr>
         </thead>
         <tbody>

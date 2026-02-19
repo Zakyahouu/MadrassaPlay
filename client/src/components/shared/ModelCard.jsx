@@ -1,6 +1,7 @@
 // client/src/components/shared/ModelCard.jsx
 import React from 'react';
 import { Eye, Edit, Trash2, Share, ExternalLink } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ModelCard = ({ 
   model, 
@@ -11,6 +12,7 @@ const ModelCard = ({
   showAdminActions = false,
   showTeacherActions = false 
 }) => {
+  const { t } = useLanguage();
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:border-slate-300">
       <div className="p-6">

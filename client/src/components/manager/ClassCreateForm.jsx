@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ClassCreateForm = ({ onCreated }) => {
+  const { t } = useLanguage();
   const { user } = useContext(AuthContext);
   const [form, setForm] = useState({
     number: '',
@@ -32,11 +34,13 @@ const ClassCreateForm = ({ onCreated }) => {
   }, []);
 
   const handleChange = (e) => {
+  const { t } = useLanguage();
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
   const handleScheduleChange = (idx, field, value) => {
+  const { t } = useLanguage();
     const newSchedule = form.schedule.map((row, i) =>
       i === idx ? { ...row, [field]: value } : row
     );
@@ -44,10 +48,12 @@ const ClassCreateForm = ({ onCreated }) => {
   };
 
   const addScheduleRow = () => {
+  const { t } = useLanguage();
     setForm({ ...form, schedule: [...form.schedule, { day: '', time: '' }] });
   };
 
   const removeScheduleRow = (idx) => {
+  const { t } = useLanguage();
     setForm({ ...form, schedule: form.schedule.filter((_, i) => i !== idx) });
   };
 

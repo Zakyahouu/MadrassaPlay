@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Share2, Copy, Check, X, ExternalLink } from 'lucide-react';
 import shareService from '../../services/shareService';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ShareButton = ({ modelId, modelName, className = '' }) => {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [shareStatus, setShareStatus] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -22,7 +24,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
       setShareStatus(response.data);
     } catch (err) {
       console.error('Error loading share status:', err);
-      setError('Failed to load share status');
+      setError(t.failedToLoadShareStatus || 'Failed to load share status');
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +39,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
       // Don't automatically show modal, let user click Share button to see it
     } catch (err) {
       console.error('Error generating share link:', err);
-      setError(err.response?.data?.error || 'Failed to generate share link');
+      setError(err.response?.data?.error || t.failedToGenerateShareLink || 'Failed to generate share link');
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +54,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
       setShowShareModal(false);
     } catch (err) {
       console.error('Error disabling share link:', err);
-      setError(err.response?.data?.error || 'Failed to disable share link');
+      setError(err.response?.data?.error || t.failedToDisableShareLink || 'Failed to disable share link');
     } finally {
       setIsLoading(false);
     }
@@ -75,21 +77,21 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         try {
           document.execCommand('copy');
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         } catch (fallbackErr) {
           console.error('Fallback copy failed:', fallbackErr);
-          setError('Failed to copy link. Please copy manually.');
+          setError(t.failedToCopyLink || 'Failed to copy link. Please copy manually.');
         } finally {
           document.body.removeChild(textArea);
         }
       }
     } catch (err) {
       console.error('Error copying link:', err);
-      setError('Failed to copy link. Please copy manually.');
+      setError(t.failedToCopyLink || 'Failed to copy link. Please copy manually.');
     }
   };
 
@@ -109,7 +111,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
   };
 
   const isExpired = shareStatus?.expiresAt && new Date(shareStatus.expiresAt) < new Date();
-  
+
 
   const handleOpenModal = () => {
     setShowShareModal(true);
@@ -127,7 +129,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
         className={`inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       >
         <Share2 className="w-4 h-4 mr-2" />
-        {isLoading ? 'Loading...' : 'Share'}
+        {isLoading ? (t.loading || 'Loading...') : (t.share || 'Share')}
       </button>
 
       {/* Share Modal */}
@@ -136,7 +138,7 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Share Model</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t.shareModel || 'Share Model'}</h2>
                 <button
                   onClick={() => setShowShareModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -160,17 +162,17 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                      <span className="text-sm font-medium text-green-800">Share Link Active</span>
+                      <span className="text-sm font-medium text-green-800">{t.shareLinkActive || 'Share Link Active'}</span>
                     </div>
                     <p className="text-sm text-green-700">
-                      This model is currently shared and accessible via the link below.
+                      {t.shareLinkActiveDesc || 'This model is currently shared and accessible via the link below.'}
                     </p>
                   </div>
 
                   {/* Share URL */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Share Link
+                      {t.shareLink || 'Share Link'}
                     </label>
                     <div className="flex">
                       <input
@@ -191,20 +193,20 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                   {/* Share Details */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Access Count:</span>
+                      <span className="text-gray-500">{t.accessCount || 'Access Count'}:</span>
                       <span className="ml-2 font-medium">{shareStatus.accessCount || 0}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Expires:</span>
+                      <span className="text-gray-500">{t.expires || 'Expires'}:</span>
                       <span className="ml-2 font-medium">{formatDate(shareStatus.expiresAt)}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Last Accessed:</span>
+                      <span className="text-gray-500">{t.lastAccessed || 'Last Accessed'}:</span>
                       <span className="ml-2 font-medium">{formatDate(shareStatus.lastAccessedAt)}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">Status:</span>
-                      <span className="ml-2 font-medium text-green-600">Active</span>
+                      <span className="text-gray-500">{t.status || 'Status'}:</span>
+                      <span className="ml-2 font-medium text-green-600">{t.active || 'Active'}</span>
                     </div>
                   </div>
 
@@ -215,14 +217,14 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                       className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Open Link
+                      {t.openLink || 'Open Link'}
                     </button>
                     <button
                       onClick={handleDisableShare}
                       disabled={isLoading}
                       className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
                     >
-                      {isLoading ? 'Disabling...' : 'Disable Share'}
+                      {isLoading ? (t.disabling || 'Disabling...') : (t.disableShare || 'Disable Share')}
                     </button>
                   </div>
                 </div>
@@ -233,13 +235,13 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                       <span className="text-sm font-medium text-red-800">
-                        {isExpired ? 'Share Link Expired' : 'Share Link Disabled'}
+                        {isExpired ? (t.shareLinkExpired || 'Share Link Expired') : (t.shareLinkDisabled || 'Share Link Disabled')}
                       </span>
                     </div>
                     <p className="text-sm text-red-700">
-                      {isExpired 
-                        ? 'This share link has expired and is no longer accessible.'
-                        : 'This share link has been disabled and is no longer accessible.'
+                      {isExpired
+                        ? (t.shareLinkExpiredDesc || 'This share link has expired and is no longer accessible.')
+                        : (t.shareLinkDisabledDesc || 'This share link has been disabled and is no longer accessible.')
                       }
                     </p>
                   </div>
@@ -250,13 +252,13 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                       disabled={isLoading}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                      {isLoading ? 'Generating...' : 'Generate New Share Link'}
+                      {isLoading ? (t.generating || 'Generating...') : (t.generateNewShareLink || 'Generate New Share Link')}
                     </button>
                     <button
                       onClick={() => setShowShareModal(false)}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
                     >
-                      Cancel
+                      {t.cancel || 'Cancel'}
                     </button>
                   </div>
                 </div>
@@ -266,10 +268,10 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                   <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
-                      <span className="text-sm font-medium text-gray-800">Not Shared</span>
+                      <span className="text-sm font-medium text-gray-800">{t.notShared || 'Not Shared'}</span>
                     </div>
                     <p className="text-sm text-gray-600">
-                      This model is not currently shared. Generate a share link to make it accessible to others.
+                      {t.notSharedDesc || 'This model is not currently shared. Generate a share link to make it accessible to others.'}
                     </p>
                   </div>
 
@@ -279,13 +281,13 @@ const ShareButton = ({ modelId, modelName, className = '' }) => {
                       disabled={isLoading}
                       className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                      {isLoading ? 'Generating...' : 'Generate Share Link'}
+                      {isLoading ? (t.generating || 'Generating...') : (t.generateShareLink || 'Generate Share Link')}
                     </button>
                     <button
                       onClick={() => setShowShareModal(false)}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
                     >
-                      Cancel
+                      {t.cancel || 'Cancel'}
                     </button>
                   </div>
                 </div>

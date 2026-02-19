@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { Clock } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const NotificationItem = ({ message, time, type }) => {
+  const { t } = useLanguage();
   const getTypeColor = () => {
     switch (type) {
       case 'urgent':
@@ -18,8 +20,8 @@ const NotificationItem = ({ message, time, type }) => {
 
   return (
     <div className={`p-3 rounded-lg border-l-4 ${getTypeColor()} hover:bg-opacity-75 transition-colors`}>
-      <p className="text-sm text-gray-900 mb-1">{message}</p>
-      <div className="flex items-center text-xs text-gray-500">
+      <p className="text-sm text-text-main-light mb-1">{message}</p>
+      <div className="flex items-center text-xs text-text-muted-light">
         <Clock className="w-3 h-3 mr-1" />
         {time}
       </div>

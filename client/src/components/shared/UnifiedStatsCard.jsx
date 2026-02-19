@@ -1,5 +1,6 @@
 import React from 'react';
 import UnifiedCard from './UnifiedCard';
+import { useLanguage } from '../../context/LanguageContext';
 
 const UnifiedStatsCard = ({ 
   title, 
@@ -10,6 +11,7 @@ const UnifiedStatsCard = ({
   changeType = 'positive',
   className = ''
 }) => {
+  const { t } = useLanguage();
   const getChangeColor = () => {
     if (changeType === 'positive') return 'text-green-600';
     if (changeType === 'negative') return 'text-red-600';

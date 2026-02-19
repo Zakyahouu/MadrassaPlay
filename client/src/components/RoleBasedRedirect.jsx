@@ -33,6 +33,8 @@ const RoleBasedRedirect = () => {
         return <Navigate to="/student/dashboard" replace />;
       case 'manager':
         return <Navigate to="/manager/dashboard" replace />;
+      case 'staff':
+        return <Navigate to="/manager/dashboard" replace />;
       default:
         // If role is unknown, redirect to login as a fallback.
         return <Navigate to="/login" replace />;

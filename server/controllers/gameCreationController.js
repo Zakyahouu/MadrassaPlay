@@ -42,13 +42,13 @@ const createGameCreation = asyncHandler(async (req, res) => {
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     finalName = `Game - ${template.name}-${ts}`;
   }
-  
+
   // Data processing for numbers (from our previous fix)
   const processedConfig = { ...config };
-    Object.entries(template.formSchema.settings).forEach(([key, schema]) => {
+  Object.entries(template.formSchema.settings).forEach(([key, schema]) => {
     if (schema.type === 'number' && processedConfig[key] !== undefined) {
-        processedConfig[key] = parseInt(processedConfig[key], 10);
-        if (isNaN(processedConfig[key])) processedConfig[key] = 0;
+      processedConfig[key] = parseInt(processedConfig[key], 10);
+      if (isNaN(processedConfig[key])) processedConfig[key] = 0;
     }
   });
 
@@ -70,12 +70,12 @@ const createGameCreation = asyncHandler(async (req, res) => {
     processedContent = content.map(item => {
       const processedItem = { ...item };
       if (template.formSchema.content && template.formSchema.content.itemSchema) {
-          Object.entries(template.formSchema.content.itemSchema).forEach(([key, schema]) => {
-              if (schema.type === 'number' && processedItem[key] !== undefined) {
-                  processedItem[key] = parseFloat(processedItem[key]);
-                  if (isNaN(processedItem[key])) processedItem[key] = 0;
-              }
-          });
+        Object.entries(template.formSchema.content.itemSchema).forEach(([key, schema]) => {
+          if (schema.type === 'number' && processedItem[key] !== undefined) {
+            processedItem[key] = parseFloat(processedItem[key]);
+            if (isNaN(processedItem[key])) processedItem[key] = 0;
+          }
+        });
       }
       return processedItem;
     });
@@ -84,7 +84,7 @@ const createGameCreation = asyncHandler(async (req, res) => {
   // Enforce max images per creation (manifest.assets.maxImagesPerCreation) if content includes image fields
   const maxImagesPerCreation = Number(template.manifest?.assets?.maxImagesPerCreation || 0);
   if (maxImagesPerCreation > 0 && Array.isArray(processedContent)) {
-    const imageFieldTypes = new Set(['image','imageArray']);
+    const imageFieldTypes = new Set(['image', 'imageArray']);
     const itemSchema = template.formSchema?.content?.itemSchema || {};
     let imageCount = 0;
     processedContent.forEach(item => {
@@ -128,8 +128,8 @@ const createGameCreation = asyncHandler(async (req, res) => {
     enginePath: template.enginePath,
     engineVersion: manifest.version || undefined,
     attemptPolicy,
-  levelLabel: levelLabel || undefined,
-  levelId: levelId || undefined,
+    levelLabel: levelLabel || undefined,
+    levelId: levelId || undefined,
     xp: xpSnapshot,
   });
 
@@ -142,7 +142,7 @@ const createGameCreation = asyncHandler(async (req, res) => {
       const draftPrefix = `/uploads/templates/${templateId}/creations/draft/`;
       const finalPrefix = `/uploads/templates/${templateId}/creations/${gameCreation._id}/`;
       const itemSchema = template.formSchema?.content?.itemSchema || {};
-      const imageFieldTypes = new Set(['image','imageArray']);
+      const imageFieldTypes = new Set(['image', 'imageArray']);
       let changed = false;
       const newContent = (Array.isArray(processedContent) ? JSON.parse(JSON.stringify(processedContent)) : []);
       for (let i = 0; i < newContent.length; i++) {
@@ -192,7 +192,7 @@ const createGameCreation = asyncHandler(async (req, res) => {
         gameCreation.content = newContent;
         await gameCreation.save();
       }
-    } catch (_) {}
+    } catch (_) { }
 
     res.status(201).json(gameCreation);
   } else {
@@ -222,55 +222,83 @@ const getMyGameCreations = asyncHandler(async (req, res) => {
 // @route   GET /api/creations/:id
 // @access  Private
 const getGameCreationById = asyncHandler(async (req, res) => {
-    const gameCreation = await GameCreation.findById(req.params.id)
-        .populate('template');
+  const gameCreation = await GameCreation.findById(req.params.id)
+    .populate('template');
 
-    if (!gameCreation) {
-        res.status(404);
-        throw new Error('Game creation not found');
-    }
+  if (!gameCreation) {
+    res.status(404);
+    throw new Error('Game creation not found');
+  }
 
-    const isOwner = gameCreation.owner.toString() === req.user._id.toString();
-    
-    const isAssignedStudent = await Assignment.findOne({
-        students: req.user._id,
-        gameCreations: req.params.id,
-    });
+  const isOwner = gameCreation.owner.toString() === req.user._id.toString();
 
-    // Live access: allow if the student is currently in a live room for this creation
-    let isInLiveGame = false;
+  const isAssignedStudent = await Assignment.findOne({
+    students: req.user._id,
+    gameCreations: req.params.id,
+  });
+
+  // Same-school access: allow if the student belongs to the same school as the game owner
+  let isSameSchool = false;
+  if (req.user.role === 'student' && req.user.school && gameCreation.owner) {
     try {
-      const live = req.liveGames || require('../realtimeState').liveGames;
-      // Prefer explicit room code when provided (via header), else scan all rooms
-      const hintedCode = req.headers['x-live-room'];
-      if (hintedCode && live[hintedCode]) {
-        const room = live[hintedCode];
+      const User = require('../models/User');
+      const ownerUser = await User.findById(gameCreation.owner).select('school');
+      if (ownerUser && String(ownerUser.school) === String(req.user.school)) {
+        isSameSchool = true;
+      }
+    } catch { }
+  }
+
+  // Federated access: students from directis360 can access games from the same federated system
+  const isFederated = req.user.externalSource === 'directis360';
+
+  // Live access: allow if the student is currently in a live room for this creation
+  let isInLiveGame = false;
+  try {
+    const live = req.liveGames || require('../realtimeState').liveGames;
+    // Prefer explicit room code when provided (via header), else scan all rooms
+    const hintedCode = req.headers['x-live-room'];
+    if (hintedCode && live[hintedCode]) {
+      const room = live[hintedCode];
+      if (
+        String(room.gameCreationId) === String(req.params.id) &&
+        Array.isArray(room.players) && room.players.some(p => String(p.userId) === String(req.user._id))
+      ) {
+        isInLiveGame = true;
+      }
+    } else if (live) {
+      for (const code in live) {
+        const room = live[code];
         if (
           String(room.gameCreationId) === String(req.params.id) &&
           Array.isArray(room.players) && room.players.some(p => String(p.userId) === String(req.user._id))
         ) {
           isInLiveGame = true;
-        }
-      } else if (live) {
-        for (const code in live) {
-          const room = live[code];
-          if (
-            String(room.gameCreationId) === String(req.params.id) &&
-            Array.isArray(room.players) && room.players.some(p => String(p.userId) === String(req.user._id))
-          ) {
-            isInLiveGame = true;
-            break;
-          }
+          break;
         }
       }
-    } catch {}
-
-  if (isOwner || (req.user.role === 'student' && (isAssignedStudent || isInLiveGame))) {
-        res.json(gameCreation);
-    } else {
-        res.status(403);
-        throw new Error('User not authorized to access this game');
     }
+  } catch { }
+
+  const allowed = isOwner || (req.user.role === 'student' && (isAssignedStudent || isInLiveGame || isSameSchool || isFederated));
+
+  if (!allowed) {
+    console.log('[getGameCreationById] Access denied debug:', {
+      userId: req.user._id,
+      role: req.user.role,
+      school: req.user.school,
+      externalSource: req.user.externalSource,
+      gameOwner: gameCreation.owner,
+      isOwner, isAssignedStudent: !!isAssignedStudent, isInLiveGame, isSameSchool, isFederated,
+    });
+  }
+
+  if (allowed) {
+    res.json(gameCreation);
+  } else {
+    res.status(403);
+    throw new Error('User not authorized to access this game');
+  }
 });
 
 
@@ -331,7 +359,7 @@ const updateGameCreation = asyncHandler(async (req, res) => {
   // Validate image limits (same as create)
   const maxImagesPerCreation = Number(template.manifest?.assets?.maxImagesPerCreation || 0);
   if (maxImagesPerCreation > 0 && Array.isArray(processedContent)) {
-    const imageFieldTypes = new Set(['image','imageArray']);
+    const imageFieldTypes = new Set(['image', 'imageArray']);
     const itemSchema = template.formSchema?.content?.itemSchema || {};
     let imageCount = 0;
     processedContent.forEach(item => {

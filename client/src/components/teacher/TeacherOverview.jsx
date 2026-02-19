@@ -1,18 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  Trophy, 
-  BookOpen, 
+import { useNavigate } from 'react-router-dom';
+import {
+  TrendingUp,
+  Users,
+  Trophy,
+  BookOpen,
   Calendar,
   Star,
   Target,
-  Activity
+  Activity,
+  Clock
 } from 'lucide-react';
 import UnifiedCard from '../shared/UnifiedCard';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
-const TeacherOverview = ({ stats }) => {
+const TeacherOverview = () => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [metrics, setMetrics] = useState({ totalGames: 0, activeStudents: 0, averageScore: 0, liveSessions: 0 });
@@ -41,12 +46,12 @@ const TeacherOverview = ({ stats }) => {
         const past = Array.isArray(pastRes.data) ? pastRes.data : (pastRes.data?.sessions || []);
         const active = Array.isArray(actRes.data) ? actRes.data : (actRes.data?.sessions || []);
 
-  // Active students: use new aggregated endpoint
-  const uniqueStudents = Number(uniqRes.data?.uniqueStudents || 0);
+        // Active students: use new aggregated endpoint
+        const uniqueStudents = Number(uniqRes.data?.uniqueStudents || 0);
 
         // Average score from past live sessions (if controller provides averageScore)
         const avgScores = past.map(s => (typeof s.averageScore === 'number' ? s.averageScore : null)).filter(v => v !== null);
-        const averageScore = avgScores.length ? Math.round((avgScores.reduce((a,b)=>a+b,0) / avgScores.length) * 10) / 10 : 0;
+        const averageScore = avgScores.length ? Math.round((avgScores.reduce((a, b) => a + b, 0) / avgScores.length) * 10) / 10 : 0;
 
         setMetrics({
           totalGames: creations.length,
@@ -65,46 +70,18 @@ const TeacherOverview = ({ stats }) => {
   }, []);
 
   const display = useMemo(() => ({
-    totalGames: metrics.totalGames || stats?.totalGames || 0,
-    activeStudents: metrics.activeStudents || stats?.totalStudents || 0,
-    averageScore: metrics.averageScore || stats?.averageScore || 0,
-    liveSessions: metrics.liveSessions || stats?.liveSessions || 0,
-  }), [metrics, stats]);
-  const recentActivity = [
-    {
-      id: 1,
-      type: 'game_created',
-      title: 'Math Quiz: Fractions',
-      description: 'Created a new game template',
-      time: '2 hours ago',
-      icon: BookOpen,
-      color: 'text-blue-600'
-    },
-    {
-      id: 2,
-      type: 'session_hosted',
-      title: 'Science Lab Session',
-      description: 'Hosted live session with 24 students',
-      time: '4 hours ago',
-      icon: Users,
-      color: 'text-green-600'
-    },
-    {
-      id: 3,
-      type: 'result_achieved',
-      title: 'History Challenge',
-      description: 'Class average: 92% - Excellent!',
-      time: '1 day ago',
-      icon: Trophy,
-      color: 'text-yellow-600'
-    }
-  ];
+    totalGames: metrics.totalGames || 0,
+    activeStudents: metrics.activeStudents || 0,
+    averageScore: metrics.averageScore || 0,
+    liveSessions: metrics.liveSessions || 0,
+  }), [metrics]);
 
+  // Real actions with navigation
   const quickActions = [
-    { name: 'Create New Game', icon: BookOpen, color: 'text-blue-600' },
-    { name: 'Host Live Session', icon: Users, color: 'text-green-600' },
-    { name: 'View Results', icon: Trophy, color: 'text-yellow-600' },
-    { name: 'Schedule Assignment', icon: Calendar, color: 'text-purple-600' }
+    { name: t.createGame || 'Create New Game', icon: BookOpen, color: 'text-blue-600', path: '/teacher/dashboard?tab=create-game' },
+    { name: t.hostLive || 'Host Live Session', icon: Users, color: 'text-green-600', path: '/teacher/dashboard?tab=my-games' },
+    { name: t.viewResults || 'View Results', icon: Trophy, color: 'text-yellow-600', path: '/teacher/dashboard?tab=my-games' }, // Usually results are linked from games
+    { name: t.assignments || 'Assignments', icon: Calendar, color: 'text-purple-600', path: '/teacher/dashboard?tab=assignments' }
   ];
 
   return (
@@ -115,132 +92,104 @@ const TeacherOverview = ({ stats }) => {
         </div>
       )}
       {/* Welcome Section */}
-      <UnifiedCard className="bg-blue-50 border-blue-200">
+      <UnifiedCard className="bg-white border-none shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-12 h-12 object-contain rounded-lg" />
+            {/* <img src="/Logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-lg" /> */}
             <div>
-              <h1 className="text-2xl font-bold text-blue-900 mb-2">Welcome back, Teacher!</h1>
-              <p className="text-blue-700">Ready to create amazing learning experiences today?</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">{t.welcomeBack}</h1>
+              <p className="text-gray-500">{t.readyToContinue}</p>
             </div>
           </div>
-          <div className="hidden md:block">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">
-              <Star className="w-8 h-8 text-blue-600" />
+          {/* Decorative element or date */}
+          <div className="hidden md:block text-right">
+            <div className="text-sm font-medium text-gray-400">
+              {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
           </div>
         </div>
       </UnifiedCard>
 
-  {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <UnifiedCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Games</p>
-      <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.totalGames}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <UnifiedCard className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-blue-600" />
             </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600">+12%</span>
-            <span className="text-gray-500 ml-1">from last month</span>
+            <div>
+              <p className="text-sm font-medium text-gray-500">{t.totalGames}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{loading ? '-' : display.totalGames}</h3>
+            </div>
           </div>
         </UnifiedCard>
 
-        <UnifiedCard>
-          <div className="flex items-center justify-between">
+        <UnifiedCard className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <Users className="w-6 h-6 text-emerald-600" />
+            </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Students</p>
-              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.activeStudents}</p>
+              <p className="text-sm font-medium text-gray-500">{t.activeStudents}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{loading ? '-' : display.activeStudents}</h3>
             </div>
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600">+8%</span>
-            <span className="text-gray-500 ml-1">from last week</span>
           </div>
         </UnifiedCard>
 
-        <UnifiedCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
-              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : `${display.averageScore}%`}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+        <UnifiedCard className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
               <Target className="w-6 h-6 text-purple-600" />
             </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600">+5%</span>
-            <span className="text-gray-500 ml-1">from last month</span>
+            <div>
+              <p className="text-sm font-medium text-gray-500">{t.averageScore}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{loading ? '-' : `${display.averageScore}%`}</h3>
+            </div>
           </div>
         </UnifiedCard>
 
-        <UnifiedCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Live Sessions</p>
-              <p className="text-2xl font-bold text-gray-900">{loading ? '—' : display.liveSessions}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
+        <UnifiedCard className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center">
               <Activity className="w-6 h-6 text-orange-600" />
             </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600">+15%</span>
-            <span className="text-gray-500 ml-1">from last week</span>
+            <div>
+              <p className="text-sm font-medium text-gray-500">{t.liveSessions}</p>
+              <h3 className="text-2xl font-bold text-gray-900">{loading ? '-' : display.liveSessions}</h3>
+            </div>
           </div>
         </UnifiedCard>
       </div>
 
       {/* Quick Actions */}
-      <UnifiedCard>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.quickActions}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => (
             <button
               key={index}
-              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 text-left group"
+              onClick={() => navigate(action.path)}
+              className="flex items-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200"
             >
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
-                  <action.icon className={`w-5 h-5 ${action.color}`} />
-                </div>
-                <h4 className="font-medium text-gray-900">{action.name}</h4>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${action.color.replace('text-', 'bg-').replace('600', '50')} `}>
+                <action.icon className={`w-5 h-5 ${action.color}`} />
               </div>
+              <span className="font-medium text-gray-700">{action.name}</span>
             </button>
           ))}
         </div>
-      </UnifiedCard>
+      </div>
 
-      {/* Recent Activity */}
+      {/* Placeholder for Recent Activity - hidden if no data to avoid fake data */}
+      {/* 
       <UnifiedCard>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <activity.icon className={`w-4 h-4 ${activity.color}`} />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-gray-900">{activity.title}</h4>
-                <p className="text-sm text-gray-600">{activity.description}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-              </div>
-            </div>
-          ))}
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.recentActivity}</h3>
+        <div className="text-center py-8 text-gray-500">
+           <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+           <p>{t.noActivityYet || 'No recent activity to show.'}</p>
         </div>
       </UnifiedCard>
+      */}
     </div>
   );
 };

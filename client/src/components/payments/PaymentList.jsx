@@ -1,8 +1,10 @@
 // PaymentList.jsx
 import React from 'react';
 import formatDZ from '../../utils/currency';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PaymentList = ({ payments }) => {
+  const { t, isRTL } = useLanguage();
   const list = Array.isArray(payments) ? payments : [];
   return (
     <div className="p-6">
@@ -10,7 +12,7 @@ const PaymentList = ({ payments }) => {
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="py-2">Date</th>
+            <th className="py-2">{t.date}</th>
             <th className="py-2">Student</th>
             <th className="py-2">Class</th>
             <th className="py-2">Kind</th>

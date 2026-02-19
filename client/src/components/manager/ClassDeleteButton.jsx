@@ -1,8 +1,10 @@
 // ClassDeleteButton.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ClassDeleteButton = ({ classId, onDeleted }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

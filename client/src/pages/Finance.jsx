@@ -2,11 +2,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Users, 
-  FileText, 
+import {
+  DollarSign,
+  TrendingUp,
+  Users,
+  FileText,
   BarChart3,
   Calendar,
   RefreshCw,
@@ -33,16 +33,16 @@ const Finance = () => {
 
   // Month names
   const months = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    t.january, t.february, t.march, t.april, t.may, t.june,
+    t.july, t.august, t.september, t.october, t.november, t.december
   ];
 
   const tabs = [
-    { id: 'overview', name: t('overview'), icon: BarChart3, component: OverviewTab },
-    { id: 'teachers', name: t('teachers'), icon: Users, component: TeachersTab },
-    { id: 'employees', name: t('employees'), icon: Users, component: EmployeesTab },
-    { id: 'expenses', name: t('expenses'), icon: FileText, component: ExpensesTab },
-    { id: 'analytics', name: t('analytics'), icon: TrendingUp, component: AnalyticsTab }
+    { id: 'overview', name: t.overview, icon: BarChart3, component: OverviewTab },
+    { id: 'teachers', name: t.teachers, icon: Users, component: TeachersTab },
+    { id: 'employees', name: t.employees, icon: Users, component: EmployeesTab },
+    { id: 'expenses', name: t.expenses, icon: FileText, component: ExpensesTab },
+    { id: 'analytics', name: t.analytics, icon: TrendingUp, component: AnalyticsTab }
   ];
 
   const handleTabChange = (tabId) => {
@@ -79,10 +79,10 @@ const Finance = () => {
               <DollarSign className="w-8 h-8 text-red-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {t('no-school-assigned')}
+              {t.noSchoolAssigned}
             </h3>
             <p className="text-gray-500">
-              {t('need-school-assignment-financial-data')}
+              {t.needSchoolAssignmentFinancialData}
             </p>
           </div>
         </div>
@@ -98,10 +98,10 @@ const Finance = () => {
               <activeTabData.icon className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeTabData.name} {t('tab')}
+              {activeTabData.name} {t.tab}
             </h3>
             <p className="text-gray-500">
-              {t('feature-available-next-phase')}
+              {t.featureAvailableNextPhase}
             </p>
           </div>
         </div>
@@ -132,19 +132,19 @@ const Finance = () => {
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>{t('back-to-dashboard')}</span>
+                <span>{t.backToDashboard}</span>
               </button>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{t('finance')}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{t.finance}</h1>
                 <p className="text-sm text-gray-500">
-                  {t('manage-school-financial-data')}
+                  {t.manageSchoolFinancialData}
                 </p>
               </div>
             </div>
-            
+
             {/* Month/Year Selector */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
@@ -172,14 +172,14 @@ const Finance = () => {
                   ))}
                 </select>
               </div>
-              
+
               <button
                 onClick={handleRefresh}
                 disabled={loading}
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>{t('refresh')}</span>
+                <span>{t.refresh}</span>
               </button>
             </div>
           </div>
@@ -194,11 +194,10 @@ const Finance = () => {
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                       ? 'border-green-500 text-green-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.name}</span>

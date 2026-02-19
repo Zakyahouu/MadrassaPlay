@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  Users, 
-  MapPin, 
-  BookOpen, 
+import {
+  Clock,
+  Users,
+  MapPin,
+  BookOpen,
   Calendar,
   X,
   Info,
@@ -11,8 +11,10 @@ import {
   Search
 } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ManagerTimetable = () => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,9 +38,9 @@ const ManagerTimetable = () => {
 
   const getPeriod = (start) => {
     const hour = parseInt(start.split(':')[0], 10);
-    if (hour < 12) return 'Morning';
-    if (hour < 16) return 'Afternoon';
-    return 'Evening';
+    if (hour < 12) return t.morning;
+    if (hour < 16) return t.afternoon;
+    return t.evening;
   };
 
   const generateHourlyTimeSlots = (start = '08:00', end = '20:00') => {
@@ -61,14 +63,15 @@ const ManagerTimetable = () => {
   const timeSlots = generateHourlyTimeSlots('08:00', '20:00');
 
   // Days of the week starting from Friday
+  // Days of the week starting from Friday
   const daysOfWeek = [
-    { key: 'friday', name: 'Friday', short: 'Fri', color: 'bg-pink-50 border-pink-200' },
-    { key: 'saturday', name: 'Saturday', short: 'Sat', color: 'bg-blue-50 border-blue-200' },
-    { key: 'sunday', name: 'Sunday', short: 'Sun', color: 'bg-green-50 border-green-200' },
-    { key: 'monday', name: 'Monday', short: 'Mon', color: 'bg-purple-50 border-purple-200' },
-    { key: 'tuesday', name: 'Tuesday', short: 'Tue', color: 'bg-orange-50 border-orange-200' },
-    { key: 'wednesday', name: 'Wednesday', short: 'Wed', color: 'bg-red-50 border-red-200' },
-    { key: 'thursday', name: 'Thursday', short: 'Thu', color: 'bg-indigo-50 border-indigo-200' }
+    { key: 'friday', name: t.friday, short: t.friday.substring(0, 3), color: 'bg-pink-50 border-pink-200' },
+    { key: 'saturday', name: t.saturday, short: t.saturday.substring(0, 3), color: 'bg-blue-50 border-blue-200' },
+    { key: 'sunday', name: t.sunday, short: t.sunday.substring(0, 3), color: 'bg-green-50 border-green-200' },
+    { key: 'monday', name: t.monday, short: t.monday.substring(0, 3), color: 'bg-purple-50 border-purple-200' },
+    { key: 'tuesday', name: t.tuesday, short: t.tuesday.substring(0, 3), color: 'bg-orange-50 border-orange-200' },
+    { key: 'wednesday', name: t.wednesday, short: t.wednesday.substring(0, 3), color: 'bg-red-50 border-red-200' },
+    { key: 'thursday', name: t.thursday, short: t.thursday.substring(0, 3), color: 'bg-indigo-50 border-indigo-200' }
   ];
 
   // Class type colors
@@ -216,10 +219,10 @@ const ManagerTimetable = () => {
   ];
 
   const getClassesForTimeSlot = (day, timeSlot) => {
-    const normalizeTime = (t) => {
-      if (!t || typeof t !== 'string') return t;
-      const m = t.match(/^([0-9]{1,2}):([0-9]{2})$/);
-      if (!m) return t;
+    const normalizeTime = (time) => {
+      if (!time || typeof time !== 'string') return time;
+      const m = time.match(/^([0-9]{1,2}):([0-9]{2})$/);
+      if (!m) return time;
       const h = m[1].padStart(2, '0');
       return `${h}:${m[2]}`;
     };
@@ -255,7 +258,7 @@ const ManagerTimetable = () => {
     const matchesType = filterType === 'all' || cls.catalogItem?.type === filterType;
     const matchesTeacher = filterTeacher === 'all' || cls.teacherId?._id === filterTeacher;
     const matchesRoom = filterRoom === 'all' || cls.roomId?._id === filterRoom;
-    
+
     // Apply category-specific filtering based on filterCategory
     let matchesCategory = true;
     if (filterCategory === 'name' && searchTerm) {
@@ -265,12 +268,12 @@ const ManagerTimetable = () => {
     } else if (filterCategory === 'room' && searchTerm) {
       matchesCategory = cls.roomId?.name.toLowerCase().includes(searchTerm.toLowerCase());
     } else if (filterCategory === 'all' && searchTerm) {
-      matchesCategory = 
+      matchesCategory =
         cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         `${cls.teacherId?.firstName} ${cls.teacherId?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cls.roomId?.name.toLowerCase().includes(searchTerm.toLowerCase());
     }
-    
+
     return matchesType && matchesTeacher && matchesRoom && matchesCategory;
   });
 
@@ -278,7 +281,7 @@ const ManagerTimetable = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <span className="ml-2 text-gray-600">Loading timetable...</span>
+        <span className="ml-2 text-gray-600">{t.loadingTimetable}</span>
       </div>
     );
   }
@@ -288,10 +291,10 @@ const ManagerTimetable = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">School Timetable</h1>
-          <p className="text-gray-600">View and manage all class schedules across the school</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t.schoolTimetable}</h1>
+          <p className="text-gray-600">{t.schoolTimetableDesc}</p>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           {/* Filter Category Dropdown */}
           <div className="relative">
@@ -316,11 +319,11 @@ const ManagerTimetable = () => {
             <input
               type="text"
               placeholder={
-                filterCategory === 'all' ? "Search classes, teachers, rooms..." :
-                filterCategory === 'name' ? "Search by class name..." :
-                filterCategory === 'teacher' ? "Search by teacher name..." :
-                filterCategory === 'room' ? "Search by room name..." :
-                "Search..."
+                filterCategory === 'all' ? t.searchClasses :
+                  filterCategory === 'name' ? t.searchByClassName :
+                    filterCategory === 'teacher' ? t.searchByTeacherName :
+                      filterCategory === 'room' ? t.searchByRoomName :
+                        t.search
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -334,7 +337,7 @@ const ManagerTimetable = () => {
             className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Filter className="w-4 h-4" />
-            <span>Advanced</span>
+            <span>{t.advanced}</span>
           </button>
         </div>
       </div>
@@ -344,29 +347,29 @@ const ManagerTimetable = () => {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Class Type:</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.classType}:</label>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                <option value="all">All Types</option>
-                <option value="supportLessons">Support Lessons</option>
-                <option value="reviewCourses">Review Courses</option>
-                <option value="vocationalTrainings">Vocational Training</option>
-                <option value="languages">Languages</option>
-                <option value="otherActivities">Other Activities</option>
+                <option value="all">{t.allTypes}</option>
+                <option value="supportLessons">{t.supportLessons}</option>
+                <option value="reviewCourses">{t.reviewCourses}</option>
+                <option value="vocationalTrainings">{t.vocationalTrainings}</option>
+                <option value="languages">{t.languages}</option>
+                <option value="otherActivities">{t.otherActivities}</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher:</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.teacher}:</label>
               <select
                 value={filterTeacher}
                 onChange={(e) => setFilterTeacher(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                <option value="all">All Teachers</option>
+                <option value="all">{t.allTeachers}</option>
                 {teachers.map(teacher => (
                   <option key={teacher._id} value={teacher._id}>
                     {teacher.firstName} {teacher.lastName}
@@ -376,13 +379,13 @@ const ManagerTimetable = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room:</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.room}:</label>
               <select
                 value={filterRoom}
                 onChange={(e) => setFilterRoom(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                <option value="all">All Rooms</option>
+                <option value="all">{t.allRooms}</option>
                 {rooms.map(room => (
                   <option key={room._id} value={room._id}>
                     {room.name}
@@ -399,7 +402,7 @@ const ManagerTimetable = () => {
         {/* Header Row */}
         <div className="grid grid-cols-8 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-gray-200">
           <div className="p-4 border-r border-gray-200">
-            <h3 className="text-sm font-medium text-gray-900">Time</h3>
+            <h3 className="text-sm font-medium text-gray-900">{t.time}</h3>
           </div>
           {daysOfWeek.map((day) => (
             <div key={day.key} className={`p-4 border-r border-gray-200 last:border-r-0 ${day.color}`}>
@@ -428,7 +431,7 @@ const ManagerTimetable = () => {
             {daysOfWeek.map((day) => {
               const classesInSlot = getClassesForTimeSlot(day, timeSlot);
               const hasClasses = classesInSlot.length > 0;
-              
+
               return (
                 <div key={day.key} className="p-2 border-r border-gray-200 last:border-r-0">
                   {hasClasses ? (
@@ -444,7 +447,7 @@ const ManagerTimetable = () => {
                           <div className="flex items-center gap-2">
                             {classesInSlot.length > 1 && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                                +{classesInSlot.length - 1} more
+                                +{classesInSlot.length - 1} {t.more}
                               </span>
                             )}
                             <Info className="w-4 h-4 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -459,18 +462,18 @@ const ManagerTimetable = () => {
 
                           <div className="flex items-center space-x-2 text-xs text-indigo-500">
                             <MapPin className="w-3 h-3" />
-                            <span className="truncate">{classesInSlot[0].roomId?.name || 'Room TBD'}</span>
+                            <span className="truncate">{classesInSlot[0].roomId?.name || t.roomTBD}</span>
                           </div>
 
                           <span className={`inline-block px-2 py-1 text-xs rounded-full ${getClassTypeColor(classesInSlot[0].catalogItem?.type)}`}>
-                            {classesInSlot[0].catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
+                            {t[classesInSlot[0].catalogItem?.type] || classesInSlot[0].catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
                         </div>
                       </div>
                     </button>
                   ) : (
                     <div className="w-full h-full min-h-[100px] flex items-center justify-center">
-                      <span className="text-xs text-gray-400">No classes</span>
+                      <span className="text-xs text-gray-400">{t.noClasses}</span>
                     </div>
                   )}
                 </div>
@@ -491,7 +494,7 @@ const ManagerTimetable = () => {
                   {selectedSession.day.name} - {selectedSession.timeSlot.label}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Class Details and Information
+                  {t.classDetails}
                 </p>
               </div>
               <button
@@ -509,10 +512,10 @@ const ManagerTimetable = () => {
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">{cls.name}</h3>
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${getClassTypeColor(cls.catalogItem?.type)}`}>
-                      {cls.catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
+                      {t[cls.catalogItem?.type] || cls.catalogItem?.type?.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center space-x-2">
                       <Users className="w-4 h-4 text-gray-400" />
@@ -520,40 +523,39 @@ const ManagerTimetable = () => {
                         {cls.teacherId?.firstName} {cls.teacherId?.lastName}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {cls.roomId?.name || 'Room TBD'}
+                        {cls.roomId?.name || t.roomTBD}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
                         {selectedSession.timeSlot.start} - {selectedSession.timeSlot.end}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {cls.schedules?.length || 0} sessions/week
+                        {cls.schedules?.length || 0} {t.sessionsWeek}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="border-t border-gray-200 pt-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Weekly Schedule</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">{t.weeklySchedule}</h4>
                     <div className="flex flex-wrap gap-2">
                       {cls.schedules?.map((schedule, index) => (
                         <span
                           key={index}
-                          className={`px-3 py-2 text-xs rounded-md font-medium ${
-                            schedule.dayOfWeek === selectedSession.day.key
-                              ? 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300'
-                              : 'bg-gray-100 text-gray-600 border border-gray-200'
-                          }`}
+                          className={`px-3 py-2 text-xs rounded-md font-medium ${schedule.dayOfWeek === selectedSession.day.key
+                            ? 'bg-indigo-100 text-indigo-800 border-2 border-indigo-300'
+                            : 'bg-gray-100 text-gray-600 border border-gray-200'
+                            }`}
                         >
                           {daysOfWeek.find(d => d.key === schedule.dayOfWeek)?.short} {schedule.startTime}-{schedule.endTime}
                         </span>
@@ -569,14 +571,12 @@ const ManagerTimetable = () => {
               <button
                 onClick={closeSessionModal}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                Close
-              </button>
+              >{t.close}</button>
             </div>
           </div>
-        </div>
+        </div >
       )}
-    </div>
+    </div >
   );
 };
 

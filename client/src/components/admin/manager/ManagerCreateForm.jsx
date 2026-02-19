@@ -1,8 +1,10 @@
 // ManagerCreateForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ManagerCreateForm = ({ schoolId, onCreated }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

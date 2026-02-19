@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+import { useLanguage } from '../../context/LanguageContext';
   Search,
   Filter,
   ChevronLeft,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loading, categories, handleDelete }) => {
+  const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -144,7 +146,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             <option value="all">All Types</option>
-            <option value="income">Income</option>
+            <option value="income">{t.income}</option>
             <option value="expense">Expense</option>
           </select>
 
@@ -156,11 +158,11 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
               onChange={(e) => setSortBy(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="date">Date</option>
-              <option value="category">Category</option>
-              <option value="description">Description</option>
-              <option value="type">Type</option>
-              <option value="amount">Amount</option>
+              <option value="date">{t.date}</option>
+              <option value="category">{t.category}</option>
+              <option value="description">{t.description}</option>
+              <option value="type">{t.type}</option>
+              <option value="amount">{t.amount}</option>
               <option value="createdBy">Created By</option>
             </select>
           </div>
@@ -188,7 +190,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Date</span>
+                    <span>{t.date}</span>
                     <span>{getSortIcon('date')}</span>
                   </div>
                 </th>
@@ -197,7 +199,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Category</span>
+                    <span>{t.category}</span>
                     <span>{getSortIcon('category')}</span>
                   </div>
                 </th>
@@ -206,7 +208,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Description</span>
+                    <span>{t.description}</span>
                     <span>{getSortIcon('description')}</span>
                   </div>
                 </th>
@@ -215,7 +217,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Type</span>
+                    <span>{t.type}</span>
                     <span>{getSortIcon('type')}</span>
                   </div>
                 </th>
@@ -224,7 +226,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Amount</span>
+                    <span>{t.amount}</span>
                     <span>{getSortIcon('amount')}</span>
                   </div>
                 </th>
@@ -240,9 +242,7 @@ const ManualTransactionsTable = ({ transactions, formatCurrency, formatDate, loa
                     <span>{getSortIcon('createdBy')}</span>
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.actions}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

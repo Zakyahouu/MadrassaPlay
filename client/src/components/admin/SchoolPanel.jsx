@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 // --- SVG ICONS ---
 // A collection of SVG icons used throughout the application for a clean and consistent UI.
@@ -13,6 +14,7 @@ const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
 // --- ManagerPanel Component ---
 // This component is displayed inside a modal to show and manage managers for a specific school.
 const ManagerPanel = ({ schoolId, schoolName }) => {
+  const { t } = useLanguage();
     const [managers, setManagers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -123,8 +125,8 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
                             <p className="text-sm text-gray-500">{m.email}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={()=>openEdit(m)} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded">Edit</button>
-                            <button onClick={()=>deleteManager(m._id)} className="text-red-600 hover:bg-red-50 px-3 py-1 rounded">Delete</button>
+                            <button onClick={()=>openEdit(m)} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded">{t.edit}</button>
+                            <button onClick={()=>deleteManager(m._id)} className="text-red-600 hover:bg-red-50 px-3 py-1 rounded">{t.delete}</button>
                         </div>
                     </div>
                 )) : (
@@ -150,7 +152,7 @@ const ManagerPanel = ({ schoolId, schoolName }) => {
                         <input className="border p-2 rounded w-full" placeholder={`Address${editModal.manager?.contact?.address ? ` (${editModal.manager.contact.address})` : ''}`} value={editForm.contact.address} onChange={(e)=>setEditForm({...editForm, contact: { ...editForm.contact, address: e.target.value }})} />
                         <input className="border p-2 rounded w-full" placeholder="New Password (optional)" type="password" value={editForm.password} onChange={(e)=>setEditForm({...editForm, password: e.target.value})} />
                         <div className="flex gap-2 justify-end">
-                            <button type="button" onClick={()=>setEditModal({ open: false, manager: null })} className="px-4 py-2 rounded bg-gray-200 text-gray-800">Cancel</button>
+                            <button type="button" onClick={()=>setEditModal({ open: false, manager: null })} className="px-4 py-2 rounded bg-gray-200 text-gray-800">{t.cancel}</button>
                             <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
                         </div>
                     </form>
@@ -295,7 +297,7 @@ const SchoolPanel = () => {
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                      <input
                         type="text"
-                        placeholder="Search schools..."
+                        placeholder={t.searchSchools}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
@@ -318,7 +320,7 @@ const SchoolPanel = () => {
                         <SchoolForm title="Add New School" onSave={handleSaveSchool} onClose={() => setModal({ type: null, data: null })} />
                     )}
                     {modal.type === 'EDIT_SCHOOL' && (
-                        <SchoolForm title="Edit School" schoolToEdit={modal.data} onSave={handleSaveSchool} onClose={() => setModal({ type: null, data: null })} />
+                        <SchoolForm title={t.editSchool} schoolToEdit={modal.data} onSave={handleSaveSchool} onClose={() => setModal({ type: null, data: null })} />
                     )}
                     {modal.type === 'VIEW_MANAGERS' && (
                         <div>
@@ -423,7 +425,7 @@ const SchoolForm = ({ title, schoolToEdit, onSave, onClose }) => {
                 <input name="address" value={form.address} onChange={handleChange} placeholder="Address" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" />
             </div>
             <div className="flex gap-3 pt-6">
-                <button type="button" onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancel</button>
+                <button type="button" onClick={onClose} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">{t.cancel}</button>
                 <button type="submit" className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-colors">
                     {schoolToEdit ? 'Update' : 'Create'}
                 </button>
@@ -437,8 +439,8 @@ const DeleteConfirmation = ({ itemName, onConfirm, onCancel }) => (
         <h3 className="text-xl font-bold text-gray-800 mb-2">Confirm Deletion</h3>
         <p className="text-gray-600 mb-6">Are you sure you want to delete <span className="font-semibold">{itemName}</span>? This action cannot be undone.</p>
         <div className="flex gap-3">
-            <button onClick={onCancel} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancel</button>
-            <button onClick={onConfirm} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">Delete</button>
+            <button onClick={onCancel} className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">{t.cancel}</button>
+            <button onClick={onConfirm} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">{t.delete}</button>
         </div>
     </div>
 );

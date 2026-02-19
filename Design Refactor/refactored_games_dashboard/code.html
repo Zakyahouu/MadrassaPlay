@@ -1,0 +1,210 @@
+<html><head><script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          primary: "#0052CC", // Trustworthy Blue
+          "primary-hover": "#0043a6",
+          "background-light": "#F9FAFB", // Comfort Light
+          "background-dark": "#111827", // Dark mode equivalent
+          "card-light": "#FFFFFF",
+          "card-dark": "#1F2937",
+          "text-light": "#111827",
+          "text-secondary-light": "#6B7280",
+          "text-dark": "#F9FAFB",
+          "text-secondary-dark": "#9CA3AF",
+          "border-light": "#E5E7EB",
+          "border-dark": "#374151",
+          success: "#10B981",
+        },
+        fontFamily: {
+          display: ["Inter", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+        borderRadius: {
+          DEFAULT: "0.625rem", // 10px
+        },
+        boxShadow: {
+          'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        }
+      },
+    },
+  };
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+</head><body><div class="flex h-screen bg-background-light dark:bg-background-dark font-sans text-text-light dark:text-text-dark overflow-hidden transition-colors duration-200">
+<aside class="w-64 bg-card-light dark:bg-card-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col h-full z-10">
+<div class="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-300">
+<span class="material-icons-outlined text-xl">person</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-text-light dark:text-text-dark">Admin User</span>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Admin</span>
+</div>
+</div>
+<button class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors">
+<span class="material-icons-outlined text-sm">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">bar_chart</span>
+        Overview
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">apartment</span>
+        Schools
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT bg-blue-50 dark:bg-blue-900/20 text-primary transition-colors" href="#">
+<span class="material-icons-outlined mr-3 text-lg">play_circle_outline</span>
+        Games
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">sports_esports</span>
+        Games by Template
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">add</span>
+        Game Templates
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">menu_book</span>
+        Template Guide
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">verified</span>
+        Badges
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">trending_up</span>
+        Analytics
+      </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group justify-between" href="#">
+<div class="flex items-center">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">view_in_ar</span>
+          3D Management
+        </div>
+<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+</a>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-DEFAULT text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-text-light dark:hover:text-text-dark transition-colors group" href="#">
+<span class="material-icons-outlined mr-3 text-lg group-hover:text-text-light dark:group-hover:text-text-dark">notifications</span>
+        Notifications
+      </a>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark">
+<header class="h-16 flex items-center justify-between px-8 py-4 bg-card-light dark:bg-card-dark border-b border-border-light dark:border-border-dark flex-shrink-0 z-10">
+<div class="flex items-center">
+<div class="w-8 h-8 rounded-lg bg-indigo-900 flex items-center justify-center mr-3 shadow-sm">
+<span class="material-icons-outlined text-white text-lg">layers</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-base font-semibold text-text-light dark:text-text-dark leading-tight">Games</h1>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Manage Dashboard</span>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="flex items-center px-3 py-1.5 border border-border-light dark:border-border-dark rounded-DEFAULT text-sm text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<span class="material-icons-outlined text-base mr-2">language</span>
+          English
+        </button>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-outlined text-gray-400 text-lg">search</span>
+</div>
+<input class="block w-64 pl-10 pr-3 py-1.5 border border-border-light dark:border-border-dark rounded-DEFAULT leading-5 bg-white dark:bg-gray-800 text-text-light dark:text-text-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-shadow" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center space-x-3 text-text-secondary-light dark:text-text-secondary-dark border-l border-border-light dark:border-border-dark pl-4">
+<button class="relative hover:text-primary transition-colors">
+<span class="material-icons-outlined">notifications</span>
+<span class="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white dark:ring-gray-800 bg-red-500 transform translate-x-1/4 -translate-y-1/4"></span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-icons-outlined">person_outline</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-icons-outlined">logout</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="flex items-center mb-8">
+<div class="w-1.5 h-8 bg-primary rounded-full mr-4"></div>
+<h2 class="text-2xl font-bold text-text-light dark:text-text-dark">Test Games</h2>
+<span class="ml-3 px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-primary text-xs font-semibold">2</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="bg-card-light dark:bg-card-dark rounded-DEFAULT p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 border border-border-light dark:border-border-dark flex flex-col h-full relative group">
+<div class="absolute top-6 right-6">
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+</span>
+</div>
+<div class="flex-1">
+<h3 class="text-lg font-bold text-text-light dark:text-text-dark mb-2 pr-6">Arithmetic Sprint</h3>
+<div class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-1 flex items-center">
+<span class="material-icons-outlined text-base mr-1.5">category</span>
+              Template: Arithmetic Sprint
+            </div>
+<div class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-6 flex items-center">
+<span class="material-icons-outlined text-base mr-1.5">calendar_today</span>
+              2/13/2026
+            </div>
+</div>
+<div class="flex items-center space-x-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-DEFAULT text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:border-primary hover:text-primary dark:hover:text-white dark:hover:border-primary transition-all duration-200">
+              Edit
+            </button>
+<button class="flex-1 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-DEFAULT text-sm font-medium shadow-sm transition-colors duration-200 flex items-center justify-center">
+<span class="material-icons-outlined text-sm mr-2">play_arrow</span>
+              Play
+            </button>
+<button class="p-2 text-text-secondary-light dark:text-text-secondary-dark hover:text-red-500 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-icons-outlined">delete_outline</span>
+</button>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-DEFAULT p-6 shadow-soft hover:shadow-lg transition-shadow duration-300 border border-border-light dark:border-border-dark flex flex-col h-full relative group">
+<div class="absolute top-6 right-6">
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+</span>
+</div>
+<div class="flex-1">
+<h3 class="text-lg font-bold text-text-light dark:text-text-dark mb-2 pr-6">Global Communications Designer</h3>
+<div class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-1 flex items-center">
+<span class="material-icons-outlined text-base mr-1.5">category</span>
+              Template: Multiple Choice Quiz
+            </div>
+<div class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-6 flex items-center">
+<span class="material-icons-outlined text-base mr-1.5">calendar_today</span>
+              9/27/2025
+            </div>
+</div>
+<div class="flex items-center space-x-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+<button class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-DEFAULT text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:border-primary hover:text-primary dark:hover:text-white dark:hover:border-primary transition-all duration-200">
+              Edit
+            </button>
+<button class="flex-1 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-DEFAULT text-sm font-medium shadow-sm transition-colors duration-200 flex items-center justify-center">
+<span class="material-icons-outlined text-sm mr-2">play_arrow</span>
+              Play
+            </button>
+<button class="p-2 text-text-secondary-light dark:text-text-secondary-dark hover:text-red-500 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-icons-outlined">delete_outline</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div></body></html>

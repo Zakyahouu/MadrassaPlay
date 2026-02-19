@@ -57,14 +57,14 @@ const AdminDashboard = () => {
   };
 
   const navigationItems = [
-    { id: 'overview', name: t('overview') },
-    { id: 'schools', name: t('schools') },
-    { id: 'games', name: t('games') },
-    { id: 'template-games', name: t('template-games') },
-    { id: 'templates', name: t('templates') },
-    { id: 'template-guide', name: t('template-guide') },
-    { id: 'badges', name: t('badges') },
-    { id: 'analytics', name: t('analytics') }
+    { id: 'overview', name: t.overview },
+    { id: 'schools', name: t.schools },
+    { id: 'games', name: t.games },
+    { id: 'template-games', name: t.templateGames },
+    { id: 'templates', name: t.templates },
+    { id: 'template-guide', name: t.templateGuide },
+    { id: 'badges', name: t.badges },
+    { id: 'analytics', name: t.analytics }
   ];
 
   const renderContent = () => {
@@ -93,8 +93,8 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:flex">
-      <UnifiedSidebar 
+    <div className="min-h-screen bg-background-light lg:flex">
+      <UnifiedSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         sidebarOpen={sidebarOpen}
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
       />
 
       <div className="flex-1 relative">
-        <TopNav 
+        <TopNav
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           activeTab={activeTab}
@@ -112,13 +112,13 @@ const AdminDashboard = () => {
           logout={logout}
         />
 
-        <main className="p-6">
+        <main className="p-6 md:p-8">
           {renderContent()}
         </main>
       </div>
 
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />

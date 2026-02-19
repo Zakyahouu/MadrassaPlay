@@ -16,7 +16,7 @@ const createPayment = async (req, res) => {
     if (!enrollmentId || !amount || !kind) {
       return res.status(400).json({ message: 'enrollmentId, amount, and kind are required.' });
     }
-  if (!['pay_sessions', 'pay_cycles'].includes(kind)) {
+    if (!['pay_sessions', 'pay_cycles'].includes(kind)) {
       return res.status(400).json({ message: 'Invalid kind.' });
     }
     if (!mongoose.isValidObjectId(enrollmentId)) {
@@ -31,7 +31,7 @@ const createPayment = async (req, res) => {
       return res.status(400).json({ message: 'Invalid school assignment.' });
     }
     const schoolId = new mongoose.Types.ObjectId(schoolIdRaw);
-    const enrollment = await Enrollment.findById(enrollmentId);
+    const enrollment = await Enrollment.findById(enrollmentId).populate('studentId', 'firstName lastName name');
     if (!enrollment || enrollment.schoolId.toString() !== schoolId.toString()) {
       return res.status(404).json({ message: 'Enrollment not found.' });
     }
@@ -113,8 +113,14 @@ const createPayment = async (req, res) => {
     }
 
     // Log the payment activity
-    await LoggingService.logManagerActivity(req, 'manager_payment_record', 
-      `Recorded payment of ${parsedAmount} DZD for student ${enrollment.studentId}`, 
+    const studentName = enrollment.studentId
+      ? (enrollment.studentId.firstName && enrollment.studentId.lastName
+        ? `${enrollment.studentId.firstName} ${enrollment.studentId.lastName}`
+        : enrollment.studentId.name || enrollment.studentId._id)
+      : 'Unknown Student';
+
+    await LoggingService.logManagerActivity(req, 'manager_payment_record',
+      `Recorded payment of ${parsedAmount} DZD for student ${studentName}`,
       { paymentId: payment._id, amount: parsedAmount, kind, enrollmentId },
       { entityType: 'payment', entityId: payment._id }
     );
@@ -363,7 +369,7 @@ const payStudentDebt = asyncHandler(async (req, res) => {
     });
 
     const currentDebt = studentDebt?.debt || 0;
-    
+
     if (currentDebt <= 0) {
       res.status(400);
       throw new Error('Student has no outstanding debt');
@@ -436,7 +442,7 @@ const cleanupDebtTransactions = asyncHandler(async (req, res) => {
 
   try {
     const ManualTransaction = require('../models/ManualTransaction');
-    
+
     // Remove all manual transactions related to debt adjustments
     const result = await ManualTransaction.deleteMany({
       schoolId: new mongoose.Types.ObjectId(schoolId),

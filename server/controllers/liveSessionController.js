@@ -7,8 +7,8 @@ const GameResult = require('../models/GameResult');
 const CODE_LENGTH = 8;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const genCode = async () => {
-  const make = () => Array.from({length: CODE_LENGTH}, () => CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]).join('');
-  for (let i=0;i<5;i++) { const code = make(); const exists = await LiveSession.findOne({ code }).select('_id').lean(); if (!exists) return code; }
+  const make = () => Array.from({ length: CODE_LENGTH }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+  for (let i = 0; i < 5; i++) { const code = make(); const exists = await LiveSession.findOne({ code }).select('_id').lean(); if (!exists) return code; }
   return make();
 };
 
@@ -22,16 +22,13 @@ const rankComparator = (a, b) => {
 
 exports.createSession = async (req, res) => {
   try {
-  const { gameCreationId, title, classIds = [], allowLateJoin = false, config = {} } = req.body;
+    const { gameCreationId, title, classIds = [], allowLateJoin = false, config = {} } = req.body;
     if (req.user.role !== 'teacher') return res.status(403).json({ message: 'Teacher only' });
     const creation = await GameCreation.findById(gameCreationId).select('_id owner');
     if (!creation || String(creation.owner) !== String(req.user._id)) return res.status(403).json({ message: 'Not your game' });
 
     // Validate classes belong to this teacher
     const classes = Array.isArray(classIds) ? classIds : [];
-    if (!classes.length) {
-      return res.status(400).json({ message: 'At least one class is required' });
-    }
     if (classes.length) {
       const Class = require('../models/Class');
       const owned = await Class.countDocuments({ _id: { $in: classes }, teacherId: req.user._id });
@@ -39,7 +36,7 @@ exports.createSession = async (req, res) => {
     }
 
     const code = await genCode();
-  const session = await LiveSession.create({
+    const session = await LiveSession.create({
       code,
       teacherId: req.user._id,
       gameCreationId,
@@ -47,7 +44,7 @@ exports.createSession = async (req, res) => {
       title: title || undefined,
       allowLateJoin: !!allowLateJoin,
       config: {
-        scoring: ['best','fastest','hybrid'].includes(config.scoring) ? config.scoring : 'hybrid',
+        scoring: ['best', 'fastest', 'hybrid'].includes(config.scoring) ? config.scoring : 'hybrid',
         timePenaltyPerWrongMs: Number.isFinite(Number(config.timePenaltyPerWrongMs)) ? Number(config.timePenaltyPerWrongMs) : 3000,
         strictProgress: !!config.strictProgress,
       }
@@ -107,7 +104,7 @@ exports.getSummary = async (req, res) => {
     }
     const participants = await LiveParticipant.find({ sessionId: id }).lean();
     // Ranking
-  const ranks = participants.map(p => ({
+    const ranks = participants.map(p => ({
       studentId: p.studentId,
       firstName: p.firstName,
       lastName: p.lastName,
@@ -117,7 +114,7 @@ exports.getSummary = async (req, res) => {
       wrong: p.wrong,
       effectiveTimeMs: p.effectiveTimeMs,
       finishedAt: p.finishedAt,
-  })).sort((a,b)=>rankComparator(a,b));
+    })).sort((a, b) => rankComparator(a, b));
     res.json({ session: s, ranks, participants });
   } catch (e) { res.status(500).json({ message: 'Server Error', error: e.message }); }
 };

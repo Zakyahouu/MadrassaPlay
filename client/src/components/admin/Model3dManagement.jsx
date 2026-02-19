@@ -5,8 +5,10 @@ import { adminApi, model3dHelpers } from '../../services/model3dService';
 import ModelCard from '../shared/ModelCard';
 import FilterDropdowns from '../shared/FilterDropdowns';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Model3dManagement = () => {
+  const { t } = useLanguage();
   const [models, setModels] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);

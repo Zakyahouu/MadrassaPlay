@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ManagerSchoolPanel = () => {
+  const { t } = useLanguage();
   const { user } = useContext(AuthContext);
   const [school, setSchool] = useState(null);
   const [teachers, setTeachers] = useState([]);
@@ -95,7 +97,7 @@ const ManagerSchoolPanel = () => {
         </div>
       )}
       <div className="mb-6">
-        <h3 className="font-bold mb-2">Teachers</h3>
+        <h3 className="font-bold mb-2">{t.teachers}</h3>
         <ul>
           {teachers.map(t => (
             <li key={t._id} className="flex items-center justify-between">
@@ -107,11 +109,11 @@ const ManagerSchoolPanel = () => {
         <form className="mt-2 flex gap-2" onSubmit={handleAddTeacher}>
           <input type="text" name="teacherName" placeholder="Teacher Name" className="p-2 border" required />
           <input type="email" name="teacherEmail" placeholder="Teacher Email" className="p-2 border" required />
-          <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">Add</button>
+          <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">{t.add}</button>
         </form>
       </div>
       <div>
-        <h3 className="font-bold mb-2">Students</h3>
+        <h3 className="font-bold mb-2">{t.students}</h3>
         <ul>
           {students.map(s => (
             <li key={s._id} className="flex items-center justify-between">
@@ -123,7 +125,7 @@ const ManagerSchoolPanel = () => {
         <form className="mt-2 flex gap-2" onSubmit={handleAddStudent}>
           <input type="text" name="studentName" placeholder="Student Name" className="p-2 border" required />
           <input type="email" name="studentEmail" placeholder="Student Email" className="p-2 border" required />
-          <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">Add</button>
+          <button type="submit" className="bg-blue-500 text-white px-2 py-1 rounded">{t.add}</button>
         </form>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Megaphone, Plus, Edit, Trash2, Eye, Calendar, Users, 
+import {
+  Megaphone, Plus, Edit, Trash2, Eye, Calendar, Users,
   Target, MapPin, AlertTriangle, Loader, CheckCircle, XCircle,
   X, Save, Clock
 } from 'lucide-react';
@@ -37,7 +37,7 @@ const AdsTab = () => {
       setAds(response.data || []);
     } catch (err) {
       console.error('Error fetching ads:', err);
-      setError('Failed to fetch advertisements');
+      setError(t.failFetchAds);
       // Use mock data for demo
       setAds([
         {
@@ -82,11 +82,11 @@ const AdsTab = () => {
     e.preventDefault();
     try {
       const token = getAuthToken();
-      const config = { 
-        headers: { 
-          'Content-Type': 'application/json', 
-          Authorization: `Bearer ${token}` 
-        } 
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
       };
 
       if (editingAd) {
@@ -100,7 +100,7 @@ const AdsTab = () => {
           await axios.post(`/api/advertisements/${editingAd._id}/banner`, fd, { headers: { Authorization: `Bearer ${token}` } });
         }
         await fetchAds();
-        alert('Advertisement updated successfully!');
+        alert(t.adUpdatedSuccess);
       } else {
         // Create new ad
         const response = await axios.post('/api/advertisements', formData, config);
@@ -112,18 +112,18 @@ const AdsTab = () => {
           await axios.post(`/api/advertisements/${created._id}/banner`, fd, { headers: { Authorization: `Bearer ${token}` } });
         }
         await fetchAds();
-        alert('Advertisement created successfully!');
+        alert(t.adCreatedSuccess);
       }
-      
+
       closeModal();
     } catch (err) {
-      const message = err.response?.data?.message || 'An error occurred while saving.';
-      alert(`Error: ${message}`);
+      const message = err.response?.data?.message || t.errorSaving;
+      alert(`${t.error}: ${message}`);
     }
   };
 
   const handleDelete = async (adId) => {
-    if (!window.confirm('Are you sure you want to delete this advertisement?')) {
+    if (!window.confirm(t.confirmDeleteAd)) {
       return;
     }
 
@@ -132,10 +132,10 @@ const AdsTab = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       await axios.delete(`/api/advertisements/${adId}`, config);
       setAds(ads.filter(ad => ad._id !== adId));
-      alert('Advertisement deleted successfully!');
+      alert(t.adDeletedSuccess);
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to delete advertisement.';
-      alert(`Error: ${message}`);
+      const message = err.response?.data?.message || t.failDeleteAd;
+      alert(`${t.error}: ${message}`);
     }
   };
 
@@ -200,7 +200,7 @@ const AdsTab = () => {
   };
 
   const formatDateTime = (dateTime) => {
-    return new Date(dateTime).toLocaleString('en-US', {
+    return new Date(dateTime).toLocaleString(t.locale || 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -213,7 +213,7 @@ const AdsTab = () => {
     return (
       <div className="flex justify-center items-center bg-white rounded-lg p-8 shadow-sm border">
         <Loader className="animate-spin text-indigo-500 mr-3" />
-        <span className="text-gray-600">Loading advertisements...</span>
+        <span className="text-gray-600">{t.loadingAds}</span>
       </div>
     );
   }
@@ -229,8 +229,8 @@ const AdsTab = () => {
                 <Megaphone className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{t('advertisements')}</h1>
-                <p className="text-gray-600">{t('manage-announcements-promotional')}</p>
+                <h1 className="text-2xl font-bold text-gray-900">{t.advertisements}</h1>
+                <p className="text-gray-600">{t.manageAnnouncementsPromotional}</p>
               </div>
             </div>
             <button
@@ -238,7 +238,7 @@ const AdsTab = () => {
               className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
             >
               <Plus className="w-4 h-4" />
-{t('create-advertisement')}
+              {t.createAdvertisement}
             </button>
           </div>
         </div>
@@ -248,7 +248,7 @@ const AdsTab = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
             <AlertTriangle className="text-red-500 w-5 h-5" />
             <div>
-              <h3 className="font-medium text-red-800">Error</h3>
+              <h3 className="font-medium text-red-800">{t.error}</h3>
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
@@ -259,12 +259,12 @@ const AdsTab = () => {
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('advertisement')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('target-audience')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Location</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Start Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">End Date</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t.advertisement}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t.targetAudience}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t.location}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t.startDate}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t.endDate}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">{t.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -284,13 +284,17 @@ const AdsTab = () => {
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getTargetAudienceBadge(ad.targetAudience)}`}>
                             <Target className="w-3 h-3 mr-1" />
-                            {ad.targetAudience.charAt(0).toUpperCase() + ad.targetAudience.slice(1)}
+                            {ad.targetAudience === 'both' ? t.studentsTeachers :
+                              ad.targetAudience === 'students' ? t.studentsOnly :
+                                ad.targetAudience === 'teachers' ? t.teachersOnly : t.custom}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getLocationBadge(ad.location)}`}>
                             <MapPin className="w-3 h-3 mr-1" />
-                            {ad.location.charAt(0).toUpperCase() + ad.location.slice(1)}
+                            {ad.location === 'dashboard' ? t.dashboard :
+                              ad.location === 'banner' ? t.topBanner :
+                                ad.location === 'notification' ? t.recentNotifications : t.other}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -304,14 +308,14 @@ const AdsTab = () => {
                             <button
                               onClick={() => openModal(ad)}
                               className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                              title="Edit Advertisement"
+                              title={t.editAdvertisementAction}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(ad._id)}
                               className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete Advertisement"
+                              title={t.deleteAdvertisementAction}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -328,16 +332,16 @@ const AdsTab = () => {
                   <Megaphone className="h-8 w-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {t('no-ads-found')}
+                  {t.noAdsFound}
                 </h3>
                 <p className="text-gray-600 max-w-sm mx-auto">
-{t('get-started-create-first-advertisement')}
+                  {t.getStartedCreateFirstAdvertisement}
                 </p>
                 <button
                   onClick={() => openModal()}
                   className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
                 >
-{t('create-first-advertisement')}
+                  {t.createFirstAdvertisement}
                 </button>
               </div>
             )}
@@ -351,7 +355,7 @@ const AdsTab = () => {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200 flex-shrink-0">
                 <h2 className="text-xl font-semibold text-gray-900">
-{editingAd ? t('edit-advertisement') : t('create-advertisement')}
+                  {editingAd ? t.editAdvertisement : t.createAdvertisement}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -367,35 +371,35 @@ const AdsTab = () => {
                   <div className="grid grid-cols-1 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Title *
+                        {t.name} *
                       </label>
                       <input
                         required
                         type="text"
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        placeholder="Enter advertisement title"
+                        placeholder={t.enterTitle}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description *
+                        {t.details} *
                       </label>
                       <textarea
                         required
                         rows={4}
                         value={formData.description}
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Enter advertisement description"
+                        placeholder={t.enterDescriptionPlaceholder}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.startDate} *</label>
                         <input
                           required
                           type="datetime-local"
@@ -405,7 +409,7 @@ const AdsTab = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.endDate} *</label>
                         <input
                           required
                           type="datetime-local"
@@ -417,31 +421,31 @@ const AdsTab = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Target Audience *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.targetAudience} *</label>
                         <select
                           required
                           value={formData.targetAudience}
                           onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         >
-                          <option value="both">Students & Teachers</option>
-                          <option value="students">Students Only</option>
-                          <option value="teachers">Teachers Only</option>
-                          <option value="custom">Custom</option>
+                          <option value="both">{t.studentsTeachers}</option>
+                          <option value="students">{t.studentsOnly}</option>
+                          <option value="teachers">{t.teachersOnly}</option>
+                          <option value="custom">{t.custom}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Display Location *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.displayLocation} *</label>
                         <select
                           required
                           value={formData.location}
                           onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                         >
-                          <option value="dashboard">Dashboard</option>
-                          <option value="banner">Top Banner</option>
-                          <option value="notification">Notification</option>
-                          <option value="other">Other</option>
+                          <option value="dashboard">{t.dashboard}</option>
+                          <option value="banner">{t.topBanner}</option>
+                          <option value="notification">{t.recentNotifications}</option>
+                          <option value="other">{t.other}</option>
                         </select>
                       </div>
                     </div>
@@ -449,7 +453,7 @@ const AdsTab = () => {
                     {/* Banner Image (optional, for banner location) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Banner Image (JPG/PNG/WEBP)
+                        {t.bannerImage}
                       </label>
                       <input
                         type="file"
@@ -457,7 +461,7 @@ const AdsTab = () => {
                         onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Recommended: 1200x300px. Max 10MB.</p>
+                      <p className="text-xs text-gray-500 mt-1">{t.bannerImageNote}</p>
                     </div>
                   </div>
                 </form>
@@ -469,16 +473,14 @@ const AdsTab = () => {
                   type="button"
                   onClick={closeModal}
                   className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                >
-                  Cancel
-                </button>
+                >{t.cancel}</button>
                 <button
                   type="submit"
                   onClick={handleSubmit}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  {editingAd ? 'Update' : 'Create'}
+                  {editingAd ? t.update : t.create}
                 </button>
               </div>
             </div>

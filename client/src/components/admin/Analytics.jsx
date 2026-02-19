@@ -42,9 +42,9 @@ const Analytics = () => {
     currentPage * rowsPerPage
   );
   const [kpis, setKpis] = useState([
-    { id: 1, label: t('total-users'), value: '—', icon: <Users className="w-6 h-6 text-blue-500" /> },
-    { id: 2, label: t('total-schools'), value: '—', icon: <Activity className="w-6 h-6 text-green-500" /> },
-    { id: 3, label: t('templates'), value: '—', icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
+    { id: 1, label: t.totalUsers, value: '—', icon: <Users className="w-6 h-6 text-blue-500" /> },
+    { id: 2, label: t.totalSchools, value: '—', icon: <Activity className="w-6 h-6 text-green-500" /> },
+    { id: 3, label: t.templates, value: '—', icon: <BarChart3 className="w-6 h-6 text-red-500" /> },
   ]);
 
   useEffect(() => {
@@ -98,11 +98,11 @@ const Analytics = () => {
   }, []);
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
+    <div className="card-base p-6">
       {/* Header */}
       <div className="text-center mb-8 space-y-3">
-        <div className="w-16 h-16 bg-indigo-100 rounded-full mx-auto flex items-center justify-center">
-          <TrendingUp className="w-8 h-8 text-indigo-600" />
+        <div className="w-16 h-16 bg-slate-100 rounded-full mx-auto flex items-center justify-center border border-slate-200 shadow-sm">
+          <TrendingUp className="w-8 h-8 text-slate-700" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
         <p className="text-gray-600">Visual reports and performance tracking</p>
@@ -169,7 +169,7 @@ const Analytics = () => {
           )}
         </div>
         {loadingBreakdown ? (
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-gray-500">{t.loading}</div>
         ) : filteredBreakdown.length === 0 ? (
           <div className="text-gray-500">No data available.</div>
         ) : (
@@ -213,7 +213,7 @@ const Analytics = () => {
                 <XAxis dataKey="day" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={2} />
+                <Line type="monotone" dataKey="users" stroke="#475569" strokeWidth={2} activeDot={{ r: 6, strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -232,7 +232,7 @@ const Analytics = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="sessions" fill="#10b981" />
+                <Bar dataKey="sessions" fill="#64748b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

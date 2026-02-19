@@ -2,7 +2,7 @@ const { liveGames } = require('../realtimeState');
 const LiveParticipant = require('../models/LiveParticipant');
 const LiveSession = require('../models/LiveSession');
 
-module.exports = function(io) {
+module.exports = function (io) {
   if (!io) return;
 
   io.on('connection', (socket) => {
@@ -39,7 +39,7 @@ module.exports = function(io) {
       try {
         const room = liveGames[roomCode];
         if (!room) { socket.emit('join-error', 'Room not found'); return; }
-        
+
         // add or update player in memory
         const existing = room.players.find(p => String(p.userId) === String(userId));
         if (!existing) {
@@ -50,16 +50,16 @@ module.exports = function(io) {
           existing.name = playerName;
         }
         socket.join(roomCode);
-        
+
         // ✅ Create or update LiveParticipant in database
         if (room.sessionId && userId) {
           try {
             const User = require('../models/User');
             const student = await User.findById(userId).select('firstName lastName').lean();
-            
+
             // Find which class this student belongs to from the session's classes
             const session = await LiveSession.findById(room.sessionId).select('classes').lean();
-            
+
             let studentClassId = null;
             if (session && session.classes && session.classes.length > 0) {
               // Check if student is enrolled in any of the session's classes
@@ -69,7 +69,7 @@ module.exports = function(io) {
                 classId: { $in: session.classes },
                 status: 'active'
               }).select('classId').lean();
-              
+
               if (enrollment) {
                 studentClassId = enrollment.classId;
               } else if (session.classes.length > 0) {
@@ -77,7 +77,7 @@ module.exports = function(io) {
                 studentClassId = session.classes[0];
               }
             }
-            
+
             // Create or update participant record
             await LiveParticipant.findOneAndUpdate(
               { sessionId: room.sessionId, studentId: userId },
@@ -99,13 +99,13 @@ module.exports = function(io) {
               },
               { upsert: true, new: true }
             );
-            
+
             console.log('[socket] LiveParticipant created/updated for', playerName, 'in session', room.sessionId);
           } catch (e) {
             console.error('[socket] Failed to create LiveParticipant:', e);
           }
         }
-        
+
         io.to(roomCode).emit('player-joined', room.players.slice());
         io.to(roomCode).emit('live:session-count', { sessionId: room.sessionId, participantsCount: room.players.length });
         console.log('[socket] player joined', playerName, '->', roomCode);
@@ -126,7 +126,9 @@ module.exports = function(io) {
       try {
         const room = liveGames[roomCode];
         if (!room) return;
-        
+
+        let finalRanks = [];
+
         // Update session status in database
         if (room.sessionId) {
           try {
@@ -141,11 +143,42 @@ module.exports = function(io) {
           } catch (e) {
             console.error('[socket] Failed to update session status:', e);
           }
+
+          // Fetch final leaderboard from DB
+          try {
+            const allParticipants = await LiveParticipant.find({
+              sessionId: room.sessionId
+            }).lean();
+
+            finalRanks = allParticipants
+              .map(p => {
+                const pName = p.firstName ? [p.firstName, p.lastName].filter(Boolean).join(' ') : 'Unknown';
+                return {
+                  userId: String(p.studentId),
+                  name: pName,
+                  score: p.score || 0,
+                  correct: p.correct || 0,
+                  wrong: p.wrong || 0,
+                  effectiveTimeMs: p.effectiveTimeMs || 0,
+                  finishedAt: p.finishedAt
+                };
+              })
+              .sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (a.effectiveTimeMs !== b.effectiveTimeMs) return a.effectiveTimeMs - b.effectiveTimeMs;
+                return (a.wrong || 0) - (b.wrong || 0);
+              });
+
+            // Emit final scoreboard
+            io.to(roomCode).emit('live:scoreboard', { ranks: finalRanks });
+          } catch (e) {
+            console.error('[socket] Failed to fetch final leaderboard:', e);
+          }
         }
-        
-        io.to(roomCode).emit('game-ended', { sessionId: room.sessionId });
+
+        io.to(roomCode).emit('game-ended', { sessionId: room.sessionId, ranks: finalRanks });
         // remove live game state
-        try { delete liveGames[roomCode]; } catch {}
+        try { delete liveGames[roomCode]; } catch { }
         console.log('[socket] end-game ->', roomCode);
       } catch (e) { console.error('end-game handler failed', e); }
     });
@@ -160,9 +193,9 @@ module.exports = function(io) {
 
         // Update participant record
         try {
-          const participant = await LiveParticipant.findOne({ 
-            sessionId: room.sessionId, 
-            studentId: userId 
+          const participant = await LiveParticipant.findOne({
+            sessionId: room.sessionId,
+            studentId: userId
           });
 
           if (participant) {
@@ -172,7 +205,7 @@ module.exports = function(io) {
             } else {
               participant.wrong = (participant.wrong || 0) + 1;
             }
-            
+
             if (typeof currentScore === 'number') {
               participant.score = currentScore;
             } else if (typeof scoreDelta === 'number') {
@@ -186,22 +219,27 @@ module.exports = function(io) {
             await participant.save();
 
             // Fetch all participants and calculate ranks
-            const allParticipants = await LiveParticipant.find({ 
-              sessionId: room.sessionId 
-            }).populate('studentId', 'name').lean();
+            const allParticipants = await LiveParticipant.find({
+              sessionId: room.sessionId
+            }).populate('studentId', 'firstName lastName name').lean();
 
             const ranks = allParticipants
-              .map(p => ({
-                userId: String(p.studentId?._id || p.studentId),
-                name: p.studentId?.name || 'Unknown',
-                score: p.score || 0,
-                correct: p.correct || 0,
-                wrong: p.wrong || 0,
-                effectiveTimeMs: p.effectiveTimeMs || 0,
-                finishedAt: p.finishedAt
-              }))
+              .map(p => {
+                const stu = p.studentId;
+                const pName = (stu && typeof stu === 'object')
+                  ? (stu.name || [stu.firstName, stu.lastName].filter(Boolean).join(' ') || 'Unknown')
+                  : (p.firstName ? [p.firstName, p.lastName].filter(Boolean).join(' ') : 'Unknown');
+                return {
+                  userId: String(stu?._id || p.studentId),
+                  name: pName,
+                  score: p.score || 0,
+                  correct: p.correct || 0,
+                  wrong: p.wrong || 0,
+                  effectiveTimeMs: p.effectiveTimeMs || 0,
+                  finishedAt: p.finishedAt
+                };
+              })
               .sort((a, b) => {
-                // Sort by score desc, then by time asc, then by wrong asc
                 if (b.score !== a.score) return b.score - a.score;
                 if (a.effectiveTimeMs !== b.effectiveTimeMs) return a.effectiveTimeMs - b.effectiveTimeMs;
                 return (a.wrong || 0) - (b.wrong || 0);
@@ -222,30 +260,35 @@ module.exports = function(io) {
     });
 
     // ✅ Handle when a player finishes the game
-    socket.on('live:finish', async ({ roomCode, userId, totalTimeMs } = {}) => {
+    socket.on('live:finish', async ({ roomCode, userId, totalTimeMs, score, correct, wrong } = {}) => {
       try {
         const room = liveGames[roomCode];
         if (!room || !room.sessionId) return;
 
-        console.log('[socket] live:finish ->', { roomCode, userId, totalTimeMs });
+        console.log('[socket] live:finish ->', { roomCode, userId, totalTimeMs, score, correct, wrong });
 
-        // Mark participant as finished
+        // Mark participant as finished and set final stats
         try {
-          const participant = await LiveParticipant.findOne({ 
-            sessionId: room.sessionId, 
-            studentId: userId 
+          const participant = await LiveParticipant.findOne({
+            sessionId: room.sessionId,
+            studentId: userId
           });
 
-          if (participant && !participant.finishedAt) {
-            participant.finishedAt = new Date();
+          if (participant) {
+            participant.finishedAt = participant.finishedAt || new Date();
+            // Set final score data from GAME_COMPLETE
+            if (typeof score === 'number') participant.score = score;
+            if (typeof correct === 'number') participant.correct = correct;
+            if (typeof wrong === 'number') participant.wrong = wrong;
             if (typeof totalTimeMs === 'number') {
               participant.effectiveTimeMs = totalTimeMs;
             }
             await participant.save();
+            console.log('[socket] LiveParticipant updated:', { score: participant.score, correct: participant.correct, wrong: participant.wrong });
 
             // Check if all participants have finished
-            const allParticipants = await LiveParticipant.find({ 
-              sessionId: room.sessionId 
+            const allParticipants = await LiveParticipant.find({
+              sessionId: room.sessionId
             }).lean();
 
             const allFinished = allParticipants.every(p => p.finishedAt);
@@ -255,15 +298,18 @@ module.exports = function(io) {
 
             // Emit final scoreboard
             const ranks = allParticipants
-              .map(p => ({
-                userId: String(p.studentId),
-                name: p.studentId?.name || 'Unknown',
-                score: p.score || 0,
-                correct: p.correct || 0,
-                wrong: p.wrong || 0,
-                effectiveTimeMs: p.effectiveTimeMs || 0,
-                finishedAt: p.finishedAt
-              }))
+              .map(p => {
+                const pName = p.firstName ? [p.firstName, p.lastName].filter(Boolean).join(' ') : 'Unknown';
+                return {
+                  userId: String(p.studentId),
+                  name: pName,
+                  score: p.score || 0,
+                  correct: p.correct || 0,
+                  wrong: p.wrong || 0,
+                  effectiveTimeMs: p.effectiveTimeMs || 0,
+                  finishedAt: p.finishedAt
+                };
+              })
               .sort((a, b) => {
                 if (b.score !== a.score) return b.score - a.score;
                 if (a.effectiveTimeMs !== b.effectiveTimeMs) return a.effectiveTimeMs - b.effectiveTimeMs;

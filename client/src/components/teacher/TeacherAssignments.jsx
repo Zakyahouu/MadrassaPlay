@@ -3,8 +3,10 @@ import { Plus, AlertCircle, FileText, CheckCircle, Calendar, Users } from 'lucid
 import AssignmentCreate from './AssignmentCreate';
 import AssignmentsList from './AssignmentsList';
 import AssignmentCard from './AssignmentCard';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TeacherAssignments = () => {
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('active');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [items, setItems] = useState([]);
@@ -23,9 +25,9 @@ const TeacherAssignments = () => {
   const loadAssignments = async () => {
     try {
       const axios = (await import('axios')).default;
-  const params = { page, limit };
-  if (activeTab !== 'all') params.status = activeTab;
-  const res = await axios.get('/api/assignments/teacher', { params });
+      const params = { page, limit };
+      if (activeTab !== 'all') params.status = activeTab;
+      const res = await axios.get('/api/assignments/teacher', { params });
       if (Array.isArray(res.data?.items)) {
         setItems(res.data.items);
         setTotal(res.data.total || 0);
@@ -35,7 +37,7 @@ const TeacherAssignments = () => {
         setItems(res.data || []);
         const totalLen = res.data?.length || 0;
         setTotal(totalLen);
-  setCounts({ active: 0, upcoming: 0, completed: 0, canceled: 0, total: totalLen });
+        setCounts({ active: 0, upcoming: 0, completed: 0, canceled: 0, total: totalLen });
       }
     } catch (_) { /* ignore */ }
     finally { setLoading(false); }
@@ -86,7 +88,7 @@ const TeacherAssignments = () => {
       const axios = (await import('axios')).default;
       await axios.delete(`/api/assignments/${a._id}`);
       await loadAssignments();
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const cancelAssignment = async (a) => {
@@ -137,15 +139,15 @@ const TeacherAssignments = () => {
   return (
     <div className="space-y-8">
       {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 border border-purple-100">
+      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-8 border border-teal-100">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Assignments</h1>
             <p className="text-gray-600 text-lg">Create and manage learning tasks for your students</p>
           </div>
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-3 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
+            className="flex items-center space-x-3 px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-cyan-600 rounded-xl hover:from-teal-700 hover:to-cyan-700 shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
             <span>Create Assignment</span>
@@ -173,108 +175,98 @@ const TeacherAssignments = () => {
           <nav className="flex space-x-1 p-2">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === 'active'
-                  ? 'bg-purple-100 text-purple-700 shadow-sm'
+              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'active'
+                  ? 'bg-teal-100 text-teal-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${activeTab === 'active' ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${activeTab === 'active' ? 'bg-teal-500' : 'bg-gray-300'}`}></div>
                 <span>Active</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'active' ? 'bg-purple-200 text-purple-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'active' ? 'bg-teal-200 text-teal-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {counts.active}
                 </span>
               </div>
             </button>
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === 'upcoming'
+              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'upcoming'
                   ? 'bg-amber-100 text-amber-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${activeTab === 'upcoming' ? 'bg-amber-500' : 'bg-gray-300'}`}></div>
                 <span>Upcoming</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'upcoming' ? 'bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'upcoming' ? 'bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {counts.upcoming}
                 </span>
               </div>
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === 'completed'
+              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'completed'
                   ? 'bg-green-100 text-green-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${activeTab === 'completed' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 <span>Completed</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'completed' ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'completed' ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {counts.completed}
                 </span>
               </div>
             </button>
             <button
               onClick={() => setActiveTab('canceled')}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === 'canceled'
+              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'canceled'
                   ? 'bg-red-100 text-red-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${activeTab === 'canceled' ? 'bg-red-500' : 'bg-gray-300'}`}></div>
                 <span>Canceled</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'canceled' ? 'bg-red-200 text-red-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'canceled' ? 'bg-red-200 text-red-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {counts.canceled}
                 </span>
               </div>
             </button>
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
-                activeTab === 'all'
+              className={`px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${activeTab === 'all'
                   ? 'bg-gray-100 text-gray-700 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${activeTab === 'all' ? 'bg-gray-500' : 'bg-gray-300'}`}></div>
                 <span>All</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'all' ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'
-                }`}>
+                <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'all' ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600'
+                  }`}>
                   {counts.total}
                 </span>
               </div>
             </button>
             <div className="ml-auto flex items-center gap-2">
-              <button 
-                disabled={page===1} 
-                onClick={()=>setPage(p=>Math.max(1,p-1))} 
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
                 className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
               <span className="text-sm text-gray-500 px-2">
-                Page {page} of {Math.max(1, Math.ceil(total/limit))}
+                Page {page} of {Math.max(1, Math.ceil(total / limit))}
               </span>
-              <button 
-                disabled={page>=Math.max(1, Math.ceil(total/limit))} 
-                onClick={()=>setPage(p=>p+1)} 
+              <button
+                disabled={page >= Math.max(1, Math.ceil(total / limit))}
+                onClick={() => setPage(p => p + 1)}
                 className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
@@ -289,14 +281,14 @@ const TeacherAssignments = () => {
         <div className="space-y-4">
           {loading && <div className="text-sm text-gray-500">Loading…</div>}
           {!loading && active.length === 0 && <div className="text-sm text-gray-500">No active assignments.</div>}
-      {!loading && active.map((a) => (
+          {!loading && active.map((a) => (
             <AssignmentCard
               key={a._id}
               assignment={a}
               summary={summaryMap[a._id]}
               onView={() => openDetails(a)}
               onEdit={null}
-        onDelete={null}
+              onDelete={null}
               onCancel={() => cancelAssignment(a)}
             />
           ))}
@@ -358,14 +350,14 @@ const TeacherAssignments = () => {
 
       {/* Enhanced Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 shadow-sm border border-purple-200 hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl p-6 shadow-sm border border-teal-200 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 mb-1">Total Assignments</p>
-              <p className="text-3xl font-bold text-purple-900">{items.length}</p>
-              <p className="text-xs text-purple-600 mt-1">All time</p>
+              <p className="text-sm font-medium text-teal-700 mb-1">Total Assignments</p>
+              <p className="text-3xl font-bold text-teal-900">{items.length}</p>
+              <p className="text-xs text-teal-600 mt-1">All time</p>
             </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
               <FileText className="w-7 h-7 text-white" />
             </div>
           </div>
@@ -427,23 +419,23 @@ const TeacherAssignments = () => {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDetailsAssignment(null)} />
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 border-b border-gray-200">
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 border-b border-gray-200">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{detailsAssignment.title}</h2>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
+                      <Calendar className="w-4 h-4 text-teal-500" />
                       <span>Start: {new Date(detailsAssignment.startDate).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
+                      <Calendar className="w-4 h-4 text-teal-500" />
                       <span>End: {new Date(detailsAssignment.endDate).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setDetailsAssignment(null)} 
+                <button
+                  onClick={() => setDetailsAssignment(null)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -457,7 +449,7 @@ const TeacherAssignments = () => {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               {detailsAssignment.description && (
                 <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Description</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">{t.description}</h4>
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{detailsAssignment.description}</p>
                   </div>
@@ -494,14 +486,14 @@ const TeacherAssignments = () => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-4 border border-teal-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
                       <Users className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-purple-700">Completion</p>
-                      <p className="text-xl font-bold text-purple-900">{(() => {
+                      <p className="text-sm font-medium text-teal-700">Completion</p>
+                      <p className="text-xl font-bold text-teal-900">{(() => {
                         const s = summaryMap[detailsAssignment._id];
                         return s ? `${s.submittedCount}/${s.totalStudents}` : '—';
                       })()}</p>
@@ -515,7 +507,7 @@ const TeacherAssignments = () => {
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Student Submissions</h4>
                 {studentsLoading && (
                   <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
                     <span className="ml-3 text-gray-600">Loading submissions...</span>
                   </div>
                 )}
@@ -535,7 +527,7 @@ const TeacherAssignments = () => {
                           <div key={s.id} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center">
                                   <span className="text-white font-bold text-sm">{(s.name || 'S').slice(0, 1).toUpperCase()}</span>
                                 </div>
                                 <div>
@@ -547,7 +539,7 @@ const TeacherAssignments = () => {
                                 </div>
                               </div>
                               <button
-                                className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
                                 onClick={() => openAttemptsForStudent(s)}
                               >
                                 View Details
@@ -564,8 +556,8 @@ const TeacherAssignments = () => {
 
             {/* Modal Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button 
-                onClick={() => setDetailsAssignment(null)} 
+              <button
+                onClick={() => setDetailsAssignment(null)}
                 className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Close
@@ -581,7 +573,7 @@ const TeacherAssignments = () => {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAttemptsModal({ open: false, student: null, data: null, loading: false })} />
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 border-b border-gray-200">
+            <div className="bg-gradient-to-r from-cyan-50 to-teal-50 p-6 border-b border-gray-200">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-gray-900 mb-1">
@@ -591,8 +583,8 @@ const TeacherAssignments = () => {
                     <p className="text-sm text-gray-600">Assignment: {detailsAssignment.title}</p>
                   )}
                 </div>
-                <button 
-                  onClick={() => setAttemptsModal({ open: false, student: null, data: null, loading: false })} 
+                <button
+                  onClick={() => setAttemptsModal({ open: false, student: null, data: null, loading: false })}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white/50 rounded-lg transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -606,7 +598,7 @@ const TeacherAssignments = () => {
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               {attemptsModal.loading && (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
                   <span className="ml-3 text-gray-600">Loading attempts...</span>
                 </div>
               )}
@@ -649,11 +641,10 @@ const TeacherAssignments = () => {
                           <div key={idx} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                  a.percentage >= 80 ? 'bg-green-100 text-green-700' :
-                                  a.percentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-red-100 text-red-700'
-                                }`}>
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${a.percentage >= 80 ? 'bg-green-100 text-green-700' :
+                                    a.percentage >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-red-100 text-red-700'
+                                  }`}>
                                   <span className="text-sm font-bold">{a.attemptNumber}</span>
                                 </div>
                                 <div>
@@ -683,8 +674,8 @@ const TeacherAssignments = () => {
 
             {/* Modal Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
-              <button 
-                onClick={() => setAttemptsModal({ open: false, student: null, data: null, loading: false })} 
+              <button
+                onClick={() => setAttemptsModal({ open: false, student: null, data: null, loading: false })}
                 className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Close

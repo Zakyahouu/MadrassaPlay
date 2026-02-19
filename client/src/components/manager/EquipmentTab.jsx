@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { 
-  Plus, Edit, Trash2, X, Search, Loader, AlertTriangle, 
+import {
+  Plus, Edit, Trash2, X, Search, Loader, AlertTriangle,
   Package, Filter, Eye, Users, Wrench, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -55,7 +55,7 @@ const EquipmentTab = () => {
       }));
       setItems(normalized);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch equipment');
+      setError(err.response?.data?.message || t.failedLoadData);
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ const EquipmentTab = () => {
       }
       setModal({ open: false, mode: 'create', data: null });
     } catch (err) {
-      alert(err.response?.data?.message || 'Save failed');
+      alert(err.response?.data?.message || t.errorOccurred);
     }
   };
 
@@ -88,143 +88,132 @@ const EquipmentTab = () => {
       await axios.delete(`/api/equipment/${item._id}`, authConfig());
       setItems(prev => prev.filter(i => i._id !== item._id));
     } catch (err) {
-      alert(err.response?.data?.message || 'Delete failed');
+      alert(err.response?.data?.message || t.errorOccurred);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-      {/* Preset suggestions for major types */}
-      <datalist id="equipmentMajorTypePresets">
-        <option value="Electronics" />
-        <option value="Furniture" />
-        <option value="Laboratory" />
-        <option value="Audio/Visual" />
-        <option value="Sports & Fitness" />
-        <option value="IT/Networking" />
-      </datalist>
+        {/* Preset suggestions for major types */}
+        <datalist id="equipmentMajorTypePresets">
+          <option value={t.electronics} />
+          <option value={t.furniture} />
+          <option value={t.laboratory} />
+          <option value={t.audioVisual} />
+          <option value={t.sportsFitness} />
+          <option value={t.itNetworking} />
+        </datalist>
 
         {/* Enhanced Header */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="card-base p-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <Search className="
                   absolute left-4 top-1/2 transform -translate-y-1/2 
-                  text-gray-400 w-5 h-5
+                  text-text-muted-light w-5 h-5
                 " />
                 <input
                   type="text"
-                  placeholder={t('search-equipment')}
+                  placeholder={t.searchEquipment}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="
                     pl-12 pr-4 py-3 w-full
-                    bg-gray-50 border-0 rounded-lg
-                    focus:bg-white focus:ring-2 focus:ring-blue-500/20
+                    bg-background-light border-0 rounded-lg
+                    focus:bg-white focus:ring-2 focus:ring-primary/20
                     transition-all duration-200
-                    placeholder:text-gray-400
+                    placeholder:text-text-muted-light
                   "
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Filter className="
                   absolute left-3 top-1/2 transform -translate-y-1/2 
-                  text-gray-400 w-4 h-4
+                  text-text-muted-light w-4 h-4
                 " />
-                <input 
-                  list="equipmentMajorTypePresets" 
-                  value={filters.majorType} 
-                  onChange={(e) => setFilters(prev => ({ ...prev, majorType: e.target.value }))} 
-                  placeholder="Filter by type"
+                <input
+                  list="equipmentMajorTypePresets"
+                  value={filters.majorType}
+                  onChange={(e) => setFilters(prev => ({ ...prev, majorType: e.target.value }))}
+                  placeholder={t.filterByType}
                   className="
                     pl-10 pr-4 py-3
-                    bg-gray-50 border-0 rounded-lg
-                    focus:bg-white focus:ring-2 focus:ring-blue-500/20
+                    bg-background-light border-0 rounded-lg
+                    focus:bg-white focus:ring-2 focus:ring-primary/20
                     transition-all duration-200
-                    placeholder:text-gray-400
+                    placeholder:text-text-muted-light
                     min-w-[200px]
                   "
                 />
               </div>
-              
+
               <button
                 onClick={() => setModal({ open: true, mode: 'create', data: null })}
-                className="
-                  flex items-center gap-2 px-5 py-3
-                  bg-blue-600 text-white rounded-lg
-                  hover:bg-blue-700 hover:shadow-lg
-                  transition-all duration-200 font-medium
-                "
+                className="btn-primary flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-{t('add-equipment')}
-          </button>
+                {t.addEquipment}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-      </div>
 
         {/* Content Area */}
-      {loading ? (
+        {loading ? (
           <div className="
             flex flex-col justify-center items-center 
             bg-white rounded-xl p-16 shadow-sm
           ">
             <Loader className="animate-spin text-blue-500 mb-4" size={40} />
-            <p className="text-gray-600">Loading equipment...</p>
+            <p className="text-gray-600">{t.loading}</p>
           </div>
-      ) : error ? (
+        ) : error ? (
           <div className="
             bg-red-50 border border-red-100 rounded-xl p-6
             flex items-center gap-4
           ">
             <AlertTriangle className="text-red-500 w-6 h-6 flex-shrink-0" />
             <div>
-              <h3 className="font-medium text-red-800 mb-1">Error</h3>
-        <p className="text-red-600">{error}</p>
+              <h3 className="font-medium text-red-800 mb-1">{t.error}</h3>
+              <p className="text-red-600">{error}</p>
             </div>
           </div>
-      ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        ) : (
+          <div className="card-base overflow-hidden">
             {filtered.length > 0 ? (
-        <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b border-gray-100">
+                  <thead className="bg-slate-50 border-b border-border-light">
                     <tr>
                       <th className="
                         px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
-                        Equipment
-                      </th>
+                        text-text-muted-light uppercase tracking-wider
+                      ">{t.equipment}</th>
                       <th className="
                         px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
-                        Quantity
-                      </th>
+                        text-text-muted-light uppercase tracking-wider
+                      ">{t.quantity}</th>
                       <th className="
                         px-6 py-4 text-left text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
+                        text-text-muted-light uppercase tracking-wider
                       ">
-                        Units
+                        {t.unitsCount.charAt(0).toUpperCase() + t.unitsCount.slice(1)}
                       </th>
                       <th className="
                         px-6 py-4 text-right text-xs font-semibold 
-                        text-gray-600 uppercase tracking-wider
-                      ">
-                        Actions
-                      </th>
-              </tr>
-            </thead>
+                        text-text-muted-light uppercase tracking-wider
+                      ">{t.actions}</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filtered.map(item => (
-                      <tr 
-                        key={item._id} 
+                      <tr
+                        key={item._id}
                         className="
                           hover:bg-gray-50 transition-colors duration-150
                           group
@@ -233,20 +222,20 @@ const EquipmentTab = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             <div className="
-                              w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 
+                              w-10 h-10 bg-primary/10
                               rounded-xl flex items-center justify-center 
-                              text-white font-semibold
+                              text-primary font-semibold
                             ">
                               <Package className="w-5 h-5" />
                             </div>
                             <div>
                               <div className="
-                                font-medium text-gray-900 
-                                group-hover:text-green-600 transition-colors
+                                font-medium text-text-main-light 
+                                group-hover:text-primary transition-colors
                               ">
                                 {item.itemName}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-text-muted-light">
                                 {item.majorType}
                               </div>
                             </div>
@@ -256,7 +245,7 @@ const EquipmentTab = () => {
                           <div className="flex items-center gap-2">
                             <Users className="w-4 h-4 text-gray-400" />
                             <span className="text-sm font-medium text-gray-900">
-                              {item.quantity} {item.quantity === 1 ? 'unit' : 'units'}
+                              {item.quantity} {item.quantity === 1 ? t.unitCount : t.unitsCount}
                             </span>
                           </div>
                         </td>
@@ -280,15 +269,15 @@ const EquipmentTab = () => {
                               className="
                                 inline-flex items-center gap-1 px-2 py-1 
                                 text-xs font-medium rounded-full
-                                bg-blue-50 text-blue-700 border border-blue-200
-                                hover:bg-blue-100 transition-colors duration-200
+                                bg-primary/10 text-primary border border-primary/20
+                                hover:bg-primary/20 transition-colors duration-200
                               "
                             >
                               <Eye className="w-3 h-3" />
-                              View units{(item.units || []).length > 3 ? ` (+${(item.units || []).length - 3} more)` : ''}
+                              {t.viewUnitsAction}{(item.units || []).length > 3 ? ` (${t.plusMore.replace('{count}', (item.units || []).length - 3)})` : ''}
                             </button>
-                    </div>
-                  </td>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <UnitAdjuster item={item} onUpdated={(updated) => {
@@ -301,10 +290,10 @@ const EquipmentTab = () => {
                                 hover:bg-green-50 rounded-lg transition-all duration-200
                                 group-hover:bg-green-50
                               "
-                              title="Edit equipment"
+                              title={t.editEquipment}
                             >
                               <Edit className="w-4 h-4" />
-                    </button>
+                            </button>
                             <button
                               onClick={() => onDelete(item)}
                               className="
@@ -312,38 +301,34 @@ const EquipmentTab = () => {
                                 hover:bg-red-50 rounded-lg transition-all duration-200
                                 group-hover:bg-red-50
                               "
-                              title="Delete equipment"
+                              title={t.deleteEquipment}
                             >
                               <Trash2 className="w-4 h-4" />
-                    </button>
+                            </button>
                           </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="
                 flex flex-col justify-center items-center 
                 p-16 text-center
               ">
                 <Package className="w-16 h-16 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('no-equipment-found')}</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t.noEquipmentFound}</h3>
                 <p className="text-gray-500 mb-6">
-                  {search || filters.majorType ? t('no-equipment-match-search') : t('get-started-create-first-equipment')}
+                  {search || filters.majorType ? t.noEquipmentMatchSearch : t.getStartedCreateFirstEquipment}
                 </p>
                 {!search && !filters.majorType && (
                   <button
                     onClick={() => setModal({ open: true, mode: 'create', data: null })}
-                    className="
-                      flex items-center gap-2 px-4 py-2
-                      bg-blue-600 text-white rounded-lg
-                      hover:bg-blue-700 transition-colors duration-200
-                    "
+                    className="btn-primary mt-4"
                   >
                     <Plus className="w-4 h-4" />
-                    Add First Equipment
+                    {t.addFirstEquipment}
                   </button>
                 )}
               </div>
@@ -353,7 +338,7 @@ const EquipmentTab = () => {
 
         {/* Equipment Units Popup */}
         {equipmentPopup.open && (
-          <EquipmentUnitsPopup 
+          <EquipmentUnitsPopup
             item={equipmentPopup.item}
             onClose={() => setEquipmentPopup({ open: false, item: null })}
             onUpdated={(updated) => {
@@ -364,14 +349,14 @@ const EquipmentTab = () => {
         )}
 
         {/* Equipment Modal */}
-      {modal.open && (
-        <EquipmentModal
-          mode={modal.mode}
-          data={modal.data}
+        {modal.open && (
+          <EquipmentModal
+            mode={modal.mode}
+            data={modal.data}
             onClose={() => setModal({ open: false, mode: 'create', data: null })}
-          onSave={onSave}
-        />
-      )}
+            onSave={onSave}
+          />
+        )}
       </div>
     </div>
   );
@@ -386,21 +371,21 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
   const [notesDrafts, setNotesDrafts] = useState({});
 
   // Unified edit mode handlers
-  
+
   const beginEdit = (unit) => {
     setEditingUnitId(unit.serial);
     setNameDrafts(prev => ({ ...prev, [unit.serial]: (unit.name ?? `#${unit.serial}`) }));
     setStateDrafts(prev => ({ ...prev, [unit.serial]: unit.state }));
     setNotesDrafts(prev => ({ ...prev, [unit.serial]: unit.notes ?? '' }));
   };
-  
+
   const cancelEdit = (unit) => {
     setEditingUnitId(null);
     setNameDrafts(prev => ({ ...prev, [unit.serial]: unit.name ?? '' }));
     setStateDrafts(prev => ({ ...prev, [unit.serial]: unit.state }));
     setNotesDrafts(prev => ({ ...prev, [unit.serial]: unit.notes ?? '' }));
   };
-  
+
   const saveUnit = async (unit) => {
     try {
       const payload = {
@@ -416,7 +401,7 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
       onUpdated(data);
       setEditingUnitId(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update unit');
+      alert(err.response?.data?.message || t.failUpdateUnit);
     }
   };
 
@@ -430,11 +415,11 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
             </div>
             <div>
               <h4 className="text-xl font-semibold text-gray-900">{item.itemName}</h4>
-              <p className="text-sm text-gray-500">{item.majorType} • {item.quantity} units</p>
+              <p className="text-sm text-gray-500">{item.majorType} • {item.quantity} {item.quantity === 1 ? t.unitCount : t.unitsCount}</p>
             </div>
           </div>
-          <button 
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200" 
+          <button
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200"
             onClick={onClose}
           >
             <X className="w-5 h-5" />
@@ -444,7 +429,7 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
         <div className="overflow-y-auto max-h-[60vh]">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(item.units || []).map(unit => (
-              <div 
+              <div
                 key={unit.serial}
                 className="
                   p-4 border border-gray-200 rounded-lg 
@@ -454,7 +439,7 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="mt-1">
-                      <div className="text-xs text-gray-500">Name</div>
+                      <div className="text-xs text-gray-500">{t.name}</div>
                       {editingUnitId === unit.serial ? (
                         <input
                           className="mt-1 w-full p-2 border border-gray-300 rounded-lg text-sm"
@@ -476,7 +461,7 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
                     <button
                       onClick={() => beginEdit(unit)}
                       className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit unit"
+                      title={t.editRoom.replace(t.rooms, t.unitCount)}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -488,35 +473,37 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
                   ${getUnitStateStyle(editingUnitId === unit.serial ? (stateDrafts[unit.serial] ?? unit.state) : unit.state)}
                 `}>
                   {editingUnitId === unit.serial ? (
-                    <select 
+                    <select
                       value={stateDrafts[unit.serial] ?? unit.state}
                       onChange={(e) => setStateDrafts(prev => ({ ...prev, [unit.serial]: e.target.value }))}
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                     >
-                      <option value="Working Fine">Working Fine</option>
-                      <option value="Broken">Broken</option>
-                      <option value="Under Maintenance">Under Maintenance</option>
+                      <option value="Working Fine">{t.workingFine}</option>
+                      <option value="Broken">{t.broken}</option>
+                      <option value="Under Maintenance">{t.underMaintenance}</option>
                     </select>
                   ) : (
-                    unit.state
+                    unit.state === 'Working Fine' ? t.workingFine :
+                      unit.state === 'Broken' ? t.broken :
+                        unit.state === 'Under Maintenance' ? t.underMaintenance : unit.state
                   )}
                 </div>
 
                 <div className="mt-3">
-                  <label className="block text-xs text-gray-500">Notes</label>
+                  <label className="block text-xs text-gray-500">{t.notes}</label>
                   {editingUnitId === unit.serial ? (
                     <div className="mt-1">
                       <textarea
                         className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                         rows={3}
-                        placeholder="Add notes for this unit"
+                        placeholder={t.addNotePayout.replace(t.payment, t.unitCount)}
                         value={notesDrafts[unit.serial] ?? unit.notes ?? ''}
                         onChange={(e) => setNotesDrafts(prev => ({ ...prev, [unit.serial]: e.target.value }))}
                       />
                     </div>
                   ) : (
                     <div className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">
-                      {unit.notes && unit.notes.trim() ? unit.notes : <span className="italic text-gray-400">No notes</span>}
+                      {unit.notes && unit.notes.trim() ? unit.notes : <span className="italic text-gray-400">{t.noNotes}</span>}
                     </div>
                   )}
                 </div>
@@ -527,14 +514,12 @@ const EquipmentUnitsPopup = ({ item, onClose, onUpdated }) => {
                       onClick={() => saveUnit(unit)}
                       className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                     >
-                      Save changes
+                      {t.saveChanges}
                     </button>
                     <button
                       onClick={() => cancelEdit(unit)}
                       className="px-3 py-1 border border-gray-300 text-gray-700 rounded text-sm"
-                    >
-                      Cancel
-                    </button>
+                    >{t.cancel}</button>
                   </div>
                 )}
 
@@ -564,8 +549,8 @@ const EquipmentModal = ({ mode, data, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl p-6 w-full max-w-lg relative shadow-2xl" onClick={e => e.stopPropagation()}>
-        <button 
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200" 
+        <button
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200"
           onClick={onClose}
         >
           <X className="w-5 h-5" />
@@ -576,74 +561,72 @@ const EquipmentModal = ({ mode, data, onClose, onSave }) => {
           </div>
           <div>
             <h4 className="text-xl font-semibold text-gray-900">
-              {mode === 'edit' ? 'Edit Equipment' : 'Add New Equipment'}
+              {mode === 'edit' ? t.editEquipment : t.addEquipment}
             </h4>
             <p className="text-sm text-gray-500">
-              {mode === 'edit' ? 'Update equipment details' : 'Add new equipment to your inventory'}
+              {mode === 'edit' ? t.updateEquipmentDetails : t.addNewEquipmentInventory}
             </p>
           </div>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Major Type</label>
-            <input 
-              list="equipmentMajorTypePresets" 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200" 
-              value={form.majorType} 
-              onChange={(e) => setForm({...form, majorType: e.target.value})} 
-              required 
-              placeholder="e.g., Electronics, Furniture, Laboratory"
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.majorType}</label>
+            <input
+              list="equipmentMajorTypePresets"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+              value={form.majorType}
+              onChange={(e) => setForm({ ...form, majorType: e.target.value })}
+              required
+              placeholder={t.majorTypeExample}
             />
-            <p className="text-xs text-gray-500 mt-1">Suggestions: Electronics, Furniture, Laboratory, Audio/Visual, Sports & Fitness, IT/Networking</p>
+            <p className="text-xs text-gray-500 mt-1">{t.suggested}: {t.electronics}, {t.furniture}, {t.laboratory}, {t.audioVisual}, {t.sportsFitness}, {t.itNetworking}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
-            <input 
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200" 
-              value={form.itemName} 
-              onChange={(e) => setForm({...form, itemName: e.target.value})} 
-              required 
-              placeholder="e.g., Laptop, Desk, Microscope"
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.itemName}</label>
+            <input
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+              value={form.itemName}
+              onChange={(e) => setForm({ ...form, itemName: e.target.value })}
+              required
+              placeholder={t.itemNameExample}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t.quantity}</label>
             <div className="relative">
               <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input 
-                type="number" 
-                min={0} 
-                className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100" 
-                value={form.quantity} 
-                onChange={(e) => setForm({...form, quantity: Number(e.target.value)})} 
-                required 
+              <input
+                type="number"
+                min={0}
+                className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+                required
                 disabled={mode === 'edit'}
-                placeholder="Enter quantity"
+                placeholder={t.enterQuantity}
               />
             </div>
             {mode === 'edit' && (
-              <p className="text-xs text-gray-500 mt-1">Use the +/- adjuster in the table to change quantity.</p>
+              <p className="text-xs text-gray-500 mt-1">{t.useAdjusterHint}</p>
             )}
           </div>
           <div className="flex justify-end gap-3 pt-4">
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="
                 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 
                 hover:bg-gray-50 transition-all duration-200 font-medium
               "
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
+            >{t.cancel}</button>
+            <button
+              type="submit"
               className="
                 px-4 py-2 bg-green-600 text-white rounded-lg 
                 hover:bg-green-700 transition-all duration-200 font-medium
               "
             >
-{mode === 'create' ? t('add-equipment') : t('update-equipment')}
+              {mode === 'create' ? t.addEquipment : t.updateEquipment}
             </button>
           </div>
         </form>
@@ -668,7 +651,7 @@ const UnitBadge = ({ itemId, unit, onUpdated }) => {
       onUpdated(data);
       setOpen(false);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update unit state');
+      alert(err.response?.data?.message || t.failUpdateUnitState);
     }
   };
   return (
@@ -678,13 +661,13 @@ const UnitBadge = ({ itemId, unit, onUpdated }) => {
       {open && (
         <div className="absolute mt-6 bg-white border rounded shadow p-2 z-10">
           <select value={state} onChange={(e) => setState(e.target.value)} className="border rounded p-1 text-sm">
-            <option>Working Fine</option>
-            <option>Broken</option>
-            <option>Under Maintenance</option>
+            <option value="Working Fine">{t.workingFine}</option>
+            <option value="Broken">{t.broken}</option>
+            <option value="Under Maintenance">{t.underMaintenance}</option>
           </select>
           <div className="flex gap-2 mt-2">
-            <button onClick={() => setOpen(false)} className="px-2 py-1 border rounded text-xs">Cancel</button>
-            <button onClick={save} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
+            <button onClick={() => setOpen(false)} className="px-2 py-1 border rounded text-xs">{t.cancel}</button>
+            <button onClick={save} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">{t.save}</button>
           </div>
         </div>
       )}
@@ -700,26 +683,26 @@ const UnitAdjuster = ({ item, onUpdated }) => {
       const { data } = await axios.post(`/api/equipment/${item._id}/units`, { delta: d }, authConfig());
       onUpdated(data);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to adjust units');
+      alert(err.response?.data?.message || t.failAdjustUnits);
     }
   };
   return (
     <span className="inline-flex items-center gap-2">
-      <button 
-        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200" 
+      <button
+        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200"
         onClick={() => adjust(-Math.abs(delta))}
       >
         - {delta}
       </button>
-      <input 
-        type="number" 
-        min={1} 
-        value={delta} 
-        onChange={(e) => setDelta(Math.max(1, Number(e.target.value)))} 
-        className="w-16 p-1 border rounded text-xs" 
+      <input
+        type="number"
+        min={1}
+        value={delta}
+        onChange={(e) => setDelta(Math.max(1, Number(e.target.value)))}
+        className="w-16 p-1 border rounded text-xs"
       />
-      <button 
-        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200" 
+      <button
+        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200"
         onClick={() => adjust(Math.abs(delta))}
       >
         + {delta}

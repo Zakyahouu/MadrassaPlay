@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, User, Briefcase, DollarSign, Calendar, Phone, Mail, MapPin, FileText } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -55,6 +57,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
 
   // Handle input change
   const handleChange = (e) => {
+  const { t } = useLanguage();
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -187,9 +190,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.phone}</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -204,9 +205,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.email}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -222,9 +221,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.address}</label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
                 <textarea
@@ -233,7 +230,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
                   onChange={handleChange}
                   rows={2}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Address"
+                  placeholder={t.address}
                 />
               </div>
             </div>
@@ -330,9 +327,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Cancel
-            </button>
+            >{t.cancel}</button>
             <button
               type="submit"
               disabled={loading}

@@ -1,8 +1,10 @@
 // StudentAssignForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const StudentAssignForm = ({ classId, onAssigned }) => {
+  const { t } = useLanguage();
   const [studentId, setStudentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

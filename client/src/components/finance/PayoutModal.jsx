@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { 
-  X, 
-  DollarSign, 
-  AlertTriangle, 
+
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  X,
+  DollarSign,
+  AlertTriangle,
   CheckCircle,
   Clock,
   BookOpen,
@@ -12,6 +14,7 @@ import {
 } from 'lucide-react';
 
 const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => {
+  const { t } = useLanguage();
   const [selectedClass, setSelectedClass] = useState('');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('cash');
@@ -21,6 +24,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
 
   // Format currency
   const formatCurrency = (amount) => {
+    const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -31,6 +35,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
 
   // Get max amount for selected class
   const getMaxAmount = () => {
+    const { t } = useLanguage();
     if (!selectedClass) return 0;
     const classData = teacher.classes.find(c => c.classId === selectedClass);
     return classData ? classData.remainingDebt : 0;
@@ -39,20 +44,20 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedClass) {
-      setError('Please select a class');
+      setError(t.selectClass);
       return;
     }
-    
+
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
+      setError(t.amountGreaterThanZero);
       return;
     }
-    
+
     const maxAmount = getMaxAmount();
     if (parseFloat(amount) > maxAmount) {
-      setError(`Amount cannot exceed remaining debt of ${formatCurrency(maxAmount)}`);
+      setError(t.amountExceedsDebt.replace('{amount}', formatCurrency(maxAmount)));
       return;
     }
 
@@ -62,12 +67,12 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
 
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t.authenticationRequired);
         return;
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       const response = await axios.post(
         `/api/finance/teachers/pay/${teacher.teacherId}`,
         {
@@ -82,12 +87,12 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
       if (response.data.success) {
         onSuccess();
       } else {
-        setError(response.data.message || 'Failed to record payout');
+        setError(response.data.message || t.failedToRecordPayout);
       }
 
     } catch (err) {
       console.error('Error recording payout:', err);
-      setError(err.response?.data?.message || 'Failed to record payout');
+      setError(err.response?.data?.message || t.failedToRecordPayout);
     } finally {
       setLoading(false);
     }
@@ -111,7 +116,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         ></div>
@@ -127,7 +132,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
                     <DollarSign className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">Record Teacher Payout</h3>
+                    <h3 className="text-lg font-medium text-gray-900">{t.recordTeacherPayout}</h3>
                     <p className="text-sm text-gray-500">{teacher.teacherName}</p>
                   </div>
                 </div>
@@ -153,7 +158,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
               {/* Class Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Class
+                  {t.selectClass}
                 </label>
                 <select
                   value={selectedClass}
@@ -161,10 +166,10 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 >
-                  <option value="">Choose a class...</option>
+                  <option value="">{t.chooseClass}</option>
                   {teacher.classes.map((cls) => (
                     <option key={cls.classId} value={cls.classId}>
-                      {cls.className} - {formatCurrency(cls.remainingDebt)} remaining
+                      {cls.className} - {formatCurrency(cls.remainingDebt)} {t.remaining}
                     </option>
                   ))}
                 </select>
@@ -173,7 +178,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
               {/* Amount Input */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payout Amount
+                  {t.payoutAmount}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -196,13 +201,13 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
                       onClick={setMaxAmount}
                       className="text-sm text-green-600 hover:text-green-800 font-medium"
                     >
-                      Max
+                      {t.max}
                     </button>
                   </div>
                 </div>
                 {selectedClass && (
                   <p className="mt-1 text-xs text-gray-500">
-                    Maximum: {formatCurrency(getMaxAmount())}
+                    {t.max}: {formatCurrency(getMaxAmount())}
                   </p>
                 )}
               </div>
@@ -210,59 +215,59 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
               {/* Payment Method */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Method
+                  {t.paymentMethod}
                 </label>
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
-                  <option value="cash">Cash</option>
-                  <option value="bank_transfer">Bank Transfer</option>
-                  <option value="check">Check</option>
+                  <option value="cash">{t.cash}</option>
+                  <option value="bank_transfer">{t.bankTransfer}</option>
+                  <option value="check">{t.check}</option>
                 </select>
               </div>
 
               {/* Note */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Note (Optional)
+                  {t.noteOptional}
                 </label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Add a note about this payout..."
+                  placeholder={t.addNotePayout}
                 />
               </div>
 
               {/* Class Summary */}
               {selectedClass && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Class Summary</h4>
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">{t.classSummary}</h4>
                   {(() => {
                     const classData = teacher.classes.find(c => c.classId === selectedClass);
                     return classData ? (
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-500">Class:</span>
+                          <span className="text-gray-500">{t.class}:</span>
                           <span className="ml-2 font-medium">{classData.className}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Students Paid:</span>
+                          <span className="text-gray-500">{t.studentsPaid}:</span>
                           <span className="ml-2 font-medium">{classData.studentsPaid}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Calculated Income:</span>
+                          <span className="text-gray-500">{t.calculatedIncome}:</span>
                           <span className="ml-2 font-medium">{formatCurrency(classData.calculatedIncome)}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Already Paid:</span>
+                          <span className="text-gray-500">{t.paidAmount}:</span>
                           <span className="ml-2 font-medium">{formatCurrency(classData.paidAmount)}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-gray-500">Remaining Debt:</span>
+                          <span className="text-gray-500">{t.remainingDebt}:</span>
                           <span className="ml-2 font-medium text-red-600">{formatCurrency(classData.remainingDebt)}</span>
                         </div>
                       </div>
@@ -282,12 +287,12 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
                 {loading ? (
                   <>
                     <Clock className="w-4 h-4 mr-2 animate-spin" />
-                    Recording...
+                    {t.recording}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Record Payout
+                    {t.recordPayout}
                   </>
                 )}
               </button>
@@ -295,9 +300,7 @@ const PayoutModal = ({ teacher, onClose, onSuccess, schoolId, year, month }) => 
                 type="button"
                 onClick={onClose}
                 className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-              >
-                Cancel
-              </button>
+              >{t.cancel}</button>
             </div>
           </form>
         </div>

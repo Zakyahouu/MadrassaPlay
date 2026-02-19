@@ -2,16 +2,16 @@ import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import axios from 'axios';
-import { 
-  LogOut, 
-  Play, 
-  Users, 
-  Trophy, 
-  Star, 
-  Clock, 
-  Target, 
-  Zap, 
-  BookOpen, 
+import {
+  LogOut,
+  Play,
+  Users,
+  Trophy,
+  Star,
+  Clock,
+  Target,
+  Zap,
+  BookOpen,
   Award,
   TrendingUp,
   Calendar,
@@ -32,6 +32,8 @@ import ClassAnnouncements from '../components/student/ClassAnnouncements';
 import StudentAssignmentsPanel from '../components/student/StudentAssignmentsPanel';
 import StudentResources from '../components/student/StudentResources';
 import StudentBadges from '../components/student/StudentBadges';
+import StudentGames from '../components/student/StudentGames';
+import StudentProgress from '../components/student/StudentProgress';
 import { useToast } from '../components/shared/ToastProvider';
 
 // Main Student Dashboard Component
@@ -133,8 +135,8 @@ const StudentDashboard = () => {
           xp: s.xp || 0,
           level: s.level || 1,
         });
-  setRecent(Array.isArray(recentRes.data) ? recentRes.data : []);
-  setLiveRecent(Array.isArray(liveRes.data) ? liveRes.data : []);
+        setRecent(Array.isArray(recentRes.data) ? recentRes.data : []);
+        setLiveRecent(Array.isArray(liveRes.data) ? liveRes.data : []);
         // earned badges list
         const earned = Array.isArray(badgesRes.data) ? badgesRes.data.filter(b => b.templateBadge).map(b => ({
           name: b.templateBadge.name,
@@ -169,10 +171,10 @@ const StudentDashboard = () => {
   const stats = useMemo(() => {
     const hours = (summary.timeSpentMinutes || 0) / 60;
     return [
-      { title: 'Jeux Terminés', value: String(summary.gamesCompleted), icon: Trophy, color: 'text-yellow-600', change: '' },
-      { title: 'Série Actuelle', value: `${summary.currentStreakDays} jour${summary.currentStreakDays===1?'':'s'}`, icon: Flame, color: 'text-orange-600', change: '' },
-      { title: 'Points Totaux', value: String(summary.totalPoints), icon: Star, color: 'text-purple-600', change: '' },
-      { title: 'Temps Passé', value: `${hours.toFixed(1)} h`, icon: Clock, color: 'text-blue-600', change: '' }
+      { title: t.gamesCompleted, value: String(summary.gamesCompleted), icon: Trophy, color: 'text-yellow-600', change: '' },
+      { title: t.streak, value: `${summary.currentStreakDays} ${summary.currentStreakDays === 1 ? t.day : t.days}`, icon: Flame, color: 'text-orange-600', change: '' },
+      { title: t.totalPoints, value: String(summary.totalPoints), icon: Star, color: 'text-purple-600', change: '' },
+      { title: t.timeSpent, value: `${hours.toFixed(1)} ${t.hours}`, icon: Clock, color: 'text-blue-600', change: '' }
     ];
   }, [summary]);
 
@@ -262,15 +264,15 @@ const StudentDashboard = () => {
             <UnifiedCard>
               <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                 <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Join Live Game</h3>
-                  <p className="text-xs sm:text-sm text-gray-500">Enter the 8‑character code your teacher gave you.</p>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{t.joinLiveGame}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">{t.enterGameCode}</p>
                 </div>
                 <form
-                  onSubmit={(e)=>{
+                  onSubmit={(e) => {
                     e.preventDefault();
-                    const code = (joinCode||'').trim().toUpperCase();
+                    const code = (joinCode || '').trim().toUpperCase();
                     const valid = /^[A-Z0-9]{8}$/.test(code);
-                    if (!valid) { setJoinError('Code must be 8 letters/numbers'); return; }
+                    if (!valid) { setJoinError(t.invalidCode); return; }
                     setJoinError('');
                     navigate(`/student/lobby/${code}`);
                   }}
@@ -278,33 +280,33 @@ const StudentDashboard = () => {
                 >
                   <input
                     value={joinCode}
-                    onChange={(e)=>{ setJoinCode(e.target.value.toUpperCase()); if (joinError) setJoinError(''); }}
+                    onChange={(e) => { setJoinCode(e.target.value.toUpperCase()); if (joinError) setJoinError(''); }}
                     maxLength={8}
-                    placeholder="ABCDEFGH"
-                    className="px-3 py-2 border rounded-md text-sm tracking-widest uppercase w-40 sm:w-48"
+                    placeholder={t.gameCodePlaceholder}
+                    className="px-3 py-2 border rounded-md text-sm tracking-widest uppercase w-40 sm:w-48 focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                   />
                   <button
                     type="submit"
-                    className="px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                    disabled={(joinCode||'').trim().length!==8}
-                  >Join</button>
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 shadow-sm transition-colors"
+                    disabled={(joinCode || '').trim().length !== 8}
+                  >{t.join}</button>
                 </form>
               </div>
               {joinError && <div className="text-xs text-red-600 mt-2">{joinError}</div>}
             </UnifiedCard>
             {/* Welcome Section */}
-            <UnifiedCard className="bg-blue-50 border-blue-200">
+            <UnifiedCard className="bg-sky-50 border-sky-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-12 h-12 object-contain rounded-lg" />
+                  <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-12 h-12 object-contain rounded-lg shadow-sm" />
                   <div>
-                    <h1 className="text-2xl font-bold text-blue-900 mb-2">Bon retour, {user?.name} !</h1>
-                    <p className="text-blue-700">Prêt à continuer votre parcours d'apprentissage ?</p>
+                    <h1 className="text-2xl font-bold text-sky-900 mb-2">{(t.welcomeStudent || 'Welcome back, {name}!').replace('{name}', user?.name || '')}</h1>
+                    <p className="text-sky-700">{t.readyToContinue}</p>
                   </div>
                 </div>
                 <div className="hidden md:block">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">
-                    <Trophy className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center border border-sky-200 shadow-sm">
+                    <Trophy className="w-8 h-8 text-sky-500" />
                   </div>
                 </div>
               </div>
@@ -331,7 +333,7 @@ const StudentDashboard = () => {
             {/* XP & Level quick view + Recent Badges */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               <UnifiedCard>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">My Progress</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">{t.myProgress}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
                     <div className="text-xs text-gray-600">XP</div>
@@ -345,11 +347,11 @@ const StudentDashboard = () => {
               </UnifiedCard>
               <UnifiedCard className="lg:col-span-2">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recently Earned Badges</h3>
-                  <button onClick={()=>setActiveTab('badges')} className="text-xs text-indigo-600 hover:underline">View all</button>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">{t.recentlyEarnedBadges}</h3>
+                  <button onClick={() => setActiveTab('badges')} className="text-xs text-indigo-600 hover:underline">{t.viewAll}</button>
                 </div>
-                {loading && <div className="text-sm text-gray-500">Loading…</div>}
-                {!loading && recentBadges.length === 0 && <div className="text-sm text-gray-500">No badges yet.</div>}
+                {loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+                {!loading && recentBadges.length === 0 && <div className="text-sm text-gray-500">{t.noBadgesYet}</div>}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {recentBadges.map((b, i) => (
                     <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg border bg-white shadow-sm hover:shadow transition">
@@ -372,12 +374,12 @@ const StudentDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Recent Games */}
               <UnifiedCard>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Recent Games</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t.recentGames}</h3>
                 <div className="space-y-2 sm:space-y-3">
-                  {loading && <div className="text-sm text-gray-500">Loading…</div>}
-                  {!loading && recent.length === 0 && <div className="text-sm text-gray-500">No recent games yet.</div>}
+                  {loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+                  {!loading && recent.length === 0 && <div className="text-sm text-gray-500">{t.noRecentGames}</div>}
                   {!loading && recent.map((game, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-surface-light rounded-lg border border-border-light">
                       <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                         <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
@@ -397,12 +399,12 @@ const StudentDashboard = () => {
 
               {/* Recent Live Sessions */}
               <UnifiedCard>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Recent Live Sessions</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t.myLiveSessions}</h3>
                 <div className="space-y-2 sm:space-y-3">
-                  {loading && <div className="text-sm text-gray-500">Loading…</div>}
-                  {!loading && liveRecent.length === 0 && <div className="text-sm text-gray-500">No recent live sessions yet.</div>}
+                  {loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+                  {!loading && liveRecent.length === 0 && <div className="text-sm text-gray-500">{t.noRecentLiveSessions}</div>}
                   {!loading && liveRecent.map((game, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-surface-light rounded-lg border border-border-light">
                       <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                         <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
@@ -416,7 +418,7 @@ const StudentDashboard = () => {
                                 • Code <span className="font-mono select-all">{game.code}</span>
                                 <button
                                   type="button"
-                                  onClick={async (e)=>{ e.stopPropagation(); try{ await navigator.clipboard.writeText(game.code); toast('Code copied'); } catch{} }}
+                                  onClick={async (e) => { e.stopPropagation(); try { await navigator.clipboard.writeText(game.code); toast(t.codeCopied); } catch { } }}
                                   title="Copy code"
                                   aria-label="Copy code"
                                   className="p-1 rounded hover:bg-gray-200 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
@@ -437,27 +439,30 @@ const StudentDashboard = () => {
               </UnifiedCard>
 
               {/* Class Announcements (chat-like) */}
-              <div>
+              <div className="h-[500px] rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                 {currentClassId ? (
-                  <ClassAnnouncements classId={currentClassId} />
+                  <ClassAnnouncements
+                    classId={currentClassId}
+                    classData={classOptions.find(c => c._id === currentClassId)}
+                    className="h-full"
+                  />
                 ) : (
-                  <UnifiedCard>
-                    <div className="text-sm text-gray-500">{t('no-class-selected')}</div>
-                  </UnifiedCard>
+                  <div className="h-full flex items-center justify-center bg-white">
+                    <div className="text-sm text-gray-500">{t.noClassSelected}</div>
+                  </div>
                 )}
               </div>
 
               {/* Achievements */}
               <UnifiedCard>
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Achievements</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t.achievements}</h3>
                 <div className="space-y-2 sm:space-y-3">
-                  {loading && <div className="text-sm text-gray-500">Loading…</div>}
-                  {!loading && earnedBadges.length === 0 && <div className="text-sm text-gray-500">No achievements yet.</div>}
+                  {loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+                  {!loading && earnedBadges.length === 0 && <div className="text-sm text-gray-500">{t.noBadgesYet}</div>}
                   {!loading && earnedBadges.map((achievement, index) => (
                     <div key={index} className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg border bg-green-50 border-green-200`}>
-                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        'bg-green-100'
-                      }`}>
+                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${'bg-green-100'
+                        }`}>
                         {achievement.iconUrl ? (
                           <img src={achievement.iconUrl} alt="" className="w-3 h-3 sm:w-4 sm:h-4" />
                         ) : (
@@ -481,10 +486,28 @@ const StudentDashboard = () => {
         return (
           <div className="space-y-6">
             <div className="max-w-4xl mx-auto w-full">
-              <div className="bg-white border rounded-2xl p-4">
-                <h2 className="text-lg font-semibold text-gray-900">{t('announcements')}</h2>
-                <div className="mt-4">
-                  <ClassAnnouncements classId={currentClassId} />
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">{t.announcements}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">{t.selectClass || "Class"}:</span>
+                    <select
+                      value={currentClassId}
+                      onChange={(e) => setCurrentClassId(e.target.value)}
+                      className="text-sm border-gray-200 rounded-md focus:border-primary focus:ring-primary/20"
+                    >
+                      {classOptions.map(c => (
+                        <option key={c._id} value={c._id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4 h-[650px] rounded-xl overflow-hidden border border-gray-200">
+                  <ClassAnnouncements
+                    classId={currentClassId}
+                    classData={classOptions.find(c => c._id === currentClassId)}
+                    className="h-full"
+                  />
                 </div>
               </div>
             </div>
@@ -493,79 +516,65 @@ const StudentDashboard = () => {
       case 'assignments':
         return <StudentAssignmentsPanel />;
       case 'games':
-        return (
-          <div className="space-y-6">
-            <UnifiedCard className="bg-gray-50 border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Games</h3>
-              <p className="text-xs text-gray-600">Coming Soon</p>
-            </UnifiedCard>
-          </div>
-        );
+        return <StudentGames />;
       case 'progress':
-        return (
-          <div className="space-y-6">
-            <UnifiedCard className="bg-gray-50 border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Progress</h3>
-              <p className="text-xs text-gray-600">Coming Soon</p>
-            </UnifiedCard>
-          </div>
-        );
+        return <StudentProgress />;
       case 'badges':
         return <StudentBadges />;
       case 'leaderboard':
         return (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
-              <h2 className="text-xl md:text-2xl font-extrabold text-indigo-900">Leaderboard</h2>
-              <p className="text-indigo-700 text-sm">See top students in your school and class.</p>
+              <h2 className="text-xl md:text-2xl font-extrabold text-indigo-900">{t.leaderboard}</h2>
+              <p className="text-indigo-700 text-sm">{t.seeTopStudents}</p>
             </div>
             {lbLoading && <div className="text-sm text-gray-500">Loading…</div>}
             {lbError && <div className="text-sm text-red-600">{lbError}</div>}
             {/* School leaderboard */}
             <UnifiedCard>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">School Top Students</h3>
-                {mySchoolRank && <div className="text-xs text-gray-600">Your Rank: #{mySchoolRank.rank} • Points {summary.totalPoints}</div>}
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">{t.schoolTopStudents}</h3>
+                {mySchoolRank && <div className="text-xs text-gray-600">{t.yourRank}: #{mySchoolRank.rank} • {t.points} {summary.totalPoints}</div>}
               </div>
               <div className="divide-y border rounded-lg">
                 {(Array.isArray(schoolLeaders) ? schoolLeaders : []).map((s, idx) => (
                   <div key={s._id || idx} className="flex items-center justify-between p-2 sm:p-3">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${idx<3?'bg-yellow-50 text-yellow-700 border border-yellow-200':'bg-gray-100 text-gray-600 border border-gray-200'}`}>#{idx+1}</div>
+                      <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${idx < 3 ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>#{idx + 1}</div>
                       <div className="text-sm font-medium text-gray-900 truncate">{s.name}</div>
                     </div>
                     <div className="text-xs text-gray-600 flex-shrink-0 ml-2">{s.totalPoints} pts</div>
                   </div>
                 ))}
-                {(!Array.isArray(schoolLeaders) || schoolLeaders.length===0) && <div className="p-3 text-sm text-gray-500">No data yet.</div>}
+                {(!Array.isArray(schoolLeaders) || schoolLeaders.length === 0) && <div className="p-3 text-sm text-gray-500">{t.noData}</div>}
               </div>
             </UnifiedCard>
 
             {/* Class leaderboard */}
             <UnifiedCard>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Class Leaderboard</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">{t.classLeaderboard}</h3>
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-gray-600">Class</label>
-                  <select value={lbClassId} onChange={e=>setLbClassId(e.target.value)} className="px-2 py-1 text-xs border rounded-md">
+                  <label className="text-xs text-gray-600">{t.classLabel}</label>
+                  <select value={lbClassId} onChange={e => setLbClassId(e.target.value)} className="px-2 py-1 text-xs border rounded-md">
                     {classOptions.map(c => (
                       <option key={c._id} value={c._id}>{c.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
-              {myClassRank && <div className="text-xs text-gray-600 mb-2">Your Rank: #{myClassRank.rank} • Points {summary.totalPoints}</div>}
+              {myClassRank && <div className="text-xs text-gray-600 mb-2">{t.yourRank}: #{myClassRank.rank} • {t.points} {summary.totalPoints}</div>}
               <div className="divide-y border rounded-lg">
                 {(Array.isArray(classLeaders) ? classLeaders : []).map((s, idx) => (
                   <div key={s._id || idx} className="flex items-center justify-between p-2 sm:p-3">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${idx<3?'bg-indigo-50 text-indigo-700 border border-indigo-200':'bg-gray-100 text-gray-600 border border-gray-200'}`}>#{idx+1}</div>
+                      <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${idx < 3 ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>#{idx + 1}</div>
                       <div className="text-sm font-medium text-gray-900 truncate">{s.name}</div>
                     </div>
                     <div className="text-xs text-gray-600 flex-shrink-0 ml-2">{s.totalPoints} pts</div>
                   </div>
                 ))}
-                {(!Array.isArray(classLeaders) || classLeaders.length===0) && <div className="p-3 text-sm text-gray-500">No data yet.</div>}
+                {(!Array.isArray(classLeaders) || classLeaders.length === 0) && <div className="p-3 text-sm text-gray-500">{t.noData}</div>}
               </div>
             </UnifiedCard>
           </div>
@@ -574,9 +583,9 @@ const StudentDashboard = () => {
         return (
           <div className="space-y-4">
             <UnifiedCard>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">My Live Sessions</h3>
-              {liveAll.loading && <div className="text-sm text-gray-500">Loading…</div>}
-              {!liveAll.loading && liveAll.items.length === 0 && <div className="text-sm text-gray-500">No past live sessions yet.</div>}
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t.myLiveSessions}</h3>
+              {liveAll.loading && <div className="text-sm text-gray-500">{t.loading}</div>}
+              {!liveAll.loading && liveAll.items.length === 0 && <div className="text-sm text-gray-500">{t.noPastLiveSessions}</div>}
               <div className="divide-y divide-gray-100">
                 {liveAll.items.map((g, idx) => (
                   <div key={idx} className="flex items-center justify-between py-2">
@@ -591,7 +600,7 @@ const StudentDashboard = () => {
                               • Code <span className="font-mono select-all">{g.code}</span>
                               <button
                                 type="button"
-                                onClick={async (e)=>{ e.stopPropagation(); try{ await navigator.clipboard.writeText(g.code); toast('Code copied'); } catch{} }}
+                                onClick={async (e) => { e.stopPropagation(); try { await navigator.clipboard.writeText(g.code); toast(t.codeCopied); } catch { } }}
                                 title="Copy code"
                                 aria-label="Copy code"
                                 className="p-1 rounded hover:bg-gray-200 text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
@@ -617,56 +626,56 @@ const StudentDashboard = () => {
       default:
         return (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('dashboard')}</h2>
-            <p className="text-gray-600">Bienvenue sur votre tableau de bord étudiant</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{t.dashboard}</h2>
+            <p className="text-gray-600">{t.welcomeStudentDashboard}</p>
           </div>
         );
     }
   };
 
   const navigationItems = [
-    { id: 'overview', name: t('overview') },
-    { id: 'assignments', name: t('my-assignments') },
-    { id: 'games', name: t('games') },
-    { id: 'progress', name: t('my-progress') },
-    { id: 'badges', name: t('badges') },
-    { id: 'leaderboard', name: 'Classement' },
-    { id: 'announcements', name: t('announcements') },
-    { id: 'live', name: t('live-sessions') },
-    { id: 'resources', name: t('resources') }
+    { id: 'overview', name: t.overview },
+    { id: 'assignments', name: t.myAssignments },
+    { id: 'games', name: t.games },
+    { id: 'progress', name: t.myProgress },
+    { id: 'badges', name: t.badges },
+    { id: 'leaderboard', name: t.leaderboard },
+    { id: 'announcements', name: t.announcements },
+    { id: 'live', name: t.liveSessions },
+    { id: 'resources', name: t.resources }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-light">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 sm:py-4 gap-3 sm:gap-4">
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{t('dashboard')} Étudiant</h1>
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{t.studentDashboard}</h1>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-4 w-full sm:w-auto">
               <button
                 onClick={() => setAdsPanelOpen(true)}
-                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-indigo-300 text-xs sm:text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors w-full sm:w-auto justify-center"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-sky-300 text-xs sm:text-sm font-medium rounded-md text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors w-full sm:w-auto justify-center"
               >
                 <Megaphone className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Annonces
+                {t.announcements}
               </button>
               <button
-                onClick={() => { setActiveTab('overview'); setTimeout(()=>{ const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
-                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-purple-300 text-xs sm:text-sm font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors w-full sm:w-auto justify-center"
+                onClick={() => { setActiveTab('overview'); setTimeout(() => { const el = document.querySelector('input[placeholder="ABCDEFGH"]'); if (el) el.focus(); }, 0); }}
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-sky-300 text-xs sm:text-sm font-medium rounded-md text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors w-full sm:w-auto justify-center"
               >
                 <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                Rejoindre en Direct
+                {t.joinLiveGame}
               </button>
-              <span className="text-xs sm:text-sm text-gray-600">Bienvenue, {user?.name}</span>
+              <span className="text-xs sm:text-sm text-gray-600">{t.welcome}, {user?.name}</span>
               <button
                 onClick={logout}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-xs sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors w-full sm:w-auto justify-center"
               >
                 <LogOut className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                {t('logout')}
+                {t.logout}
               </button>
             </div>
           </div>
@@ -689,11 +698,10 @@ const StudentDashboard = () => {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`py-3 sm:py-4 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                  activeTab === item.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 sm:py-4 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${activeTab === item.id
+                  ? 'border-sky-500 text-sky-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 {item.name}
               </button>

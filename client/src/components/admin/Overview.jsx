@@ -5,57 +5,57 @@ import UnifiedStatsCard from '../shared/UnifiedStatsCard';
 
 const Overview = ({ stats, loading, onNavigate }) => {
   const { t } = useLanguage();
-  
+
   const statCards = [
-    { 
-      title: t('total-users'), 
-      value: stats.totalUsers, 
-      icon: Users, 
-      description: 'Utilisation de la plateforme',
+    {
+      title: t.totalUsers,
+      value: stats.totalUsers,
+      icon: Users,
+      description: t.platformUsage,
       change: '+12%',
       changeType: 'positive'
     },
-    { 
-      title: t('total-schools'), 
-      value: stats.totalSchools, 
-      icon: School, 
-      description: 'Institutions enregistrées',
+    {
+      title: t.totalSchools,
+      value: stats.totalSchools,
+      icon: School,
+      description: t.registeredInstitutions,
       change: '+8%',
       changeType: 'positive'
     },
-    { 
-      title: t('templates'), 
-      value: stats.totalTemplates, 
-      icon: Plus, 
-      description: 'Modèles disponibles',
+    {
+      title: t.templates,
+      value: stats.totalTemplates,
+      icon: Plus,
+      description: t.availableTemplates,
       change: '+24%',
       changeType: 'positive'
     }
   ];
 
   const quickActions = [
-    { 
-      title: 'Ajouter une Nouvelle École', 
-      icon: Plus, 
-      description: 'Enregistrer une nouvelle institution éducative',
+    {
+      title: t.addNewSchool,
+      icon: Plus,
+      description: t.registerNewSchool,
       action: 'schools'
     },
-    { 
-      title: 'Ajouter un Modèle de Jeu', 
-      icon: Plus, 
-      description: 'Créer un nouveau modèle de jeu',
+    {
+      title: t.addGameTemplate,
+      icon: Plus,
+      description: t.createNewGameTemplate,
       action: 'templates'
     },
-    { 
-      title: 'Voir les Analyses', 
-      icon: TrendingUp, 
-      description: 'Analyser les performances de la plateforme',
+    {
+      title: t.viewAnalytics,
+      icon: TrendingUp,
+      description: t.analyzePlatformPerformance,
       action: 'analytics'
     },
-    { 
-      title: 'Paramètres de la Plateforme', 
-      icon: Settings, 
-      description: 'Configurer les paramètres du système',
+    {
+      title: t.platformSettings,
+      icon: Settings,
+      description: t.configureSystemSettings,
       action: 'settings',
       comingSoon: true,
     }
@@ -65,10 +65,10 @@ const Overview = ({ stats, loading, onNavigate }) => {
     <div className="space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-gray-900">
-          {t('platform-overview')}
+          {t.platformOverview}
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Surveillez les métriques clés de votre plateforme et gérez les fonctionnalités principales
+          {t.platformOverviewDesc}
         </p>
       </div>
 
@@ -93,7 +93,7 @@ const Overview = ({ stats, loading, onNavigate }) => {
                   </span>
                 </div>
               </div>
-              
+
               <div className="mt-4">
                 {loading ? (
                   <div className="animate-pulse bg-gray-200 h-8 w-20 rounded"></div>
@@ -109,17 +109,17 @@ const Overview = ({ stats, loading, onNavigate }) => {
       <UnifiedCard>
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Actions Rapides
+            {t.quickActions}
           </h3>
-          <p className="text-sm text-gray-600">Simplifiez votre flux de travail avec des actions en un clic</p>
+          <p className="text-sm text-gray-600">{t.quickActionsDesc}</p>
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action, index) => {
             const IconComponent = action.icon;
             const disabled = action.comingSoon;
             return (
-              <button 
+              <button
                 key={index}
                 onClick={() => { if (!disabled && onNavigate) onNavigate(action.action); }}
                 className={`relative p-4 border border-gray-200 rounded-lg transition-all duration-200 text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-70' : 'hover:bg-gray-50 hover:border-gray-300'}`}
@@ -127,7 +127,7 @@ const Overview = ({ stats, loading, onNavigate }) => {
                 disabled={disabled}
               >
                 {disabled && (
-                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Bientôt</span>
+                  <span className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">{t.comingSoon}</span>
                 )}
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 group-hover:bg-gray-100 transition-colors">
@@ -143,13 +143,13 @@ const Overview = ({ stats, loading, onNavigate }) => {
       </UnifiedCard>
 
       <UnifiedCard>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t.recentActivity}</h3>
         <div className="space-y-3">
           {[
-            { action: 'New school registered', time: '2 minutes ago', icon: School },
-            { action: 'Game template uploaded', time: '15 minutes ago', icon: Plus },
-            { action: 'User account created', time: '3 hours ago', icon: Users },
-            { action: 'Analytics report generated', time: '1 day ago', icon: TrendingUp }
+            { action: t.newSchoolRegistered, time: '2 minutes ago', icon: School },
+            { action: t.gameTemplateUploaded, time: '15 minutes ago', icon: Plus },
+            { action: t.userAccountCreated, time: '3 hours ago', icon: Users },
+            { action: t.analyticsReportGenerated, time: '1 day ago', icon: TrendingUp }
           ].map((activity, index) => {
             const IconComponent = activity.icon;
             return (

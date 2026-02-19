@@ -22,9 +22,10 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { checkFinanceAccess } = require('../middleware/permissionMiddleware');
 
-// All routes are protected and require Manager role
+// All routes are protected and require Manager or Staff role
+// checkFinanceAccess ensures staff have the 'finance' permission
 router.use(protect);
-router.use(authorize('manager'));
+router.use(authorize('manager', 'staff'));
 router.use(checkFinanceAccess);
 
 // @route   GET /api/finance/overview/:schoolId/:year/:month

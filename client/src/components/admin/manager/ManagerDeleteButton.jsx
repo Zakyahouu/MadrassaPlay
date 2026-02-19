@@ -1,8 +1,10 @@
 // ManagerDeleteButton.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ManagerDeleteButton = ({ schoolId, managerId, onDeleted }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

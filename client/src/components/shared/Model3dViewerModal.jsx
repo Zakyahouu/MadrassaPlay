@@ -3,8 +3,10 @@ import React from 'react';
 import { X } from 'lucide-react';
 import ThreeJSViewer from './ThreeJSViewer';
 import ShareButton from './ShareButton';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Model3dViewerModal = ({ model, isOpen, onClose, showShareButton = false }) => {
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 

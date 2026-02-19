@@ -1,0 +1,68 @@
+﻿[36mvite v7.0.3 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : Browserslist: browsers data 
+(caniuse-lite) is 8 months old. Please run:
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (B 
+   rowserslist: b...ld. Please run::String) [  
+  ], RemoteException
+    + FullyQualifiedErrorId : NativeCommandErr 
+   or
+ 
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://githu
+b.com/browserslist/update-db#readme
+[32mΓ£ô[39m 24 modules transformed.
+[31mΓ£ù[39m Build failed in 1.30s
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 
+error:
+C:/Users/Moha/Documents/GitHub/Linking-Directie
+s-wajibet/MadrassaPlay/client/src/components/sh
+ared/LanguageTransitionOverlay.jsx:7:7: ERROR: 
+Unexpected ")"[31m
+file: [36mC:/Users/Moha/Documents/GitHub/Linki
+ng-Directies-wajibet/MadrassaPlay/client/src/co
+mponents/shared/LanguageTransitionOverlay.jsx:7
+:7[31m
+[33m
+[33mUnexpected ")"[33m
+5  |    const { language } = useLanguage();
+6  |  
+7  |    if (!) return null;
+   |         ^
+8  |  
+9  |    return (
+[31m
+    at failureErrorWithLog (C:\Users\Moha\Docum
+ents\GitHub\Linking-Directies-wajibet\MadrassaP
+lay\client\node_modules\esbuild\lib\main.js:146
+5:15)
+    at C:\Users\Moha\Documents\GitHub\Linking-D
+irecties-wajibet\MadrassaPlay\client\node_modul
+es\esbuild\lib\main.js:734:50
+    at responseCallbacks.<computed> (C:\Users\M
+oha\Documents\GitHub\Linking-Directies-wajibet\
+MadrassaPlay\client\node_modules\esbuild\lib\ma
+in.js:601:9)
+    at handleIncomingPacket (C:\Users\Moha\Docu
+ments\GitHub\Linking-Directies-wajibet\Madrassa
+Play\client\node_modules\esbuild\lib\main.js:65
+6:12)
+    at Socket.readFromStdout (C:\Users\Moha\Doc
+uments\GitHub\Linking-Directies-wajibet\Madrass
+aPlay\client\node_modules\esbuild\lib\main.js:5
+79:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk 
+(node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode 
+(node:internal/streams/readable:512:3)
+    at Readable.push 
+(node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead 
+(node:internal/stream_base_commons:189:23)[39m

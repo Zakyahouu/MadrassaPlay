@@ -1,0 +1,30 @@
+[36mvite v7.0.3 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32m✓[39m 24 modules transformed.
+[31m✗[39m Build failed in 1.31s
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 1 error:
+C:/Users/Moha/Documents/GitHub/Linking-Directies-wajibet/MadrassaPlay/client/src/components/manager/InquiriesManager.jsx:6:7: ERROR: Expected "as" but found "{"[31m
+file: [36mC:/Users/Moha/Documents/GitHub/Linking-Directies-wajibet/MadrassaPlay/client/src/components/manager/InquiriesManager.jsx:6:7[31m
+[33m
+[33mExpected "as" but found "{"[33m
+4  |  import axios from 'axios';
+5  |  import { 
+6  |  import { useLanguage } from '../../context/LanguageContext';
+   |         ^
+7  |    Mail, Phone, Calendar, Clock, CheckCircle, 
+8  |    AlertCircle, Filter, Search, Download 
+[31m
+    at failureErrorWithLog (C:\Users\Moha\Documents\GitHub\Linking-Directies-wajibet\MadrassaPlay\client\node_modules\esbuild\lib\main.js:1465:15)
+    at C:\Users\Moha\Documents\GitHub\Linking-Directies-wajibet\MadrassaPlay\client\node_modules\esbuild\lib\main.js:734:50
+    at responseCallbacks.<computed> (C:\Users\Moha\Documents\GitHub\Linking-Directies-wajibet\MadrassaPlay\client\node_modules\esbuild\lib\main.js:601:9)
+    at handleIncomingPacket (C:\Users\Moha\Documents\GitHub\Linking-Directies-wajibet\MadrassaPlay\client\node_modules\esbuild\lib\main.js:656:12)
+    at Socket.readFromStdout (C:\Users\Moha\Documents\GitHub\Linking-Directies-wajibet\MadrassaPlay\client\node_modules\esbuild\lib\main.js:579:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m

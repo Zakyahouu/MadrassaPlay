@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { TemplateContext } from '../../context/TemplateContext';
-import { Joystick,Trash } from 'lucide-react';
+import { Joystick, Trash } from 'lucide-react';
 import LoadingState from '../shared/LoadingState';
 import EmptyState from '../shared/EmptyState';
 import StatusMessage from '../shared/StatusMessage';
@@ -21,7 +21,7 @@ const AdminTestGames = () => {
         const response = await axios.get('/api/creations');
         setCreations(response.data);
       } catch (err) {
-        setError(t('failed-fetch-test-games'));
+        setError(t.failedFetchTestGames);
       } finally {
         setLoading(false);
       }
@@ -30,24 +30,24 @@ const AdminTestGames = () => {
   }, [lastUpdate]);
 
   const handleDelete = async (id) => {
-    if (!confirm(t('delete-test-game'))) return;
+    if (!confirm(t.deleteTestGame)) return;
     try {
       await axios.delete(`/api/creations/${id}`);
       setCreations(prev => prev.filter(c => c._id !== id));
     } catch (err) {
-      setError(t('failed-delete-game'));
+      setError(t.failedDeleteGame);
     }
   };
 
-  if (loading) return <LoadingState message={t('loading-test-games')} />;
+  if (loading) return <LoadingState message={t.loadingTestGames} />;
   if (error) return <StatusMessage variant="error" message={error} onClose={() => setError(null)} />;
 
   return (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
-        <h3 className="text-2xl font-bold text-gray-800">{t('test-games')}</h3>
-        <span className="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full">
+        <div className="w-2 h-8 bg-primary rounded-full"></div>
+        <h3 className="text-2xl font-bold text-text-main-light">{t.testGames}</h3>
+        <span className="bg-primary/10 text-primary text-sm font-medium px-3 py-1 rounded-full">
           {creations.length}
         </span>
       </div>
@@ -57,14 +57,14 @@ const AdminTestGames = () => {
           {creations.map((creation) => {
             const isPublished = creation.template?.status === 'published';
             return (
-              <div key={creation._id} className="group relative bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-lg hover:border-indigo-200 transition-all duration-200">
+              <div key={creation._id} className="group relative card-base p-5 hover:shadow-md transition-shadow">
                 <div className="absolute top-4 right-4">
                   <div className={`w-3 h-3 rounded-full ${isPublished ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
                 </div>
-                
-                <h4 className="font-bold text-lg text-gray-900 mb-2 pr-6">{creation.name}</h4>
-                <div className="space-y-1 text-sm text-gray-500 mb-4">
-                  <p>Template: <span className="text-gray-700">{creation.template?.name || 'Unknown'}</span></p>
+
+                <h4 className="font-bold text-lg text-text-main-light mb-2 pr-6">{creation.name}</h4>
+                <div className="space-y-1 text-sm text-text-muted-light mb-4">
+                  <p>Template: <span className="text-text-main-light">{creation.template?.name || 'Unknown'}</span></p>
                   <p>{new Date(creation.createdAt).toLocaleDateString()}</p>
                 </div>
 
@@ -76,12 +76,12 @@ const AdminTestGames = () => {
 
                 <div className="flex gap-2">
                   <Link to={`/admin/edit-game/${creation._id}`} className="flex-1">
-                    <button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-colors">
+                    <button className="w-full btn-secondary py-2 text-sm">
                       Edit
                     </button>
                   </Link>
                   <Link to={`/admin/play-game/${creation._id}`} className="flex-1">
-                    <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-colors">
+                    <button className="w-full btn-primary py-2 text-sm">
                       Play
                     </button>
                   </Link>

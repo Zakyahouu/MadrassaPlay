@@ -32,6 +32,12 @@ class LoggingService {
     relatedEntity = null
   }) {
     try {
+      // Prevent validation error if schoolId is missing
+      if (!schoolId && action !== 'system_error') {
+        // console.warn('LoggingService: SKIPPING LOG - schoolId is required', { action, userId });
+        return null;
+      }
+
       const logEntry = new ActivityLog({
         school: schoolId,
         user: userId,
@@ -153,7 +159,7 @@ class LoggingService {
    */
   static async logAuthActivity(req, action, description, details = {}, userId = null, userRole = null, userName = null) {
     const user = req.user || { _id: userId, role: userRole, school: req.body?.school };
-    
+
     return await this.logActivity({
       schoolId: user.school,
       userId: user._id,
@@ -287,7 +293,7 @@ class LoggingService {
     }
 
     const data = stats[0];
-    
+
     // Process role statistics
     const byRole = {};
     data.byRole.forEach(item => {

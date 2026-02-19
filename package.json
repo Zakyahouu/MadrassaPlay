@@ -1,0 +1,29 @@
+{
+  "name": "madrassaplay",
+  "version": "1.0.0",
+  "description": "An educational gaming platform for teachers to create and host interactive games for students.",
+  "main": "ecosystem.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "npm start --prefix server",
+    "client": "npm run dev --prefix client",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zakyahouu/MadrassaPlay.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Zakyahouu/MadrassaPlay/issues"
+  },
+  "homepage": "https://github.com/Zakyahouu/MadrassaPlay#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

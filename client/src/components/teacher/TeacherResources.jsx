@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TeacherResources = () => {
+  const { t } = useLanguage();
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [resources, setResources] = useState([]);
@@ -325,7 +327,7 @@ const TeacherResources = () => {
           </div>
           {viewMode==='class' && (
             <div className="flex items-center gap-3 w-full md:w-auto md:ml-4">
-              <label className="text-sm font-medium text-gray-700">Class</label>
+              <label className="text-sm font-medium text-gray-700">{t.class}</label>
               <select
                 value={selectedClass}
                 onChange={(e)=>setSelectedClass(e.target.value)}

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  X, 
-  Users, 
-  BookOpen, 
-  DollarSign, 
+
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  X,
+  Users,
+  BookOpen,
+  DollarSign,
   Calendar,
   TrendingUp,
   AlertTriangle,
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react';
 
 const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
+  const { t } = useLanguage();
   const [payoutDetails, setPayoutDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,7 +34,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       const response = await axios.get(
         `/api/finance/teachers/${teacher.teacherId}/${year}/${month}`,
         config
@@ -57,6 +60,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
 
   // Format currency
   const formatCurrency = (amount) => {
+    const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -67,6 +71,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
 
   // Format date
   const formatDate = (dateString) => {
+    const { t } = useLanguage();
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -78,34 +83,35 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
 
   // Get status info
   const getStatusInfo = (status) => {
+    const { t } = useLanguage();
     switch (status) {
       case 'paid':
-        return { 
-          icon: CheckCircle, 
-          color: 'text-green-600', 
+        return {
+          icon: CheckCircle,
+          color: 'text-green-600',
           bgColor: 'bg-green-100',
-          text: 'Paid' 
+          text: 'Paid'
         };
       case 'partial':
-        return { 
-          icon: Clock, 
-          color: 'text-yellow-600', 
+        return {
+          icon: Clock,
+          color: 'text-yellow-600',
           bgColor: 'bg-yellow-100',
-          text: 'Partial' 
+          text: 'Partial'
         };
       case 'pending':
-        return { 
-          icon: AlertTriangle, 
-          color: 'text-red-600', 
+        return {
+          icon: AlertTriangle,
+          color: 'text-red-600',
           bgColor: 'bg-red-100',
-          text: 'Pending' 
+          text: 'Pending'
         };
       default:
-        return { 
-          icon: Clock, 
-          color: 'text-gray-600', 
+        return {
+          icon: Clock,
+          color: 'text-gray-600',
           bgColor: 'bg-gray-100',
-          text: 'Unknown' 
+          text: 'Unknown'
         };
     }
   };
@@ -145,9 +151,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
                   <button
                     onClick={onClose}
                     className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  >
-                    Close
-                  </button>
+                  >{t.close}</button>
                 </div>
               </div>
             </div>
@@ -164,7 +168,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         ></div>
@@ -234,7 +238,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
                 <div className="flex items-center">
                   <BookOpen className="w-8 h-8 text-gray-600 mr-3" />
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Classes</p>
+                    <p className="text-sm text-gray-600 font-medium">{t.classes}</p>
                     <p className="text-xl font-bold text-gray-900">
                       {teacherSummary.classes?.length || 0}
                     </p>
@@ -265,16 +269,14 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Remaining
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.status}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {teacherSummary.classes?.map((cls) => {
                       const statusInfo = getStatusInfo(cls.status);
                       const StatusIcon = statusInfo.icon;
-                      
+
                       return (
                         <tr key={cls.classId}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -304,9 +306,8 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${
-                              cls.remainingDebt > 0 ? 'text-red-600' : 'text-gray-500'
-                            }`}>
+                            <span className={`text-sm font-medium ${cls.remainingDebt > 0 ? 'text-red-600' : 'text-gray-500'
+                              }`}>
                               {formatCurrency(cls.remainingDebt)}
                             </span>
                           </td>
@@ -335,25 +336,19 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Class
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Method
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.amount}</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.method}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Paid By
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.date}</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Note
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {payoutHistory.map((payout) => 
+                      {payoutHistory.map((payout) =>
                         payout.payoutHistory.map((history, index) => (
                           <tr key={`${payout._id}-${index}`}>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -407,9 +402,7 @@ const TeacherDetailModal = ({ teacher, onClose, schoolId, year, month }) => {
             <button
               onClick={onClose}
               className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:w-auto sm:text-sm"
-            >
-              Close
-            </button>
+            >{t.close}</button>
           </div>
         </div>
       </div>

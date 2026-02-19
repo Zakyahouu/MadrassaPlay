@@ -31,11 +31,11 @@ const generateToken = (id) => {
 const registerUser = async (req, res) => {
   try {
     const { name, firstName, lastName, email, password, role, school, address, phone1, phone2 } = req.body;
-    
-    console.log('Manager registration request:', { 
-      name, firstName, lastName, email, 
-      password: password ? '[PROVIDED]' : '[MISSING]', 
-      role, school, address, phone1, phone2 
+
+    console.log('Manager registration request:', {
+      name, firstName, lastName, email,
+      password: password ? '[PROVIDED]' : '[MISSING]',
+      role, school, address, phone1, phone2
     });
 
     // Support both name (legacy) and firstName/lastName (new) formats
@@ -75,15 +75,12 @@ const registerUser = async (req, res) => {
       userData.school = school;
     }
 
-    // Add additional fields for managers
-    if (address) {
-      userData.address = address;
-    }
-    if (phone1) {
-      userData.phone1 = phone1;
-    }
-    if (phone2) {
-      userData.phone2 = phone2;
+    // Add additional fields for managers - Map to contact object
+    if (address || phone1 || phone2) {
+      userData.contact = {};
+      if (address) userData.contact.address = address;
+      if (phone1) userData.contact.phone1 = phone1;
+      if (phone2) userData.contact.phone2 = phone2;
     }
 
     console.log('Creating user with data:', userData);
@@ -172,8 +169,8 @@ const loginUser = async (req, res) => {
         }
       }
       // Log successful login
-      await LoggingService.logAuthActivity(req, 'login', 
-        `User logged in successfully: ${user.name || user.username}`, 
+      await LoggingService.logAuthActivity(req, 'login',
+        `User logged in successfully: ${user.name || user.username}`,
         { userId: user._id, role: user.role, school: user.school },
         user._id, user.role, user.name || user.username
       );
@@ -211,7 +208,7 @@ const loginUser = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    
+
     if (user) {
       res.status(200).json(user);
     } else {
@@ -227,10 +224,36 @@ const getUserProfile = async (req, res) => {
 // @access  Private
 const updateUserProfile = async (req, res) => {
   try {
-  const { name, firstName, lastName, email, username, contact, experience, status, activities } = req.body;
+    const { name, firstName, lastName, email, username, password, contact, experience, status, activities } = req.body;
 
     // Find the user by ID
     const user = await User.findById(req.user._id);
+
+    // Enforce role-based restrictions
+    const RESTRICTED_ROLES = ['teacher', 'student'];
+    if (RESTRICTED_ROLES.includes(user.role)) {
+      // Only allow username and password
+      // Reset other fields to null/undefined so they are ignored by update logic below
+      // Or explicitly prevent them from being used
+      if (req.body.name) delete req.body.name;
+      if (req.body.firstName) delete req.body.firstName;
+      if (req.body.lastName) delete req.body.lastName;
+      if (req.body.email) delete req.body.email;
+      if (req.body.contact) delete req.body.contact;
+      if (req.body.experience) delete req.body.experience;
+      if (req.body.status) delete req.body.status;
+      if (req.body.activities) delete req.body.activities;
+
+      // Locally update variables to reflect deletion (since destructuring happened earlier)
+      // Actually, destructured vars are const/let in function scope, so we can't 'delete' them from scope.
+      // We must rely on 'user' object updates below.
+      // We should overwrite the destructured variables or change how we use them.
+      // Better approach: Re-read explicitly or use conditional logic below.
+    }
+
+    // Re-assign destructured variables if they were restricted (to safe defaults or null)
+    // Since we can't reassign const, let's just use conditional logic in the update blocks.
+    const isRestricted = RESTRICTED_ROLES.includes(user.role);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
@@ -245,9 +268,9 @@ const updateUserProfile = async (req, res) => {
     }
 
     // Update user fields
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
-    if (name) {
+    if (firstName && !isRestricted) user.firstName = firstName;
+    if (lastName && !isRestricted) user.lastName = lastName;
+    if (name && !isRestricted) {
       user.name = name;
       // Ensure required first/last names exist before validation
       if (!firstName || !lastName) {
@@ -261,37 +284,45 @@ const updateUserProfile = async (req, res) => {
         }
       }
     }
-    user.email = email || user.email;
+    // Only update email if not restricted
+    if (!isRestricted) {
+      user.email = email || user.email;
+    }
+
     if (username) user.username = username;
-    if (contact) {
+    if (password) user.password = password; // pre-save hook will hash this
+
+    if (contact && !isRestricted) {
       user.contact = {
         phone1: contact.phone1 ?? user.contact?.phone1,
         phone2: contact.phone2 ?? user.contact?.phone2,
         address: contact.address ?? user.contact?.address,
       };
     }
-    
+
     // Update teacher-specific fields if user is a teacher
-    if (user.role === 'teacher') {
+    if (user.role === 'teacher' && !isRestricted) {
+      // NOTE: Even though teachers are restricted generally, if we want to allow them to update specific things we could exception here.
+      // But user said "allow them ONLY to change username and password". So we block this too.
       if (experience !== undefined) user.experience = experience;
       if (status) user.teacherStatus = status;
       if (Array.isArray(activities)) user.activities = activities;
     }
     // Optional: allow staff/employees to update their own status if exposed in UI
-  if ((user.role === 'staff' || user.role === 'employee' || user.role === 'staff pedagogique') && status) {
+    if ((user.role === 'staff' || user.role === 'employee' || user.role === 'staff pedagogique') && status) {
       user.staffStatus = status;
     }
 
     // Ensure required name fields are present before save (legacy safety)
-  if (!user.firstName || !user.lastName) {
+    if (!user.firstName || !user.lastName) {
       const base = name || user.name || (user.email ? String(user.email).split('@')[0] : `User-${user._id}`);
       if (!user.firstName && !user.lastName) {
         const parts = String(base).trim().split(/\s+/);
-    user.firstName = parts[0] || 'User';
-    user.lastName = parts.slice(1).join(' ') || 'User';
+        user.firstName = parts[0] || 'User';
+        user.lastName = parts.slice(1).join(' ') || 'User';
       } else {
-    if (!user.firstName) user.firstName = base || 'User';
-    if (!user.lastName) user.lastName = 'User';
+        if (!user.firstName) user.firstName = base || 'User';
+        if (!user.lastName) user.lastName = 'User';
       }
     }
 
@@ -314,9 +345,9 @@ const updateUserProfile = async (req, res) => {
       role: updatedUser.role,
       school: updatedUser.school,
       experience: updatedUser.experience,
-  username: updatedUser.username,
-  contact: updatedUser.contact,
-  activities: updatedUser.activities,
+      username: updatedUser.username,
+      contact: updatedUser.contact,
+      activities: updatedUser.activities,
       status: updatedUser.status,
       rating: updatedUser.rating,
       token: generateToken(updatedUser._id),

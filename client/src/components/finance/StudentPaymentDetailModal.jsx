@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, DollarSign, Calendar, User, BookOpen, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const StudentPaymentDetailModal = ({ transactionId, onClose, formatCurrency, formatDate }) => {
+  const { t } = useLanguage();
   const [transaction, setTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,6 +37,7 @@ const StudentPaymentDetailModal = ({ transactionId, onClose, formatCurrency, for
   }, [transactionId]);
 
   const getDebtStatus = (debtDelta) => {
+  const { t } = useLanguage();
     if (debtDelta > 0) {
       return { text: 'Owed', color: 'text-red-600', bgColor: 'bg-red-100' };
     } else if (debtDelta < 0) {
@@ -45,6 +48,7 @@ const StudentPaymentDetailModal = ({ transactionId, onClose, formatCurrency, for
   };
 
   const getPaymentKindIcon = (kind) => {
+  const { t } = useLanguage();
     switch (kind) {
       case 'pay_sessions':
         return <Calendar className="w-4 h-4 text-blue-600" />;
@@ -78,7 +82,7 @@ const StudentPaymentDetailModal = ({ transactionId, onClose, formatCurrency, for
           <div className="text-center text-red-600">
             <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
             <p>{error}</p>
-            <button onClick={onClose} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md">Close</button>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md">{t.close}</button>
           </div>
         </div>
       </div>

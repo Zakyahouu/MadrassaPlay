@@ -51,11 +51,13 @@ router.get('/count', protect, async (req, res) => {
 
 		if (req.user.role === 'admin') {
 			// no extra scoping
-		} else if (req.user.role === 'manager' && req.user.school) {
+		} else if ((req.user.role === 'manager' || req.user.role === 'staff') && req.user.school) {
 			filter.school = req.user.school;
 		} else {
 			return res.status(403).json({ message: 'Not authorized.' });
 		}
+
+		console.log('Count filter:', filter);
 
 		const count = await User.countDocuments(filter);
 		res.json({ count });

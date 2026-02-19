@@ -27,8 +27,10 @@ import {
 import enhancedPdfExportService from '../../services/enhancedPdfExportService';
 import fallbackPdfExportService from '../../services/fallbackPdfExportService';
 import chartCaptureService from '../../services/chartCaptureService';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
+  const { t } = useLanguage();
   const { user } = useContext(AuthContext);
   const [monthData, setMonthData] = useState(null);
   const [teacherPayouts, setTeacherPayouts] = useState([]);
@@ -132,6 +134,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   // Register charts for PDF capture
   useEffect(() => {
     const registerCharts = () => {
+      const { t } = useLanguage();
       const incomeExpensesChart = document.getElementById('income-expenses-chart');
       const teacherPayoutsChart = document.getElementById('teacher-payouts-chart');
       const expenseCategoriesChart = document.getElementById('expense-categories-chart');
@@ -149,7 +152,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
     // Register charts after a short delay to ensure DOM is ready
     const timer = setTimeout(registerCharts, 1000);
-    
+
     return () => {
       clearTimeout(timer);
       chartCaptureService.clearAllCharts();
@@ -158,12 +161,14 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Handle refresh
   const handleRefresh = () => {
+    const { t } = useLanguage();
     fetchAnalyticsData();
     if (onRefresh) onRefresh();
   };
 
   // Format currency
   const formatCurrency = (amount) => {
+    const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -174,12 +179,14 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Calculate percentage change
   const calculatePercentageChange = (current, previous) => {
+    const { t } = useLanguage();
     if (!previous || previous === 0) return 0;
     return ((current - previous) / previous) * 100;
   };
 
   // Chart components
   const DonutChart = ({ data, colors, size = 200 }) => {
+    const { t } = useLanguage();
     const total = data.reduce((sum, item) => sum + item.value, 0);
     let cumulativePercentage = 0;
 
@@ -191,7 +198,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
             const circumference = 2 * Math.PI * (size / 2 - 20);
             const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
             const strokeDashoffset = -((cumulativePercentage / 100) * circumference);
-            
+
             cumulativePercentage += percentage;
 
             return (
@@ -213,7 +220,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{formatCurrency(total)}</div>
-            <div className="text-sm text-gray-500">Total</div>
+            <div className="text-sm text-gray-500">{t.total}</div>
           </div>
         </div>
       </div>
@@ -221,8 +228,9 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   };
 
   const BarChart = ({ data, colors, height = 300 }) => {
+    const { t } = useLanguage();
     const maxValue = Math.max(...data.map(item => item.value));
-    
+
     return (
       <div className="space-y-4">
         {data.map((item, index) => (
@@ -250,10 +258,11 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   };
 
   const LineChart = ({ data, colors, height = 200 }) => {
+    const { t } = useLanguage();
     const maxValue = Math.max(...data.map(item => item.value));
     const minValue = Math.min(...data.map(item => item.value));
     const range = maxValue - minValue;
-    
+
     return (
       <div className="relative" style={{ height }}>
         <svg width="100%" height="100%" className="overflow-visible">
@@ -290,23 +299,24 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   };
 
   const AreaChart = ({ data, colors, height = 200 }) => {
+    const { t } = useLanguage();
     const maxValue = Math.max(...data.map(item => item.value));
     const minValue = Math.min(...data.map(item => item.value));
     const range = maxValue - minValue;
-    
+
     const pathData = data.map((item, index) => {
       const x = (index / (data.length - 1)) * 100;
       const y = 100 - ((item.value - minValue) / range) * 100;
       return `${x},${y}`;
     }).join(' L');
-    
+
     return (
       <div className="relative" style={{ height }}>
         <svg width="100%" height="100%" className="overflow-visible">
           <defs>
             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={colors[0]} stopOpacity="0.3"/>
-              <stop offset="100%" stopColor={colors[0]} stopOpacity="0.05"/>
+              <stop offset="0%" stopColor={colors[0]} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={colors[0]} stopOpacity="0.05" />
             </linearGradient>
           </defs>
           <path
@@ -334,23 +344,20 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   const MetricCard = ({ title, value, change, icon: Icon, color, subtitle }) => (
     <div className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 ${color === 'success' ? 'border-l-4 border-l-green-500' : color === 'danger' ? 'border-l-4 border-l-red-500' : color === 'warning' ? 'border-l-4 border-l-yellow-500' : 'border-l-4 border-l-blue-500'}`}>
       <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-          color === 'success' ? 'bg-green-100' : 
-          color === 'danger' ? 'bg-red-100' : 
-          color === 'warning' ? 'bg-yellow-100' : 
-          'bg-blue-100'
-        }`}>
-          <Icon className={`w-6 h-6 ${
-            color === 'success' ? 'text-green-600' : 
-            color === 'danger' ? 'text-red-600' : 
-            color === 'warning' ? 'text-yellow-600' : 
-            'text-blue-600'
-          }`} />
+        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color === 'success' ? 'bg-green-100' :
+          color === 'danger' ? 'bg-red-100' :
+            color === 'warning' ? 'bg-yellow-100' :
+              'bg-blue-100'
+          }`}>
+          <Icon className={`w-6 h-6 ${color === 'success' ? 'text-green-600' :
+            color === 'danger' ? 'text-red-600' :
+              color === 'warning' ? 'text-yellow-600' :
+                'text-blue-600'
+            }`} />
         </div>
         {change !== undefined && (
-          <div className={`flex items-center space-x-1 ${
-            change >= 0 ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <div className={`flex items-center space-x-1 ${change >= 0 ? 'text-green-600' : 'text-red-600'
+            }`}>
             {change >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
             <span className="text-sm font-medium">{Math.abs(change).toFixed(1)}%</span>
           </div>
@@ -366,14 +373,14 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
 
   // Prepare chart data
   const incomeExpenseData = monthData ? [
-    { label: 'Student Income', value: monthData.breakdown?.studentIncome || 0 },
-    { label: 'Manual Income', value: monthData.breakdown?.manualIncome || 0 }
+    { label: t.studentIncome, value: monthData.breakdown?.studentIncome || 0 },
+    { label: t.manualIncome, value: monthData.breakdown?.manualIncome || 0 }
   ] : [];
 
   const expenseBreakdownData = monthData ? [
-    { label: 'Manual Expenses', value: monthData.breakdown?.manualExpenses || 0 },
-    { label: 'Teacher Earnings', value: monthData.breakdown?.teacherEarnings || 0 },
-    { label: 'Employee Salaries', value: monthData.breakdown?.employeeSalaries || 0 }
+    { label: t.manualExpenses, value: monthData.breakdown?.manualExpenses || 0 },
+    { label: t.teacherEarnings, value: monthData.breakdown?.teacherEarnings || 0 },
+    { label: t.employeeSalaries, value: monthData.breakdown?.employeeSalaries || 0 }
   ] : [];
 
   const teacherPayoutData = teacherPayouts.map(teacher => ({
@@ -396,7 +403,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
     try {
       setExportingPDF(true);
       const filename = `financial-analytics-report-${year}-${month}.pdf`;
-      
+
       const exportData = {
         monthData,
         teacherPayouts,
@@ -423,7 +430,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
         await enhancedPdfExportService.exportAnalyticsToPDF(exportData, chartIds, filename);
       } catch (enhancedError) {
         console.warn('Enhanced PDF export failed, using fallback:', enhancedError);
-        
+
         // Use fallback HTML export
         await fallbackPdfExportService.exportAnalyticsToPDF(exportData, [], filename);
       }
@@ -436,14 +443,16 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
   };
 
   const exportToExcel = () => {
+    const { t } = useLanguage();
     // Basic CSV export for now (can be opened in Excel)
     const csvData = generateCSVData();
     downloadCSV(csvData, `financial-report-${year}-${month}.csv`);
   };
 
   const generateCSVData = () => {
+    const { t } = useLanguage();
     let csv = `Financial Report - ${monthData?.monthName || month}/${year}\n\n`;
-    
+
     // Month summary
     if (monthData) {
       csv += 'Month Summary\n';
@@ -451,26 +460,26 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
       csv += `Total Income,${monthData.income}\n`;
       csv += `Total Expenses,${monthData.expenses}\n`;
       csv += `Net Balance,${monthData.net}\n\n`;
-      
+
       if (monthData.breakdown) {
         csv += 'Income Breakdown\n';
         csv += `Student Income,${monthData.breakdown.studentIncome}\n`;
         csv += `Manual Income,${monthData.breakdown.manualIncome}\n\n`;
-        
+
         csv += 'Expense Breakdown\n';
         csv += `Manual Expenses,${monthData.breakdown.manualExpenses}\n`;
         csv += `Teacher Earnings,${monthData.breakdown.teacherEarnings}\n`;
         csv += `Employee Salaries,${monthData.breakdown.employeeSalaries}\n\n`;
       }
     }
-    
+
     // Teacher payouts
     csv += 'Teacher Payouts\n';
     csv += 'Teacher,Classes,Students,Calculated Income,Paid Amount,Remaining\n';
     teacherPayouts.forEach(teacher => {
       csv += `${teacher.teacherName},${teacher.classCount},${teacher.totalStudents},${teacher.totalCalculated},${teacher.totalPaid},${teacher.totalRemaining}\n`;
     });
-    
+
     // Expense categories
     csv += '\nExpense Categories\n';
     csv += 'Category,Amount,Transaction Count,Percentage\n';
@@ -479,25 +488,26 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
       const percentage = totalExpenses > 0 ? ((category.totalAmount / totalExpenses) * 100).toFixed(1) : 0;
       csv += `${category._id},${category.totalAmount},${category.transactionCount},${percentage}%\n`;
     });
-    
+
     // Debt data
     if (debtData) {
       csv += '\nStudent Debt Summary\n';
       csv += 'Total Debt,New Debt,Student Count,Avg Debt Per Student\n';
       csv += `${debtData.totalDebt},${debtData.newDebt},${debtData.studentCount},${debtData.avgDebtPerStudent}\n`;
     }
-    
+
     // Employee salaries
     csv += '\nEmployee Salary Analytics\n';
     csv += 'Role,Employee Count,Total Calculated,Total Paid,Total Remaining,Avg per Employee\n';
     employeeSalaries.byRole.forEach(role => {
       csv += `${role._id},${role.employeeCount},${role.totalCalculated},${role.totalPaid},${role.totalRemaining},${role.totalCalculated / role.employeeCount}\n`;
     });
-    
+
     return csv;
   };
 
   const downloadCSV = (csvContent, filename) => {
+    const { t } = useLanguage();
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -550,13 +560,13 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <BarChart3 className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Tableau de Bord des Analyses Financières</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t.financialAnalyticsDashboard}</h2>
               <p className="text-gray-600">
-                Analyse complète pour {monthData?.monthName || month} {year}
+                {t.comprehensiveAnalysis} {monthData?.monthName || month} {year}
               </p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-3">
             <button
               onClick={exportToPDF}
@@ -568,24 +578,24 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               ) : (
                 <FileText className="w-4 h-4" />
               )}
-              <span>{exportingPDF ? 'Génération PDF...' : 'Exporter PDF'}</span>
+              <span>{exportingPDF ? t.generatingPDF : t.exportPDF}</span>
             </button>
-            
+
             <button
               onClick={exportToExcel}
               className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span>Exporter Excel</span>
+              <span>{t.exportExcel}</span>
             </button>
-            
+
             <button
               onClick={handleRefresh}
               disabled={loading}
               className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t.refresh}</span>
             </button>
           </div>
         </div>
@@ -605,11 +615,10 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
             <button
               key={id}
               onClick={() => setSelectedChart(id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                selectedChart === id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${selectedChart === id
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               <Icon className="w-4 h-4" />
               <span>{name}</span>
@@ -673,14 +682,14 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                  <span className="text-sm text-gray-700">Income</span>
+                  <span className="text-sm text-gray-700">{t.income}</span>
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{formatCurrency(monthData?.income || 0)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                  <span className="text-sm text-gray-700">Expenses</span>
+                  <span className="text-sm text-gray-700">{t.expenses}</span>
                 </div>
                 <span className="text-sm font-semibold text-gray-900">{formatCurrency(monthData?.expenses || 0)}</span>
               </div>
@@ -730,7 +739,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               />
             </div>
           </div>
-          
+
           {expenseCategories.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Expense Categories Details</h3>
@@ -738,9 +747,9 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-700">Amount</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-700">Transactions</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">{t.category}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-700">{t.amount}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-700">{t.transactions}</th>
                       <th className="text-right py-3 px-4 font-semibold text-gray-700">Percentage</th>
                     </tr>
                   </thead>
@@ -752,8 +761,8 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                         <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <div className="flex items-center space-x-2">
-                              <div 
-                                className="w-3 h-3 rounded-full" 
+                              <div
+                                className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: colors.categories[index % colors.categories.length] }}
                               ></div>
                               <span className="font-medium text-gray-900">{category._id}</span>
@@ -799,7 +808,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               />
             </div>
           </div>
-          
+
           {teacherPayouts.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Teacher Payouts Details</h3>
@@ -808,12 +817,12 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                   <thead>
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Teacher</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-700">Classes</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-700">Students</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-700">{t.classes}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-700">{t.students}</th>
                       <th className="text-right py-3 px-4 font-semibold text-gray-700">Calculated</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-700">Paid</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-700">{t.paid}</th>
                       <th className="text-right py-3 px-4 font-semibold text-gray-700">Remaining</th>
-                      <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
+                      <th className="text-center py-3 px-4 font-semibold text-gray-700">{t.status}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -821,8 +830,8 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                       <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
+                            <div
+                              className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: colors.teachers[index % colors.teachers.length] }}
                             ></div>
                             <span className="font-medium text-gray-900">{teacher.teacherName}</span>
@@ -840,13 +849,12 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
                           {formatCurrency(teacher.totalRemaining)}
                         </td>
                         <td className="text-center py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            teacher.totalRemaining === 0 
-                              ? 'bg-green-100 text-green-800' 
-                              : teacher.totalPaid > 0 
-                                ? 'bg-yellow-100 text-yellow-800' 
-                                : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${teacher.totalRemaining === 0
+                            ? 'bg-green-100 text-green-800'
+                            : teacher.totalPaid > 0
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                            }`}>
                             {teacher.totalRemaining === 0 ? 'Paid' : teacher.totalPaid > 0 ? 'Partial' : 'Pending'}
                           </span>
                         </td>
@@ -880,7 +888,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               />
             </div>
           </div>
-          
+
           {employeeSalaries.summary && employeeSalaries.summary.employeeCount > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <MetricCard
@@ -941,7 +949,7 @@ const AnalyticsTab = ({ schoolId, year, month, onRefresh, loading }) => {
               color="warning"
             />
           </div>
-          
+
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Debt Analysis</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

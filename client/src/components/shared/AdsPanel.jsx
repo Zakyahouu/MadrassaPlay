@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Megaphone, X, Calendar, Target, MapPin, Clock } from 'lucide-react';
+import { Megaphone, X, Calendar, Target, MapPin } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) => {
+  const { t } = useLanguage();
   const [ads, setAds] = useState([]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +20,7 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
       setIsLoading(true);
       const token = getAuthToken();
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      
+
       // Fetch ads based on user role and school
       const response = await axios.get(`/api/advertisements/user/${userRole}`, config);
       const filteredAds = response.data.filter(ad => {
@@ -26,10 +28,10 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
         if (ad.targetAudience === 'both') return true;
         if (ad.targetAudience === userRole) return true;
         if (ad.targetAudience === 'custom') return true; // Could add more logic here
-        
+
         return false;
       });
-      
+
       setAds(filteredAds);
       setCurrentAdIndex(0);
     } catch (error) {
@@ -99,17 +101,35 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
     return colors[audience] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
+  const getTargetAudienceLabel = (audience) => {
+    switch (audience) {
+      case 'both': return t.targetAudienceBoth || 'Both';
+      case 'teachers': return t.targetAudienceTeachers || 'Teachers';
+      case 'students': return t.targetAudienceStudents || 'Students';
+      case 'custom': return t.targetAudienceCustom || 'Custom';
+      default: return audience.charAt(0).toUpperCase() + audience.slice(1);
+    }
+  };
+
+  const getLocationLabel = (location) => {
+    switch (location) {
+      case 'banner': return t.locationBanner || 'Banner';
+      case 'dashboard': return t.locationDashboard || 'Dashboard';
+      default: return location.charAt(0).toUpperCase() + location.slice(1);
+    }
+  };
+
   if (!isOpen || ads.length === 0) return null;
 
   const currentAd = ads[currentAdIndex];
 
   return (
-    <div className={`fixed ${position === 'right' ? 'right-0' : 'left-0'} top-0 h-full w-80 bg-white shadow-2xl border-l border-gray-200 z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : position === 'right' ? 'translate-x-full' : '-translate-x-full'}`}>
+    <div className={`fixed ${position === 'right' ? 'right-0' : 'left-0'} top-0 h-full w-80 bg-surface-light shadow-2xl border-l border-border-light z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : position === 'right' ? 'translate-x-full' : '-translate-x-full'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+      <div className="flex items-center justify-between p-4 bg-primary text-white">
         <div className="flex items-center gap-2">
           <Megaphone className="w-5 h-5" />
-          <h3 className="font-semibold">Announcements</h3>
+          <h3 className="font-semibold">{t.announcements}</h3>
         </div>
         <button
           onClick={onClose}
@@ -123,40 +143,40 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
           <div className="p-4">
             {/* Current Ad */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+            <div className="bg-primary-light/50 rounded-lg p-4 border border-border-light">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 flex-shrink-0">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-primary border border-border-light flex-shrink-0">
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-900 text-sm mb-2">
+                  <h4 className="font-semibold text-text-main-light text-sm mb-2">
                     {currentAd.title}
                   </h4>
-                  <p className="text-gray-600 text-sm mb-3 leading-relaxed">
+                  <p className="text-text-muted-light text-sm mb-3 leading-relaxed">
                     {currentAd.description}
                   </p>
-                  
+
                   {/* Ad Metadata */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 text-xs text-text-muted-light">
                       <Calendar className="w-3 h-3" />
                       <span>{formatDateTime(currentAd.dateTime)}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${getTargetAudienceBadge(currentAd.targetAudience)}`}>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border bg-surface-light text-text-muted-light border-border-light`}>
                         <Target className="w-3 h-3 mr-1" />
-                        {currentAd.targetAudience.charAt(0).toUpperCase() + currentAd.targetAudience.slice(1)}
+                        {getTargetAudienceLabel(currentAd.targetAudience)}
                       </span>
-                      
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border bg-gray-100 text-gray-800 border-gray-200">
+
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border bg-surface-light text-text-muted-light border-border-light">
                         <MapPin className="w-3 h-3 mr-1" />
-                        {currentAd.location.charAt(0).toUpperCase() + currentAd.location.slice(1)}
+                        {getLocationLabel(currentAd.location)}
                       </span>
                     </div>
                   </div>
@@ -169,30 +189,29 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
               <div className="flex items-center justify-between mt-4 px-2">
                 <button
                   onClick={previousAd}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Previous"
+                  className="p-2 text-text-muted-light hover:text-text-main-light hover:bg-background-light rounded-lg transition-colors border border-transparent hover:border-border-light"
+                  title={t.previous}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                
+
                 <div className="flex items-center gap-1">
                   {ads.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentAdIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentAdIndex ? 'bg-indigo-500' : 'bg-gray-300'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-colors ${index === currentAdIndex ? 'bg-primary' : 'bg-slate-300'
+                        }`}
                     />
                   ))}
                 </div>
-                
+
                 <button
                   onClick={nextAd}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Next"
+                  className="p-2 text-text-muted-light hover:text-text-main-light hover:bg-background-light rounded-lg transition-colors border border-transparent hover:border-border-light"
+                  title={t.next}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -203,33 +222,29 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
 
             {/* All Ads List */}
             <div className="mt-6">
-              <h4 className="font-medium text-gray-900 text-sm mb-3">All Announcements</h4>
+              <h4 className="font-medium text-text-main-light text-sm mb-3">{t.allAnnouncements}</h4>
               <div className="space-y-3">
                 {ads.map((ad, index) => (
                   <div
                     key={ad._id}
                     onClick={() => setCurrentAdIndex(index)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      index === currentAdIndex
-                        ? 'border-indigo-300 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${index === currentAdIndex
+                      ? 'border-primary/30 bg-primary-light/30'
+                      : 'border-border-light hover:border-border-dark bg-surface-light hover:bg-background-light'
+                      }`}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 flex-shrink-0"></div>
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${index === currentAdIndex ? 'bg-primary' : 'bg-slate-300'}`}></div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-medium text-gray-900 text-sm mb-1 truncate">
+                        <h5 className="font-medium text-text-main-light text-sm mb-1 truncate">
                           {ad.title}
                         </h5>
-                        <p className="text-gray-600 text-xs line-clamp-2">
+                        <p className="text-text-muted-light text-xs line-clamp-2">
                           {ad.description}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-text-muted-light">
                             {formatDateTime(ad.dateTime)}
-                          </span>
-                          <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full border ${getTargetAudienceBadge(ad.targetAudience)}`}>
-                            {ad.targetAudience.charAt(0).toUpperCase() + ad.targetAudience.slice(1)}
                           </span>
                         </div>
                       </div>
@@ -243,10 +258,10 @@ const AdsPanel = ({ userRole, schoolId, isOpen, onClose, position = 'right' }) =
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="text-center text-xs text-gray-500">
-          <p>Showing {ads.length} announcement{ads.length !== 1 ? 's' : ''}</p>
-          <p className="mt-1">Click on any announcement to view details</p>
+      <div className="p-4 border-t border-border-light bg-background-light">
+        <div className="text-center text-xs text-text-muted-light">
+          <p>{(t.showingAnnouncements || 'Showing {count} announcements').replace('{count}', ads.length)}</p>
+          <p className="mt-1">{t.clickToViewDetails}</p>
         </div>
       </div>
     </div>

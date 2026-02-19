@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  ArrowLeft, 
-  ArrowRight, 
-  Building, 
-  Settings, 
-  Upload, 
+import {
+  X,
+  ArrowLeft,
+  ArrowRight,
+  Building,
+  Settings,
+  Upload,
   UserPlus,
   CheckCircle,
   Calendar,
@@ -16,8 +16,10 @@ import {
 } from 'lucide-react';
 import { generateStrongPassword, getPasswordStrength } from '../../utils/passwordGenerator';
 import CredentialsPopup from './CredentialsPopup';
+import { useLanguage } from '../../context/LanguageContext';
 
 const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Step 1: School Information
@@ -27,14 +29,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       phone: '',
       address: ''
     },
-    
+
     // Step 2: Status Configuration
     status: 'trial',
     customTrialDays: 30,
-    
+
     // Step 3: Document Upload (optional)
     skipDocuments: false,
-    
+
     // Step 4: Manager Creation (optional)
     skipManager: false,
     managerData: {
@@ -47,7 +49,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       phone2: ''
     }
   });
-  
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [createdSchoolId, setCreatedSchoolId] = useState(null);
@@ -57,10 +59,10 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const steps = [
-    { number: 1, title: 'School Information', icon: Building },
-    { number: 2, title: 'Status Configuration', icon: Settings },
-    { number: 3, title: 'Document Upload', icon: Upload },
-    { number: 4, title: 'Create Manager', icon: UserPlus }
+    { number: 1, title: t.schoolInformation || 'School Information', icon: Building },
+    { number: 2, title: t.statusConfiguration, icon: Settings },
+    { number: 3, title: t.documentUpload, icon: Upload },
+    { number: 4, title: t.createManager, icon: UserPlus }
   ];
 
   const getToken = () => JSON.parse(localStorage.getItem('user'))?.token;
@@ -72,80 +74,80 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
   const validateStep = (step) => {
     const newErrors = {};
-    
+
     switch (step) {
       case 1:
-        if (!formData.name.trim()) newErrors.name = 'School name is required';
+        if (!formData.name.trim()) newErrors.name = t.schoolName + ' ' + t.fieldRequired;
         if (formData.contact.email && !/\S+@\S+\.\S+/.test(formData.contact.email)) {
-          newErrors.email = 'Valid email is required';
+          newErrors.email = t.validEmailRequired;
         }
         if (formData.contact.phone && !/^[\d\s\+\-\(\)]+$/.test(formData.contact.phone)) {
-          newErrors.phone = 'Valid phone number is required';
+          newErrors.phone = t.validPhoneRequired;
         }
         break;
       case 2:
         if (formData.status === 'trial' && (!formData.customTrialDays || formData.customTrialDays < 1)) {
-          newErrors.customTrialDays = 'Trial days must be at least 1';
+          newErrors.customTrialDays = t.trialDurationDays + ' ' + t.fieldRequired;
         }
         break;
       case 4:
         if (!formData.skipManager) {
           if (!formData.managerData.firstName.trim()) {
-            newErrors.managerFirstName = 'First name is required';
+            newErrors.managerFirstName = t.firstName + ' ' + t.fieldRequired;
           }
           if (!formData.managerData.lastName.trim()) {
-            newErrors.managerLastName = 'Last name is required';
+            newErrors.managerLastName = t.lastName + ' ' + t.fieldRequired;
           }
           if (!formData.managerData.email.trim()) {
-            newErrors.managerEmail = 'Email is required';
+            newErrors.managerEmail = t.email + ' ' + t.fieldRequired;
           } else if (!/\S+@\S+\.\S+/.test(formData.managerData.email)) {
-            newErrors.managerEmail = 'Valid email is required';
+            newErrors.managerEmail = t.validEmailRequired;
           }
           if (!formData.managerData.password || formData.managerData.password.length < 6) {
-            newErrors.managerPassword = 'Password must be at least 6 characters';
+            newErrors.managerPassword = t.passwordMinLength;
           }
           if (!formData.managerData.address.trim()) {
-            newErrors.managerAddress = 'Address is required';
+            newErrors.managerAddress = t.address + ' ' + t.fieldRequired;
           }
           if (!formData.managerData.phone1.trim()) {
-            newErrors.managerPhone1 = 'Phone number is required';
+            newErrors.managerPhone1 = t.managerPrimaryPhone + ' ' + t.fieldRequired;
           }
         }
         break;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateManagerData = () => {
     const errors = {};
-    
+
     if (!formData.skipManager) {
       if (!formData.managerData.firstName.trim()) {
-        errors.managerFirstName = 'First name is required';
+        errors.managerFirstName = t.firstName + ' ' + t.fieldRequired;
       }
       if (!formData.managerData.lastName.trim()) {
-        errors.managerLastName = 'Last name is required';
+        errors.managerLastName = t.lastName + ' ' + t.fieldRequired;
       }
       if (!formData.managerData.email.trim()) {
-        errors.managerEmail = 'Email is required';
+        errors.managerEmail = t.email + ' ' + t.fieldRequired;
       } else if (!/\S+@\S+\.\S+/.test(formData.managerData.email)) {
-        errors.managerEmail = 'Please enter a valid email';
+        errors.managerEmail = t.validEmailRequired;
       }
       if (!formData.managerData.password.trim()) {
-        errors.managerPassword = 'Password is required';
+        errors.managerPassword = t.password + ' ' + t.fieldRequired;
       } else if (formData.managerData.password.length < 6) {
-        errors.managerPassword = 'Password must be at least 6 characters';
+        errors.managerPassword = t.passwordMinLength;
       }
       if (!formData.managerData.address.trim()) {
-        errors.managerAddress = 'Address is required';
+        errors.managerAddress = t.address + ' ' + t.fieldRequired;
       }
       if (!formData.managerData.phone1.trim()) {
-        errors.managerPhone1 = 'Phone number is required';
+        errors.managerPhone1 = t.managerPrimaryPhone + ' ' + t.fieldRequired;
       }
     }
-    
+
     return {
       isValid: Object.keys(errors).length === 0,
       errors
@@ -154,7 +156,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
   const handleNext = async () => {
     if (!validateStep(currentStep)) return;
-    
     setCurrentStep(prev => Math.min(prev + 1, 4));
   };
 
@@ -163,8 +164,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   };
 
   const handleInputChange = (field, value) => {
-    console.log('handleInputChange called:', field, value);
-    
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
@@ -181,7 +180,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       }));
     }
 
-    // Clear errors for this field
     const errorKey = field.replace('.', '');
     if (errors[errorKey]) {
       setErrors(prev => ({
@@ -199,10 +197,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         contact: formData.contact,
         status: formData.status
       };
-      
-      console.log('School payload being sent:', schoolPayload);
 
-      // Add trial configuration if status is trial
       if (formData.status === 'trial') {
         const trialExpiresAt = new Date();
         trialExpiresAt.setDate(trialExpiresAt.getDate() + formData.customTrialDays);
@@ -219,7 +214,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
       if (response.ok && data && data._id) {
         setCreatedSchoolId(data._id);
         return data;
@@ -235,10 +229,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
   };
 
   const createManager = async (schoolId) => {
-    console.log('createManager called with schoolId:', schoolId);
-    console.log('formData.skipManager:', formData.skipManager);
-    console.log('formData.managerData:', formData.managerData);
-
     try {
       const managerPayload = {
         firstName: formData.managerData.firstName,
@@ -252,8 +242,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         school: schoolId
       };
 
-      console.log('Creating manager with payload:', { ...managerPayload, password: '[HIDDEN]' });
-
       const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: {
@@ -264,15 +252,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       });
 
       const data = await response.json();
-      console.log('Manager creation response:', response.status, data);
-      
+
       if (!response.ok) {
         throw new Error(data.message || `Failed to create manager: ${response.status}`);
       }
-      
+
       if (data && data._id) {
         // Add manager to school's managers array
-        const updateResponse = await fetch(`/api/schools/${schoolId}`, {
+        await fetch(`/api/schools/${schoolId}`, {
           method: 'PUT',
           headers: {
             'Authorization': `Bearer ${getToken()}`,
@@ -283,10 +270,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           })
         });
 
-        if (!updateResponse.ok) {
-          console.warn('Manager created but failed to add to school managers array');
-        }
-        
         return data;
       } else {
         throw new Error('Manager creation returned invalid data');
@@ -302,7 +285,6 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
     setLoading(true);
     try {
-      // Validate all data before creating anything
       if (!formData.skipManager) {
         const managerValidation = validateManagerData();
         if (!managerValidation.isValid) {
@@ -312,24 +294,16 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
         }
       }
 
-      // Step 1: Create the school
-      console.log('Creating school with data:', formData);
       const school = await createSchool();
-      console.log('School created:', school);
-      setCreatedSchoolId(school._id);
       setCreatedSchool(school);
-      
-      // Step 2: Create manager if not skipped
+      setCreatedSchoolId(school._id);
+
       let manager = null;
-      console.log('Manager creation check - skipManager:', formData.skipManager);
-      console.log('Manager data:', formData.managerData);
       if (!formData.skipManager) {
         try {
           manager = await createManager(school._id);
           setCreatedManager(manager);
         } catch (managerError) {
-          // If manager creation fails, delete the school to prevent orphaned data
-          console.error('Manager creation failed, rolling back school creation:', managerError);
           await fetch(`/api/schools/${school._id}`, {
             method: 'DELETE',
             headers: {
@@ -340,18 +314,8 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           throw managerError;
         }
       }
-      
-      // Step 3: Handle document upload if not skipped
-      if (!formData.skipDocuments) {
-        // Note: Document upload will be handled post-creation
-        // The user will be redirected to the document management interface
-      }
 
-      // Wait a moment to ensure all data is properly set
       setTimeout(() => {
-        console.log('Final school data:', school);
-        console.log('Final manager data:', manager);
-        console.log('Final formData.skipManager:', formData.skipManager);
         setShowCredentials(true);
       }, 100);
     } catch (error) {
@@ -368,22 +332,21 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <Building className="mx-auto mb-4 text-blue-600" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800">School Information</h3>
-              <p className="text-gray-600">Enter basic information about the school</p>
+              <h3 className="text-xl font-semibold text-gray-800">{t.schoolInformation || 'School Information'}</h3>
+              <p className="text-gray-600">{t.enterBasicInfo}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                School Name <span className="text-red-500">*</span>
+                {t.schoolName} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter school name"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                placeholder={t.enterSchoolName}
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
@@ -391,15 +354,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                  {t.email}
                 </label>
                 <input
                   type="email"
                   value={formData.contact.email}
                   onChange={(e) => handleInputChange('contact.email', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="school@example.com"
                 />
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -407,15 +369,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
+                  {t.phone}
                 </label>
                 <input
                   type="tel"
                   value={formData.contact.phone}
                   onChange={(e) => handleInputChange('contact.phone', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   placeholder="+1 234 567 8900"
                 />
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
@@ -424,7 +385,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
+                {t.address}
               </label>
               <textarea
                 value={formData.contact.address}
@@ -442,13 +403,13 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <Settings className="mx-auto mb-4 text-blue-600" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800">Status Configuration</h3>
-              <p className="text-gray-600">Configure the school's initial status and trial period</p>
+              <h3 className="text-xl font-semibold text-gray-800">{t.statusConfiguration}</h3>
+              <p className="text-gray-600">{t.configureStatus}</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Initial Status <span className="text-red-500">*</span>
+                {t.initialStatus || 'Initial Status'} <span className="text-red-500">*</span>
               </label>
               <div className="space-y-3">
                 <label className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -463,9 +424,9 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   <div className="flex-1">
                     <div className="flex items-center">
                       <Calendar className="mr-2 text-yellow-600" size={20} />
-                      <span className="font-medium">Trial Period</span>
+                      <span className="font-medium">{t.trialPeriod || 'Trial Period'}</span>
                     </div>
-                    <p className="text-sm text-gray-600 ml-7">Start with a trial period</p>
+                    <p className="text-sm text-gray-600 ml-7">{t.trialPeriodDesc}</p>
                   </div>
                 </label>
 
@@ -481,9 +442,9 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   <div className="flex-1">
                     <div className="flex items-center">
                       <CheckCircle className="mr-2 text-green-600" size={20} />
-                      <span className="font-medium">Active</span>
+                      <span className="font-medium">{t.active}</span>
                     </div>
-                    <p className="text-sm text-gray-600 ml-7">Immediately active with full access</p>
+                    <p className="text-sm text-gray-600 ml-7">{t.activeDesc}</p>
                   </div>
                 </label>
 
@@ -499,9 +460,9 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   <div className="flex-1">
                     <div className="flex items-center">
                       <AlertTriangle className="mr-2 text-red-600" size={20} />
-                      <span className="font-medium">Inactive</span>
+                      <span className="font-medium">{t.inactive}</span>
                     </div>
-                    <p className="text-sm text-gray-600 ml-7">Create but keep inactive until ready</p>
+                    <p className="text-sm text-gray-600 ml-7">{t.inactiveDesc}</p>
                   </div>
                 </label>
               </div>
@@ -510,7 +471,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
             {formData.status === 'trial' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Trial Duration (Days) <span className="text-red-500">*</span>
+                  {t.trialDurationDays} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -518,13 +479,12 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   max="365"
                   value={formData.customTrialDays}
                   onChange={(e) => handleInputChange('customTrialDays', parseInt(e.target.value))}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.customTrialDays ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.customTrialDays ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {errors.customTrialDays && <p className="text-red-500 text-sm mt-1">{errors.customTrialDays}</p>}
                 <p className="text-sm text-gray-600 mt-1">
-                  Trial will expire on: {new Date(Date.now() + (formData.customTrialDays || 30) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                  {t.trialWillExpireOn}: {new Date(Date.now() + (formData.customTrialDays || 30) * 24 * 60 * 60 * 1000).toLocaleDateString()}
                 </p>
               </div>
             )}
@@ -536,17 +496,17 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <Upload className="mx-auto mb-4 text-blue-600" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800">Document Upload</h3>
-              <p className="text-gray-600">Upload school documents (optional)</p>
+              <h3 className="text-xl font-semibold text-gray-800">{t.documentUpload}</h3>
+              <p className="text-gray-600">{t.uploadDocumentsOptional}</p>
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex">
                 <AlertTriangle className="text-yellow-600 mr-3 mt-0.5" size={20} />
                 <div>
-                  <h4 className="font-medium text-yellow-800">Optional Step</h4>
+                  <h4 className="font-medium text-yellow-800">{t.optionalStep}</h4>
                   <p className="text-yellow-700 text-sm">
-                    You can skip this step and upload documents later through the school management interface.
+                    {t.skipDocumentUpload}
                   </p>
                 </div>
               </div>
@@ -561,7 +521,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   className="mr-3"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  Skip document upload (I'll upload documents later)
+                  {t.skipDocumentUpload}
                 </span>
               </label>
             </div>
@@ -571,18 +531,17 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                 <div className="text-center">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-blue-700 text-sm">
-                      <strong>Note:</strong> Document upload will be available immediately after creating the school. 
-                      For now, you can prepare your documents and upload them once the school is created.
+                      <strong>{t.note}:</strong> {t.documentUploadNote}
                     </p>
                   </div>
-                  
+
                   <div className="mt-4 p-4 border-2 border-dashed border-gray-300 rounded-lg">
                     <Upload className="mx-auto mb-2 text-gray-400" size={32} />
                     <p className="text-gray-600 text-sm">
-                      Documents will be uploaded after school creation
+                      {t.documentsWillBeUploaded || 'Documents will be uploaded after school creation'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB each)
+                      {t.supportedFormats}
                     </p>
                   </div>
                 </div>
@@ -596,18 +555,18 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <UserPlus className="mx-auto mb-4 text-blue-600" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800">Create Manager & Finalize</h3>
-              <p className="text-gray-600">Create a manager account for this school and finalize creation</p>
+              <h3 className="text-xl font-semibold text-gray-800">{t.createManager}</h3>
+              <p className="text-gray-600">{t.createManagerDesc}</p>
             </div>
 
             {/* Summary Section */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <h4 className="font-medium text-blue-800 mb-2">School Summary</h4>
+              <h4 className="font-medium text-blue-800 mb-2">{t.schoolSummary}</h4>
               <div className="text-blue-700 text-sm space-y-1">
-                <p><strong>Name:</strong> {formData.name}</p>
-                <p><strong>Status:</strong> {formData.status?.toUpperCase()} {formData.status === 'trial' && `(${formData.customTrialDays} days)`}</p>
-                <p><strong>Email:</strong> {formData.contact.email || 'Not provided'}</p>
-                <p><strong>Documents:</strong> {formData.skipDocuments ? 'Will be uploaded later' : 'Will be uploaded after creation'}</p>
+                <p><strong>{t.schoolName}:</strong> {formData.name}</p>
+                <p><strong>{t.status}:</strong> {formData.status?.toUpperCase()} {formData.status === 'trial' && `(${formData.customTrialDays} ${t.days})`}</p>
+                <p><strong>{t.email}:</strong> {formData.contact.email || t.notProvided}</p>
+                <p><strong>{t.documents}:</strong> {formData.skipDocuments ? t.willBeUploadedLater || 'Will be uploaded later' : t.willBeUploadedAfterCreation || 'Will be uploaded after creation'}</p>
               </div>
             </div>
 
@@ -615,9 +574,9 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
               <div className="flex">
                 <CheckCircle className="text-green-600 mr-3 mt-0.5" size={20} />
                 <div>
-                  <h4 className="font-medium text-green-800">Ready to Create</h4>
+                  <h4 className="font-medium text-green-800">{t.readyToCreate}</h4>
                   <p className="text-green-700 text-sm">
-                    Clicking "Create School" will create the school with all the information provided.
+                    {t.createSchoolDisclaimer}
                   </p>
                 </div>
               </div>
@@ -632,25 +591,24 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                 className="mr-3"
               />
               <label htmlFor="skipManager" className="text-sm font-medium text-gray-700">
-                Skip manager creation for now
+                {t.skipManagerCreation}
               </label>
             </div>
 
             {!formData.skipManager && (
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-800">Manager Information</h4>
+                <h4 className="font-medium text-gray-800">{t.managerInformation}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name <span className="text-red-500">*</span>
+                      {t.firstName} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.managerData.firstName}
                       onChange={(e) => handleInputChange('managerData.firstName', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.managerFirstName ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerFirstName ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="John"
                     />
                     {errors.managerFirstName && <p className="text-red-500 text-sm mt-1">{errors.managerFirstName}</p>}
@@ -658,15 +616,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name <span className="text-red-500">*</span>
+                      {t.lastName} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.managerData.lastName}
                       onChange={(e) => handleInputChange('managerData.lastName', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.managerLastName ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerLastName ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="Doe"
                     />
                     {errors.managerLastName && <p className="text-red-500 text-sm mt-1">{errors.managerLastName}</p>}
@@ -675,15 +632,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
+                    {t.email} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     value={formData.managerData.email}
                     onChange={(e) => handleInputChange('managerData.email', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.managerEmail ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerEmail ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="manager@school.com"
                   />
                   {errors.managerEmail && <p className="text-red-500 text-sm mt-1">{errors.managerEmail}</p>}
@@ -691,24 +647,23 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password <span className="text-red-500">*</span>
+                    {t.password} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={formData.managerData.password}
                       onChange={(e) => handleInputChange('managerData.password', e.target.value)}
-                      className={`w-full px-3 py-2 pr-20 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.managerPassword ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Minimum 6 characters"
+                      className={`w-full px-3 py-2 pr-20 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerPassword ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      placeholder={t.passwordMinLength}
                     />
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="p-1 hover:bg-gray-100 rounded"
-                        title={showPassword ? "Hide password" : "Show password"}
+                        title={showPassword ? t.hidePassword : t.showPassword}
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -716,7 +671,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                         type="button"
                         onClick={generatePassword}
                         className="p-1 hover:bg-gray-100 rounded"
-                        title="Generate strong password"
+                        title={t.generateStrongPassword}
                       >
                         <RefreshCw size={16} />
                       </button>
@@ -725,16 +680,15 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                   {formData.managerData.password && (
                     <div className="mt-2">
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-600">Password strength:</span>
+                        <span className="text-xs text-gray-600">{t.passwordStrength}:</span>
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              getPasswordStrength(formData.managerData.password).color === 'red' ? 'bg-red-500' :
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrength(formData.managerData.password).color === 'red' ? 'bg-red-500' :
                               getPasswordStrength(formData.managerData.password).color === 'orange' ? 'bg-orange-500' :
-                              getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'bg-yellow-500' :
-                              'bg-green-500'
-                            }`}
-                            style={{ 
+                                getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'bg-yellow-500' :
+                                  'bg-green-500'
+                              }`}
+                            style={{
                               width: `${(Object.values({
                                 length: formData.managerData.password.length >= 8,
                                 lowercase: /[a-z]/.test(formData.managerData.password),
@@ -745,12 +699,11 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                             }}
                           />
                         </div>
-                        <span className={`text-xs font-medium ${
-                          getPasswordStrength(formData.managerData.password).color === 'red' ? 'text-red-600' :
+                        <span className={`text-xs font-medium ${getPasswordStrength(formData.managerData.password).color === 'red' ? 'text-red-600' :
                           getPasswordStrength(formData.managerData.password).color === 'orange' ? 'text-orange-600' :
-                          getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'text-yellow-600' :
-                          'text-green-600'
-                        }`}>
+                            getPasswordStrength(formData.managerData.password).color === 'yellow' ? 'text-yellow-600' :
+                              'text-green-600'
+                          }`}>
                           {getPasswordStrength(formData.managerData.password).level}
                         </span>
                       </div>
@@ -761,14 +714,13 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address <span className="text-red-500">*</span>
+                    {t.address} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={formData.managerData.address}
                     onChange={(e) => handleInputChange('managerData.address', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.managerAddress ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerAddress ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     rows="3"
                     placeholder="Full address"
                   />
@@ -778,15 +730,14 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Primary Phone <span className="text-red-500">*</span>
+                      {t.managerPrimaryPhone} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
                       value={formData.managerData.phone1}
                       onChange={(e) => handleInputChange('managerData.phone1', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.managerPhone1 ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.managerPhone1 ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       placeholder="+1 234 567 8900"
                     />
                     {errors.managerPhone1 && <p className="text-red-500 text-sm mt-1">{errors.managerPhone1}</p>}
@@ -794,7 +745,7 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Secondary Phone
+                      {t.managerSecondaryPhone}
                     </label>
                     <input
                       type="tel"
@@ -835,108 +786,106 @@ const SchoolCreationWizard = ({ onClose, onSchoolCreated }) => {
       {/* Main Wizard Modal - Only show when credentials popup is not open */}
       {!showCredentials && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold">Create New School</h2>
-            <p className="text-blue-100">Step {currentStep} of 4</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-blue-700 p-2 rounded"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="bg-gray-100 px-6 py-4">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <React.Fragment key={step.number}>
-                <div className="flex items-center">
-                  <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                    ${currentStep >= step.number 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-300 text-gray-600'
-                    }
-                  `}>
-                    {currentStep > step.number ? (
-                      <CheckCircle size={16} />
-                    ) : (
-                      step.number
-                    )}
-                  </div>
-                  <span className={`ml-2 text-sm font-medium ${
-                    currentStep >= step.number ? 'text-blue-600' : 'text-gray-600'
-                  }`}>
-                    {step.title}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-4 ${
-                    currentStep > step.number ? 'bg-blue-600' : 'bg-gray-300'
-                  }`} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 max-h-[calc(90vh-240px)] overflow-y-auto">
-          {errors.general && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700">{errors.general}</p>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">{t.createNewSchool || 'Create New School'}</h2>
+                <p className="text-blue-100">{t.step} {currentStep} {t.of} 4</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-white hover:bg-blue-700 p-2 rounded"
+              >
+                <X size={24} />
+              </button>
             </div>
-          )}
-          
-          {renderStep()}
-        </div>
 
-        {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-between">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className={`
-              inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium
-              ${currentStep === 1 
-                ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
-                : 'text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }
-            `}
-          >
-            <ArrowLeft className="mr-2" size={16} />
-            Previous
-          </button>
+            {/* Progress Bar */}
+            <div className="bg-gray-100 px-6 py-4">
+              <div className="flex items-center justify-between">
+                {steps.map((step, index) => (
+                  <React.Fragment key={step.number}>
+                    <div className="flex items-center">
+                      <div className={`
+                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                        ${currentStep >= step.number
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                        }
+                      `}>
+                        {currentStep > step.number ? (
+                          <CheckCircle size={16} />
+                        ) : (
+                          step.number
+                        )}
+                      </div>
+                      <span className={`ml-2 text-sm font-medium ${currentStep >= step.number ? 'text-blue-600' : 'text-gray-600'
+                        }`}>
+                        {step.title}
+                      </span>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`flex-1 h-0.5 mx-4 ${currentStep > step.number ? 'bg-blue-600' : 'bg-gray-300'
+                        }`} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
 
-          <div className="flex space-x-3">
-            {currentStep < 4 ? (
+            {/* Content */}
+            <div className="p-6 max-h-[calc(90vh-240px)] overflow-y-auto">
+              {errors.general && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700">{errors.general}</p>
+                </div>
+              )}
+
+              {renderStep()}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-between">
               <button
-                onClick={handleNext}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+                className={`
+                  inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium
+                  ${currentStep === 1
+                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                    : 'text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                  }
+                `}
               >
-                Next
-                <ArrowRight className="ml-2" size={16} />
+                <ArrowLeft className="mr-2" size={16} />
+                {t.previous || 'Previous'}
               </button>
-            ) : (
-              <button
-                onClick={handleFinish}
-                disabled={loading}
-                className="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-              >
-                {loading ? 'Creating School...' : 'Create School'}
-                <CheckCircle className="ml-2" size={16} />
-              </button>
-            )}
+
+              <div className="flex space-x-3">
+                {currentStep < 4 ? (
+                  <button
+                    onClick={handleNext}
+                    disabled={loading}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    {t.next || 'Next'}
+                    <ArrowRight className="ml-2" size={16} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleFinish}
+                    disabled={loading}
+                    className="inline-flex items-center px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                  >
+                    {loading ? (t.creatingSchool || 'Creating School...') : t.createSchool}
+                    <CheckCircle className="ml-2" size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
       )}
     </>
   );

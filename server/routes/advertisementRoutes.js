@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { protect, manager } = require('../middleware/authMiddleware');
+const { protect, manager, authorize } = require('../middleware/authMiddleware');
 const { upload, handleMulterError } = require('../middleware/uploadMiddleware');
+const { checkAdsAccess } = require('../middleware/permissionMiddleware');
 const {
   createAdvertisement,
   getAdvertisements,
@@ -11,17 +12,20 @@ const {
   uploadAdvertisementBanner
 } = require('../controllers/advertisementController');
 
-// Manager routes (require manager role)
-router.post('/', protect, manager, createAdvertisement);
-router.get('/', protect, manager, getAdvertisements);
-router.put('/:id', protect, manager, updateAdvertisement);
-router.delete('/:id', protect, manager, deleteAdvertisement);
+// Manager routes (require manager role or staff with ads permission)
+router.use(protect);
+
+// Apply specific permissions
+router.post('/', authorize('manager', 'staff'), checkAdsAccess, createAdvertisement);
+router.get('/', authorize('manager', 'staff'), checkAdsAccess, getAdvertisements);
+router.put('/:id', authorize('manager', 'staff'), checkAdsAccess, updateAdvertisement);
+router.delete('/:id', authorize('manager', 'staff'), checkAdsAccess, deleteAdvertisement);
 
 // Upload banner image (single file under field name 'banner')
 router.post(
   '/:id/banner',
-  protect,
-  manager,
+  authorize('manager', 'staff'),
+  checkAdsAccess,
   (req, res, next) => { req.uploadTarget = 'ads'; next(); },
   upload.single('banner'),
   handleMulterError,

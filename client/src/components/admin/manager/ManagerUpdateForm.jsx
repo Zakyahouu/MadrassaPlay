@@ -1,8 +1,10 @@
 // ManagerUpdateForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ManagerUpdateForm = ({ schoolId, manager, onUpdated }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ name: manager.name, email: manager.email, password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

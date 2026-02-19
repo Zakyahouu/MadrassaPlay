@@ -73,4 +73,47 @@ const authorize = (...roles) => (req, res, next) => {
   res.status(403).json({ message: `Not authorized. Requires one of roles: ${roles.join(', ')}` });
 };
 
-module.exports = { protect, admin, manager, staff, teacher, authorize };
+// Middleware to check for specific staff permissions
+// If user is manager, they interpret as having all permissions
+const checkPermission = (permission) => async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Not authorized' });
+  }
+
+  // Managers have all permissions
+  if (req.user.role === 'manager') {
+    return next();
+  }
+
+  // Staff need specific permission check
+  if (req.user.role === 'staff') {
+    try {
+      // Find the employee record associated with this user
+      // We need to look up the Employee model to get permissions
+      // Since we can't easily circular depend on Employee model here (it might use User), 
+      // we'll require it inside the function
+      const Employee = require('../models/Employee');
+
+      const employee = await Employee.findOne({
+        userId: req.user._id,
+        schoolId: req.user.school
+      });
+
+      if (employee && employee.permissions && employee.permissions[permission]) {
+        return next();
+      }
+
+      return res.status(403).json({
+        message: `Not authorized. Requires '${permission}' permission.`
+      });
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({ message: 'Server error during permission check' });
+    }
+  }
+
+  // Other roles don't have these permissions
+  res.status(403).json({ message: 'Not authorized.' });
+};
+
+module.exports = { protect, admin, manager, staff, teacher, authorize, checkPermission };

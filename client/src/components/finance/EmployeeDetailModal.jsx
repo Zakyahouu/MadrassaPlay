@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, User, DollarSign, Calendar, Phone, Mail, MapPin, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) => {
+  const { t } = useLanguage();
   const [salaryHistory, setSalaryHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,6 +46,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Format currency
   const formatCurrency = (amount) => {
+  const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -54,6 +57,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Format date
   const formatDate = (dateString) => {
+  const { t } = useLanguage();
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -63,6 +67,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get month name
   const getMonthName = (month) => {
+  const { t } = useLanguage();
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
@@ -72,6 +77,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get status color
   const getStatusColor = (remaining) => {
+  const { t } = useLanguage();
     if (remaining <= 0) return 'bg-green-100 text-green-800';
     if (remaining > 0) return 'bg-orange-100 text-orange-800';
     return 'bg-gray-100 text-gray-800';
@@ -79,6 +85,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get status text
   const getStatusText = (remaining) => {
+  const { t } = useLanguage();
     if (remaining <= 0) return 'Paid';
     if (remaining > 0) return 'Partial';
     return 'Unpaid';
@@ -123,7 +130,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <label className="block text-sm font-medium text-gray-700">{t.role}</label>
                 <div className="flex items-center mt-1">
                   <FileText className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-sm text-gray-900">{employee?.role}</span>
@@ -131,7 +138,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Salary</label>
+                <label className="block text-sm font-medium text-gray-700">{t.salary}</label>
                 <div className="flex items-center mt-1">
                   <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
                   <span className="text-sm text-gray-900">
@@ -157,7 +164,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
               {employee?.phone && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700">{t.phone}</label>
                   <div className="flex items-center mt-1">
                     <Phone className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-sm text-gray-900">{employee.phone}</span>
@@ -167,7 +174,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
               {employee?.email && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <label className="block text-sm font-medium text-gray-700">{t.email}</label>
                   <div className="flex items-center mt-1">
                     <Mail className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-sm text-gray-900">{employee.email}</span>
@@ -177,7 +184,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
               {employee?.address && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
+                  <label className="block text-sm font-medium text-gray-700">{t.address}</label>
                   <div className="flex items-start mt-1">
                     <MapPin className="w-4 h-4 text-gray-400 mr-2 mt-0.5" />
                     <span className="text-sm text-gray-900">{employee.address}</span>
@@ -207,7 +214,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
               className="flex items-center space-x-2 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>{t.refresh}</span>
             </button>
           </div>
 
@@ -261,21 +268,15 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Month
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.month}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Calculated
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Paid
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.paid}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Remaining
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.status}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Payment Date
                       </th>
@@ -318,9 +319,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Close
-          </button>
+          >{t.close}</button>
           {employee?.status === 'active' && (
             <button
               onClick={onPaySalary}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  ChevronLeft, 
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  Search,
+  Filter,
+  ChevronLeft,
   ChevronRight,
   Eye,
   DollarSign,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, onViewDetails }) => {
+  const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -34,7 +36,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
   // Sort transactions
   const sortedTransactions = [...filteredTransactions].sort((a, b) => {
     let aValue, bValue;
-    
+
     switch (sortBy) {
       case 'date':
         aValue = new Date(a.date);
@@ -90,11 +92,11 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
 
   const getDebtStatus = (debtDelta) => {
     if (debtDelta > 0) {
-      return { text: 'Owed', color: 'text-red-600', bgColor: 'bg-red-100' };
+      return { text: t.owed, color: 'text-red-600', bgColor: 'bg-red-100' };
     } else if (debtDelta < 0) {
-      return { text: 'Credit', color: 'text-green-600', bgColor: 'bg-green-100' };
+      return { text: t.credit, color: 'text-green-600', bgColor: 'bg-green-100' };
     } else {
-      return { text: 'Paid', color: 'text-gray-600', bgColor: 'bg-gray-100' };
+      return { text: t.paid, color: 'text-gray-600', bgColor: 'bg-gray-100' };
     }
   };
 
@@ -113,7 +115,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
     return (
       <div className="p-8 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-2 text-gray-500">Loading transactions...</p>
+        <p className="mt-2 text-gray-500">{t.loading}</p>
       </div>
     );
   }
@@ -122,8 +124,8 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
     return (
       <div className="p-8 text-center">
         <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Transactions Found</h3>
-        <p className="text-gray-500">No payment transactions found for this month.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t.noResults}</h3>
+        <p className="text-gray-500">{t.noData}</p>
       </div>
     );
   }
@@ -138,14 +140,14 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search transactions..."
+                placeholder={t.searchTransactions}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="w-4 h-4 text-gray-400" />
             <span className="text-sm text-gray-600">Sort by:</span>
@@ -154,11 +156,11 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
               onChange={(e) => setSortBy(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="date">Date</option>
-              <option value="student">Student</option>
-              <option value="class">Class</option>
-              <option value="amount">Amount</option>
-              <option value="debt">Debt Status</option>
+              <option value="date">{t.date}</option>
+              <option value="student">{t.students}</option>
+              <option value="class">{t.class}</option>
+              <option value="amount">{t.amount}</option>
+              <option value="debt">{t.status}</option>
             </select>
           </div>
         </div>
@@ -174,7 +176,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center space-x-1">
-                  <span>Date</span>
+                  <span>{t.date}</span>
                   <span>{getSortIcon('date')}</span>
                 </div>
               </th>
@@ -183,7 +185,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center space-x-1">
-                  <span>Student</span>
+                  <span>{t.students}</span>
                   <span>{getSortIcon('student')}</span>
                 </div>
               </th>
@@ -192,7 +194,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center space-x-1">
-                  <span>Class</span>
+                  <span>{t.class}</span>
                   <span>{getSortIcon('class')}</span>
                 </div>
               </th>
@@ -201,7 +203,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center space-x-1">
-                  <span>Amount</span>
+                  <span>{t.amount}</span>
                   <span>{getSortIcon('amount')}</span>
                 </div>
               </th>
@@ -210,22 +212,20 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center space-x-1">
-                  <span>Debt Status</span>
+                  <span>{t.status}</span>
                   <span>{getSortIcon('debt')}</span>
                 </div>
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.type}</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t.actions}
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {currentTransactions.map((transaction) => {
               const debtStatus = getDebtStatus(transaction.debtDelta);
-              
+
               return (
                 <tr key={transaction._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -234,7 +234,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       {formatDate(transaction.date)}
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <User className="w-4 h-4 text-gray-400 mr-2" />
@@ -250,7 +250,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <BookOpen className="w-4 h-4 text-gray-400 mr-2" />
@@ -259,7 +259,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       </div>
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {formatCurrency(transaction.amount)}
@@ -270,12 +270,12 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       </div>
                     )}
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${debtStatus.bgColor} ${debtStatus.color}`}>
-                      {debtStatus.text === 'Owed' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                      {debtStatus.text === 'Credit' && <CheckCircle className="w-3 h-3 mr-1" />}
-                      {debtStatus.text === 'Paid' && <CheckCircle className="w-3 h-3 mr-1" />}
+                      {debtStatus.text === t.owed && <AlertTriangle className="w-3 h-3 mr-1" />}
+                      {debtStatus.text === t.credit && <CheckCircle className="w-3 h-3 mr-1" />}
+                      {debtStatus.text === t.paid && <CheckCircle className="w-3 h-3 mr-1" />}
                       {debtStatus.text}
                     </span>
                     {transaction.debtDelta !== 0 && (
@@ -284,7 +284,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       </div>
                     )}
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {getPaymentKindIcon(transaction.kind)}
@@ -293,14 +293,14 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
                       </span>
                     </div>
                   </td>
-                  
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button 
+                    <button
                       onClick={() => onViewDetails(transaction._id)}
                       className="text-blue-600 hover:text-blue-900 flex items-center"
                     >
                       <Eye className="w-4 h-4 mr-1" />
-                      View
+                      {t.details}
                     </button>
                   </td>
                 </tr>
@@ -315,9 +315,9 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {startIndex + 1} to {Math.min(endIndex, sortedTransactions.length)} of {sortedTransactions.length} transactions
+              {t.showing} {startIndex + 1} {t.to} {Math.min(endIndex, sortedTransactions.length)} {t.of} {sortedTransactions.length} {t.transactions}
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -326,11 +326,11 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              
+
               <span className="px-3 py-2 text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
+                {t.page} {currentPage} {t.of} {totalPages}
               </span>
-              
+
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
@@ -341,6 +341,7 @@ const TransactionsTable = ({ transactions, formatCurrency, formatDate, loading, 
             </div>
           </div>
         </div>
+
       )}
     </div>
   );

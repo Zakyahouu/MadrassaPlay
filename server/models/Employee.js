@@ -4,20 +4,20 @@ const mongoose = require('mongoose');
 
 const employeeSchema = new mongoose.Schema(
   {
-    schoolId: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'School', 
-      required: true 
+    schoolId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'School',
+      required: true
     },
-    name: { 
-      type: String, 
-      required: true, 
-      trim: true 
+    name: {
+      type: String,
+      required: true,
+      trim: true
     },
-    role: { 
-      type: String, 
-      required: true, 
-      trim: true 
+    role: {
+      type: String,
+      required: true,
+      trim: true
     },
     employeeType: {
       type: String,
@@ -25,41 +25,41 @@ const employeeSchema = new mongoose.Schema(
       required: true,
       default: 'other'
     },
-    salaryType: { 
-      type: String, 
-      enum: ['fixed', 'hourly'], 
-      required: true 
+    salaryType: {
+      type: String,
+      enum: ['fixed', 'hourly'],
+      required: true
     },
-    salaryValue: { 
-      type: Number, 
-      required: true, 
-      min: 0 
+    salaryValue: {
+      type: Number,
+      required: true,
+      min: 0
     },
-    hireDate: { 
-      type: Date, 
-      required: true 
+    hireDate: {
+      type: Date,
+      required: true
     },
-    status: { 
-      type: String, 
-      enum: ['active', 'inactive'], 
-      default: 'active' 
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active'
     },
-    phone: { 
-      type: String, 
-      trim: true 
+    phone: {
+      type: String,
+      trim: true
     },
-    email: { 
-      type: String, 
-      trim: true, 
-      lowercase: true 
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
     },
-    address: { 
-      type: String, 
-      trim: true 
+    address: {
+      type: String,
+      trim: true
     },
-    notes: { 
-      type: String, 
-      trim: true 
+    notes: {
+      type: String,
+      trim: true
     },
     // Platform access fields (only for staff)
     username: {
@@ -74,14 +74,22 @@ const employeeSchema = new mongoose.Schema(
     },
     // Permissions for platform access (only for staff)
     permissions: {
-      finance: {
-        type: Boolean,
-        default: false
-      },
-      logs: {
-        type: Boolean,
-        default: false
-      }
+      dashboard: { type: Boolean, default: true }, // Everyone gets dashboard
+      classes: { type: Boolean, default: false },
+      students: { type: Boolean, default: false },
+      teachers: { type: Boolean, default: false },
+      attendance: { type: Boolean, default: false },
+      timetable: { type: Boolean, default: false },
+      employees: { type: Boolean, default: false }, // Access to view/manage other employees
+      finance: { type: Boolean, default: false },
+      logs: { type: Boolean, default: false },
+      rooms: { type: Boolean, default: false },
+      equipment: { type: Boolean, default: false },
+      catalog: { type: Boolean, default: false },
+      ads: { type: Boolean, default: false },
+      landingPage: { type: Boolean, default: false },
+      reports: { type: Boolean, default: false }, // New Reports & Analytics
+      settings: { type: Boolean, default: false } // Global Settings
     },
     // Link to User record for staff employees
     userId: {
@@ -90,8 +98,8 @@ const employeeSchema = new mongoose.Schema(
       required: false
     }
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true
   }
 );
 
@@ -101,12 +109,12 @@ employeeSchema.index({ schoolId: 1, role: 1 });
 employeeSchema.index({ schoolId: 1, name: 1 });
 
 // Virtual for full name display
-employeeSchema.virtual('displayName').get(function() {
+employeeSchema.virtual('displayName').get(function () {
   return this.name;
 });
 
 // Method to calculate monthly salary
-employeeSchema.methods.calculateMonthlySalary = function(year, month) {
+employeeSchema.methods.calculateMonthlySalary = function (year, month) {
   if (this.salaryType === 'fixed') {
     return this.salaryValue;
   } else if (this.salaryType === 'hourly') {
@@ -118,22 +126,22 @@ employeeSchema.methods.calculateMonthlySalary = function(year, month) {
 };
 
 // Method to check if employee is active
-employeeSchema.methods.isActive = function() {
+employeeSchema.methods.isActive = function () {
   return this.status === 'active';
 };
 
 // Static method to get employees by school
-employeeSchema.statics.getBySchool = function(schoolId) {
+employeeSchema.statics.getBySchool = function (schoolId) {
   return this.find({ schoolId: new mongoose.Types.ObjectId(schoolId) })
     .sort({ name: 1 })
     .lean(); // Use lean() for better performance
 };
 
 // Static method to get active employees
-employeeSchema.statics.getActiveBySchool = function(schoolId) {
-  return this.find({ 
+employeeSchema.statics.getActiveBySchool = function (schoolId) {
+  return this.find({
     schoolId: new mongoose.Types.ObjectId(schoolId),
-    status: 'active' 
+    status: 'active'
   }).sort({ name: 1 });
 };
 

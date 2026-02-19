@@ -1,8 +1,10 @@
 // ClassEditForm.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ClassEditForm = ({ classId, onUpdated }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,16 +24,19 @@ const ClassEditForm = ({ classId, onUpdated }) => {
   }, [classId]);
 
   const handleChange = (e) => {
+  const { t } = useLanguage();
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleScheduleChange = (idx, field, value) => {
+  const { t } = useLanguage();
     const newSchedule = [...form.schedule];
     newSchedule[idx][field] = value;
     setForm({ ...form, schedule: newSchedule });
   };
 
   const addScheduleRow = () => {
+  const { t } = useLanguage();
     setForm({ ...form, schedule: [...form.schedule, { day: '', time: '' }] });
   };
 

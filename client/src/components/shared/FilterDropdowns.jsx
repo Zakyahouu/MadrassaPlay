@@ -1,6 +1,7 @@
 // client/src/components/shared/FilterDropdowns.jsx
 import React from 'react';
 import { Filter, X } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const FilterDropdowns = ({ 
   categories = [], 
@@ -11,6 +12,7 @@ const FilterDropdowns = ({
   onTagChange, 
   onClearFilters 
 }) => {
+  const { t } = useLanguage();
   const hasActiveFilters = selectedCategory || selectedTag;
 
   return (

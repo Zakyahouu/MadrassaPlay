@@ -28,8 +28,8 @@ router.use(protect);
 
 // Main catalog routes
 router.route('/:schoolId')
-  // Allow managers and teachers to read catalog; teachers cannot modify
-  .get(authorize('manager', 'teacher'), getSchoolCatalog)
+  // Allow managers, staff and teachers to read catalog; teachers cannot modify
+  .get(authorize('manager', 'staff', 'teacher'), getSchoolCatalog)
   .put(manager, updateSchoolCatalog);
 
 // Support Lessons routes

@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Download, CheckCircle, Copy, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CredentialsPopup = ({ 
   isOpen, 
@@ -9,6 +10,7 @@ const CredentialsPopup = ({
   managerData, 
   onDownloadPDF 
 }) => {
+  const { t } = useLanguage();
   const [showPassword, setShowPassword] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 

@@ -6,16 +6,20 @@ import ClassEditForm from './ClassEditForm';
 import ClassDeleteButton from './ClassDeleteButton';
 import StudentAssignForm from './StudentAssignForm';
 import ClassPaymentStatus from './ClassPaymentStatus';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ManagerClassPanel = () => {
+  const { t } = useLanguage();
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [refresh, setRefresh] = useState(false);
 
   const handleClassSelected = (classId) => {
+  const { t } = useLanguage();
     setSelectedClassId(classId);
   };
 
   const handleRefresh = () => {
+  const { t } = useLanguage();
     setRefresh(r => !r);
   };
 

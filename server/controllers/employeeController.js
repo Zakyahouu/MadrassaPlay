@@ -18,11 +18,11 @@ const createEmployee = asyncHandler(async (req, res) => {
 
   // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
-  
+
   if (!userSchoolId) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'No school associated with your account. Please contact an administrator.' 
+      message: 'No school associated with your account. Please contact an administrator.'
     });
   }
 
@@ -48,7 +48,7 @@ const createEmployee = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Salary type must be fixed or hourly' });
   }
 
-  
+
   if (salaryValue <= 0) {
     return res.status(400).json({ message: 'Salary value must be greater than 0' });
   }
@@ -72,13 +72,15 @@ const createEmployee = asyncHandler(async (req, res) => {
     if (employeeType === 'staff') {
       employeeData.username = username;
       employeeData.password = password; // Note: In production, this should be hashed
-      
+
       // Add permissions for staff
       employeeData.permissions = {
         finance: permissions?.finance === true || permissions?.finance === 'true',
-        logs: permissions?.logs === true || permissions?.logs === 'true'
+        logs: permissions?.logs === true || permissions?.logs === 'true',
+        ads: permissions?.ads === true || permissions?.ads === 'true',
+        landingPage: permissions?.landingPage === true || permissions?.landingPage === 'true'
       };
-      
+
       console.log('Saving permissions for staff employee:', employeeData.permissions);
       console.log('Received permissions from request:', permissions);
       console.log('Finance permission type:', typeof permissions?.finance, 'Value:', permissions?.finance);
@@ -111,7 +113,7 @@ const createEmployee = asyncHandler(async (req, res) => {
         };
 
         const user = await User.create(userData);
-        
+
         // Link the employee to the user
         employee.userId = user._id;
         await employee.save();
@@ -133,8 +135,8 @@ const createEmployee = asyncHandler(async (req, res) => {
     }
 
     // Log the activity
-    await LoggingService.logManagerActivity(req, 'manager_employee_create', 
-      `Created new employee: ${employee.name} (${employee.employeeType})`, 
+    await LoggingService.logManagerActivity(req, 'manager_employee_create',
+      `Created new employee: ${employee.name} (${employee.employeeType})`,
       { employeeId: employee._id, employeeType: employee.employeeType, role: employee.role },
       { entityType: 'employee', entityId: employee._id }
     );
@@ -146,10 +148,10 @@ const createEmployee = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error creating employee:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server Error', 
-      error: error.message 
+      message: 'Server Error',
+      error: error.message
     });
   }
 });
@@ -161,16 +163,16 @@ const createEmployee = asyncHandler(async (req, res) => {
  */
 const getEmployees = asyncHandler(async (req, res) => {
   console.log('Getting employees for user:', req.user);
-  
+
   // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
   console.log('User school ID:', userSchoolId);
-  
+
   if (!userSchoolId) {
     console.log('User has no school associated');
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'No school associated with your account. Please contact an administrator.' 
+      message: 'No school associated with your account. Please contact an administrator.'
     });
   }
 
@@ -190,10 +192,10 @@ const getEmployees = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Error getting employees:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server Error', 
-      error: error.message 
+      message: 'Server Error',
+      error: error.message
     });
   }
 });
@@ -252,6 +254,17 @@ const updateEmployee = asyncHandler(async (req, res) => {
     if (notes !== undefined) employee.notes = notes;
     if (status) employee.status = status;
 
+    // Update permissions if provided (and if employee is staff)
+    if (employee.employeeType === 'staff' && req.body.permissions) {
+      employee.permissions = {
+        ...employee.permissions,
+        ...req.body.permissions
+      };
+
+      // Also update the linked User's permissions if we decide to sync them later
+      // For now, checks are done against the Employee record
+    }
+
     await employee.save();
 
     res.json({
@@ -306,7 +319,7 @@ const getEmployeeSalaryHistory = asyncHandler(async (req, res) => {
 
   try {
     let query = { employeeId: new mongoose.Types.ObjectId(id) };
-    
+
     if (year && month) {
       query.year = parseInt(year);
       query.month = parseInt(month);
@@ -338,7 +351,7 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
 
   // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
-  
+
   // if (!userSchoolId) {
   //   return res.status(403).json({ message: 'Access denied to this school' });
   // }
@@ -373,10 +386,10 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
 
     // Calculate salary for the month
     const calculatedSalary = employee.calculateMonthlySalary(year, month);
-    
+
     // Check if transaction already exists for this month
     let transaction = await EmployeeSalaryTransaction.getByEmployeeAndMonth(id, year, month);
-    
+
     if (transaction) {
       // Update existing transaction
       transaction.paidAmount += paidAmount;
@@ -407,8 +420,8 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
     await transaction.populate('createdBy', 'firstName lastName');
 
     // Log the salary payment activity
-    await LoggingService.logManagerActivity(req, 'manager_salary_pay', 
-      `Paid salary of ${paidAmount} DZD to employee ${employee.name} for ${year}-${month}`, 
+    await LoggingService.logManagerActivity(req, 'manager_salary_pay',
+      `Paid salary of ${paidAmount} DZD to employee ${employee.name} for ${year}-${month}`,
       { employeeId: employee._id, amount: paidAmount, year, month, paymentMethod },
       { entityType: 'employee', entityId: employee._id }
     );
@@ -463,9 +476,9 @@ const getEmployeeByUsername = asyncHandler(async (req, res) => {
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
 
   if (!userSchoolId) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'No school associated with your account' 
+      message: 'No school associated with your account'
     });
   }
 
@@ -488,10 +501,10 @@ const getEmployeeByUsername = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting employee by username:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server Error', 
-      error: error.message 
+      message: 'Server Error',
+      error: error.message
     });
   }
 });
@@ -504,9 +517,9 @@ const getEmployeeByUserId = asyncHandler(async (req, res) => {
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
 
   if (!userSchoolId) {
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      message: 'No school associated with your account' 
+      message: 'No school associated with your account'
     });
   }
 
@@ -529,17 +542,17 @@ const getEmployeeByUserId = asyncHandler(async (req, res) => {
       financeType: typeof employee.permissions?.finance,
       logsType: typeof employee.permissions?.logs
     });
-    
+
     res.json({
       success: true,
       data: employee
     });
   } catch (error) {
     console.error('Error getting employee by user ID:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server Error', 
-      error: error.message 
+      message: 'Server Error',
+      error: error.message
     });
   }
 });

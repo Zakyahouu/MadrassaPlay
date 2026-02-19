@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Reusable ResetPasswordForm
 // Props:
@@ -6,6 +7,7 @@ import React, { useState } from 'react';
 // - submitLabel (optional)
 // - minLength (optional)
 const ResetPasswordForm = ({ onSubmit, submitLabel = 'Reset Password', minLength = 6 }) => {
+  const { t } = useLanguage();
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);

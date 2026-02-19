@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, DollarSign, Calendar, CreditCard, FileText, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     paidAmount: '',
     paymentMethod: 'cash',
@@ -36,6 +38,7 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Handle input change
   const handleChange = (e) => {
+  const { t } = useLanguage();
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -84,6 +87,7 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Format currency
   const formatCurrency = (amount) => {
+  const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -94,6 +98,7 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Get month name
   const getMonthName = (month) => {
+  const { t } = useLanguage();
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
@@ -302,9 +307,7 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
             type="button"
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
+          >{t.cancel}</button>
           <button
             type="submit"
             form="pay-salary-form"

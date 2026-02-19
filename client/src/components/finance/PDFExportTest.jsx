@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FileText, Download } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PDFExportTest = () => {
+  const { t } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
 
   const testPDFExport = async () => {

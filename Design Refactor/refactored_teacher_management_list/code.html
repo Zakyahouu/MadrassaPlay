@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Teacher Management - Academic SaaS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2563EB", // Royal Blue
+              "background-light": "#F8FAFC", // Slate 50
+              "background-dark": "#0F172A", // Slate 900
+              "surface-light": "#FFFFFF",
+              "surface-dark": "#1E293B",
+              "border-light": "#E2E8F0",
+              "border-dark": "#334155",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              "xl": "1rem",
+            },
+          },
+        },
+      };
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased h-screen flex overflow-hidden">
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col h-full transition-colors duration-200">
+<div class="p-4 border-b border-border-light dark:border-border-dark flex items-center space-x-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-xl">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Jaydon Rice Brandy</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Manager</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">bar_chart</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">school</span>
+<span class="text-sm font-medium">Classes</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="text-sm font-medium">Attendance</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="text-sm font-medium">Timetable</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">Students</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 bg-primary/10 text-primary dark:text-blue-400 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+<span class="text-sm font-medium">Teachers</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">engineering</span>
+<span class="text-sm font-medium">Employees</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">meeting_room</span>
+<span class="text-sm font-medium">Rooms</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span>
+<span class="text-sm font-medium">Equipment</span>
+</a>
+</nav>
+</aside>
+<main class="flex-1 flex flex-col h-full overflow-hidden">
+<header class="h-16 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-6 flex-shrink-0 z-10">
+<div class="flex items-center space-x-4">
+<div class="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-lg">layers</span>
+</div>
+<div>
+<h1 class="text-lg font-semibold text-slate-900 dark:text-white leading-tight">Teachers</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Manage Dashboard</p>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="flex items-center space-x-2 px-3 py-1.5 border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-lg">language</span>
+<span>English</span>
+</button>
+<div class="relative w-64 hidden md:block">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-lg">search</span>
+<input class="w-full pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-slate-800 border border-border-light dark:border-border-dark rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white placeholder-slate-400" placeholder="Search..." type="text"/>
+</div>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-surface-light dark:border-surface-dark"></span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 p-6">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-border-light dark:border-border-dark mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-3 flex-1">
+<div class="relative flex-1 max-w-md">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-border-light dark:border-border-dark rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all dark:text-white" placeholder="Search teachers..." type="text"/>
+</div>
+<div class="relative min-w-[140px]">
+<select class="w-full appearance-none pl-3 pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-700 dark:text-slate-300 focus:border-primary outline-none cursor-pointer">
+<option>All Statuses</option>
+<option>Active</option>
+<option>On Leave</option>
+<option>Retired</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-lg pointer-events-none">expand_more</span>
+</div>
+</div>
+<button class="bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm shadow-blue-500/30">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    Add Teacher
+                </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition-shadow group overflow-hidden flex flex-col">
+<div class="p-5 flex-1">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-semibold">
+                                    M
+                                </div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white text-base">Marques Zemlak</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">No activities</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700">Retired</span>
+</div>
+<div class="space-y-4">
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+                                    Personal Info
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">verified</span>
+<span>444 years experience</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">mail</span>
+<span class="truncate">fakedata23941@gmail.com</span>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">call</span>
+                                    Contact
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">phone_iphone</span>
+<span>+1 (555) 000-374</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">desk_phone</span>
+<span>Ext. 250</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+<button class="flex-1 text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium flex items-center justify-center gap-2 py-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                            View Profile
+                        </button>
+<div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-2"></div>
+<button class="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition-shadow group overflow-hidden flex flex-col">
+<div class="p-5 flex-1">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-semibold">
+<img alt="Sarah Connor" class="w-12 h-12 rounded-lg object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs0tMbYvGcB8WoM9YVoSy6_1DSZ6E8TLBz2nDIn8NSzRMR5XQ6OoETZWnzj-ZOqqTz770b3grA_KSp4XtRtjhNlJ1__FyxIt4Uh08MYmh1JphzUIOBZ-VskEPU2EW_jTUJK69XFmHzKFmog0Z-X04Fk0jTb9kRQdAx_riZaCxVxTBuVBy53Dhy5RPR7vNI3OTsPeeXx2OMgITgiUY9KifQb8PKZ9jzKEz0LnsZKU8zT0tnFKCtEwgfrdsKo2jIWoGv1JW9SJaOt6L8"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white text-base">Sarah Connor</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Active since 2019</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-200 dark:border-emerald-800">Active</span>
+</div>
+<div class="space-y-4">
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+                                    Personal Info
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">verified</span>
+<span>5 years experience</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">mail</span>
+<span class="truncate">sarah.connor@school.edu</span>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">call</span>
+                                    Contact
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">phone_iphone</span>
+<span>+1 (555) 992-112</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">desk_phone</span>
+<span>Ext. 104</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+<button class="flex-1 text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium flex items-center justify-center gap-2 py-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                            View Profile
+                        </button>
+<div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-2"></div>
+<button class="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm hover:shadow-md transition-shadow group overflow-hidden flex flex-col">
+<div class="p-5 flex-1">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-semibold">
+                                    J
+                                </div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white text-base">James Cameron</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Head of Science</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">On Leave</span>
+</div>
+<div class="space-y-4">
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span>
+                                    Personal Info
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">verified</span>
+<span>12 years experience</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">mail</span>
+<span class="truncate">j.cameron@school.edu</span>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">call</span>
+                                    Contact
+                                </p>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">phone_iphone</span>
+<span>+1 (555) 774-883</span>
+</div>
+<div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">desk_phone</span>
+<span>Ext. 402</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+<button class="flex-1 text-primary dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium flex items-center justify-center gap-2 py-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                            View Profile
+                        </button>
+<div class="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-2"></div>
+<button class="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-dashed border-slate-300 dark:border-slate-700 shadow-sm flex flex-col items-center justify-center min-h-[400px] text-slate-400 hover:border-primary hover:text-primary transition-colors cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+<span class="font-medium text-sm">Add New Teacher</span>
+</div>
+</div>
+</div>
+</main>
+
+</body></html>

@@ -38,12 +38,8 @@ const TeacherDashboard = () => {
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adsPanelOpen, setAdsPanelOpen] = useState(false);
-  const [stats, setStats] = useState({
-    totalGames: 24,
-    totalStudents: 156,
-    averageScore: 87,
-    liveSessions: 8
-  });
+  // Removed fake stats state
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,21 +58,21 @@ const TeacherDashboard = () => {
   }, [location.search]);
 
   const navigationItems = [
-    { id: 'announcements', name: t('announcements') },
-    { id: 'overview', name: t('overview') },
-    { id: 'my-games', name: t('my-games') },
-    { id: 'create-game', name: t('create-game') },
-    { id: 'live-sessions', name: t('live-sessions') },
-    { id: 'assignments', name: t('assignments') },
-    { id: 'resources', name: t('resources') },
-    { id: 'timetable', name: t('timetable') },
-    { id: 'students', name: t('my-classes') },
-    { id: 'calendar', name: t('calendar') }
+    { id: 'announcements', name: t.announcements },
+    { id: 'overview', name: t.overview },
+    { id: 'my-games', name: t.myGames },
+    { id: 'create-game', name: t.createGame },
+    { id: 'live-sessions', name: t.liveSessions },
+    { id: 'assignments', name: t.assignments },
+    { id: 'resources', name: t.resources },
+    { id: 'timetable', name: t.timetable },
+    { id: 'students', name: t.myClasses },
+    { id: 'calendar', name: t.calendar }
   ];
 
   // Keep the active tab in session storage
   useEffect(() => {
-    try { sessionStorage.setItem('teacher.activeTab', activeTab); } catch {}
+    try { sessionStorage.setItem('teacher.activeTab', activeTab); } catch { }
   }, [activeTab]);
 
   const renderContent = () => {
@@ -84,12 +80,12 @@ const TeacherDashboard = () => {
       case 'announcements':
         // Use Suspense with the lazy-loaded TeacherAnnouncements
         return (
-          <React.Suspense fallback={<div className="py-8 text-center">{t('loading')}...</div>}>
+          <React.Suspense fallback={<div className="py-8 text-center">{t.loading}...</div>}>
             <TeacherAnnouncementsLazy />
           </React.Suspense>
         );
       case 'overview':
-        return <TeacherOverview stats={stats} />;
+        return <TeacherOverview />;
       case 'my-games':
         return <MyCreations />;
       case 'create-game':
@@ -106,30 +102,30 @@ const TeacherDashboard = () => {
         return <TeacherStudents />;
       case 'calendar':
         return <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('calendar')}</h2>
-          <p className="text-gray-600">Fonctionnalités de calendrier et de planification bientôt disponibles...</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t.calendar}</h2>
+          <p className="text-gray-600">{t.calendarFeaturesComingSoon}</p>
         </div>;
       case '3d-library':
         return <Model3dLibrary />;
       default:
-        return <TeacherOverview stats={stats} />;
+        return <TeacherOverview />;
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">{t('loading')} votre tableau de bord...</p>
-      </div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{t.loadingDashboard}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:flex">
-      <UnifiedSidebar 
+    <div className="min-h-screen bg-background-light lg:flex">
+      <UnifiedSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         sidebarOpen={sidebarOpen}
@@ -139,7 +135,7 @@ const TeacherDashboard = () => {
       />
 
       <div className="flex-1 relative">
-        <TopNav 
+        <TopNav
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           activeTab={activeTab}
@@ -152,13 +148,13 @@ const TeacherDashboard = () => {
           <AdsBar userRole="teacher" schoolId={user?.school} />
         )}
 
-        <main className="p-6">
+        <main className="p-4 md:p-8">
           {renderContent()}
         </main>
       </div>
 
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />

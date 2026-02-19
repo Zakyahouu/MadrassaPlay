@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Classes Management - School Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563eb", // Royal Blue
+                        "primary-hover": "#1d4ed8",
+                        "primary-light": "#eff6ff",
+                        "background-light": "#f8fafc", // Slate 50
+                        "background-dark": "#0f172a", // Slate 900
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b", // Slate 800
+                        "border-light": "#e2e8f0", // Slate 200
+                        "border-dark": "#334155", // Slate 700
+                        "text-main-light": "#334155", // Slate 700
+                        "text-main-dark": "#e2e8f0", // Slate 200
+                        "text-muted-light": "#64748b", // Slate 500
+                        "text-muted-dark": "#94a3b8", // Slate 400
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark min-h-screen transition-colors duration-200">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 hidden md:flex flex-col overflow-y-auto">
+<div class="p-4 border-b border-border-light dark:border-border-dark flex items-center space-x-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 font-bold">
+<span class="material-icons-outlined">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-text-main-light dark:text-text-main-dark truncate">Jaydon Rice Brandy</p>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark truncate">Manager</p>
+</div>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-primary transition-colors">
+<span class="material-icons-outlined text-sm">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 px-3 py-4 space-y-1">
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">dashboard</span>
+                    Overview
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary/10 text-primary dark:text-blue-400 dark:bg-blue-900/20 group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">class</span>
+                    Classes
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">calendar_today</span>
+                    Attendance
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">schedule</span>
+                    Timetable
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">people</span>
+                    Students
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">school</span>
+                    Teachers
+                </a>
+<div class="pt-4 pb-2">
+<p class="px-3 text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider">Administration</p>
+</div>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">badge</span>
+                    Employees
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">meeting_room</span>
+                    Rooms
+                </a>
+<a class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-primary group" href="#">
+<span class="material-icons-outlined mr-3 text-lg">inventory_2</span>
+                    Equipment
+                </a>
+</nav>
+</aside>
+<div class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+<header class="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark h-16 flex items-center justify-between px-6 shadow-sm z-10">
+<div class="flex items-center">
+<div class="h-8 w-8 rounded bg-indigo-600 flex items-center justify-center mr-3 shadow-sm">
+<span class="material-icons-outlined text-white text-lg">school</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-text-main-light dark:text-text-main-dark leading-tight">Classes</h1>
+<p class="text-xs text-text-muted-light dark:text-text-muted-dark">Manage Dashboard</p>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<div class="hidden md:flex items-center border border-border-light dark:border-border-dark rounded-md px-3 py-1.5 bg-background-light dark:bg-slate-800">
+<span class="material-icons-outlined text-gray-400 text-sm mr-2">language</span>
+<span class="text-sm font-medium text-text-main-light dark:text-text-main-dark mr-2">US English</span>
+</div>
+<div class="relative hidden lg:block w-64">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-outlined text-gray-400 text-lg">search</span>
+</span>
+<input class="block w-full pl-10 pr-3 py-2 border border-border-light dark:border-border-dark rounded-md leading-5 bg-background-light dark:bg-slate-800 text-text-main-light dark:text-text-main-dark placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="Search..." type="text"/>
+</div>
+<div class="flex items-center space-x-3 text-text-muted-light dark:text-text-muted-dark">
+<button class="relative hover:text-primary transition-colors">
+<span class="material-icons-outlined">notifications</span>
+<span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800 transform translate-x-1/2 -translate-y-1/2"></span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-icons-outlined">person_outline</span>
+</button>
+<button class="hover:text-primary transition-colors">
+<span class="material-icons-outlined">logout</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-6 md:p-8">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row gap-4 flex-1">
+<div class="relative flex-grow max-w-md">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons-outlined text-gray-400">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 border border-border-light dark:border-border-dark rounded-lg leading-5 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm shadow-sm transition-shadow" placeholder="Search by class name, teacher or room" type="text"/>
+</div>
+<div class="min-w-[160px]">
+<select class="block w-full py-2.5 pl-3 pr-10 border border-border-light dark:border-border-dark rounded-lg leading-5 bg-white dark:bg-slate-800 text-text-main-light dark:text-text-main-dark focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary sm:text-sm shadow-sm">
+<option>All Status</option>
+<option>Active</option>
+<option>Inactive</option>
+<option>Archived</option>
+</select>
+</div>
+</div>
+<div class="flex items-center gap-3 self-end md:self-auto">
+<button class="flex items-center justify-center px-4 py-2.5 border border-primary text-primary dark:text-blue-400 dark:border-blue-500 rounded-lg text-sm font-medium bg-white dark:bg-transparent hover:bg-primary-light dark:hover:bg-blue-900/20 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+<span class="material-icons-outlined mr-2 text-lg">download</span>
+                            Export CSV
+                        </button>
+<button class="flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+<span class="material-icons-outlined mr-2 text-lg">add</span>
+                            Create Class
+                        </button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark shadow-sm rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
+<div class="overflow-x-auto">
+<table class="min-w-full divide-y divide-border-light dark:divide-border-dark">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr>
+<th class="px-6 py-4 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider" scope="col">Class Details</th>
+<th class="px-6 py-4 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider" scope="col">Schedule</th>
+<th class="px-6 py-4 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider" scope="col">Capacity &amp; Enrollment</th>
+<th class="px-6 py-4 text-left text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider" scope="col">Status</th>
+<th class="px-6 py-4 text-right text-xs font-semibold text-text-muted-light dark:text-text-muted-dark uppercase tracking-wider" scope="col">Actions</th>
+</tr>
+</thead>
+<tbody class="bg-surface-light dark:bg-surface-dark divide-y divide-border-light dark:divide-border-dark">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="flex items-start">
+<div class="flex-shrink-0 h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-primary dark:text-blue-400">
+<span class="material-icons-outlined">menu_book</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-semibold text-text-main-light dark:text-text-main-dark">High School - 1 - Arabic</div>
+<div class="flex items-center mt-1 text-xs text-text-muted-light dark:text-text-muted-dark space-x-2">
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">person</span> Marques Zemlak</span>
+<span class="text-gray-300 dark:text-gray-600">|</span>
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">room</span> Room 1</span>
+</div>
+<div class="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">$123 DZD per 4 sessions</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="text-sm text-text-main-light dark:text-text-main-dark flex flex-col gap-1">
+<div class="flex items-center">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark text-sm mr-2">calendar_today</span>
+                                                Mon
+                                            </div>
+<div class="flex items-center text-xs text-text-muted-light dark:text-text-muted-dark">
+<span class="material-icons-outlined text-sm mr-2">schedule</span>
+                                                9:00 AM - 10:00 AM
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="w-full max-w-[140px]">
+<div class="flex justify-between items-center mb-1">
+<div class="flex items-center text-sm font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark mr-1.5 text-lg">group</span>
+                                                    0 / 1
+                                                </div>
+<span class="text-xs text-text-muted-light dark:text-text-muted-dark">0% full</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400 mr-1.5"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end space-x-3">
+<button class="text-primary dark:text-blue-400 hover:text-primary-hover dark:hover:text-blue-300 flex items-center text-xs font-semibold px-2 py-1 rounded hover:bg-primary-light dark:hover:bg-blue-900/20 transition-colors">
+<span class="material-icons-outlined text-sm mr-1">visibility</span>
+                                                Attendance
+                                            </button>
+<div class="h-4 w-px bg-border-light dark:bg-border-dark"></div>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-blue-400 transition-colors" title="Edit">
+<span class="material-icons-outlined text-[19px]">edit</span>
+</button>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
+<span class="material-icons-outlined text-[19px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="flex items-start">
+<div class="flex-shrink-0 h-10 w-10 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-icons-outlined">functions</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-semibold text-text-main-light dark:text-text-main-dark">Mathematics - Grade 10</div>
+<div class="flex items-center mt-1 text-xs text-text-muted-light dark:text-text-muted-dark space-x-2">
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">person</span> Sarah Connor</span>
+<span class="text-gray-300 dark:text-gray-600">|</span>
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">room</span> Lab A</span>
+</div>
+<div class="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">$150 DZD per 4 sessions</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="text-sm text-text-main-light dark:text-text-main-dark flex flex-col gap-1">
+<div class="flex items-center">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark text-sm mr-2">calendar_today</span>
+                                                Wed, Fri
+                                            </div>
+<div class="flex items-center text-xs text-text-muted-light dark:text-text-muted-dark">
+<span class="material-icons-outlined text-sm mr-2">schedule</span>
+                                                11:00 AM - 12:30 PM
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="w-full max-w-[140px]">
+<div class="flex justify-between items-center mb-1">
+<div class="flex items-center text-sm font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark mr-1.5 text-lg">group</span>
+                                                    18 / 25
+                                                </div>
+<span class="text-xs text-text-muted-light dark:text-text-muted-dark">72% full</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 72%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400 mr-1.5"></span>
+                                            Active
+                                        </span>
+</td>
+<td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end space-x-3">
+<button class="text-primary dark:text-blue-400 hover:text-primary-hover dark:hover:text-blue-300 flex items-center text-xs font-semibold px-2 py-1 rounded hover:bg-primary-light dark:hover:bg-blue-900/20 transition-colors">
+<span class="material-icons-outlined text-sm mr-1">visibility</span>
+                                                Attendance
+                                            </button>
+<div class="h-4 w-px bg-border-light dark:bg-border-dark"></div>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-blue-400 transition-colors" title="Edit">
+<span class="material-icons-outlined text-[19px]">edit</span>
+</button>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
+<span class="material-icons-outlined text-[19px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group opacity-75">
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="flex items-start">
+<div class="flex-shrink-0 h-10 w-10 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+<span class="material-icons-outlined">science</span>
+</div>
+<div class="ml-4">
+<div class="text-sm font-semibold text-text-main-light dark:text-text-main-dark">Physics - Intro</div>
+<div class="flex items-center mt-1 text-xs text-text-muted-light dark:text-text-muted-dark space-x-2">
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">person</span> John Doe</span>
+<span class="text-gray-300 dark:text-gray-600">|</span>
+<span class="flex items-center"><span class="material-icons-outlined text-[14px] mr-1">room</span> Room 302</span>
+</div>
+<div class="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">$140 DZD per 4 sessions</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="text-sm text-text-main-light dark:text-text-main-dark flex flex-col gap-1">
+<div class="flex items-center">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark text-sm mr-2">calendar_today</span>
+                                                Tue, Thu
+                                            </div>
+<div class="flex items-center text-xs text-text-muted-light dark:text-text-muted-dark">
+<span class="material-icons-outlined text-sm mr-2">schedule</span>
+                                                2:00 PM - 3:30 PM
+                                            </div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<div class="w-full max-w-[140px]">
+<div class="flex justify-between items-center mb-1">
+<div class="flex items-center text-sm font-medium text-text-main-light dark:text-text-main-dark">
+<span class="material-icons-outlined text-text-muted-light dark:text-text-muted-dark mr-1.5 text-lg">group</span>
+                                                    20 / 20
+                                                </div>
+<span class="text-xs text-red-500 dark:text-red-400 font-medium">Full</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+<div class="bg-red-500 dark:bg-red-500 h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+<span class="h-1.5 w-1.5 rounded-full bg-gray-500 dark:bg-gray-400 mr-1.5"></span>
+                                            Inactive
+                                        </span>
+</td>
+<td class="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end space-x-3">
+<button class="text-text-muted-light dark:text-text-muted-dark cursor-not-allowed opacity-50 flex items-center text-xs font-semibold px-2 py-1 rounded">
+<span class="material-icons-outlined text-sm mr-1">visibility_off</span>
+                                                Attendance
+                                            </button>
+<div class="h-4 w-px bg-border-light dark:bg-border-dark"></div>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-primary dark:hover:text-blue-400 transition-colors" title="Edit">
+<span class="material-icons-outlined text-[19px]">edit</span>
+</button>
+<button class="text-text-muted-light dark:text-text-muted-dark hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
+<span class="material-icons-outlined text-[19px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark px-4 py-3 border-t border-border-light dark:border-border-dark sm:px-6 flex items-center justify-between">
+<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark">
+                                    Showing <span class="font-medium text-text-main-light dark:text-text-main-dark">1</span> to <span class="font-medium text-text-main-light dark:text-text-main-dark">3</span> of <span class="font-medium text-text-main-light dark:text-text-main-dark">3</span> results
+                                </p>
+</div>
+<div>
+<nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+<a class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700" href="#">
+<span class="sr-only">Previous</span>
+<span class="material-icons-outlined text-sm">chevron_left</span>
+</a>
+<a aria-current="page" class="z-10 bg-primary/10 border-primary text-primary relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        1
+                                    </a>
+<a class="bg-white dark:bg-slate-800 border-border-light dark:border-border-dark text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        2
+                                    </a>
+<a class="bg-white dark:bg-slate-800 border-border-light dark:border-border-dark text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700 relative inline-flex items-center px-4 py-2 border text-sm font-medium" href="#">
+                                        3
+                                    </a>
+<a class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 text-sm font-medium text-text-muted-light dark:text-text-muted-dark hover:bg-slate-50 dark:hover:bg-slate-700" href="#">
+<span class="sr-only">Next</span>
+<span class="material-icons-outlined text-sm">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>

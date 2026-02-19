@@ -27,7 +27,77 @@ const schoolSchema = new mongoose.Schema(
       phone: String,
       address: String
     },
+<<<<<<< Updated upstream
     
+=======
+    logo: { type: String },
+
+    // Comprehensive Landing Page System
+    landingPage: {
+      // Status flags
+      isEnabled: { type: Boolean, default: false },
+      isDraft: { type: Boolean, default: true },
+      publishedAt: { type: Date },
+      lastEditedAt: { type: Date },
+
+      // Complete configuration as JSON
+      config: {
+        // Theme Configuration
+        theme: {
+          primaryColor: { type: String, default: '#3B82F6' },
+          secondaryColor: { type: String, default: '#F97316' },
+          accentColor: { type: String, default: '#8B5CF6' },
+          backgroundColor: { type: String, default: '#FFFFFF' },
+          textColor: { type: String, default: '#1F2937' },
+          fontFamily: { type: String, default: 'Inter' },
+          buttonStyle: { type: String, default: 'rounded' },
+          buttonVariant: { type: String, default: 'filled' },
+          spacing: { type: String, default: 'normal' },
+          animations: { type: Boolean, default: true }
+        },
+
+        // SEO Configuration
+        seo: {
+          metaTitle: { type: String },
+          metaDescription: { type: String },
+          keywords: [{ type: String }],
+          ogImage: { type: String },
+          ogTitle: { type: String },
+          ogDescription: { type: String },
+          twitterCard: { type: String },
+          twitterImage: { type: String }
+        },
+
+        // Sections array - flexible structure for all content
+        sections: [{
+          type: { type: String, required: true },
+          enabled: { type: Boolean, default: true },
+          order: { type: Number, required: true },
+          data: { type: mongoose.Schema.Types.Mixed }
+        }]
+      },
+
+      // Revision history for rollback capability
+      revisions: [{
+        config: { type: mongoose.Schema.Types.Mixed },
+        createdAt: { type: Date, default: Date.now },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+      }]
+    },
+
+    // =============== External Integration (Directis360 Linking) ===============
+    externalId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    externalSource: {
+      type: String,
+      enum: ['directis360', 'standalone', null],
+      default: null,
+    },
+
+>>>>>>> Stashed changes
     // Trial System Fields
     status: {
       type: String,
@@ -40,7 +110,7 @@ const schoolSchema = new mongoose.Schema(
     },
     trialExpiresAt: {
       type: Date,
-      default: function() {
+      default: function () {
         // 30 days trial by default
         return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       }
@@ -50,7 +120,7 @@ const schoolSchema = new mongoose.Schema(
     },
     subscriptionExpiresAt: {
       type: Date
-  }
+    }
     // We can add more details about the school later if needed,
     // like address, contact info, etc.
   },

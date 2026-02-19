@@ -42,7 +42,9 @@ const getAllowedOrigins = () => {
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       'http://0.0.0.0:5173',
-      process.env.CORS_ORIGIN || 'http://72.60.133.119'
+      'http://localhost:3000',  // Directis360 frontend
+      process.env.CORS_ORIGIN || 'http://72.60.133.119',
+      process.env.DIRECTIS_ORIGIN, // Directis360 production origin
     ].filter(Boolean);
   }
 };
@@ -67,8 +69,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Static file serving moved to server.js to ensure proper middleware order
-// This prevents React Router from intercepting engine files in production
+// Serve game engine static files from /engines/*
+app.use('/engines', express.static(path.join(__dirname, 'public', 'engines')));
+// Serve uploaded files (ads, etc.) from public/uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+// Serve badge icons
+app.use('/badge-icons', express.static(path.join(__dirname, 'public', 'badge-icons')));
+// Serve general assets
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
 
 // Safe route loading with error handling to prevent path-to-regexp errors
 try {
@@ -76,7 +84,7 @@ try {
   loadAllRoutes(app);
 } catch (error) {
   console.error('❌ Critical error loading routes:', error);
-  
+
   // Fallback: Load routes individually with try-catch
   const routeConfigs = [
     { path: '/api/users', file: './routes/userRoutes' },
@@ -105,9 +113,10 @@ try {
     { path: '/api/advertisements', file: './routes/advertisementRoutes' },
     { path: '/api/finance', file: './routes/financeRoutes' },
     { path: '/api/logs', file: './routes/logRoutes' },
-    { path: '/api/live-sessions', file: './routes/liveSessionRoutes' }
+    { path: '/api/live-sessions', file: './routes/liveSessionRoutes' },
+    { path: '/api/analytics', file: './routes/analyticsRoutes' }
   ];
-  
+
   routeConfigs.forEach(({ path, file }) => {
     try {
       console.log(`🔄 Loading route: ${path}`);
@@ -115,7 +124,7 @@ try {
       console.log(`✅ Successfully loaded: ${path}`);
     } catch (routeError) {
       console.error(`❌ Failed to load route ${path}:`, routeError.message);
-      
+
       // Create a fallback route that returns an error
       app.use(path, (req, res) => {
         res.status(500).json({

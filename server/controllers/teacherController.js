@@ -45,7 +45,7 @@ async function validateActivitiesAgainstCatalog(schoolId, activities) {
     // No catalog yet: accept but drop activities
     return { ok: true, activities: [] };
   }
-  const types = ['supportLessons','reviewCourses','vocationalTrainings','languages','otherActivities'];
+  const types = ['supportLessons', 'reviewCourses', 'vocationalTrainings', 'languages', 'otherActivities'];
   const allowedMap = {};
   const idMap = {};
   for (const t of types) {
@@ -84,7 +84,7 @@ const getTeachersForSchool = async (req, res) => {
     const query = { role: 'teacher', school: schoolId };
     if (req.query.status) {
       const s = req.query.status.toString().toLowerCase();
-      if (['retired','employed','freelance'].includes(s)) query.teacherStatus = s;
+      if (['retired', 'employed', 'freelance'].includes(s)) query.teacherStatus = s;
     }
     const teachers = await User.find(query).select('-password');
     res.status(200).json(teachers);
@@ -102,7 +102,7 @@ const createTeacher = async (req, res) => {
       firstName, lastName,
       phone1, phone2, email, address,
       yearsExperience,
-  status, // employed | freelance | retired
+      status, // employed | freelance | retired
       banking = {}, // { ccp, bankAccount }
       username, password,
       activities = [], // array of { type, items }
@@ -116,7 +116,7 @@ const createTeacher = async (req, res) => {
     const normalizedEmail = email.toString().trim().toLowerCase();
     const normalizedUsername = username.toString().trim();
 
-  // debug logs removed
+    // debug logs removed
 
     // Check duplicates (email and username)
     const emailExists = await User.findOne({ email: normalizedEmail });
@@ -128,27 +128,27 @@ const createTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Username already exists. Please choose another.' });
     }
 
-  const normalizedStatus = (status || 'employed').toString().toLowerCase(); // employed | freelance | retired
+    const normalizedStatus = (status || 'employed').toString().toLowerCase(); // employed | freelance | retired
 
     // Validate activities against school catalog
-  const valid = await validateActivitiesAgainstCatalog(schoolId, activities);
+    const valid = await validateActivitiesAgainstCatalog(schoolId, activities);
 
     const teacherData = {
       firstName,
       lastName,
-  email: normalizedEmail,
-  username: normalizedUsername,
+      email: normalizedEmail,
+      username: normalizedUsername,
       password, // hashed via pre-save hook
       role: 'teacher',
       school: schoolId,
       experience: Number(yearsExperience) || 0,
-  teacherStatus: ['retired','employed','freelance'].includes(normalizedStatus) ? normalizedStatus : 'employed',
+      teacherStatus: ['retired', 'employed', 'freelance'].includes(normalizedStatus) ? normalizedStatus : 'employed',
       contact: { phone1, phone2, address },
       banking: { ccp: banking.ccp, bankAccount: banking.bankAccount },
-  activities: valid.activities || [],
+      activities: valid.activities || [],
     };
 
-  // debug logs removed
+    // debug logs removed
 
     const newTeacher = new User(teacherData);
     const savedTeacher = await newTeacher.save();
@@ -178,10 +178,10 @@ const createTeacher = async (req, res) => {
 // @route   GET /api/teachers/:id
 const getTeacherById = async (req, res) => {
   try {
-  const user = await User.findById(req.params.id).select('-password');
-  const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
-  // Security check: ensure the user exists, is a teacher, and belongs to the manager's school
-  if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
+    const user = await User.findById(req.params.id).select('-password');
+    const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
+    // Security check: ensure the user exists, is a teacher, and belongs to the manager's school
+    if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
       return res.status(404).json({ message: "Teacher not found in your school" });
     }
     res.status(200).json(user);
@@ -193,49 +193,92 @@ const getTeacherById = async (req, res) => {
 // @desc    Update a teacher's information (ensuring they are in the manager's school)
 // @route   PUT /api/teachers/:id
 const updateTeacher = async (req, res) => {
-    try {
-  const user = await User.findById(req.params.id);
-  const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
-        // Security check: ensure user is a teacher in the manager's school
-  if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
-            return res.status(404).json({ message: "Teacher not found in your school" });
-        }
-        
-        // Prevent changing role or password via this endpoint
-        const updateData = { ...req.body };
-        delete updateData.role; 
-        delete updateData.password;
-        // Remove legacy fields
-        delete updateData.subject;
-        delete updateData.department;
-        if (updateData.status) {
-          const s = updateData.status.toString().toLowerCase();
-          if (['retired','employed','freelance'].includes(s)) updateData.teacherStatus = s; 
-          delete updateData.status;
-        }
-        if (updateData.yearsExperience !== undefined) {
-          updateData.experience = Number(updateData.yearsExperience) || 0;
-          delete updateData.yearsExperience;
-        }
-        if (updateData.activities !== undefined) {
-          if (!Array.isArray(updateData.activities)) {
-            delete updateData.activities; // ignore invalid shape
-          } else {
-            const valid = await validateActivitiesAgainstCatalog(managerSchoolId, updateData.activities);
-            updateData.activities = valid.activities || [];
-          }
-        }
+  try {
+    const managerSchoolId = req.user?.school?._id?.toString?.() || req.user?.school?.toString?.() || req.user?.school;
 
-        const updatedUser = await User.findByIdAndUpdate(
-            req.params.id,
-            updateData,
-            { new: true, runValidators: true }
-        ).select('-password');
+    // Use findOne to get the document instance (needed for pre-save hooks like password hashing)
+    const user = await User.findOne({ _id: req.params.id });
 
-        res.status(200).json({ message: "Teacher updated successfully", teacher: updatedUser });
-    } catch (error) {
-        res.status(400).json({ message: "Error updating teacher", error: error.message });
+    // Security check: ensure user exists, is a teacher, and belongs to the manager's school
+    if (!user || user.role !== 'teacher' || (user.school?.toString?.() !== managerSchoolId?.toString?.())) {
+      return res.status(404).json({ message: "Teacher not found in your school" });
     }
+
+    // prevent changing role via this endpoint
+    // password IS allowed to be changed now, but only if explicitly provided
+    const {
+      firstName, lastName, phone1, phone2, address,
+      username, password,
+      banking, activities, yearsExperience, status
+    } = req.body;
+
+    // Update basic fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+
+    // Update contact
+    if (phone1 || phone2 || address) {
+      user.contact = user.contact || {};
+      if (phone1) user.contact.phone1 = phone1;
+      if (phone2) user.contact.phone2 = phone2;
+      if (address) user.contact.address = address;
+    }
+
+    // Update username (uniqueness check will happen on save via unique index, or we can pre-check)
+    if (username) {
+      if (username !== user.username) {
+        const exists = await User.findOne({ username, _id: { $ne: user._id } });
+        if (exists) return res.status(400).json({ message: 'Username already taken' });
+        user.username = username;
+      }
+    }
+
+    // Update password (triggers hashing in pre-save)
+    if (password && password.trim().length > 0) {
+      user.password = password;
+    }
+
+    // Update teacher status
+    if (status) {
+      const s = status.toString().toLowerCase();
+      if (['retired', 'employed', 'freelance'].includes(s)) user.teacherStatus = s;
+    }
+
+    // Update experience
+    if (yearsExperience !== undefined) {
+      user.experience = Number(yearsExperience) || 0;
+    }
+
+    // Update banking
+    if (banking) {
+      user.banking = user.banking || {};
+      if (banking.ccp) user.banking.ccp = banking.ccp;
+      if (banking.bankAccount) user.banking.bankAccount = banking.bankAccount;
+    }
+
+    // Update activities
+    if (activities !== undefined) {
+      if (Array.isArray(activities)) {
+        const valid = await validateActivitiesAgainstCatalog(managerSchoolId, activities);
+        user.activities = valid.activities || [];
+      }
+    }
+
+    const updatedUser = await user.save();
+
+    // Remove password from response
+    const userObj = updatedUser.toObject();
+    delete userObj.password;
+
+    res.status(200).json({ message: "Teacher updated successfully", teacher: userObj });
+  } catch (error) {
+    // Handle duplicate key errors nicely
+    if (error.code === 11000) {
+      if (error.keyPattern?.username) return res.status(400).json({ message: 'Username already exists' });
+      if (error.keyPattern?.email) return res.status(400).json({ message: 'Email already exists' });
+    }
+    res.status(400).json({ message: "Error updating teacher", error: error.message });
+  }
 };
 
 // @desc    Delete a teacher (ensuring they are in the manager's school)

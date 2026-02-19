@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Inline, dismissible status message (success / error / info / warning)
 const variantStyles = {
@@ -9,6 +10,7 @@ const variantStyles = {
 };
 
 const StatusMessage = ({ variant = 'info', title, message, onClose, className = '', children }) => {
+  const { t } = useLanguage();
   const style = variantStyles[variant] || variantStyles.info;
   return (
     <div className={`relative rounded-md border p-4 mb-4 ${style} ${className}`} role="alert" aria-live="polite">

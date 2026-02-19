@@ -10,23 +10,23 @@ const express = require('express');
 function safeLoadRoute(routePath, mountPath) {
   try {
     console.log(`🔄 Loading route: ${mountPath} from ${routePath}`);
-    
+
     // Clear require cache to ensure fresh load
     delete require.cache[require.resolve(routePath)];
-    
+
     const router = require(routePath);
-    
+
     // Validate that it's a valid router
     if (!router || typeof router !== 'function') {
       throw new Error(`Invalid router exported from ${routePath}`);
     }
-    
+
     console.log(`✅ Successfully loaded route: ${mountPath}`);
     return router;
-    
+
   } catch (error) {
     console.error(`❌ Failed to load route ${mountPath}:`, error.message);
-    
+
     // Return a dummy router that logs the error
     const dummyRouter = express.Router();
     dummyRouter.all('*', (req, res) => {
@@ -35,7 +35,7 @@ function safeLoadRoute(routePath, mountPath) {
         message: `Route ${mountPath} failed to load: ${error.message}`
       });
     });
-    
+
     return dummyRouter;
   }
 }
@@ -69,20 +69,26 @@ function loadAllRoutes(app) {
     { path: '/api/rooms', file: './routes/roomRoutes' },
     { path: '/api/equipment', file: './routes/equipmentRoutes' },
     { path: '/api/advertisements', file: './routes/advertisementRoutes' },
+<<<<<<< Updated upstream
   { path: '/api/announcements', file: './routes/announcementRoutes' },
+=======
+    { path: '/api/public', file: './routes/publicRoutes' },
+    { path: '/api/announcements', file: './routes/announcementRoutes' },
+>>>>>>> Stashed changes
     { path: '/api/manager', file: './routes/managerRoutes' },
     { path: '/api/finance', file: './routes/financeRoutes' },
     { path: '/api/logs', file: './routes/logRoutes' },
-    { path: '/api/live-sessions', file: './routes/liveSessionRoutes' }
+    { path: '/api/live-sessions', file: './routes/liveSessionRoutes' },
+    { path: '/api/auth', file: './routes/federatedAuthRoutes' },
   ];
-  
+
   console.log('🚀 Starting safe route loading...\n');
-  
+
   routes.forEach(({ path, file }) => {
     const router = safeLoadRoute(file, path);
     app.use(path, router);
   });
-  
+
   console.log('\n✅ All routes loaded successfully');
 }
 

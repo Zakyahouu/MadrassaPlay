@@ -1,8 +1,10 @@
 // client/src/components/admin/TemplateUploader.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TemplateUploader = ({ onUploadSuccess }) => {
+  const { t } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -14,7 +16,7 @@ const TemplateUploader = ({ onUploadSuccess }) => {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Please select a .zip file to upload.');
+      setError(t.pleaseSelectZipFile);
       return;
     }
 
@@ -37,11 +39,11 @@ const TemplateUploader = ({ onUploadSuccess }) => {
       };
 
       const { data } = await axios.post('/api/templates/upload', formData, config);
-      setSuccess(`Template "${data.name}" uploaded successfully!`);
+      setSuccess(`${t.template} "${data.name}" ${t.templateUploadedSuccess}`);
       setSelectedFile(null);
       onUploadSuccess(data); // Notify parent component of the new template
     } catch (err) {
-      setError(err.response?.data?.message || 'File upload failed');
+      setError(err.response?.data?.message || t.fileUploadFailed);
       console.error(err);
     } finally {
       setUploading(false);
@@ -50,32 +52,32 @@ const TemplateUploader = ({ onUploadSuccess }) => {
 
   return (
     <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Upload New Template Bundle</h3>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            {error && <div className="text-red-500 mb-4">{error}</div>}
-            {success && <div className="text-green-500 mb-4">{success}</div>}
-            <div className="flex items-center space-x-4">
-                <input 
-                    type="file" 
-                    onChange={handleFileChange} 
-                    accept=".zip"
-                    className="block w-full text-sm text-gray-500
+      <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">{t.uploadNewTemplateBundle}</h3>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        {error && <div className="text-red-500 mb-4">{error}</div>}
+        {success && <div className="text-green-500 mb-4">{success}</div>}
+        <div className="flex items-center space-x-4">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept=".zip"
+            className="block w-full text-sm text-gray-500
                                file:mr-4 file:py-2 file:px-4
                                file:rounded-full file:border-0
                                file:text-sm file:font-semibold
                                file:bg-indigo-50 file:text-indigo-700
                                hover:file:bg-indigo-100"
-                />
-                <button 
-                    onClick={handleUpload} 
-                    disabled={uploading || !selectedFile}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400"
-                >
-                    {uploading ? 'Uploading...' : 'Upload'}
-                </button>
-            </div>
-            {selectedFile && <p className="text-sm text-gray-500 mt-2">Selected: {selectedFile.name}</p>}
+          />
+          <button
+            onClick={handleUpload}
+            disabled={uploading || !selectedFile}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-400"
+          >
+            {uploading ? t.uploading : t.upload}
+          </button>
         </div>
+        {selectedFile && <p className="text-sm text-gray-500 mt-2">{t.selected}: {selectedFile.name}</p>}
+      </div>
     </div>
   );
 };

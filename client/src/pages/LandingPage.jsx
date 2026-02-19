@@ -3,12 +3,14 @@ import { AuthContext } from '../context/AuthContext';
 // Add these imports at the top
 import { useContext, useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useLanguage } from '../context/LanguageContext';
+import LanguageSwitcher from '../components/layout/LanguageSwitcher';
 import '../styles/landing-page.css';
-import { 
-  Play, 
-  Users, 
-  BookOpen, 
-  BarChart3, 
+import {
+  Play,
+  Users,
+  BookOpen,
+  BarChart3,
   Gamepad2,
   CheckCircle,
   ArrowRight,
@@ -40,9 +42,11 @@ import {
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const { t: globalT, language, isRTL } = useLanguage();
+  const t = globalT.landingPage || { nav: {}, hero: {}, problem: {}, features: {}, viewer3D: {}, howItWorks: {}, testimonials: {}, audience: {}, cta: {}, footer: {}, screenshots: [] };
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [faqOpen, setFaqOpen] = useState(null);
-  const [language, setLanguage] = useState('ar'); // Default to Arabic as per PDF
   const [activeStep, setActiveStep] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [activeScreenshot, setActiveScreenshot] = useState(0);
@@ -64,100 +68,33 @@ const LandingPage = () => {
   const audienceRef = useRef(null);
   const ctaRef = useRef(null);
 
-  // Screenshot Gallery Data (from original)
-  const screenshotGallery = [
-    {
-      id: 'teacher-dashboard',
-      title: language === 'ar' ? 'لوحة تحكم المعلم' : 'Tableau de bord enseignant',
-      description: language === 'ar' ? 'مراقبة الفصل وتتبع تقدم الطلاب في الوقت الفعلي' : 'Surveillance de classe et suivi des progrès en temps réel',
-      image: '/assets/asset-1.png',
-      category: language === 'ar' ? 'إدارة' : 'Gestion',
-      stats: { students: 24, classes: 3, progress: '89%' },
-      features: [
-        language === 'ar' ? 'حالة الطلاب المباشرة' : 'Statut des élèves en direct',
-        language === 'ar' ? 'تتبع التقدم' : 'Suivi des progrès',
-        language === 'ar' ? 'إدارة الفصل' : 'Gestion de classe'
-      ]
-    },
-    {
-      id: 'student-game',
-      title: language === 'ar' ? 'تعلم الطالب' : 'Apprentissage étudiant',
-      description: language === 'ar' ? 'ألعاب تفاعلية وتجارب تعليمية جذابة' : 'Jeux interactifs et expériences d\'apprentissage engageantes',
-      image: '/assets/asset-2.png',
-      category: language === 'ar' ? 'تعلم' : 'Apprentissage',
-      stats: { games: 15, score: '92%', streak: language === 'ar' ? '7 أيام' : '7 jours' },
-      features: [
-        language === 'ar' ? 'ألعاب تفاعلية' : 'Jeux interactifs',
-        language === 'ar' ? 'تتبع التقدم' : 'Suivi des progrès',
-        language === 'ar' ? 'إنجازات' : 'Réalisations'
-      ]
-    },
-    {
-      id: 'analytics',
-      title: language === 'ar' ? 'لوحة التحليلات' : 'Tableau d\'analyse',
-      description: language === 'ar' ? 'رؤى شاملة ومقاييس الأداء' : 'Insights complets et métriques de performance',
-      image: '/assets/asset-3.png',
-      category: language === 'ar' ? 'رؤى' : 'Insights',
-      stats: { improvement: '+18%', engagement: '94%', completion: '87%' },
-      features: [
-        language === 'ar' ? 'مقاييس الأداء' : 'Métriques de performance',
-        language === 'ar' ? 'تحليلات التعلم' : 'Analyses d\'apprentissage',
-        language === 'ar' ? 'تقارير التقدم' : 'Rapports de progrès'
-      ]
-    },
-    {
-      id: 'mobile-app',
-      title: language === 'ar' ? 'تجربة الموبايل' : 'Expérience mobile',
-      description: language === 'ar' ? 'تعلم سلس على أي جهاز، في أي مكان' : 'Apprentissage fluide sur tout appareil',
-      image: '/assets/asset-4.png',
-      category: language === 'ar' ? 'موبايل' : 'Mobile',
-      stats: { downloads: '2.1k', rating: '4.8', users: '1.2k' },
-      features: [
-        language === 'ar' ? 'متعدد المنصات' : 'Multi-plateforme',
-        language === 'ar' ? 'وضع عدم الاتصال' : 'Mode hors ligne',
-        language === 'ar' ? 'إشعارات فورية' : 'Notifications push'
-      ]
-    },
-    {
-      id: 'class-management',
-      title: language === 'ar' ? 'إدارة الفصول' : 'Gestion de classe',
-      description: language === 'ar' ? 'تنظيم وإدارة فصول متعددة بكفاءة' : 'Organiser et gérer plusieurs classes efficacement',
-      image: '/assets/asset-5.png',
-      category: language === 'ar' ? 'تنظيم' : 'Organisation',
-      stats: { classes: 8, students: 156, attendance: '96%' },
-      features: [
-        language === 'ar' ? 'تنظيم الفصول' : 'Organisation des classes',
-        language === 'ar' ? 'إدارة الطلاب' : 'Gestion des élèves',
-        language === 'ar' ? 'تتبع الحضور' : 'Suivi de présence'
-      ]
-    },
-    {
-      id: 'finance-management',
-      title: language === 'ar' ? 'إدارة المالية' : 'Gestion financière',
-      description: language === 'ar' ? 'تتبع مالي شامل وإدارة المدفوعات' : 'Suivi financier complet et gestion des paiements',
-      image: '/assets/finance.png',
-      category: language === 'ar' ? 'مالية' : 'Finance',
-      stats: { payments: 156, revenue: '$12.5k', transactions: 89 },
-      features: [
-        language === 'ar' ? 'تتبع المدفوعات' : 'Suivi des paiements',
-        language === 'ar' ? 'تقارير مالية' : 'Rapports financiers',
-        language === 'ar' ? 'تحليلات الإيرادات' : 'Analyses de revenus'
-      ]
-    },
-    {
-      id: 'model-3d',
-      title: language === 'ar' ? 'إدارة النماذج 3D' : 'Gestion de modèles 3D',
-      description: language === 'ar' ? 'نماذج تعليمية ثلاثية الأبعاد تفاعلية ومحتوى تعليمي' : 'Modèles 3D interactifs et contenu éducatif',
-      image: '/assets/model-3d.png',
-      category: language === 'ar' ? 'تعلم 3D' : 'Apprentissage 3D',
-      stats: { models: 45, downloads: 234, engagement: '92%' },
-      features: [
-        language === 'ar' ? 'مكتبة نماذج 3D' : 'Bibliothèque de modèles 3D',
-        language === 'ar' ? 'محتوى تفاعلي' : 'Contenu interactif',
-        language === 'ar' ? 'محاكاة تعليمية' : 'Simulations éducatives'
-      ]
-    }
+  // Screenshot Gallery Configuration
+  const screenshotImages = [
+    '/assets/asset-1.png',
+    '/assets/asset-2.png',
+    '/assets/asset-3.png',
+    '/assets/asset-4.png',
+    '/assets/asset-5.png',
+    '/assets/finance.png',
+    '/assets/model-3d.png'
   ];
+
+  const screenshotIds = [
+    'teacher-dashboard',
+    'student-game',
+    'analytics',
+    'mobile-app',
+    'class-management',
+    'finance-management',
+    'model-3d'
+  ];
+
+  const screenshotsData = t.screenshots || [];
+  const screenshotGallery = screenshotsData.map((item, index) => ({
+    ...item,
+    id: screenshotIds[index] || `screenshot-${index}`,
+    image: screenshotImages[index] || '/assets/asset-1.png'
+  }));
 
   // Auto-increment live stats
   useEffect(() => {
@@ -199,20 +136,20 @@ const LandingPage = () => {
     let animationId;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
-      75, 
-      threeViewerRef.current.clientWidth / threeViewerRef.current.clientHeight, 
-      0.1, 
+      75,
+      threeViewerRef.current.clientWidth / threeViewerRef.current.clientHeight,
+      0.1,
       1000
     );
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    
+
     renderer.setSize(threeViewerRef.current.clientWidth, threeViewerRef.current.clientHeight);
     renderer.setClearColor(0x000000, 0);
     threeViewerRef.current.appendChild(renderer.domElement);
 
     // Create educational 3D model (DNA-like structure)
     const modelGroup = new THREE.Group();
-    
+
     const sphereGeometry = new THREE.SphereGeometry(0.15, 32, 32);
     const materials = [
       new THREE.MeshPhongMaterial({ color: 0x4F46E5, emissive: 0x4F46E5, emissiveIntensity: 0.2 }),
@@ -226,11 +163,11 @@ const LandingPage = () => {
       const angle = (i / 40) * Math.PI * 6;
       const y = (i / 40) * 5 - 2.5;
       const radius = 1.2;
-      
+
       const sphere1 = new THREE.Mesh(sphereGeometry, materials[i % 4]);
       sphere1.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
       modelGroup.add(sphere1);
-      
+
       const sphere2 = new THREE.Mesh(sphereGeometry, materials[(i + 2) % 4]);
       sphere2.position.set(Math.cos(angle + Math.PI) * radius, y, Math.sin(angle + Math.PI) * radius);
       modelGroup.add(sphere2);
@@ -252,11 +189,11 @@ const LandingPage = () => {
     // Enhanced lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-    
+
     const pointLight1 = new THREE.PointLight(0x4F46E5, 1);
     pointLight1.position.set(5, 5, 5);
     scene.add(pointLight1);
-    
+
     const pointLight2 = new THREE.PointLight(0x06B6D4, 0.8);
     pointLight2.position.set(-5, -5, 5);
     scene.add(pointLight2);
@@ -276,11 +213,11 @@ const LandingPage = () => {
 
     const animate = () => {
       animationId = requestAnimationFrame(animate);
-      
+
       modelGroup.rotation.y += 0.005;
       modelGroup.rotation.x = mouseY * 0.3;
       modelGroup.rotation.y += mouseX * 0.01;
-      
+
       renderer.render(scene, camera);
     };
     animate();
@@ -334,312 +271,6 @@ const LandingPage = () => {
     );
   };
 
-  // Translation content matching PDF
-  const translations = {
-    ar: {
-      nav: {
-        features: "المميزات",
-        how: "كيف يعمل",
-        testimonials: "آراء المستخدمين",
-        login: "تسجيل الدخول",
-        getStarted: "ابدأ الآن",
-        dashboard: "لوحة التحكم"
-      },
-      hero: {
-        title: "WajibET - التعليم أصبح أكثر متعة",
-        subtitle: "وواقعية مع WajibET",
-        description: "منصة تعليمية مبتكرة تجمع بين الألعاب التفاعلية والمجسمات ثلاثية الأبعاد، لتجعل الدروس تجربة مشوقة سواء في الفصل أو من المنزل.",
-        startFree: "ابدأ الآن",
-        watchDemo: "شاهد العرض التوضيحي"
-      },
-      problem: {
-        title: "لماذا WajibET؟",
-        subtitle: "التحديات التي يواجهها التعليم التقليدي وحلولنا المبتكرة",
-        issues: [
-          "الحصص التقليدية تسبب الملل وقلة التفاعل",
-          "الطلاب يحتاجون لطرق جديدة أكثر جذبًا",
-          "الأساتذة يبحثون عن أدوات بسيطة وفعالة",
-          "صعوبة متابعة تقدم الطلاب بشكل فوري",
-          "عدم وجود أدوات تفاعلية للمواد المعقدة"
-        ],
-        solution: "الحل المبتكر",
-        solutionText: "WajibET يجعل التعليم تجربة تفاعلية ممتعة بفضل تقنياتنا المتقدمة:",
-        solutionPoints: [
-          "ألعاب تعليمية محفزة مع نظام النقاط والشارات",
-          "عارض 3D Viewer مدمج يضيف الواقعية للدروس",
-          "متابعة فورية لنتائج الطلاب والتقدم",
-          "سهولة الاستخدام للمعلمين والطلاب على حد سواء",
-          "دعم جميع المواد الدراسية والمستويات التعليمية"
-        ],
-        stats: {
-          engagement: "+85%",
-          retention: "+92%",
-          satisfaction: "4.8/5"
-        }
-      },
-      features: {
-        title: "المزايا الرئيسية",
-        subtitle: "كل ما تحتاجه لتحويل التعليم إلى تجربة ممتعة",
-        list: [
-          {
-            title: "مكتبة قوالب ضخمة",
-            description: "مكتبة كبيرة من القوالب التعليمية الجاهزة"
-          },
-          {
-            title: "ألعاب تفاعلية",
-            description: "ألعاب تفاعلية حضوريًا أو عن بعد"
-          },
-          {
-            title: "تخصيص سهل",
-            description: "تخصيص سهل حسب المستوى والمادة"
-          },
-          {
-            title: "3D Viewer مدمج",
-            description: "عرض مجسمات ثلاثية الأبعاد (علوم، رياضيات، هندسة…)"
-          },
-          {
-            title: "متابعة فورية",
-            description: "متابعة نتائج الطلاب في الوقت الحقيقي"
-          }
-        ]
-      },
-      viewer3D: {
-        title: "التعلم كما لم تره من قبل",
-        subtitle: "3D Viewer داخل WajibET",
-        description: "اكتشف الأعضاء البشرية، الأشكال الهندسية، أو الظواهر العلمية في بيئة ثلاثية الأبعاد تفاعلية. الطلاب لا يقرأون فقط… بل يعيشون التجربة!",
-        capabilities: [
-          "تدوير وتكبير النماذج ثلاثية الأبعاد",
-          "استكشاف تفاصيل معقدة بسهولة",
-          "مناسب لجميع المواد الدراسية",
-          "واجهة بسيطة وسهلة الاستخدام"
-        ]
-      },
-      howItWorks: {
-        title: "كيف يعمل WajibET؟",
-        subtitle: "أربع خطوات بسيطة لتحويل طريقة التدريس",
-        steps: [
-          {
-            title: "اختر القالب",
-            description: "اختر القالب أو اللعبة التعليمية المناسبة"
-          },
-          {
-            title: "أضف النشاط",
-            description: "أضف نشاطًا تفاعليًا للطلاب"
-          },
-          {
-            title: "عزز بـ 3D",
-            description: "عزز التجربة باستخدام 3D Viewer"
-          },
-          {
-            title: "راقب النتائج",
-            description: "راقب النتائج والتقدم مباشرة"
-          }
-        ]
-      },
-      testimonials: {
-        title: "ماذا يقول المستخدمون؟",
-        subtitle: "تجارب حقيقية من معلمين وطلاب",
-        list: [
-          {
-            quote: "طلابي صاروا أكثر حماسًا للدروس",
-            author: "أستاذة سارة",
-            role: "معلمة علوم"
-          },
-          {
-            quote: "3D Viewer جعل شرح العلوم أسرع وأسهل",
-            author: "الأستاذ محمد",
-            role: "معلم فيزياء"
-          },
-          {
-            quote: "بسيط جدًا، حتى المعلمين الجدد يقدرون يستخدمونه",
-            author: "د. فاطمة",
-            role: "مديرة مدرسة"
-          }
-        ]
-      },
-      audience: {
-        title: "لمن صُمم WajibET؟",
-        subtitle: "حلول مصممة لكل فرد في المنظومة التعليمية",
-        groups: [
-          {
-            title: "المدارس والمؤسسات",
-            description: "منصة شاملة لإدارة العملية التعليمية"
-          },
-          {
-            title: "الأساتذة",
-            description: "أدوات تدريس حديثة وطرق جديدة للشرح"
-          },
-          {
-            title: "التلاميذ", // changed from أولياء التلاميذ
-            description: "تدعم التلاميذ خلال مسارهم الدراسي" // changed from دعم تعلم الأبناء من المنزل بسهولة
-          }
-        ]
-      },
-      cta: {
-        title: "اجعل التعليم أكثر متعة مع WajibET اليوم!",
-        subtitle: "ابدأ مجانًا واكتشف الفرق",
-        button: "ابدأ الآن",
-        demo: "احجز عرضًا توضيحيًا"
-      },
-      footer: {
-        rights: "© EDZ Smart System. جميع الحقوق محفوظة",
-        contact: "تواصل معنا"
-      }
-    },
-    fr: {
-      nav: {
-        features: "Fonctionnalités",
-        how: "Comment ça marche",
-        testimonials: "Témoignages",
-        login: "Connexion",
-        getStarted: "Commencer",
-        dashboard: "Tableau de bord"
-      },
-      hero: {
-        title: "WajibET - L'éducation devient",
-        subtitle: "plus amusante et réaliste avec WajibET",
-        description: "Une plateforme éducative innovante qui combine jeux interactifs et modèles 3D pour transformer les cours en une expérience captivante, en classe ou à la maison.",
-        startFree: "Commencer maintenant",
-        watchDemo: "Voir la démo"
-      },
-      problem: {
-        title: "Pourquoi WajibET ?",
-        subtitle: "Les défis de l'éducation traditionnelle et nos solutions innovantes",
-        issues: [
-          "Les cours traditionnels causent l'ennui et le manque d'interaction",
-          "Les élèves ont besoin de méthodes plus attrayantes",
-          "Les enseignants cherchent des outils simples et efficaces",
-          "Difficulté à suivre les progrès des élèves en temps réel",
-          "Absence d'outils interactifs pour les matières complexes"
-        ],
-        solution: "La solution innovante",
-        solutionText: "WajibET rend l'éducation une expérience interactive et amusante grâce à nos technologies avancées :",
-        solutionPoints: [
-          "Jeux éducatifs motivants avec système de points et badges",
-          "Visualiseur 3D intégré qui ajoute du réalisme aux leçons",
-          "Suivi instantané des résultats et progrès des élèves",
-          "Facilité d'utilisation pour les enseignants et élèves",
-          "Support de toutes les matières et niveaux scolaires"
-        ],
-        stats: {
-          engagement: "+85%",
-          retention: "+92%",
-          satisfaction: "4.8/5"
-        }
-      },
-      features: {
-        title: "Fonctionnalités principales",
-        subtitle: "Tout ce dont vous avez besoin pour transformer l'éducation",
-        list: [
-          {
-            title: "Grande bibliothèque",
-            description: "Large collection de modèles éducatifs prêts à l'emploi"
-          },
-          {
-            title: "Jeux interactifs",
-            description: "Jeux interactifs en présentiel ou à distance"
-          },
-          {
-            title: "Personnalisation facile",
-            description: "Adaptation simple selon le niveau et la matière"
-          },
-          {
-            title: "Visualiseur 3D intégré",
-            description: "Affichage de modèles 3D (sciences, maths, géométrie…)"
-          },
-          {
-            title: "Suivi en temps réel",
-            description: "Suivez les résultats des élèves instantanément"
-          }
-        ]
-      },
-      viewer3D: {
-        title: "L'apprentissage comme vous ne l'avez jamais vu",
-        subtitle: "Visualiseur 3D dans WajibET",
-        description: "Découvrez les organes humains, les formes géométriques ou les phénomènes scientifiques dans un environnement 3D interactif. Les élèves ne lisent pas seulement… ils vivent l'expérience !",
-        capabilities: [
-          "Rotation et zoom des modèles 3D",
-          "Explorer facilement les détails complexes",
-          "Adapté à toutes les matières",
-          "Interface simple et facile à utiliser"
-        ]
-      },
-      howItWorks: {
-        title: "Comment fonctionne WajibET ?",
-        subtitle: "Quatre étapes simples pour transformer l'enseignement",
-        steps: [
-          {
-            title: "Choisissez le modèle",
-            description: "Sélectionnez le modèle ou le jeu éducatif approprié"
-          },
-          {
-            title: "Ajoutez l'activité",
-            description: "Ajoutez une activité interactive pour les élèves"
-          },
-          {
-            title: "Améliorez avec 3D",
-            description: "Enrichissez l'expérience avec le visualiseur 3D"
-          },
-          {
-            title: "Suivez les résultats",
-            description: "Surveillez les résultats et les progrès directement"
-          }
-        ]
-      },
-      testimonials: {
-        title: "Que disent les utilisateurs ?",
-        subtitle: "Expériences réelles d'enseignants et d'élèves",
-        list: [
-          {
-            quote: "Mes élèves sont devenus plus enthousiastes pour les cours",
-            author: "Professeur Sarah",
-            role: "Enseignante de sciences"
-          },
-          {
-            quote: "Le visualiseur 3D a rendu l'explication des sciences plus rapide et facile",
-            author: "Professeur Mohamed",
-            role: "Enseignant de physique"
-          },
-          {
-            quote: "Très simple, même les nouveaux enseignants peuvent l'utiliser",
-            author: "Dr. Fatima",
-            role: "Directrice d'école"
-          }
-        ]
-      },
-      audience: {
-        title: "Pour qui est conçu WajibET ?",
-        subtitle: "Des solutions adaptées à chaque membre de la communauté éducative",
-        groups: [
-          {
-            title: "Écoles et institutions",
-            description: "Plateforme complète pour gérer le processus éducatif"
-          },
-          {
-            title: "Enseignants",
-            description: "Outils d'enseignement modernes et nouvelles méthodes"
-          },
-          {
-            title: "Élèves", // changed for consistency
-            description: "Accompagne les élèves tout au long de leur parcours scolaire" // changed for consistency
-          }
-        ]
-      },
-      cta: {
-        title: "Rendez l'éducation plus amusante avec WajibET aujourd'hui !",
-        subtitle: "Commencez gratuitement et découvrez la différence",
-        button: "Commencer maintenant",
-        demo: "Réserver une démo"
-      },
-      footer: {
-        rights: "© EDZ Smart System. Tous droits réservés",
-        contact: "Contactez-nous"
-      }
-    }
-  };
-
-  const t = translations[language];
-
   const handleGetStarted = () => {
     if (user) {
       navigate('/dashboard');
@@ -679,31 +310,12 @@ const LandingPage = () => {
               <a href="#testimonials" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
                 {t.nav.testimonials}
               </a>
-              
+
               {/* Language Switcher */}
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <button
-                  onClick={() => setLanguage('ar')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    language === 'ar' 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  عربي
-                </button>
-                <button
-                  onClick={() => setLanguage('fr')}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    language === 'fr' 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  FR
-                </button>
+                <LanguageSwitcher />
               </div>
-              
+
               {user ? (
                 <>
                   <button
@@ -762,26 +374,24 @@ const LandingPage = () => {
               <a href="#testimonials" className="block text-gray-700 hover:text-blue-600 font-medium py-2">
                 {t.nav.testimonials}
               </a>
-              
+
               <div className="flex items-center space-x-2 rtl:space-x-reverse py-2">
                 <button
                   onClick={() => setLanguage('ar')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${
-                    language === 'ar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${language === 'ar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}
                 >
                   عربي
                 </button>
                 <button
                   onClick={() => setLanguage('fr')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${
-                    language === 'fr' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 ${language === 'fr' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}
                 >
                   FR
                 </button>
               </div>
-              
+
               {user ? (
                 <button
                   onClick={() => navigate('/dashboard')}
@@ -827,7 +437,7 @@ const LandingPage = () => {
                 {t.hero.subtitle}
               </span>
             </h1>
-            
+
             <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
               {t.hero.description}
             </p>
@@ -840,7 +450,7 @@ const LandingPage = () => {
                 <span>{t.hero.startFree}</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
               </button>
-              <a 
+              <a
                 href="/tutorial"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -984,25 +594,25 @@ const LandingPage = () => {
               {/* Solution Statistics */}
               <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                  {language === 'ar' ? 'نتائج WajibET' : 'Résultats WajibET'}
+                  {t.wajibetResults}
                 </h4>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <div className="text-2xl font-bold text-green-600">{t.problem.stats.engagement}</div>
                     <div className="text-sm text-gray-600">
-                      {language === 'ar' ? 'زيادة التفاعل' : 'Interaction +'}
+                      {t.increasedInteraction}
                     </div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-green-600">{t.problem.stats.retention}</div>
                     <div className="text-sm text-gray-600">
-                      {language === 'ar' ? 'تحسين الاحتفاظ' : 'Rétention +'}
+                      {t.improvedRetention}
                     </div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-green-600">{t.problem.stats.satisfaction}</div>
                     <div className="text-sm text-gray-600">
-                      {language === 'ar' ? 'رضا المستخدمين' : 'Satisfaction'}
+                      {t.userSatisfaction}
                     </div>
                   </div>
                 </div>
@@ -1026,7 +636,7 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {t.features.list.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="group bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-2xl hover:border-indigo-200 transition-all duration-300"
               >
@@ -1060,11 +670,11 @@ const LandingPage = () => {
               <div className="inline-block bg-blue-500/20 backdrop-blur-sm text-blue-200 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 {t.viewer3D.subtitle}
               </div>
-              
+
               <h2 className="text-3xl sm:text-4xl font-bold mb-6 leading-tight">
                 {t.viewer3D.title}
               </h2>
-              
+
               <p className="text-xl text-blue-100 mb-8 leading-relaxed">
                 {t.viewer3D.description}
               </p>
@@ -1082,7 +692,7 @@ const LandingPage = () => {
                 onClick={handleGetStarted}
                 className="mt-8 bg-white text-blue-900 px-8 py-4 rounded-xl hover:shadow-2xl transition-all font-semibold text-lg inline-flex items-center space-x-2 rtl:space-x-reverse group"
               >
-                <span>{language === 'ar' ? 'جرب 3D Viewer الآن' : 'Essayer le visualiseur 3D'}</span>
+                <span>{t.tryViewerNow}</span>
                 <Eye className="w-5 h-5 group-hover:scale-110 transition-transform" />
               </button>
             </div>
@@ -1092,15 +702,15 @@ const LandingPage = () => {
               <div className="aspect-square bg-white/10 backdrop-blur-sm rounded-3xl p-4 shadow-2xl border border-white/20">
                 <div ref={threeViewerRef} className="w-full h-full rounded-2xl" />
               </div>
-              
+
               {/* Floating Info Cards */}
               <div className="absolute -top-6 -right-6 bg-white text-gray-900 px-4 py-3 rounded-xl shadow-lg">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <Zap className="w-5 h-5 text-yellow-500" />
-                  <span className="font-semibold">{language === 'ar' ? 'تفاعلي 100%' : 'Interactif 100%'}</span>
+                  <span className="font-semibold">{t.interactive100}</span>
                 </div>
               </div>
-              
+
               {/* REMOVE: 235+ مجسم (floating info card in 3D Viewer section)
               <div className="absolute -bottom-6 -left-6 bg-white text-gray-900 px-4 py-3 rounded-xl shadow-lg">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -1130,27 +740,24 @@ const LandingPage = () => {
             {t.howItWorks.steps.map((step, index) => (
               <div
                 key={index}
-                className={`relative bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${
-                  activeStep === index 
-                    ? 'border-indigo-500 shadow-2xl scale-105' 
-                    : 'border-gray-100 hover:border-indigo-200'
-                }`}
+                className={`relative bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${activeStep === index
+                  ? 'border-indigo-500 shadow-2xl scale-105'
+                  : 'border-gray-100 hover:border-indigo-200'
+                  }`}
               >
                 {/* Step Number */}
-                <div className={`absolute -top-4 ${language === 'ar' ? '-right-4' : '-left-4'} w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
-                  activeStep === index
-                    ? 'bg-indigo-600 animate-pulse'
-                    : 'bg-gray-400'
-                }`}>
+                <div className={`absolute -top-4 ${isRTL ? '-right-4' : '-left-4'} w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${activeStep === index
+                  ? 'bg-indigo-600 animate-pulse'
+                  : 'bg-gray-400'
+                  }`}>
                   {index + 1}
                 </div>
 
                 {/* Icon */}
-                <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 transition-all ${
-                  activeStep === index
-                    ? 'bg-indigo-600'
-                    : 'bg-gray-100'
-                }`}>
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center mb-6 transition-all ${activeStep === index
+                  ? 'bg-indigo-600'
+                  : 'bg-gray-100'
+                  }`}>
                   {index === 0 && <BookOpen className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
                   {index === 1 && <Target className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
                   {index === 2 && <Layers className={`w-8 h-8 ${activeStep === index ? 'text-white' : 'text-gray-600'}`} />}
@@ -1176,11 +783,10 @@ const LandingPage = () => {
               <button
                 key={index}
                 onClick={() => setActiveStep(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  activeStep === index
-                    ? 'bg-indigo-600 w-8'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
+                className={`w-3 h-3 rounded-full transition-all ${activeStep === index
+                  ? 'bg-indigo-600 w-8'
+                  : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
                 aria-label={`Go to step ${index + 1}`}
               />
             ))}
@@ -1204,11 +810,10 @@ const LandingPage = () => {
             {t.testimonials.list.map((testimonial, index) => (
               <div
                 key={index}
-                className={`bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${
-                  activeTestimonial === index
-                    ? 'border-indigo-500 shadow-2xl scale-105'
-                    : 'border-gray-100 hover:border-indigo-200'
-                }`}
+                className={`bg-white rounded-2xl p-8 shadow-lg border-2 transition-all duration-500 ${activeTestimonial === index
+                  ? 'border-indigo-500 shadow-2xl scale-105'
+                  : 'border-gray-100 hover:border-indigo-200'
+                  }`}
               >
                 {/* Quote Icon */}
                 <div className="flex justify-between items-start mb-6">
@@ -1243,11 +848,10 @@ const LandingPage = () => {
               <button
                 key={index}
                 onClick={() => setActiveTestimonial(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  activeTestimonial === index
-                    ? 'bg-indigo-600 w-8'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
+                className={`w-3 h-3 rounded-full transition-all ${activeTestimonial === index
+                  ? 'bg-indigo-600 w-8'
+                  : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
                 aria-label={`View testimonial ${index + 1}`}
               />
             ))}
@@ -1258,27 +862,23 @@ const LandingPage = () => {
         <div className="section-content max-w-7xl mx-auto w-full">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-whitesmoke mb-4">
-              {language === 'ar' ? 'شاهد المنصة في العمل' : 'Voir la plateforme en action'}
+              {t.watchPlatform}
             </h2>
             <p className="text-xl text-gray-200 max-w-2xl mx-auto">
-              {language === 'ar' 
-                ? 'لقطات حقيقية من فصول دراسية حقيقية. اختبر المنصة من خلال عيون المعلمين والطلاب والإداريين'
-                : 'Captures réelles de vraies salles de classe. Découvrez la plateforme à travers les yeux des enseignants, étudiants et administrateurs'
-              }
+              {t.watchPlatformDesc}
             </p>
           </div>
-          
+
           {/* Screenshot Navigation Tabs */}
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             {screenshotGallery.map((screenshot, index) => (
               <button
                 key={screenshot.id}
                 onClick={() => setActiveScreenshot(index)}
-                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                  activeScreenshot === index
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-white/10 backdrop-blur-sm text-gray-200 hover:bg-white/20 border border-white/20'
-                }`}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 ${activeScreenshot === index
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'bg-white/10 backdrop-blur-sm text-gray-200 hover:bg-white/20 border border-white/20'
+                  }`}
               >
                 {screenshot.title}
               </button>
@@ -1304,86 +904,86 @@ const LandingPage = () => {
             </button>
 
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-              {/* Screenshot Image */}
-              <div className="relative bg-gray-100 min-h-[400px] lg:min-h-[600px] flex items-center justify-center">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <div className="w-full h-full flex items-center justify-center p-6 lg:p-8">
-                    <img 
-                      src={screenshotGallery[activeScreenshot].image} 
-                      alt={screenshotGallery[activeScreenshot].title}
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    {/* Fallback placeholder */}
-                    <div className="text-center hidden">
-                      <div className="w-24 h-24 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        {activeScreenshot === 0 && <Users className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 1 && <Gamepad2 className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 2 && <BarChart3 className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 3 && <Users className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 4 && <Users className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 5 && <BarChart3 className="w-12 h-12 text-gray-600" />}
-                        {activeScreenshot === 6 && <Layers className="w-12 h-12 text-gray-600" />}
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                        {screenshotGallery[activeScreenshot].title}
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        {screenshotGallery[activeScreenshot].description}
-                      </p>
-                      <div className="text-sm text-gray-500">
-                        {language === 'ar' ? 'ملف' : 'Fichier'}: {screenshotGallery[activeScreenshot].image}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                {/* Screenshot Image */}
+                <div className="relative bg-gray-100 min-h-[400px] lg:min-h-[600px] flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center p-6 lg:p-8">
+                      <img
+                        src={screenshotGallery[activeScreenshot].image}
+                        alt={screenshotGallery[activeScreenshot].title}
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback placeholder */}
+                      <div className="text-center hidden">
+                        <div className="w-24 h-24 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                          {activeScreenshot === 0 && <Users className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 1 && <Gamepad2 className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 2 && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 3 && <Users className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 4 && <Users className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 5 && <BarChart3 className="w-12 h-12 text-gray-600" />}
+                          {activeScreenshot === 6 && <Layers className="w-12 h-12 text-gray-600" />}
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          {screenshotGallery[activeScreenshot].title}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          {screenshotGallery[activeScreenshot].description}
+                        </p>
+                        <div className="text-sm text-gray-500">
+                          {t.file}: {screenshotGallery[activeScreenshot].image}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Screenshot Details */}
-              <div className="p-6 lg:p-10">
-                <div className="mb-6">
-                  <div className="inline-block bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
-                    {screenshotGallery[activeScreenshot].category}
+                {/* Screenshot Details */}
+                <div className="p-6 lg:p-10">
+                  <div className="mb-6">
+                    <div className="inline-block bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                      {screenshotGallery[activeScreenshot].category}
+                    </div>
+                    <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
+                      {screenshotGallery[activeScreenshot].title}
+                    </h3>
+                    <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
+                      {screenshotGallery[activeScreenshot].description}
+                    </p>
                   </div>
-                  <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
-                    {screenshotGallery[activeScreenshot].title}
-                  </h3>
-                  <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
-                    {screenshotGallery[activeScreenshot].description}
-                  </p>
-                </div>
 
-                {/* Feature List */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'ar' ? 'الميزات الرئيسية' : 'Fonctionnalités clés'}
-                  </h4>
-                  <div className="space-y-3">
-                    {screenshotGallery[activeScreenshot].features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-3 rtl:space-x-reverse">
-                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
+                  {/* Feature List */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      {t.keyFeatures}
+                    </h4>
+                    <div className="space-y-3">
+                      {screenshotGallery[activeScreenshot].features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-3 rtl:space-x-reverse">
+                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-3 lg:gap-4">
+                    {Object.entries(screenshotGallery[activeScreenshot].stats).map(([key, value]) => (
+                      <div key={key} className="text-center p-3 lg:p-4 bg-gray-50 rounded-lg">
+                        <div className="text-xl lg:text-2xl font-bold text-gray-900">{value}</div>
+                        <div className="text-xs lg:text-sm text-gray-600 capitalize">{key}</div>
                       </div>
                     ))}
                   </div>
                 </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-3 lg:gap-4">
-                  {Object.entries(screenshotGallery[activeScreenshot].stats).map(([key, value]) => (
-                    <div key={key} className="text-center p-3 lg:p-4 bg-gray-50 rounded-lg">
-                      <div className="text-xl lg:text-2xl font-bold text-gray-900">{value}</div>
-                      <div className="text-xs lg:text-sm text-gray-600 capitalize">{key}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
-          </div>
           </div>
 
           {/* Screenshot Thumbnails */}
@@ -1392,15 +992,14 @@ const LandingPage = () => {
               <button
                 key={screenshot.id}
                 onClick={() => setActiveScreenshot(index)}
-                className={`relative rounded-lg overflow-hidden transition-all duration-300 ${
-                  activeScreenshot === index
-                    ? 'ring-2 ring-indigo-600 shadow-lg scale-100'
-                    : 'hover:shadow-md scale-50 opacity-40'
-                }`}
+                className={`relative rounded-lg overflow-hidden transition-all duration-300 ${activeScreenshot === index
+                  ? 'ring-2 ring-indigo-600 shadow-lg scale-100'
+                  : 'hover:shadow-md scale-50 opacity-40'
+                  }`}
               >
                 <div className="aspect-video bg-gray-200 flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={screenshot.image} 
+                  <img
+                    src={screenshot.image}
                     alt={screenshot.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -1546,12 +1145,12 @@ const LandingPage = () => {
 
             {/* Quick Links */}
             <div>
-              <h4 className="font-bold text-lg mb-4">{language === 'ar' ? 'روابط سريعة' : 'Liens rapides'}</h4>
+              <h4 className="font-bold text-lg mb-4">{t.quickLinks}</h4>
               <ul className="space-y-3">
                 <li><a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.features}</a></li>
                 <li><a href="#how-it-works" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.how}</a></li>
                 <li><a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm">{t.nav.testimonials}</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{language === 'ar' ? 'الدعم الفني' : 'Support technique'}</a></li>
+                <li><a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">{t.technicalSupport}</a></li>
               </ul>
             </div>
           </div>
@@ -1564,10 +1163,10 @@ const LandingPage = () => {
               </div>
               <div className="flex items-center space-x-6 rtl:space-x-reverse text-gray-400 text-sm">
                 <a href="#" className="hover:text-white transition-colors">
-                  {language === 'ar' ? 'سياسة الخصوصية' : 'Politique de confidentialité'}
+                  {t.privacyPolicy}
                 </a>
                 <a href="#" className="hover:text-white transition-colors">
-                  {language === 'ar' ? 'الشروط والأحكام' : 'Conditions d\'utilisation'}
+                  {t.termsConditions}
                 </a>
               </div>
             </div>

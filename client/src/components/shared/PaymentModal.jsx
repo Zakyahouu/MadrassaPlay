@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Unified Payment Modal (default export)
 // Props: isOpen, onClose, enrollmentId, pricingSnapshot, defaultKind, onSuccess
@@ -11,6 +12,7 @@ const PaymentModal = ({
   defaultKind = 'pay_sessions',
   onSuccess,
 }) => {
+  const { t } = useLanguage();
   const [method, setMethod] = useState('cash');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +76,7 @@ const PaymentModal = ({
         await axios.post('/api/payments', payload, config);
       } catch (postErr) {
         // Surface backend error
-        const msg = postErr?.response?.data?.message || 'Failed to record payment';
+        const msg = postErr?.response?.data?.message || t.failedToRecordPayment || 'Failed to record payment';
         alert(msg);
         return;
       }
@@ -89,7 +91,7 @@ const PaymentModal = ({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
       <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Record Payment</h3>
+          <h3 className="font-semibold">{t.recordPayment}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded" aria-label="Close">
             ✕
           </button>
@@ -97,53 +99,53 @@ const PaymentModal = ({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Unit</label>
-              <select value={unitType} onChange={(e)=>setUnitType(e.target.value)} className="w-full p-2 border rounded">
-                <option value="session">Session</option>
-                <option value="cycle">Cycle</option>
+              <label className="block text-sm font-medium mb-1">{t.unit}</label>
+              <select value={unitType} onChange={(e) => setUnitType(e.target.value)} className="w-full p-2 border rounded">
+                <option value="session">{t.session}</option>
+                <option value="cycle">{t.cycle}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Quantity</label>
-              <input type="number" min="1" value={quantity} onChange={(e)=>setQuantity(e.target.value)} className="w-full p-2 border rounded" />
+              <label className="block text-sm font-medium mb-1">{t.quantity}</label>
+              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full p-2 border rounded" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Price</label>
+              <label className="block text-sm font-medium mb-1">{t.price}</label>
               <input value={expectedPrice.toFixed(2)} readOnly className="w-full p-2 border rounded bg-gray-50" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Taken</label>
-              <input type="number" value={taken} onChange={(e)=>setTaken(e.target.value)} className="w-full p-2 border rounded" />
+              <label className="block text-sm font-medium mb-1">{t.taken}</label>
+              <input type="number" value={taken} onChange={(e) => setTaken(e.target.value)} className="w-full p-2 border rounded" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Debt (taken - price)</label>
+              <label className="block text-sm font-medium mb-1">{t.debt}</label>
               <input value={debt.toFixed(2)} readOnly className="w-full p-2 border rounded bg-gray-50" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Method</label>
-              <select value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full p-2 border rounded">
-                <option value="cash">Cash</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="card">Card</option>
+              <label className="block text-sm font-medium mb-1">{t.method}</label>
+              <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full p-2 border rounded">
+                <option value="cash">{t.cash}</option>
+                <option value="bank_transfer">{t.bankTransfer}</option>
+                <option value="card">{t.card}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Note</label>
-              <input value={note} onChange={(e)=>setNote(e.target.value)} className="w-full p-2 border rounded" placeholder="Optional" />
+              <label className="block text-sm font-medium mb-1">{t.note}</label>
+              <input value={note} onChange={(e) => setNote(e.target.value)} className="w-full p-2 border rounded" placeholder={t.optional || "Optional"} />
             </div>
           </div>
           <div className="bg-gray-50 border rounded p-3 text-sm">
             <div>
-              Credited: <span className="font-medium">{creditedUnits}</span> {unitType === 'cycle' ? 'cycle(s)' : 'session(s)'}{unitType === 'cycle' && cycleSize ? ` (${cycleSize} sessions per cycle)` : ''}
+              {t.credited}: <span className="font-medium">{creditedUnits}</span> {unitType === 'cycle' ? (t.cycles || 'cycle(s)') : (t.sessions || 'session(s)')}{unitType === 'cycle' && cycleSize ? ` (${cycleSize} ${t.sessionsPerCycle})` : ''}
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 p-2 border rounded hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={isSubmitting || Number(quantity) <= 0} className="flex-1 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">{isSubmitting ? 'Processing…' : 'Save'}</button>
+            <button type="button" onClick={onClose} className="flex-1 p-2 border rounded hover:bg-gray-50">{t.cancel}</button>
+            <button type="submit" disabled={isSubmitting || Number(quantity) <= 0} className="flex-1 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">{isSubmitting ? (t.processing || 'Processing...') : (t.save || 'Save')}</button>
           </div>
         </form>
       </div>
@@ -152,5 +154,3 @@ const PaymentModal = ({
 };
 
 export default PaymentModal;
-
-

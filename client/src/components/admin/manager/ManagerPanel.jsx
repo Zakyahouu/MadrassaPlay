@@ -4,8 +4,10 @@ import ManagerCreateForm from './ManagerCreateForm';
 import ManagerList from './ManagerList';
 import ManagerDeleteButton from './ManagerDeleteButton';
 import ManagerUpdateForm from './ManagerUpdateForm';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ManagerPanel = ({ schoolId }) => {
+  const { t } = useLanguage();
   const [selectedManager, setSelectedManager] = useState(null);
   const [refresh, setRefresh] = useState(false);
 

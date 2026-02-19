@@ -30,6 +30,7 @@ import Profile from './pages/Profile';
 import SharedModelViewer from './pages/SharedModelViewer';
 import FullScreenModelViewer from './pages/FullScreenModelViewer';
 import ProtectedRoute from './components/ProtectedRoute';
+import GameAnalyticsDashboard from './components/analytics/GameAnalyticsDashboard';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
 
 function App() {
@@ -42,80 +43,71 @@ function App() {
           <div className="App">
             <LanguageTransitionOverlay />
             <Routes>
-          {/* Route 1: The Landing Page */}
-          <Route path="/" element={<LandingPage />} />
-          
-          {/* Tutorial Video Page */}
-          <Route path="/tutorial" element={<TutorialVideo />} />
+              {/* Route 1: The Landing Page */}
+              <Route path="/" element={<LandingPage />} />
 
-          {/* Route 2: The Login Page */}
-          <Route 
-            path="/login" 
-            element={user ? <RoleBasedRedirect /> : <Login />} 
-          />
+              {/* Tutorial Video Page */}
+              <Route path="/tutorial" element={<TutorialVideo />} />
 
-          {/* Route 3: Dashboard redirect for authenticated users */}
-          <Route path="/dashboard" element={<RoleBasedRedirect />} />
+              {/* Route 2: The Login Page */}
+              <Route
+                path="/login"
+                element={user ? <RoleBasedRedirect /> : <Login />}
+              />
 
-          {/* Route 4: The Admin Dashboard */}
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
+              {/* Route 3: Dashboard redirect for authenticated users */}
+              <Route path="/dashboard" element={<RoleBasedRedirect />} />
 
-          {/* Route 5: The Teacher Dashboard */}
-          <Route 
-            path="/teacher/dashboard" 
-            element={
-              <ProtectedRoute>
-                <TeacherDashboard />
-              </ProtectedRoute>
-            } 
-          />
+              {/* Route 4: The Admin Dashboard */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 6: The Student Dashboard */}
-          <Route 
-            path="/student/dashboard" 
-            element={
-              <ProtectedRoute>
-                <StudentDashboard />
-              </ProtectedRoute>
-            } 
-          />
+              {/* Route 5: The Teacher Dashboard */}
+              <Route
+                path="/teacher/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <TeacherDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 7: The Manager Dashboard */}
-          <Route
-            path="/manager/dashboard"
-            element={
-              <ProtectedRoute>
-                <ManagerDashboardPage />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 6: The Student Dashboard */}
+              <Route
+                path="/student/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <StudentDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-          <Route
-            path="/manager/password-reset"
-            element={
-              <ProtectedRoute>
-                <ManagerPasswordReset />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 7: The Manager Dashboard */}
+              <Route
+                path="/manager/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <ManagerDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 8: The Finance Page (Manager only) */}
-          <Route
-            path="/manager/finance"
-            element={
-              <ProtectedRoute>
-                <Finance />
-              </ProtectedRoute>
-            }
-          />
+              <Route
+                path="/manager/password-reset"
+                element={
+                  <ProtectedRoute>
+                    <ManagerPasswordReset />
+                  </ProtectedRoute>
+                }
+              />
 
+<<<<<<< Updated upstream
           {/* Route 9: The Create Game Page */}
           <Route
             path="/teacher/create-game/:templateId"
@@ -125,127 +117,159 @@ function App() {
               </ProtectedRoute>
             }
           />
+=======
+              {/* Route 8: The Finance Page (Manager only) */}
+              <Route
+                path="/manager/finance"
+                element={
+                  <ProtectedRoute>
+                    <Finance />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 10: The Edit Game Page */}
-          <Route
-            path="/teacher/edit-game/:creationId"
-            element={
-              <ProtectedRoute>
-                <EditGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/edit-game/:creationId"
-            element={
-              <ProtectedRoute>
-                <EditGame />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 8.1: Landing Page Builder (Manager only) */}
+              <Route
+                path="/manager/landing-page-builder"
+                element={
+                  <ProtectedRoute>
+                    <LandingPageBuilder />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 11: The Play Game Page */}
-          <Route
-            path="/admin/play-game/:creationId"
-            element={
-              <ProtectedRoute>
-                <PlayGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/teacher/play-game/:creationId"
-            element={
-              <ProtectedRoute>
-                <PlayGame />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/student/play-game/:creationId"
-            element={
-              <ProtectedRoute>
-                <PlayGame />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 8.2: Inquiries Manager (Manager only) */}
+              <Route
+                path="/manager/inquiries"
+                element={
+                  <ProtectedRoute>
+                    <InquiriesManager />
+                  </ProtectedRoute>
+                }
+              />
+>>>>>>> Stashed changes
 
-          {/* Route 12: The View Results Page */}
-          <Route
-            path="/teacher/results/:gameCreationId"
-            element={
-              <ProtectedRoute>
-                <ViewResults />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 9: The Create Game Page */}
+              <Route
+                path="/teacher/create-game/:templateId"
+                element={
+                  <ProtectedRoute>
+                    <CreateGame />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Detailed result page (teacher/admin) */}
-          <Route
-            path="/teacher/result/:resultId"
-            element={
-              <ProtectedRoute>
-                <ResultDetail />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 10: The Edit Game Page */}
+              <Route
+                path="/teacher/edit-game/:creationId"
+                element={
+                  <ProtectedRoute>
+                    <EditGame />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/edit-game/:creationId"
+                element={
+                  <ProtectedRoute>
+                    <EditGame />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 13: The Host Lobby Page */}
-          <Route
-            path="/teacher/host-lobby/:gameCreationId"
-            element={
-              <ProtectedRoute>
-                <HostLobby />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/teacher/host-lobby/session/:sessionId"
-            element={
-              <ProtectedRoute>
-                <HostLobby />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 11: The Play Game Page */}
+              <Route
+                path="/admin/play-game/:creationId"
+                element={
+                  <ProtectedRoute>
+                    <PlayGame />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teacher/play-game/:creationId"
+                element={
+                  <ProtectedRoute>
+                    <PlayGame />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/play-game/:creationId"
+                element={
+                  <ProtectedRoute>
+                    <PlayGame />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Route 14: The Player Lobby Page */}
-          <Route
-            path="/student/lobby/:roomCode"
-            element={
-              <ProtectedRoute>
-                <PlayerLobby />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 12: The View Results Page */}
+              <Route
+                path="/teacher/results/:gameCreationId"
+                element={
+                  <ProtectedRoute>
+                    <ViewResults />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Live Sessions */}
-          <Route
-            path="/teacher/live-sessions"
-            element={
-              <ProtectedRoute>
-                <Navigate to="/teacher/dashboard?tab=live-sessions" replace />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/teacher/live-sessions/:id"
-            element={
-              <ProtectedRoute>
-                <TeacherLiveSessionSummary />
-              </ProtectedRoute>
-            }
-          />
+              {/* Detailed result page (teacher/admin) */}
+              <Route
+                path="/teacher/result/:resultId"
+                element={
+                  <ProtectedRoute>
+                    <ResultDetail />
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Profile Route - Unified for all roles */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+              {/* Route 13: The Host Lobby Page */}
+              <Route
+                path="/teacher/host-lobby/:gameCreationId"
+                element={
+                  <ProtectedRoute>
+                    <HostLobby />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teacher/host-lobby/session/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <HostLobby />
+                  </ProtectedRoute>
+                }
+              />
 
+              {/* Route 14: The Player Lobby Page */}
+              <Route
+                path="/student/lobby/:roomCode"
+                element={
+                  <ProtectedRoute>
+                    <PlayerLobby />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Live Sessions */}
+              <Route
+                path="/teacher/live-sessions"
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/teacher/dashboard?tab=live-sessions" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/teacher/live-sessions/:id"
+                element={
+                  <ProtectedRoute>
+                    <TeacherLiveSessionSummary />
+                  </ProtectedRoute>
+                }
+              />
+
+<<<<<<< Updated upstream
           {/* Shared Model Viewer - Public route (no authentication required) */}
           <Route
             path="/shared/:authKey"
@@ -257,6 +281,34 @@ function App() {
             element={<FullScreenModelViewer />}
           />
         </Routes>
+=======
+              {/* Profile Route - Unified for all roles */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Shared Model Viewer - Public route (no authentication required) */}
+              <Route
+                path="/shared/:authKey"
+                element={<SharedModelViewer />}
+              />
+
+              {/* Public School Landing Pages - Two routes for compatibility */}
+              <Route path="/school/:schoolId" element={<PublicSchoolLandingPage />} />
+              <Route path="/school/:schoolId/legacy" element={<PublicSchoolPage />} />
+
+              {/* Full-screen 3D Model viewer (authenticated via underlying API token) */}
+              <Route
+                path="/viewer/:modelId"
+                element={<FullScreenModelViewer />}
+              />
+            </Routes>
+>>>>>>> Stashed changes
           </div>
         </Router>
       </ToastProvider>

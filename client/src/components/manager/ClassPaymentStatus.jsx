@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import formatDZ from '../../utils/currency';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ClassPaymentStatus = ({ classId }) => {
+  const { t } = useLanguage();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

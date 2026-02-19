@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: false },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-  email: {
+    email: {
       type: String,
       // Employees/staff can be created without email; others require it
       required: function () {
@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema(
     },
 
     // =============== Contact & Banking (optional) ===============
+    // Support legacy root-level fields
+    phone1: { type: String, trim: true },
+    phone2: { type: String, trim: true },
+    address: { type: String, trim: true },
+
     contact: {
       phone1: { type: String, trim: true },
       phone2: { type: String, trim: true },
@@ -47,8 +52,8 @@ const userSchema = new mongoose.Schema(
 
     // =============== Employee/Staff HR Fields ===============
     // Student education level (optional), used to validate class enrollment for level-based classes
-    educationLevel: { 
-      type: String, 
+    educationLevel: {
+      type: String,
       trim: true,
       enum: {
         values: ['before_education', 'primary', 'middle', 'high_school', 'university', 'universitie', 'other'],
@@ -132,6 +137,25 @@ const userSchema = new mongoose.Schema(
       default: 'not_enrolled',
     },
 
+    // =============== External Integration (Directis360 Linking) ===============
+    externalId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    externalSource: {
+      type: String,
+      enum: ['directis360', 'standalone', null],
+      default: null,
+    },
+    externalSchoolId: {
+      type: String,
+      sparse: true,
+    },
+    externalMeta: {
+      type: mongoose.Schema.Types.Mixed,
+    },
+
     // =============== Gamification ===============
     xp: { type: Number, default: 0 },
     level: { type: Number, default: 1 },
@@ -142,6 +166,12 @@ const userSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
+);
+
+// Compound index: ensure unique external identity per source
+userSchema.index(
+  { externalId: 1, externalSource: 1 },
+  { unique: true, partialFilterExpression: { externalSource: { $ne: null } } }
 );
 
 // -------- Virtuals --------

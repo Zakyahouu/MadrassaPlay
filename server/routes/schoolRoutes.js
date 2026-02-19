@@ -6,6 +6,30 @@ const router = express.Router();
 const { createSchool, getSchools, updateSchool, deleteSchool, createManagerForSchool, updateManagerForSchool, deleteManagerForSchool } = require('../controllers/schoolController');
 // Import middleware for protection
 const { protect, admin, manager } = require('../middleware/authMiddleware');
+<<<<<<< Updated upstream
+=======
+const { authorize } = require('../middleware/authMiddleware');
+const { upload, handleMulterError } = require('../middleware/uploadMiddleware');
+const {
+  updateMySchoolLandingPage,
+  uploadMySchoolLandingImage,
+  getLandingPageConfig,
+  updateLandingPageConfig,
+  publishLandingPage,
+  getLandingPageRevisions,
+  revertLandingPageRevision,
+  initializeLandingPage
+} = require('../controllers/schoolController');
+
+const {
+  getInquiries,
+  updateInquiryStatus,
+  getInquiryStats,
+  getLandingPageAnalytics,
+  getDetailedAnalytics,
+  exportAnalytics
+} = require('../controllers/landingPageAnalyticsController');
+>>>>>>> Stashed changes
 
 // POST create manager for a school
 router.route('/:id/managers').post(protect, admin, createManagerForSchool);
@@ -35,10 +59,39 @@ router.route('/:id')
   .put(protect, admin, updateSchool)
   .delete(protect, admin, deleteSchool);
 
+<<<<<<< Updated upstream
+=======
+const { checkLandingPageAccess } = require('../middleware/permissionMiddleware');
+
+// Landing page for a manager's school (legacy routes - kept for backward compatibility)
+router.put('/my-school/landing-page', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, updateMySchoolLandingPage);
+router.post('/my-school/landing-page/upload', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, (req, res, next) => { req.uploadTarget = 'ads'; next(); }, upload.single('image'), handleMulterError, uploadMySchoolLandingImage);
+
+// NEW Landing Page Builder Routes
+router.get('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageConfig);
+router.put('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, updateLandingPageConfig);
+router.post('/my-school/landing-page/publish', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, publishLandingPage);
+router.get('/my-school/landing-page/revisions', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageRevisions);
+router.post('/my-school/landing-page/revert/:revisionIndex', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, revertLandingPageRevision);
+router.post('/my-school/landing-page/initialize', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, initializeLandingPage);
+
+// Landing Page Analytics Routes
+router.get('/my-school/landing-page/analytics', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageAnalytics);
+router.get('/my-school/landing-page/analytics/detailed', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getDetailedAnalytics);
+router.get('/my-school/landing-page/analytics/export', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, exportAnalytics);
+
+// Contact Inquiries Routes
+router.get('/my-school/inquiries', protect, authorize('manager', 'admin'), getInquiries);
+router.get('/my-school/inquiries/stats', protect, authorize('manager', 'admin'), getInquiryStats);
+router.patch('/my-school/inquiries/:id', protect, authorize('manager', 'admin'), updateInquiryStatus);
+
+
+
+>>>>>>> Stashed changes
 
 // Custom middleware to allow admin or manager to access GET /api/schools/:id
 function adminOrManager(req, res, next) {
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'manager')) {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'manager' || req.user.role === 'staff')) {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized.' });

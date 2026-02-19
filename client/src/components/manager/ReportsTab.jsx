@@ -11,8 +11,10 @@ import QuickActionCard from './shared/QuickActionCard';
 import NotificationItem from './shared/NotificationItem'; 
 import ManagerClassPanel from './shared/ManagerClassPanel';
 import ManagerSchoolPanel from './shared/ManagerSchoolPanel';
+import { useLanguage } from '../../context/LanguageContext';
 // Reports Tab Component
 const ReportsTab = () => {
+  const { t } = useLanguage();
   const [reportType, setReportType] = useState('academic');
   const [dateRange, setDateRange] = useState('month');
   const [classes, setClasses] = useState([]);
@@ -116,9 +118,7 @@ const ReportsTab = () => {
             Export PDF
           </button>
           <button className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
+            <Filter className="w-4 h-4" />{t.filter}</button>
         </div>
       </div>
 

@@ -27,7 +27,7 @@ const Login = () => {
     try {
       await login(formData.email, formData.password);
     } catch (err) {
-      setError(err.response?.data?.message || t('login-error'));
+      setError(err.response?.data?.message || t.loginError);
     } finally {
       setLoading(false);
     }
@@ -43,10 +43,10 @@ const Login = () => {
               <img src="/Logo.jpg" alt="Skill Snap Logo" className="w-12 h-12 object-contain rounded-lg" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2 text-transition">
-              {t('welcome-back-login')}
+              {t.welcomeBackLogin}
             </h2>
             <p className="text-slate-600 text-transition">
-              {t('sign-in-to-continue')}
+              {t.signInToContinue}
             </p>
           </div>
           
@@ -62,7 +62,7 @@ const Login = () => {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="email-address" className="block text-sm font-medium text-slate-700 mb-2">
-                    {t('email-address')}
+                    {t.emailAddress}
                   </label>
                   <input
                     id="email-address"
@@ -70,7 +70,7 @@ const Login = () => {
                     type="email"
                     required
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 hover:border-slate-400 text-direction-transition"
-                    placeholder={t('enter-email')}
+                    placeholder={t.enterEmail}
                     value={formData.email}
                     onChange={handleChange}
                     dir={isRTL ? 'rtl' : 'ltr'}
@@ -79,7 +79,7 @@ const Login = () => {
                 
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
-                    {t('password')}
+                    {t.password}
                   </label>
                   <input
                     id="password"
@@ -87,7 +87,7 @@ const Login = () => {
                     type="password"
                     required
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 hover:border-slate-400 text-direction-transition"
-                    placeholder={t('enter-password')}
+                    placeholder={t.enterPassword}
                     value={formData.password}
                     onChange={handleChange}
                     dir={isRTL ? 'rtl' : 'ltr'}
@@ -103,17 +103,17 @@ const Login = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    {t('signing-in')}
+                    {t.signingIn}
                   </div>
                 ) : (
-                  t('sign-in')
+                  t.signIn
                 )}
               </button>
             </form>
 
             <div className="mt-6 text-center">
               <a href="#" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                {t('forgot-password')}
+                {t.forgotPassword}
               </a>
             </div>
           </div>

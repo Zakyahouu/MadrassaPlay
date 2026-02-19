@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Upload, 
-  File, 
-  Download, 
-  Trash2, 
-  Edit, 
-  Save, 
-  X, 
+
+import { useLanguage } from '../../context/LanguageContext';
+import {
+  Upload,
+  File,
+  Download,
+  Trash2,
+  Edit,
+  Save,
+  X,
   AlertCircle,
   CheckCircle,
   FileText
@@ -16,6 +18,7 @@ import {
 const getToken = () => JSON.parse(localStorage.getItem('user'))?.token;
 
 const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
+  const { t } = useLanguage();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -46,10 +49,10 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
       if (data.success) {
         setDocuments(data.data);
       } else {
-        setError(data.message || 'Failed to fetch documents');
+        setError(data.message || t.errorFetchingDocuments);
       }
     } catch (err) {
-      setError('Error fetching documents');
+      setError(t.errorFetchingDocuments);
       console.error('Error:', err);
     } finally {
       setLoading(false);
@@ -60,16 +63,16 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
     const file = e.target.files[0];
     if (file) {
       if (file.type !== 'application/pdf') {
-        setError('Only PDF files are allowed');
+        setError(t.onlyPdfAllowed);
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
+        setError(t.fileSizeLimit);
         return;
       }
       setSelectedFile(file);
       setError('');
-      
+
       // Auto-suggest document name from filename
       if (!documentName) {
         const name = file.name.replace('.pdf', '').replace(/[_-]/g, ' ');
@@ -80,19 +83,19 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
 
   const handleUpload = async () => {
     if (!selectedFile || !documentName.trim()) {
-      setError('Please select a file and enter a document name');
+      setError(t.selectFileAndName);
       return;
     }
 
     if (documents.length >= 5) {
-      setError('Maximum 5 documents allowed per school');
+      setError(t.maxDocumentsAllowed);
       return;
     }
 
     try {
       setUploading(true);
       setError('');
-      
+
       const formData = new FormData();
       formData.append('document', selectedFile);
       formData.append('name', documentName.trim());
@@ -108,16 +111,16 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
 
       const data = await response.json();
       if (data.success) {
-        setSuccess('Document uploaded successfully!');
+        setSuccess(t.documentUploadedSuccess);
         setSelectedFile(null);
         setDocumentName('');
         document.getElementById('file-input').value = '';
         fetchDocuments();
       } else {
-        setError(data.message || 'Failed to upload document');
+        setError(data.message || t.errorUploadingDocument);
       }
     } catch (err) {
-      setError('Error uploading document');
+      setError(t.errorUploadingDocument);
       console.error('Error:', err);
     } finally {
       setUploading(false);
@@ -131,7 +134,7 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
 
   const handleSaveName = async (docId) => {
     if (!newDocName.trim()) {
-      setError('Document name cannot be empty');
+      setError(t.documentNameEmpty);
       return;
     }
 
@@ -148,15 +151,15 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
 
       const data = await response.json();
       if (data.success) {
-        setSuccess('Document name updated successfully!');
+        setSuccess(t.documentNameUpdatedSuccess);
         setEditingDoc(null);
         setNewDocName('');
         fetchDocuments();
       } else {
-        setError(data.message || 'Failed to update document name');
+        setError(data.message || t.errorUpdatingDocumentName);
       }
     } catch (err) {
-      setError('Error updating document name');
+      setError(t.errorUpdatingDocumentName);
       console.error('Error:', err);
     }
   };
@@ -182,16 +185,16 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
         document.body.removeChild(a);
       } else {
         const data = await response.json();
-        setError(data.message || 'Failed to download document');
+        setError(data.message || t.errorDownloadingDocument);
       }
     } catch (err) {
-      setError('Error downloading document');
+      setError(t.errorDownloadingDocument);
       console.error('Error:', err);
     }
   };
 
   const handleDelete = async (docId, docName) => {
-    if (!window.confirm(`Are you sure you want to delete "${docName}"? This action cannot be undone.`)) {
+    if (!window.confirm(`${t.deleteDocumentConfirm} "${docName}"?`)) {
       return;
     }
 
@@ -206,13 +209,13 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
 
       const data = await response.json();
       if (data.success) {
-        setSuccess('Document deleted successfully!');
+        setSuccess(t.documentDeletedSuccess);
         fetchDocuments();
       } else {
-        setError(data.message || 'Failed to delete document');
+        setError(data.message || t.errorDeletingDocument);
       }
     } catch (err) {
-      setError('Error deleting document');
+      setError(t.errorDeletingDocument);
       console.error('Error:', err);
     }
   };
@@ -256,7 +259,7 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
         {/* Header */}
         <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">School Documents</h2>
+            <h2 className="text-2xl font-bold">{t.schoolDocuments}</h2>
             <p className="text-blue-100">{schoolName}</p>
           </div>
           <button
@@ -287,13 +290,13 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
           <div className="mb-8 p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <h3 className="text-lg font-semibold mb-4 flex items-center">
               <Upload className="mr-2" size={20} />
-              Upload New Document
+              {t.uploadNewDocument}
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select PDF File
+                  {t.selectPdfFile}
                 </label>
                 <input
                   id="file-input"
@@ -303,26 +306,26 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Maximum file size: 10MB. Only PDF files are allowed.
+                  {t.maxFileSizeNote}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Document Name
+                  {t.documentName || 'Document Name'}
                 </label>
                 <input
                   type="text"
                   value={documentName}
                   onChange={(e) => setDocumentName(e.target.value)}
-                  placeholder="Enter a descriptive name for this document"
+                  placeholder={t.enterDocumentName}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Documents: {documents.length}/5
+                  {t.documents}: {documents.length}/5
                 </div>
                 <button
                   onClick={handleUpload}
@@ -332,12 +335,12 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
                   {uploading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Uploading...
+                      {t.uploading || 'Uploading...'}
                     </>
                   ) : (
                     <>
                       <Upload size={16} className="mr-2" />
-                      Upload Document
+                      {t.uploadDocument}
                     </>
                   )}
                 </button>
@@ -349,19 +352,19 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center">
               <FileText className="mr-2" size={20} />
-              Uploaded Documents
+              {t.uploadedDocuments}
             </h3>
 
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-500 mt-2">Loading documents...</p>
+                <p className="text-gray-500 mt-2">{t.loadingDocuments}</p>
               </div>
             ) : documents.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <File size={48} className="mx-auto mb-4 text-gray-400" />
-                <p>No documents uploaded yet</p>
-                <p className="text-sm">Upload your first document above</p>
+                <p>{t.noDocuments}</p>
+                <p className="text-sm">{t.uploadFirstDocument}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -394,10 +397,10 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
                           <div>
                             <h4 className="font-medium text-gray-900">{doc.name}</h4>
                             <p className="text-sm text-gray-500">
-                              Original: {doc.originalName} • {formatFileSize(doc.fileSize)}
+                              {t.original}: {doc.originalName} • {formatFileSize(doc.fileSize)}
                             </p>
                             <p className="text-xs text-gray-400">
-                              Uploaded {formatDate(doc.uploadedAt)} by {doc.uploadedBy?.firstName} {doc.uploadedBy?.lastName}
+                              {t.uploadedBy} {formatDate(doc.uploadedAt)} {t.by} {doc.uploadedBy?.firstName} {doc.uploadedBy?.lastName}
                             </p>
                           </div>
                         )}
@@ -408,21 +411,21 @@ const SchoolDocuments = ({ schoolId, schoolName, onClose }) => {
                           <button
                             onClick={() => handleEditName(doc)}
                             className="p-2 text-blue-600 hover:bg-blue-100 rounded"
-                            title="Edit name"
+                            title={t.edit}
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDownload(doc._id, doc.originalName)}
                             className="p-2 text-green-600 hover:bg-green-100 rounded"
-                            title="Download"
+                            title={t.download}
                           >
                             <Download size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(doc._id, doc.name)}
                             className="p-2 text-red-600 hover:bg-red-100 rounded"
-                            title="Delete"
+                            title={t.delete}
                           >
                             <Trash2 size={16} />
                           </button>

@@ -3,8 +3,10 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ThreeJSViewer = ({ modelUrl, className = "w-full h-96" }) => {
+  const { t } = useLanguage();
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);

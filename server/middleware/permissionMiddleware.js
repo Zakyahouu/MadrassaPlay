@@ -37,7 +37,7 @@ const checkPermission = (section) => {
       console.log(`Permission type:`, typeof employee.permissions?.[section]);
       console.log(`Permission value:`, employee.permissions?.[section]);
       console.log(`Is truthy:`, !!employee.permissions?.[section]);
-      
+
       if (!employee.permissions || employee.permissions[section] !== true) {
         console.log(`Access denied for ${section} - permissions:`, employee.permissions);
         return res.status(403).json({
@@ -45,7 +45,7 @@ const checkPermission = (section) => {
           message: `Access denied. You don't have permission to access the ${section} section.`
         });
       }
-      
+
       console.log(`Access granted for ${section}`);
 
       // Add employee info to request for use in controllers
@@ -71,8 +71,20 @@ const checkFinanceAccess = checkPermission('finance');
  */
 const checkLogsAccess = checkPermission('logs');
 
+/**
+ * Middleware to check ads access
+ */
+const checkAdsAccess = checkPermission('ads');
+
+/**
+ * Middleware to check landing page access
+ */
+const checkLandingPageAccess = checkPermission('landingPage');
+
 module.exports = {
   checkPermission,
   checkFinanceAccess,
-  checkLogsAccess
+  checkLogsAccess,
+  checkAdsAccess,
+  checkLandingPageAccess
 };

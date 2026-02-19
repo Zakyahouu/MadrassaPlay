@@ -3,6 +3,17 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import {
+    AlertTriangle,
+    ArrowLeft,
+    Pencil,
+    Settings,
+    FileText,
+    Trash2,
+    Plus,
+    Save,
+    Loader2
+} from 'lucide-react';
 
 const EditGame = () => {
     const { creationId } = useParams();
@@ -15,11 +26,11 @@ const EditGame = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
-    
+
     const [settingsData, setSettingsData] = useState({});
     const [contentItems, setContentItems] = useState([{}]);
     const [autoMode, setAutoMode] = useState(false);
-    
+
 
     useEffect(() => {
         const fetchGameData = async () => {
@@ -64,7 +75,7 @@ const EditGame = () => {
         fetchGameData();
     }, [creationId, user.token]);
 
-    
+
 
     const handleSettingsChange = (field, value) => {
         setSettingsData(prev => ({ ...prev, [field]: value }));
@@ -90,7 +101,7 @@ const EditGame = () => {
         }
         setContentItems(prev => [...prev, newItem]);
     };
-    
+
     const removeContentItem = (index) => {
         setContentItems(prev => prev.filter((_, i) => i !== index));
     };
@@ -130,24 +141,24 @@ const EditGame = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 flex items-center justify-center">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             <div className="text-center">
-                <div className="animate-spin w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"></div>
+                <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
                 <p className="text-gray-600">Loading game data...</p>
             </div>
         </div>
     );
 
     if (error && !template) return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 flex items-center justify-center">
-            <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
-                <div className="text-6xl mb-4">⚠️</div>
-                <p className="text-red-600 font-medium">{error}</p>
-                <button 
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <p className="text-red-600 font-medium mb-4">{error}</p>
+                <button
                     onClick={() => navigate(-1)}
-                    className="mt-4 px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                    className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors flex items-center gap-2 mx-auto"
                 >
-                    Go Back
+                    <ArrowLeft className="w-4 h-4" /> Go Back
                 </button>
             </div>
         </div>
@@ -156,25 +167,25 @@ const EditGame = () => {
     if (!template || !gameCreation) return null;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+        <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10">
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <button 
+                            <button
                                 onClick={() => navigate(-1)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-2 hover:bg-gray-100 rounded-md transition-colors text-gray-600"
                             >
-                                ← Back
+                                <ArrowLeft className="w-6 h-6" />
                             </button>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-800">Edit Game</h1>
                                 <p className="text-sm text-gray-500">Editing: {gameCreation.name}</p>
                             </div>
                         </div>
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
-                            <span className="text-lg">✏️</span>
+                        <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+                            <Pencil className="w-6 h-6" />
                         </div>
                     </div>
                 </div>
@@ -190,16 +201,16 @@ const EditGame = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Game Settings Section */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 border-b border-gray-100">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                    <span className="text-white text-sm">⚙️</span>
+                                <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-md flex items-center justify-center">
+                                    <Settings className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-800">Game Settings</h2>
                             </div>
                         </div>
-                        
+
                         <div className="p-6">
                             <div className="grid gap-6 md:grid-cols-2">
                                 {Object.entries(template.formSchema.settings).map(([key, field]) => {
@@ -257,7 +268,7 @@ const EditGame = () => {
                                                 <select
                                                     value={currentVal}
                                                     onChange={(e) => handleSettingsChange(key, e.target.value)}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-md focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 >
                                                     <option value="" disabled>Choose...</option>
                                                     {field.options.map(opt => (
@@ -296,7 +307,7 @@ const EditGame = () => {
                                                     onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                     required={field.required}
                                                     rows={field.rows || 4}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 resize-y"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 resize-y"
                                                     placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                                                 />
                                             </div>
@@ -314,14 +325,14 @@ const EditGame = () => {
                                                         type="color"
                                                         value={settingsData[key] || '#000000'}
                                                         onChange={(e) => handleSettingsChange(key, e.target.value)}
-                                                        className="h-12 w-20 rounded-xl border border-gray-200 cursor-pointer"
+                                                        className="h-12 w-20 rounded-lg border border-gray-200 cursor-pointer"
                                                     />
                                                     <input
                                                         type="text"
                                                         value={settingsData[key] || '#000000'}
                                                         onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                         pattern="^#[0-9A-Fa-f]{6}$"
-                                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 font-mono text-sm"
+                                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200 font-mono text-sm"
                                                         placeholder="#000000"
                                                     />
                                                 </div>
@@ -366,7 +377,7 @@ const EditGame = () => {
                                                     required={field.required}
                                                     min={field.min}
                                                     max={field.max}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 />
                                             </div>
                                         );
@@ -385,7 +396,7 @@ const EditGame = () => {
                                                     required={field.required}
                                                     min={field.min}
                                                     max={field.max}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 />
                                             </div>
                                         );
@@ -404,7 +415,7 @@ const EditGame = () => {
                                                     required={field.required}
                                                     min={field.min}
                                                     max={field.max}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 />
                                             </div>
                                         );
@@ -423,7 +434,7 @@ const EditGame = () => {
                                                     required={field.required}
                                                     min={field.min}
                                                     max={field.max}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 />
                                             </div>
                                         );
@@ -442,7 +453,7 @@ const EditGame = () => {
                                                     required={field.required}
                                                     min={field.min}
                                                     max={field.max}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 />
                                             </div>
                                         );
@@ -460,7 +471,7 @@ const EditGame = () => {
                                                     onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                     required={field.required}
                                                     pattern={field.pattern}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                     placeholder={field.placeholder || 'https://example.com'}
                                                 />
                                             </div>
@@ -479,7 +490,7 @@ const EditGame = () => {
                                                     onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                     required={field.required}
                                                     pattern={field.pattern}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                     placeholder={field.placeholder || 'example@email.com'}
                                                 />
                                             </div>
@@ -498,7 +509,7 @@ const EditGame = () => {
                                                     onChange={(e) => handleSettingsChange(key, e.target.value)}
                                                     required={field.required}
                                                     pattern={field.pattern}
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                     placeholder={field.placeholder || '+1234567890'}
                                                 />
                                             </div>
@@ -517,7 +528,7 @@ const EditGame = () => {
                                                 required={field.required}
                                                 min={field.min !== undefined ? field.min : undefined}
                                                 max={field.max !== undefined ? field.max : undefined}
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-indigo-400 focus:bg-white focus:outline-none transition-all duration-200"
                                                 placeholder={`Enter ${field.label.toLowerCase()}`}
                                             />
                                         </div>
@@ -535,63 +546,71 @@ const EditGame = () => {
 
                     {/* Content Section */}
                     {template.formSchema.content && (!Object.prototype.hasOwnProperty.call(template.formSchema.settings, 'autoGenerate') || !autoMode) && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 border-b border-gray-100">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="p-6 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                                            <span className="text-white text-sm">📝</span>
+                                        <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
+                                            <FileText className="w-5 h-5" />
                                         </div>
                                         <h2 className="text-xl font-bold text-gray-800">{template.formSchema.content.label}</h2>
-                                        <span className="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
-                                            {contentItems.length} items
+                                        <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                                            {contentItems.length}
                                         </span>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={addContentItem}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add Item
+                                    </button>
                                 </div>
                             </div>
-                            
+
                             <div className="p-6 space-y-6">
                                 {contentItems.map((item, index) => (
-                                    <div key={index} className="relative">
+                                    <div key={index} className="relative group">
                                         {/* Item Header */}
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
-                                                    <span className="text-sm font-bold text-blue-600">{index + 1}</span>
+                                                <div className="w-6 h-6 bg-gray-100 text-gray-600 rounded flex items-center justify-center text-xs font-bold">
+                                                    {index + 1}
                                                 </div>
-                                                <h3 className="font-semibold text-gray-700">Content Item {index + 1}</h3>
+                                                <h3 className="font-medium text-gray-700">Item {index + 1}</h3>
                                             </div>
                                             {contentItems.length > 1 && (
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={() => removeContentItem(index)}
-                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Remove Item"
                                                 >
-                                                    🗑️
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             )}
                                         </div>
 
                                         {/* Item Fields */}
-                                        <div className="grid gap-4 md:grid-cols-2 p-4 bg-gray-50 rounded-xl">
-                        {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
+                                        <div className="grid gap-4 md:grid-cols-2 p-4 bg-gray-50 rounded-lg">
+                                            {Object.entries(template.formSchema.content.itemSchema).map(([key, field]) => (
                                                 <div key={key}>
                                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                                         {field.label}
                                                     </label>
-                            {(field.type === 'enum' || field.type === 'select') && Array.isArray(field.options) ? (
+                                                    {(field.type === 'enum' || field.type === 'select') && Array.isArray(field.options) ? (
                                                         <select
                                                             value={item[key] || ''}
                                                             onChange={(e) => {
                                                                 const value = e.target.value;
                                                                 const updated = { ...item, [key]: value };
-                                                                if (['operandA','operandB','operation'].includes(key)) {
+                                                                if (['operandA', 'operandB', 'operation'].includes(key)) {
                                                                     const a = parseFloat(updated.operandA);
                                                                     const b = parseFloat(updated.operandB);
                                                                     const op = updated.operation;
-                                                                    if (!isNaN(a) && !isNaN(b) && ['+','-','*','/'].includes(op)) {
+                                                                    if (!isNaN(a) && !isNaN(b) && ['+', '-', '*', '/'].includes(op)) {
                                                                         let ans = '';
-                                                                        switch(op){
+                                                                        switch (op) {
                                                                             case '+': ans = a + b; break;
                                                                             case '-': ans = a - b; break;
                                                                             case '*': ans = a * b; break;
@@ -619,7 +638,7 @@ const EditGame = () => {
                                                             )}
                                                             <input
                                                                 type="file"
-                                                                accept={(field.accept || ['image/webp','image/png','image/jpeg']).join(',')}
+                                                                accept={(field.accept || ['image/webp', 'image/png', 'image/jpeg']).join(',')}
                                                                 onChange={async (e) => {
                                                                     const file = e.target.files?.[0];
                                                                     if (!file) return;
@@ -650,7 +669,7 @@ const EditGame = () => {
                                                                         <img src={url} alt="preview" className="w-20 h-20 object-cover rounded" />
                                                                         <button type="button" className="absolute -top-2 -right-2 bg-white text-red-600 rounded-full shadow p-1" onClick={() => {
                                                                             const arr = Array.isArray(item[key]) ? [...item[key]] : [];
-                                                                            arr.splice(i2,1);
+                                                                            arr.splice(i2, 1);
                                                                             handleContentChange(index, key, arr);
                                                                         }}>×</button>
                                                                     </div>
@@ -659,7 +678,7 @@ const EditGame = () => {
                                                             <input
                                                                 type="file"
                                                                 multiple
-                                                                accept={(field.accept || ['image/webp','image/png','image/jpeg']).join(',')}
+                                                                accept={(field.accept || ['image/webp', 'image/png', 'image/jpeg']).join(',')}
                                                                 onChange={async (e) => {
                                                                     const files = Array.from(e.target.files || []);
                                                                     if (!files.length) return;
@@ -837,7 +856,7 @@ const EditGame = () => {
                                                                             />
                                                                         )
                                                                     )}
-                                                                    
+
                                                                     {/* Complex itemSchema (object with multiple fields) */}
                                                                     {field.itemSchema && (
                                                                         <div className="flex-1 grid gap-2 p-3 bg-white border border-gray-200 rounded-lg">
@@ -881,7 +900,7 @@ const EditGame = () => {
                                                                             ))}
                                                                         </div>
                                                                     )}
-                                                                    
+
                                                                     {/* Remove button */}
                                                                     <button
                                                                         type="button"
@@ -896,7 +915,7 @@ const EditGame = () => {
                                                                     </button>
                                                                 </div>
                                                             ))}
-                                                            
+
                                                             {/* Add new item button */}
                                                             <button
                                                                 type="button"
@@ -927,13 +946,13 @@ const EditGame = () => {
                                                             onChange={(e) => {
                                                                 let value = e.target.value;
                                                                 const updated = { ...item, [key]: value };
-                                                                if (['operandA','operandB','operation'].includes(key)) {
+                                                                if (['operandA', 'operandB', 'operation'].includes(key)) {
                                                                     const a = parseFloat(updated.operandA);
                                                                     const b = parseFloat(updated.operandB);
                                                                     const op = updated.operation;
-                                                                    if (!isNaN(a) && !isNaN(b) && ['+','-','*','/'].includes(op)) {
+                                                                    if (!isNaN(a) && !isNaN(b) && ['+', '-', '*', '/'].includes(op)) {
                                                                         let ans = '';
-                                                                        switch(op){
+                                                                        switch (op) {
                                                                             case '+': ans = a + b; break;
                                                                             case '-': ans = a - b; break;
                                                                             case '*': ans = a * b; break;
@@ -958,42 +977,59 @@ const EditGame = () => {
                                         </div>
                                     </div>
                                 ))}
-                                
+
                                 {/* Add Item Button */}
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={addContentItem}
-                                    className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-green-600"
+                                    className="w-full py-4 border-2 border-dashed border-gray-200 rounded-lg hover:border-indigo-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-500 hover:text-indigo-600"
                                 >
-                                    <span className="text-xl">+</span>
+                                    <Plus className="w-5 h-5" />
                                     <span className="font-medium">Add Content Item</span>
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Updating...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="w-4 h-4" />
+                                            <span>Update Game</span>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Submit Section */}
                     <div className="flex justify-end gap-4">
-                        <button 
+                        <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-xl transition-colors"
+                            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
                             type="submit"
                             disabled={saving}
-                            className="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                         >
                             {saving ? (
                                 <>
-                                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                     <span>Updating...</span>
                                 </>
                             ) : (
                                 <>
-                                    <span>💾</span>
+                                    <Save className="w-4 h-4" />
                                     <span>Update Game</span>
                                 </>
                             )}

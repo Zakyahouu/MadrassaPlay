@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  X, BookOpen, User, Building2, Calendar, Clock, Users, 
+import {
+  X, BookOpen, User, Building2, Calendar, Clock, Users,
   CreditCard, DollarSign, AlertTriangle, CheckCircle, Loader,
   ChevronDown, ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const API_BASE_URL = '/api/classes';
 const LEVEL_FILTER_TYPES = new Set(['supportLessons', 'reviewCourses']);
@@ -29,18 +30,19 @@ const ClassCreationModal = ({
   classData = null,
   existingClasses = []
 }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState(1);
   const [activeSection, setActiveSection] = useState('catalog'); // For edit mode sections
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [conflictError, setConflictError] = useState(null);
   const editingClassId = classData?._id || null;
-  
+
   // Data fetching states
   const [catalogItems, setCatalogItems] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [rooms, setRooms] = useState([]);
-  
+
   // Form data
   const [formData, setFormData] = useState({
     name: '',
@@ -99,18 +101,18 @@ const ClassCreationModal = ({
 
   // Edit mode sections configuration
   const editSections = [
-    { id: 'catalog', label: 'Catalog', icon: '📚' },
-    { id: 'teacher', label: 'Teacher', icon: '👨‍🏫' },
-    { id: 'room', label: 'Room', icon: '🏢' },
-    { id: 'schedule', label: 'Schedule', icon: '📅' },
-    { id: 'details', label: 'Details', icon: '📝' },
-    { id: 'pricing', label: 'Pricing', icon: '💰' }
+    { id: 'catalog', label: t.catalog, icon: '📚' },
+    { id: 'teacher', label: t.teacher, icon: '👨‍🏫' },
+    { id: 'room', label: t.room, icon: '🏢' },
+    { id: 'schedule', label: t.schedule, icon: '📅' },
+    { id: 'details', label: t.details, icon: '📝' },
+    { id: 'pricing', label: t.pricing, icon: '💰' }
   ];
 
   useEffect(() => {
     if (isOpen) {
       fetchInitialData();
-      
+
       if (editMode && classData) {
         // Populate form with existing class data
         setFormData({
@@ -271,9 +273,9 @@ const ClassCreationModal = ({
       const response = await axios.post(`${API_BASE_URL}/check-conflicts`, {
         schedules: formData.schedules,
         teacherId: formData.teacherId,
-  roomId: formData.roomId,
-  // exclude current class in edit mode to avoid self-conflict
-  excludeClassId: editMode && classData?._id ? classData._id : undefined
+        roomId: formData.roomId,
+        // exclude current class in edit mode to avoid self-conflict
+        excludeClassId: editMode && classData?._id ? classData._id : undefined
       }, config);
 
       if (response.data.hasConflict) {
@@ -316,8 +318,8 @@ const ClassCreationModal = ({
 
   const handleRoomSelect = (roomId) => {
     const selectedRoom = rooms.find(room => room._id === roomId);
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       roomId,
       capacity: selectedRoom ? selectedRoom.capacity.toString() : ''
     }));
@@ -347,7 +349,7 @@ const ClassCreationModal = ({
   const updateSchedule = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      schedules: prev.schedules.map((schedule, i) => 
+      schedules: prev.schedules.map((schedule, i) =>
         i === index ? { ...schedule, [field]: value } : schedule
       )
     }));
@@ -414,7 +416,7 @@ const ClassCreationModal = ({
 
     // Prepare section-specific payload
     let sectionPayload = {};
-    
+
     switch (sectionId) {
       case 'catalog':
         if (!formData.catalogItem) {
@@ -493,14 +495,14 @@ const ClassCreationModal = ({
 
     try {
       const response = await axios.put(`${API_BASE_URL}/${classData._id}`, sectionPayload, config);
-      
+
       // Update local class data
       const updatedClass = response.data.class;
       onSuccess(updatedClass);
-      
+
       // Show success message or visual feedback
       setError(null);
-      
+
     } catch (err) {
       const message = err.response?.data?.message || `Failed to update ${sectionId}`;
       setError(message);
@@ -580,13 +582,13 @@ const ClassCreationModal = ({
   }, [catalogItems, catalogType, levelFilter, searchCatalog]);
 
   const getStepTitle = (stepNumber) => {
-    const titles = {
-      1: 'Select Catalog Item',
-      2: 'Assign Teacher & Room',
-      3: 'Set Schedule',
-      4: 'Class Details & Pricing'
-    };
-    return titles[stepNumber] || '';
+    switch (stepNumber) {
+      case 1: return t.selectCatalogItem;
+      case 2: return t.assignTeacherRoom;
+      case 3: return t.setSchedule;
+      case 4: return t.classDetailsPricing;
+      default: return '';
+    }
   };
 
   const getStepIcon = (stepNumber) => {
@@ -605,13 +607,13 @@ const ClassCreationModal = ({
       case 'catalog':
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-gray-900">Catalog Information</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.catalogInformation}</h3>
 
             {/* Current Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Selection</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.currentSelection}</label>
               <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="font-medium">{formData.catalogItem?.name || 'No catalog item selected'}</div>
+                <div className="font-medium">{formData.catalogItem?.name || t.noCatalogItemSelected}</div>
                 <div className="text-sm text-gray-600">{formData.catalogItem?.type || classData?.catalogItem?.type || ''}</div>
               </div>
             </div>
@@ -624,35 +626,35 @@ const ClassCreationModal = ({
                   onChange={(e) => setCatalogType(e.target.value)}
                   className="p-2 border border-gray-300 rounded-md text-sm"
                 >
-                  <option value="all">All types</option>
-                  <option value="supportLessons">Support Lessons</option>
-                  <option value="reviewCourses">Review Courses</option>
-                  <option value="vocationalTrainings">Vocational Trainings</option>
-                  <option value="languages">Languages</option>
-                  <option value="otherActivities">Other Activities</option>
+                  <option value="all">{t.allTypes}</option>
+                  <option value="supportLessons">{t.supportLessons}</option>
+                  <option value="reviewCourses">{t.reviewCourses}</option>
+                  <option value="vocationalTrainings">{t.vocationalTrainings}</option>
+                  <option value="languages">{t.languages || 'Languages'}</option>
+                  <option value="otherActivities">{t.otherActivities}</option>
                 </select>
                 <select
                   value={levelFilter}
                   onChange={(e) => setLevelFilter(e.target.value)}
                   disabled={levelFilterDisabled}
-                  title={levelFilterDisabled ? 'Level filter available for Support Lessons and Review Courses only' : undefined}
+                  title={levelFilterDisabled ? t.levelFilterHint : undefined}
                   className="p-2 border border-gray-300 rounded-md text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option value="all">All levels</option>
-                  <option value="primary">Primary</option>
-                  <option value="middle">Middle</option>
-                  <option value="high_school">High School</option>
+                  <option value="all">{t.allLevels}</option>
+                  <option value="primary">{t.primary}</option>
+                  <option value="middle">{t.middle}</option>
+                  <option value="high_school">{t.highSchool}</option>
                 </select>
                 <input
                   value={searchCatalog}
                   onChange={(e) => setSearchCatalog(e.target.value)}
-                  placeholder="Search catalog..."
+                  placeholder={t.searchCatalog}
                   className="p-2 border border-gray-300 rounded-md text-sm md:col-span-2"
                 />
               </div>
               {levelFilterDisabled && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Level filter is available for Support Lessons and Review Courses.
+                  {t.levelFilterHint}
                 </p>
               )}
             </div>
@@ -663,11 +665,10 @@ const ClassCreationModal = ({
                 <div
                   key={`${item.type}-${item._id}`}
                   onClick={() => handleCatalogItemSelect(item)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    formData.catalogItem?._id === item._id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.catalogItem?._id === item._id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-medium text-gray-500 uppercase">
@@ -741,17 +742,17 @@ const ClassCreationModal = ({
       case 'teacher':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Teacher Assignment</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.teacherAssignment}</h3>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Teacher
+                {t.selectTeacher}
               </label>
               <select
                 value={formData.teacherId}
-                onChange={(e) => setFormData({...formData, teacherId: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Choose a teacher...</option>
+                <option value="">{t.chooseTeacher}</option>
                 {teachers.map(teacher => (
                   <option key={teacher._id} value={teacher._id}>
                     {teacher.firstName} {teacher.lastName}
@@ -765,7 +766,7 @@ const ClassCreationModal = ({
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {isLoading ? 'Saving...' : 'Save Teacher'}
+                {isLoading ? t.saving : t.saveChanges}
               </button>
             </div>
           </div>
@@ -774,17 +775,17 @@ const ClassCreationModal = ({
       case 'room':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Room Assignment</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.roomAssignment}</h3>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Room
+                {t.selectRoom}
               </label>
               <select
                 value={formData.roomId}
-                onChange={(e) => setFormData({...formData, roomId: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Choose a room...</option>
+                <option value="">{t.chooseRoom}</option>
                 {rooms.map(room => (
                   <option key={room._id} value={room._id}>
                     {room.name} - {room.type}
@@ -798,7 +799,7 @@ const ClassCreationModal = ({
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {isLoading ? 'Saving...' : 'Save Room'}
+                {isLoading ? t.saving : t.saveChanges}
               </button>
             </div>
           </div>
@@ -807,7 +808,7 @@ const ClassCreationModal = ({
       case 'schedule':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Class Schedule</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.schedule}</h3>
             <div className="space-y-3">
               {formData.schedules.map((schedule, index) => (
                 <div key={index} className="grid grid-cols-4 gap-3 p-3 border border-gray-200 rounded-lg">
@@ -816,13 +817,13 @@ const ClassCreationModal = ({
                     onChange={(e) => updateSchedule(index, 'dayOfWeek', e.target.value)}
                     className="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="monday">Monday</option>
-                    <option value="tuesday">Tuesday</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="thursday">Thursday</option>
-                    <option value="friday">Friday</option>
-                    <option value="saturday">Saturday</option>
-                    <option value="sunday">Sunday</option>
+                    <option value="monday">{t.mon}</option>
+                    <option value="tuesday">{t.tue}</option>
+                    <option value="wednesday">{t.wed}</option>
+                    <option value="thursday">{t.thu}</option>
+                    <option value="friday">{t.fri}</option>
+                    <option value="saturday">{t.sat}</option>
+                    <option value="sunday">{t.sun}</option>
                   </select>
                   <input
                     type="time"
@@ -842,12 +843,12 @@ const ClassCreationModal = ({
                     disabled={formData.schedules.length === 1}
                     className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Remove
+                    {t.remove}
                   </button>
                 </div>
               ))}
             </div>
-            
+
             <button
               type="button"
               onClick={addSchedule}
@@ -855,7 +856,7 @@ const ClassCreationModal = ({
             >
               + Add Another Schedule
             </button>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => saveSection('schedule')}
@@ -871,10 +872,10 @@ const ClassCreationModal = ({
       case 'details':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Class Details</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.classDetails}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Class Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.className}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -887,20 +888,20 @@ const ClassCreationModal = ({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.capacity}</label>
                 <input
                   type="number"
                   value={formData.capacity}
-                  onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t.description}</label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows="3"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
@@ -911,7 +912,7 @@ const ClassCreationModal = ({
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {isLoading ? 'Saving...' : 'Save Details'}
+                {isLoading ? t.saving : t.saveChanges}
               </button>
             </div>
           </div>
@@ -920,36 +921,36 @@ const ClassCreationModal = ({
       case 'pricing':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Pricing & Payment</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t.pricing || 'Pricing & Payment'}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Price (DZD)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.priceDz}</label>
                 <input
                   type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Cycle (sessions)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.cycleSize}</label>
                 <input
                   type="number"
                   value={formData.paymentCycle}
-                  onChange={(e) => setFormData({...formData, paymentCycle: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, paymentCycle: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Teacher Cut (%)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t.teacherCut || 'Teacher Cut (%)'}</label>
                 <input
                   type="number"
                   value={formData.teacherCut.value}
                   onChange={(e) => setFormData({
-                    ...formData, 
-                    teacherCut: {...formData.teacherCut, value: e.target.value}
+                    ...formData,
+                    teacherCut: { ...formData.teacherCut, value: e.target.value }
                   })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
@@ -961,14 +962,14 @@ const ClassCreationModal = ({
                 disabled={isLoading}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {isLoading ? 'Saving...' : 'Save Pricing'}
+                {isLoading ? t.saving : t.saveChanges}
               </button>
             </div>
           </div>
         );
 
       default:
-        return <div>Select a section to edit</div>;
+        return <div>{t.selectSectionToEdit || 'Select a section to edit'}</div>;
     }
   };
 
@@ -981,14 +982,14 @@ const ClassCreationModal = ({
         <div className="flex items-center justify-between p-6 bg-gray-50 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {editMode ? 'Edit Class' : 'Create New Class'}
+              {editMode ? t.editClass : t.createClass}
             </h2>
             {editMode ? (
               <p className="text-sm text-gray-600 mt-1">
-                {classData?.name || 'Unnamed Class'}
+                {classData?.name || t.unnamedClass || 'Unnamed Class'}
               </p>
             ) : (
-              <p className="text-sm text-gray-600 mt-1">Step {step} of 4: {getStepTitle(step)}</p>
+              <p className="text-sm text-gray-600 mt-1">{t.step || 'Step'} {step} {t.of || 'of'} 4: {getStepTitle(step)}</p>
             )}
           </div>
           <button
@@ -1008,11 +1009,10 @@ const ClassCreationModal = ({
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                      activeSection === section.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${activeSection === section.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
                   >
                     <span>{section.icon}</span>
                     {section.label}
@@ -1032,7 +1032,7 @@ const ClassCreationModal = ({
                   </div>
                 </div>
               )}
-              
+
               {renderSectionContent()}
             </div>
           </div>
@@ -1045,23 +1045,21 @@ const ClassCreationModal = ({
                   const Icon = getStepIcon(stepNumber);
                   const isActive = step === stepNumber;
                   const isCompleted = step > stepNumber;
-                  
+
                   return (
                     <div key={stepNumber} className="flex items-center">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                        isActive ? 'border-blue-500 bg-blue-500 text-white' :
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${isActive ? 'border-blue-500 bg-blue-500 text-white' :
                         isCompleted ? 'border-green-500 bg-green-500 text-white' :
-                        'border-gray-300 bg-gray-100 text-gray-400'
-                      }`}>
+                          'border-gray-300 bg-gray-100 text-gray-400'
+                        }`}>
                         {isCompleted ? (
                           <CheckCircle className="w-4 h-4" />
                         ) : (
                           <span className="text-sm font-medium">{stepNumber}</span>
                         )}
                       </div>
-                      <span className={`ml-2 text-sm font-medium ${
-                        isActive ? 'text-blue-600' : 'text-gray-500'
-                      }`}>
+                      <span className={`ml-2 text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
                         {getStepTitle(stepNumber)}
                       </span>
                       {stepNumber < 4 && (
@@ -1078,7 +1076,7 @@ const ClassCreationModal = ({
               {isLoading && step === 1 ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader className="animate-spin text-blue-500 mr-3" />
-                  <span className="text-gray-600">Loading data...</span>
+                  <span className="text-gray-600">{t.loadingData || 'Loading data...'}</span>
                 </div>
               ) : error ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 mb-6">
@@ -1096,10 +1094,10 @@ const ClassCreationModal = ({
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Select from School Catalog
+                      {t.selectCatalogItem}
                     </h3>
                     <p className="text-gray-600 mb-6">
-                      Choose an offering from your school catalog to create a class based on it.
+                      {t.selectCatalogItemDescription || 'Choose an offering from your school catalog to create a class based on it.'}
                     </p>
                   </div>
 
@@ -1111,35 +1109,35 @@ const ClassCreationModal = ({
                         onChange={(e) => setCatalogType(e.target.value)}
                         className="p-2 border border-gray-300 rounded-md text-sm"
                       >
-                        <option value="all">All types</option>
-                        <option value="supportLessons">Support Lessons</option>
-                        <option value="reviewCourses">Review Courses</option>
-                        <option value="vocationalTrainings">Vocational Trainings</option>
-                        <option value="languages">Languages</option>
-                        <option value="otherActivities">Other Activities</option>
+                        <option value="all">{t.allTypes}</option>
+                        <option value="supportLessons">{t.supportLessons}</option>
+                        <option value="reviewCourses">{t.reviewCourses}</option>
+                        <option value="vocationalTrainings">{t.vocationalTrainings}</option>
+                        <option value="languages">{t.languages || 'Languages'}</option>
+                        <option value="otherActivities">{t.otherActivities}</option>
                       </select>
                       <select
                         value={levelFilter}
                         onChange={(e) => setLevelFilter(e.target.value)}
                         disabled={levelFilterDisabled}
-                        title={levelFilterDisabled ? 'Level filter available for Support Lessons and Review Courses only' : undefined}
+                        title={levelFilterDisabled ? t.levelFilterHint : undefined}
                         className="p-2 border border-gray-300 rounded-md text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        <option value="all">All levels</option>
-                        <option value="primary">Primary</option>
-                        <option value="middle">Middle</option>
-                        <option value="high_school">High School</option>
+                        <option value="all">{t.allLevels}</option>
+                        <option value="primary">{t.primary}</option>
+                        <option value="middle">{t.middle}</option>
+                        <option value="high_school">{t.highSchool}</option>
                       </select>
                       <input
                         value={searchCatalog}
                         onChange={(e) => setSearchCatalog(e.target.value)}
-                        placeholder="Search catalog..."
+                        placeholder={t.searchCatalog}
                         className="p-2 border border-gray-300 rounded-md text-sm md:col-span-2"
                       />
                     </div>
                     {levelFilterDisabled && (
                       <p className="mt-2 text-xs text-gray-500">
-                        Level filter is available for Support Lessons and Review Courses.
+                        {t.levelFilterHint}
                       </p>
                     )}
                   </div>
@@ -1150,11 +1148,10 @@ const ClassCreationModal = ({
                       <div
                         key={`${item.type}-${item._id}`}
                         onClick={() => handleCatalogItemSelect(item)}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          formData.catalogItem?._id === item._id
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.catalogItem?._id === item._id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-gray-500 uppercase">
@@ -1208,7 +1205,7 @@ const ClassCreationModal = ({
                         onClick={() => setShowCount(c => c + 18)}
                         className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
                       >
-                        Show more ({filteredCatalogItems.length - showCount} more)
+                        {t.showMore || 'Show more'} ({filteredCatalogItems.length - showCount} {t.more || 'more'})
                       </button>
                     </div>
                   )}
@@ -1222,74 +1219,57 @@ const ClassCreationModal = ({
               {/* Step 2: Teacher & Room Assignment */}
               {step === 2 && (
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Assign Teacher & Room
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Teacher Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Teacher *
-                      </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.selectTeacher || 'SELECT TEACHER'} *</label>
                       <select
                         value={formData.teacherId}
                         onChange={(e) => handleTeacherSelect(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent transition-colors"
                       >
-                        <option value="">Choose a teacher...</option>
+                        <option value="">{t.chooseTeacher}</option>
                         {teachers.map((teacher) => (
                           <option key={teacher._id} value={teacher._id}>
-                            {teacher.firstName} {teacher.lastName} 
-                            {teacher.experience && ` (${teacher.experience} years exp.)`}
+                            {teacher.firstName} {teacher.lastName}
                           </option>
                         ))}
                       </select>
                       {validationErrors.teacherId && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.teacherId}</p>
+                        <p className="text-red-600 text-[10px] mt-1">{validationErrors.teacherId}</p>
                       )}
                     </div>
 
-                    {/* Room Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Room *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.selectRoom || 'SELECT ROOM'} *</label>
                       <select
                         value={formData.roomId}
                         onChange={(e) => handleRoomSelect(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent transition-colors"
                       >
-                        <option value="">Choose a room...</option>
+                        <option value="">{t.chooseRoom}</option>
                         {rooms.map((room) => (
                           <option key={room._id} value={room._id}>
-                            {room.name} (Capacity: {room.capacity})
+                            {room.name} (Cap: {room.capacity})
                           </option>
                         ))}
                       </select>
                       {validationErrors.roomId && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.roomId}</p>
+                        <p className="text-red-600 text-[10px] mt-1">{validationErrors.roomId}</p>
                       )}
                     </div>
 
-                    {/* Capacity */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Class Capacity *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.capacity || 'CAPACITY'} *</label>
                       <input
                         type="number"
                         min="1"
-                        max={rooms.find(r => r._id === formData.roomId)?.capacity || 100}
                         value={formData.capacity}
                         onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        placeholder="Enter class capacity"
+                        placeholder="Enter capacity"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
                       />
                       {validationErrors.capacity && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.capacity}</p>
+                        <p className="text-red-600 text-[10px] mt-1">{validationErrors.capacity}</p>
                       )}
                     </div>
                   </div>
@@ -1300,108 +1280,81 @@ const ClassCreationModal = ({
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Set Class Schedules
-                    </h3>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.setClassSchedules || 'CLASS SCHEDULES'}</h4>
                     <button
                       type="button"
                       onClick={addSchedule}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                      <Calendar className="w-4 h-4" />
-                      Add Schedule
+                      <Calendar className="w-3.5 h-3.5 text-primary" />
+                      {t.addSchedule || 'Add Schedule'}
                     </button>
                   </div>
 
                   {validationErrors.schedules && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <p className="text-red-700 text-sm">{validationErrors.schedules}</p>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-red-700 text-xs">{validationErrors.schedules}</p>
                     </div>
                   )}
 
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {formData.schedules.map((schedule, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-md font-medium text-gray-900">
-                            Schedule {index + 1}
-                          </h4>
-                          {formData.schedules.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSchedule(index)}
-                              className="text-red-600 hover:text-red-800 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-
+                      <div key={index} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {/* Day of Week */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Day of Week *
-                            </label>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase">Day</label>
                             <select
                               value={schedule.dayOfWeek}
                               onChange={(e) => updateSchedule(index, 'dayOfWeek', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                              className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent"
                             >
-                              <option value="monday">Monday</option>
-                              <option value="tuesday">Tuesday</option>
-                              <option value="wednesday">Wednesday</option>
-                              <option value="thursday">Thursday</option>
-                              <option value="friday">Friday</option>
-                              <option value="saturday">Saturday</option>
-                              <option value="sunday">Sunday</option>
+                              <option value="monday">{t.mon}</option>
+                              <option value="tuesday">{t.tue}</option>
+                              <option value="wednesday">{t.wed}</option>
+                              <option value="thursday">{t.thu}</option>
+                              <option value="friday">{t.fri}</option>
+                              <option value="saturday">{t.sat}</option>
+                              <option value="sunday">{t.sun}</option>
                             </select>
                           </div>
-
-                          {/* Start Time */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Start Time *
-                            </label>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase">Start</label>
                             <input
                               type="time"
                               value={schedule.startTime}
                               onChange={(e) => updateSchedule(index, 'startTime', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                              className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none"
                             />
-                            {validationErrors[`schedule${index}StartTime`] && (
-                              <p className="text-red-600 text-sm mt-1">{validationErrors[`schedule${index}StartTime`]}</p>
-                            )}
                           </div>
-
-                          {/* End Time */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              End Time *
-                            </label>
-                            <input
-                              type="time"
-                              value={schedule.endTime}
-                              onChange={(e) => updateSchedule(index, 'endTime', e.target.value)}
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            />
-                            {validationErrors[`schedule${index}EndTime`] && (
-                              <p className="text-red-600 text-sm mt-1">{validationErrors[`schedule${index}EndTime`]}</p>
-                            )}
+                          <div className="space-y-1 relative">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase">End</label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={schedule.endTime}
+                                onChange={(e) => updateSchedule(index, 'endTime', e.target.value)}
+                                className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none"
+                              />
+                              {formData.schedules.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeSchedule(index)}
+                                  className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Conflict Warning */}
                   {conflictError && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-                      <AlertTriangle className="text-red-500 w-5 h-5" />
-                      <div>
-                        <h3 className="font-medium text-red-800">Scheduling Conflict</h3>
-                        <p className="text-red-700 text-sm">{conflictError}</p>
-                      </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+                      <AlertTriangle className="text-red-500 w-4 h-4" />
+                      <p className="text-red-700 text-xs">{conflictError}</p>
                     </div>
                   )}
                 </div>
@@ -1410,18 +1363,9 @@ const ClassCreationModal = ({
               {/* Step 4: Class Details & Pricing */}
               {step === 4 && (
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Class Details & Pricing
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Class Name */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Class Name *
-                      </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.className || 'CLASS NAME'} *</label>
                       <input
                         type="text"
                         value={formData.name}
@@ -1430,74 +1374,61 @@ const ClassCreationModal = ({
                           setFormData(prev => ({ ...prev, name: value }));
                           setValidationErrors(prev => ({ ...prev, name: null }));
                         }}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Enter class name"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
                       />
                       {validationErrors.name && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.name}</p>
+                        <p className="text-red-600 text-[10px] mt-1">{validationErrors.name}</p>
                       )}
                     </div>
 
-                    {/* Price */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Price per Cycle *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.cyclePrice || 'PRICE PER CYCLE'} *</label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">DZ</span>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           value={formData.price}
                           onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                          className="w-full p-3 pl-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="0.00"
+                          className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
                         />
+                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">{t.dz || 'DZ'}</span>
                       </div>
                       {validationErrors.price && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.price}</p>
+                        <p className="text-red-600 text-[10px] mt-1">{validationErrors.price}</p>
                       )}
                     </div>
 
-                    {/* Payment Cycle */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cycle Size (sessions) *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.cycleSize || 'CYCLE SIZE'} *</label>
                       <input
                         type="number"
                         min="1"
                         value={formData.paymentCycle}
                         onChange={(e) => setFormData(prev => ({ ...prev, paymentCycle: parseInt(e.target.value) }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                        placeholder="4"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors"
                       />
                     </div>
 
-                    {/* Teacher Cut Mode */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Teacher Cut Mode *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.teacherCutMode || 'TEACHER CUT MODE'} *</label>
                       <select
                         value={formData.teacherCut.mode}
                         onChange={(e) => setFormData(prev => ({
                           ...prev,
                           teacherCut: { ...prev.teacherCut, mode: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent"
                       >
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed Amount</option>
+                        <option value="percentage">{t.percentage || 'Percentage'}</option>
+                        <option value="fixed">{t.fixedAmount || 'Fixed Amount'}</option>
                       </select>
                     </div>
 
-                    {/* Teacher Cut Value */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Teacher Cut Value *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.teacherCutValue || 'TEACHER CUT VALUE'} *</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -1508,20 +1439,16 @@ const ClassCreationModal = ({
                             ...prev,
                             teacherCut: { ...prev.teacherCut, value: parseFloat(e.target.value) }
                           }))}
-                          className="w-full p-3 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                          placeholder={formData.teacherCut.mode === 'percentage' ? '20' : '0.00'}
+                          className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none"
                         />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                          {formData.teacherCut.mode === 'percentage' ? '%' : 'DZ'}
+                        <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
+                          {formData.teacherCut.mode === 'percentage' ? '%' : (t.dz || 'DZ')}
                         </span>
                       </div>
                     </div>
 
-                    {/* Enrollment Period */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Enrollment Start Date *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.enrollmentStart || 'ENROLLMENT START'} *</label>
                       <input
                         type="date"
                         value={formData.enrollmentPeriod.startDate}
@@ -1529,17 +1456,12 @@ const ClassCreationModal = ({
                           ...prev,
                           enrollmentPeriod: { ...prev.enrollmentPeriod, startDate: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none"
                       />
-                      {validationErrors.startDate && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.startDate}</p>
-                      )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Enrollment End Date *
-                      </label>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.enrollmentEnd || 'ENROLLMENT END'} *</label>
                       <input
                         type="date"
                         value={formData.enrollmentPeriod.endDate}
@@ -1547,40 +1469,38 @@ const ClassCreationModal = ({
                           ...prev,
                           enrollmentPeriod: { ...prev.enrollmentPeriod, endDate: e.target.value }
                         }))}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none"
                       />
-                      {validationErrors.endDate && (
-                        <p className="text-red-600 text-sm mt-1">{validationErrors.endDate}</p>
-                      )}
                     </div>
-                  </div>
 
-                  {/* Absence Rule */}
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="absenceRule"
-                      checked={formData.absenceRule}
-                      onChange={(e) => setFormData(prev => ({ ...prev, absenceRule: e.target.checked }))}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="absenceRule" className="ml-2 text-sm text-gray-700">
-                      Absence affects payment (student pays even if absent)
-                    </label>
-                  </div>
+                    <div className="md:col-span-2 pt-2">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={formData.absenceRule}
+                            onChange={(e) => setFormData(prev => ({ ...prev, absenceRule: e.target.checked }))}
+                            className="sr-only"
+                          />
+                          <div className={`w-10 h-5 rounded-full transition-colors ${formData.absenceRule ? 'bg-primary' : 'bg-gray-200'}`}></div>
+                          <div className={`absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform ${formData.absenceRule ? 'translate-x-5' : ''}`}></div>
+                        </div>
+                        <span className="text-xs font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
+                          {t.absenceRule || 'Absence affects payment (student pays even if absent)'}
+                        </span>
+                      </label>
+                    </div>
 
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      rows={3}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                      placeholder="Enter class description..."
-                    />
+                    <div className="md:col-span-2 space-y-1">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.description || 'DESCRIPTION'}</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        rows={2}
+                        placeholder="Enter additional details..."
+                        className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300 resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1596,29 +1516,29 @@ const ClassCreationModal = ({
               disabled={step === 1}
               className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Previous
+              {t.previous}
             </button>
-            
+
             {step < 4 ? (
               <button
                 onClick={nextStep}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="btn-primary px-6 py-2"
               >
-                Next Step
+                {t.nextStep || 'Next Step'}
               </button>
             ) : (
               <button
                 onClick={handleSubmit}
                 disabled={isLoading || conflictError}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
                     <Loader className="animate-spin text-white mr-2" />
-                    {editMode ? 'Updating...' : 'Creating...'}
+                    {editMode ? t.updating : t.creating}
                   </>
                 ) : (
-                  editMode ? 'Update Class' : 'Create Class'
+                  editMode ? t.updateClass : t.createClass
                 )}
               </button>
             )}

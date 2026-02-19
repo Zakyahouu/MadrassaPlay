@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import formatDZ from '../../utils/currency';
-import { 
-  User, Mail, Phone, MapPin, GraduationCap, QrCode, BookOpen, 
+import {
+  User, Mail, Phone, MapPin, GraduationCap, QrCode, BookOpen,
   CreditCard, Calendar, Clock, Star,
   Plus, Edit, Download, ArrowLeft, Building2, CheckCircle,
   AlertCircle, Clock as ClockIcon
 } from 'lucide-react';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const getAuthToken = () => {
   const userInfoString = localStorage.getItem('user');
@@ -21,6 +22,7 @@ const getAuthToken = () => {
 };
 
 const StudentProfile = ({ student, onBack, onRefresh }) => {
+  const { t } = useLanguage();
   const [enrollments, setEnrollments] = useState([]);
   const [payments, setPayments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +42,6 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Fetch enrollments and payments for this student (unified payments endpoint)
       const [enrollmentsRes, paymentsRes] = await Promise.all([
         axios.get(`/api/students/${student._id}/enrollments`, config),
         axios.get('/api/payments', { ...config, params: { studentId: student._id, limit: 200 } })
@@ -50,7 +51,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
       setPayments(Array.isArray(paymentsRes.data?.items) ? paymentsRes.data.items : []);
     } catch (error) {
       console.error('Error fetching student data:', error);
-      // Use mock data for demo
+      // Fallback/Mock data for demo
       setEnrollments([
         {
           _id: '1',
@@ -87,13 +88,16 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
       high_school: 'bg-purple-100 text-purple-800 border-purple-200'
     };
     const labels = {
-      primary: 'Primary',
-      middle: 'Middle School',
-      high_school: 'High School'
+      school_before: t.before_education,
+      primary: t.primary_school,
+      middle: t.middle_school,
+      high_school: t.high_school,
+      university: t.university,
+      other: t.other
     };
-    return { 
-      color: colors[level] || 'bg-gray-100 text-gray-800 border-gray-200', 
-      label: labels[level] || level 
+    return {
+      color: colors[level] || 'bg-gray-100 text-gray-800 border-gray-200',
+      label: labels[level] || level
     };
   };
 
@@ -104,7 +108,10 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
       suspended: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       cancelled: 'bg-red-100 text-red-800 border-red-200'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return {
+      color: colors[status] || 'bg-gray-100 text-gray-800 border-gray-200',
+      label: t[status] || status
+    };
   };
 
   const getPaymentStatusBadge = (status) => {
@@ -113,29 +120,29 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       failed: 'bg-red-100 text-red-800 border-red-200'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return {
+      color: colors[status] || 'bg-gray-100 text-gray-800 border-gray-200',
+      label: t[status] || status
+    };
   };
 
   const calculateBalance = () => {
     let totalCredit = 0;
     let totalUsed = 0;
-    
     enrollments.forEach(enrollment => {
       totalCredit += enrollment.sessionsCount;
       totalUsed += enrollment.sessionsCompleted || 0;
     });
-    
     return totalCredit - totalUsed;
   };
-
-
 
   const levelBadge = getEducationLevelBadge(student.educationLevel);
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex flex-col justify-center items-center h-64 gap-3">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <p className="text-gray-500 text-sm">{t.loading}</p>
       </div>
     );
   }
@@ -171,7 +178,7 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
             <div className="flex gap-2">
               <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 <Edit className="w-4 h-4" />
-                Edit Profile
+                {t.editProfile}
               </button>
             </div>
           </div>
@@ -182,20 +189,19 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {[
-                { id: 'overview', name: 'Overview', icon: User },
-                { id: 'enrollments', name: 'Enrollments', icon: BookOpen },
-                { id: 'payments', name: 'Payment History', icon: CreditCard }
+                { id: 'overview', name: t.overview, icon: User },
+                { id: 'enrollments', name: t.enrollments, icon: BookOpen },
+                { id: 'payments', name: t.paymentHistory, icon: CreditCard }
               ].map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === tab.id
+                    className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     {tab.name}
@@ -211,213 +217,209 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Core Information */}
                 <div className="lg:col-span-2 space-y-6">
-                                     <div className="bg-gray-50 rounded-lg p-6">
-                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                       <User className="w-5 h-5 text-blue-500" />
-                       Core Information
-                     </h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {/* Personal Information */}
-                       <div className="space-y-4">
-                         <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Personal Details</h4>
-                         <div className="space-y-3">
-                           <div className="flex items-center gap-3">
-                             <User className="w-4 h-4 text-gray-400" />
-                             <div>
-                               <p className="text-sm font-medium text-gray-900">
-                                 {`${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name}
-                               </p>
-                               <p className="text-xs text-gray-500">Full Name</p>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-3">
-                             <QrCode className="w-4 h-4 text-gray-400" />
-                             <div>
-                               <p className="text-sm font-medium text-gray-900 font-mono">{student.studentCode}</p>
-                               <p className="text-xs text-gray-500">Student Code</p>
-                             </div>
-                           </div>
-                           {student.dateOfBirth && (
-                             <div className="flex items-center gap-3">
-                               <Calendar className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">
-                                   {new Date(student.dateOfBirth).toLocaleDateString()}
-                                 </p>
-                                 <p className="text-xs text-gray-500">Date of Birth</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.gender && (
-                             <div className="flex items-center gap-3">
-                               <User className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900 capitalize">{student.gender}</p>
-                                 <p className="text-xs text-gray-500">Gender</p>
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       </div>
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5 text-blue-500" />
+                      {t.coreInformation}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Personal Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{t.personalDetails}</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {`${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name}
+                              </p>
+                              <p className="text-xs text-gray-500">{t.fullName}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <QrCode className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 font-mono">{student.studentCode}</p>
+                              <p className="text-xs text-gray-500">{t.studentCode}</p>
+                            </div>
+                          </div>
+                          {student.dateOfBirth && (
+                            <div className="flex items-center gap-3">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {new Date(student.dateOfBirth).toLocaleDateString()}
+                                </p>
+                                <p className="text-xs text-gray-500">{t.dateOfBirth}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.gender && (
+                            <div className="flex items-center gap-3">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 capitalize">{t[student.gender] || student.gender}</p>
+                                <p className="text-xs text-gray-500">{t.gender}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                       {/* Contact Information */}
-                       <div className="space-y-4">
-                         <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Contact Information</h4>
-                         <div className="space-y-3">
-                           <div className="flex items-center gap-3">
-                             <Mail className="w-4 h-4 text-gray-400" />
-                             <div>
-                               <p className="text-sm font-medium text-gray-900">{student.email}</p>
-                               <p className="text-xs text-gray-500">Email Address</p>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-3">
-                             <Phone className="w-4 h-4 text-gray-400" />
-                             <div>
-                               <p className="text-sm font-medium text-gray-900">{student.phone}</p>
-                               <p className="text-xs text-gray-500">Phone Number</p>
-                             </div>
-                           </div>
-                           {student.emergencyContact && (
-                             <div className="flex items-center gap-3">
-                               <AlertCircle className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.emergencyContact}</p>
-                                 <p className="text-xs text-gray-500">Emergency Contact</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.address && (
-                             <div className="flex items-center gap-3">
-                               <MapPin className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.address}</p>
-                                 <p className="text-xs text-gray-500">Address</p>
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       </div>
+                      {/* Contact Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{t.contactInformation}</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{student.email}</p>
+                              <p className="text-xs text-gray-500">{t.emailAddress}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{student.phone}</p>
+                              <p className="text-xs text-gray-500">{t.phoneNumber}</p>
+                            </div>
+                          </div>
+                          {student.emergencyContact && (
+                            <div className="flex items-center gap-3">
+                              <AlertCircle className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.emergencyContact}</p>
+                                <p className="text-xs text-gray-500">{t.emergencyContact}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.address && (
+                            <div className="flex items-center gap-3">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.address}</p>
+                                <p className="text-xs text-gray-500">{t.address}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                       {/* Academic Information */}
-                       <div className="space-y-4">
-                         <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Academic Details</h4>
-                         <div className="space-y-3">
-                           <div className="flex items-center gap-3">
-                             <GraduationCap className="w-4 h-4 text-gray-400" />
-                             <div>
-                               <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${levelBadge.color}`}>
-                                 {levelBadge.label}
-                               </span>
-                               <p className="text-xs text-gray-500 mt-1">Education Level</p>
-                             </div>
-                           </div>
-                           {student.currentSchool && (
-                             <div className="flex items-center gap-3">
-                               <Building2 className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.currentSchool}</p>
-                                 <p className="text-xs text-gray-500">Current School</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.grade && (
-                             <div className="flex items-center gap-3">
-                               <Star className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.grade}</p>
-                                 <p className="text-xs text-gray-500">Current Grade</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.subjects && student.subjects.length > 0 && (
-                             <div className="flex items-start gap-3">
-                               <BookOpen className="w-4 h-4 text-gray-400 mt-0.5" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">
-                                   {student.subjects.join(', ')}
-                                 </p>
-                                 <p className="text-xs text-gray-500">Subjects of Interest</p>
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       </div>
+                      {/* Academic Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{t.academicDetails}</h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <GraduationCap className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${levelBadge.color}`}>
+                                {levelBadge.label}
+                              </span>
+                              <p className="text-xs text-gray-500 mt-1">{t.educationLevel}</p>
+                            </div>
+                          </div>
+                          {student.currentSchool && (
+                            <div className="flex items-center gap-3">
+                              <Building2 className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.currentSchool}</p>
+                                <p className="text-xs text-gray-500">{t.currentSchool}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.grade && (
+                            <div className="flex items-center gap-3">
+                              <Star className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.grade}</p>
+                                <p className="text-xs text-gray-500">{t.currentGrade}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.subjects && student.subjects.length > 0 && (
+                            <div className="flex items-start gap-3">
+                              <BookOpen className="w-4 h-4 text-gray-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {student.subjects.join(', ')}
+                                </p>
+                                <p className="text-xs text-gray-500">{t.subjectsOfInterest}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                       {/* Additional Information */}
-                       <div className="space-y-4">
-                         <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Additional Info</h4>
-                         <div className="space-y-3">
-                           {student.parentName && (
-                             <div className="flex items-center gap-3">
-                               <User className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.parentName}</p>
-                                 <p className="text-xs text-gray-500">Parent/Guardian</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.parentPhone && (
-                             <div className="flex items-center gap-3">
-                               <Phone className="w-4 h-4 text-gray-400" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.parentPhone}</p>
-                                 <p className="text-xs text-gray-500">Parent Phone</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.medicalInfo && (
-                             <div className="flex items-start gap-3">
-                               <AlertCircle className="w-4 h-4 text-gray-400 mt-0.5" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.medicalInfo}</p>
-                                 <p className="text-xs text-gray-500">Medical Information</p>
-                               </div>
-                             </div>
-                           )}
-                           {student.notes && (
-                             <div className="flex items-start gap-3">
-                               <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
-                               <div>
-                                 <p className="text-sm font-medium text-gray-900">{student.notes}</p>
-                                 <p className="text-xs text-gray-500">Notes</p>
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       </div>
-                     </div>
-                   </div>
-
-
+                      {/* Additional Information */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{t.additionalInfo}</h4>
+                        <div className="space-y-3">
+                          {student.parentName && (
+                            <div className="flex items-center gap-3">
+                              <User className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.parentName}</p>
+                                <p className="text-xs text-gray-500">{t.guardianName}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.parentPhone && (
+                            <div className="flex items-center gap-3">
+                              <Phone className="w-4 h-4 text-gray-400" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.parentPhone}</p>
+                                <p className="text-xs text-gray-500">{t.parentPhone}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.medicalInfo && (
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="w-4 h-4 text-gray-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.medicalInfo}</p>
+                                <p className="text-xs text-gray-500">{t.medicalInformation}</p>
+                              </div>
+                            </div>
+                          )}
+                          {student.notes && (
+                            <div className="flex items-start gap-3">
+                              <Clock className="w-4 h-4 text-gray-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{student.notes}</p>
+                                <p className="text-xs text-gray-500">{t.notes}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Statistics */}
+                {/* Statistics Sidebar */}
                 <div className="space-y-6">
                   {/* Balance Card */}
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-green-900">Session Balance</h3>
+                      <h3 className="text-lg font-semibold text-green-900">{t.sessionBalance}</h3>
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     </div>
                     <div className="text-3xl font-bold text-green-900 mb-2">
                       {calculateBalance()}
                     </div>
-                    <p className="text-sm text-green-700">Available Sessions</p>
+                    <p className="text-sm text-green-700">{t.availableSessions}</p>
                   </div>
-
-
 
                   {/* Active Enrollments */}
                   <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-purple-900">Active Classes</h3>
+                      <h3 className="text-lg font-semibold text-purple-900">{t.activeClasses}</h3>
                       <BookOpen className="w-6 h-6 text-purple-600" />
                     </div>
                     <div className="text-3xl font-bold text-purple-900 mb-2">
                       {enrollments.filter(e => e.status === 'active').length}
                     </div>
-                    <p className="text-sm text-purple-700">Currently Enrolled</p>
+                    <p className="text-sm text-purple-700">{t.currentlyEnrolled}</p>
                   </div>
                 </div>
               </div>
@@ -426,13 +428,13 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
             {activeTab === 'enrollments' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Enrollment History</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t.enrollmentHistory}</h3>
                   <button
                     onClick={() => setShowEnrollModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     <Plus className="w-4 h-4" />
-                    New Enrollment
+                    {t.newEnrollment}
                   </button>
                 </div>
 
@@ -442,20 +444,16 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Class
+                            {t.class}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Teacher
+                            {t.teacher}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Progress
+                            {t.progress}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.amount}</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.status}</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -464,16 +462,16 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                             <td className="px-6 py-4">
                               <div>
                                 <div className="text-sm font-medium text-gray-900">{enrollment.className}</div>
-                                <div className="text-sm text-gray-500">{enrollment.schedule}</div>
+                                <div className="text-sm text-gray-500">{enrollment.schedule || 'N/A'}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">{enrollment.teacher}</td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 <div className="w-20 bg-gray-200 rounded-full h-2">
-                                  <div 
+                                  <div
                                     className="bg-blue-500 h-2 rounded-full"
-                                    style={{ width: `${(enrollment.sessionsCompleted / enrollment.sessionsCount) * 100}%` }}
+                                    style={{ width: `${(enrollment.sessionsCompleted / (enrollment.sessionsCount || 1)) * 100}%` }}
                                   ></div>
                                 </div>
                                 <span className="text-sm text-gray-600">
@@ -482,12 +480,17 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {enrollment.totalAmount.toLocaleString()} DZD
+                              {formatDZ(enrollment.totalAmount)}
                             </td>
                             <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getEnrollmentStatusBadge(enrollment.status)}`}>
-                                {enrollment.status}
-                              </span>
+                              {(() => {
+                                const badge = getEnrollmentStatusBadge(enrollment.status);
+                                return (
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${badge.color}`}>
+                                    {badge.label}
+                                  </span>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}
@@ -501,13 +504,13 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
             {activeTab === 'payments' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t.paymentHistory}</h3>
                   <button
                     onClick={() => setShowPaymentModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
                     <CreditCard className="w-4 h-4" />
-                    Record Payment
+                    {t.recordPayment}
                   </button>
                 </div>
 
@@ -516,21 +519,11 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                     <table className="min-w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Method
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.date}</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.description}</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.amount}</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.method}</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.status}</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -541,13 +534,18 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">{payment.description}</td>
                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                              {payment.amount.toLocaleString()} DZD
+                              {formatDZ(payment.amount)}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-900 capitalize">{payment.method}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900 capitalize">{t[payment.method] || payment.method}</td>
                             <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${getPaymentStatusBadge(payment.status)}`}>
-                                {payment.status}
-                              </span>
+                              {(() => {
+                                const badge = getPaymentStatusBadge(payment.status);
+                                return (
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${badge.color}`}>
+                                    {badge.label}
+                                  </span>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}
@@ -557,8 +555,6 @@ const StudentProfile = ({ student, onBack, onRefresh }) => {
                 </div>
               </div>
             )}
-
-
           </div>
         </div>
       </div>

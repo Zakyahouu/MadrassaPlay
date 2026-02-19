@@ -1,8 +1,10 @@
 // ManagerList.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ManagerList = ({ schoolId, onSelect }) => {
+  const { t } = useLanguage();
   const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

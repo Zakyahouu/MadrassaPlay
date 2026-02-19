@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+import { useLanguage } from '../../context/LanguageContext';
   Trophy, 
   TrendingUp, 
   Users, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 
 const TeacherResults = () => {
+  const { t, isRTL } = useLanguage();
   const [selectedGame, setSelectedGame] = useState('all');
   const [timeFilter, setTimeFilter] = useState('week');
 
@@ -176,7 +178,7 @@ const TeacherResults = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Spent</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Played</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.actions}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

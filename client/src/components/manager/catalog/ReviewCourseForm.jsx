@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight, GraduationCap, Plus, Check } from 'lucide-react';
+import { useLanguage } from '../../../context/LanguageContext';
 
 const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     level: '',
@@ -29,24 +31,24 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
     switch (level) {
       case 'primary':
         return [
-          { value: 1, label: '1st Grade' },
-          { value: 2, label: '2nd Grade' },
-          { value: 3, label: '3rd Grade' },
-          { value: 4, label: '4th Grade' },
-          { value: 5, label: '5th Grade' }
+          { value: 1, label: t.grade1 || 'Grade 1' },
+          { value: 2, label: t.grade2 || 'Grade 2' },
+          { value: 3, label: t.grade3 || 'Grade 3' },
+          { value: 4, label: t.grade4 || 'Grade 4' },
+          { value: 5, label: t.grade5 || 'Grade 5' }
         ];
       case 'middle':
         return [
-          { value: 1, label: '1st Grade' },
-          { value: 2, label: '2nd Grade' },
-          { value: 3, label: '3rd Grade' },
-          { value: 4, label: '4th Grade' }
+          { value: 1, label: t.grade1 || 'Grade 1' },
+          { value: 2, label: t.grade2 || 'Grade 2' },
+          { value: 3, label: t.grade3 || 'Grade 3' },
+          { value: 4, label: t.grade4 || 'Grade 4' }
         ];
       case 'high_school':
         return [
-          { value: 1, label: '1st Year' },
-          { value: 2, label: '2nd Year' },
-          { value: 3, label: '3rd Year' }
+          { value: 1, label: t.year1 || 'Year 1' },
+          { value: 2, label: t.year2 || 'Year 2' },
+          { value: 3, label: t.year3 || 'Year 3' }
         ];
       default:
         return [];
@@ -65,7 +67,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         'التربية الإسلامية'
       ];
     }
-    
+
     if (level === 'middle') {
       return [
         'اللغة العربية',
@@ -79,7 +81,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         'اللغة الإنجليزية'
       ];
     }
-    
+
     if (level === 'high_school') {
       if (grade === 1) {
         return [
@@ -166,51 +168,51 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         }
       }
     }
-    
+
     return [];
   };
 
   // Stream options for high school
   const getStreamOptions = () => {
     return [
-      { 
-        value: 'common core science and technology', 
-        label: 'Common Core Science and Technology (جذع مشترك علوم وتكنولوجيا)',
+      {
+        value: 'common core science and technology',
+        label: t.commonCoreScienceTech || 'Common Core Science & Tech',
         years: [1]
       },
-      { 
-        value: 'common core literature and languages', 
-        label: 'Common Core Arts (جذع مشترك اداب)',
+      {
+        value: 'common core literature and languages',
+        label: t.commonCoreArts || 'Common Core Arts & Languages',
         years: [1]
       },
-      { 
-        value: 'experimental sciences', 
-        label: 'Experimental Sciences',
+      {
+        value: 'experimental sciences',
+        label: t.experimentalSciences || 'Experimental Sciences',
         years: [2, 3]
       },
-      { 
-        value: 'technical math', 
-        label: 'Technical Math',
+      {
+        value: 'technical math',
+        label: t.technicalMath || 'Technical Math',
         years: [2, 3]
       },
-      { 
-        value: 'mathematics', 
-        label: 'Mathematics',
+      {
+        value: 'mathematics',
+        label: t.mathematics || 'Mathematics',
         years: [2, 3]
       },
-      { 
-        value: 'management & economics', 
-        label: 'Management & Economics',
+      {
+        value: 'management & economics',
+        label: t.managementEconomics || 'Management & Economics',
         years: [2, 3]
       },
-      { 
-        value: 'foreign languages', 
-        label: 'Foreign Languages',
+      {
+        value: 'foreign languages',
+        label: t.foreignLanguages || 'Foreign Languages',
         years: [2, 3]
       },
-      { 
-        value: 'literature & philosophy', 
-        label: 'Literature & Philosophy',
+      {
+        value: 'literature & philosophy',
+        label: t.literaturePhilosophy || 'Literature & Philosophy',
         years: [2, 3]
       }
     ];
@@ -236,24 +238,24 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
     switch (step) {
       case 1:
         if (!formData.level) {
-          newErrors.level = 'Please select a level';
+          newErrors.level = t.pleaseSelectLevel || 'Please select a level';
         }
         break;
       case 2:
         if (formData.level === 'high_school' && !formData.stream) {
-          newErrors.stream = 'Please select a stream';
+          newErrors.stream = t.pleaseSelectStream || 'Please select a stream';
         }
         break;
       case 3:
         if (formData.selectedGrades.length === 0) {
-          newErrors.selectedGrades = 'Please select at least one grade';
+          newErrors.selectedGrades = t.pleaseSelectOneGrade || 'Please select at least one grade';
         }
         // Validate that each selected grade has at least one subject
-        const missingSubjects = formData.selectedGrades.filter(grade => 
+        const missingSubjects = formData.selectedGrades.filter(grade =>
           !formData.gradeSubjects[grade] || formData.gradeSubjects[grade].length === 0
         );
         if (missingSubjects.length > 0) {
-          newErrors.gradeSubjects = 'Please select at least one subject for each selected grade';
+          newErrors.gradeSubjects = t.pleaseSelectOneSubject || 'Please select at least one subject';
         }
         break;
     }
@@ -326,7 +328,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('Failed to save course. Please try again.');
+      alert(t.failedToSaveCourse || 'Failed to save course');
     } finally {
       setLoading(false);
     }
@@ -361,7 +363,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   const handleInputChange = (field, value) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
+
       // Reset dependent fields when level or stream changes
       if (field === 'level') {
         newData.stream = '';
@@ -371,7 +373,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         newData.selectedGrades = [];
         newData.gradeSubjects = {};
       }
-      
+
       return newData;
     });
 
@@ -452,13 +454,13 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
     if (formData.level !== 'high_school') {
       return getGradeOptions(formData.level);
     }
-    
+
     if (!formData.stream) return [];
-    
+
     const stream = getStreamOptions().find(s => s.value === formData.stream);
     if (!stream) return [];
-    
-    return getGradeOptions('high_school').filter(grade => 
+
+    return getGradeOptions('high_school').filter(grade =>
       stream.years.includes(grade.value)
     );
   };
@@ -479,7 +481,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
           <div className="flex items-center gap-3">
             <GraduationCap className="w-6 h-6 text-purple-600" />
             <h2 className="text-xl font-semibold text-gray-900">
-              {data ? 'Edit Review Course' : 'Add Review Course'}
+              {data ? (t.editReviewCourse || 'Edit Review Course') : (t.addReviewCourse || 'Add Review Course')}
             </h2>
           </div>
           <button
@@ -497,27 +499,25 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
               const isActive = step === currentStep;
               const isCompleted = step < currentStep;
               const isHidden = step === 2 && skipStreamStep;
-              
+
               if (isHidden) return null;
-              
+
               return (
                 <div key={step} className="flex items-center">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      isActive
-                        ? 'bg-purple-600 text-white'
-                        : isCompleted
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${isActive
+                      ? 'bg-purple-600 text-white'
+                      : isCompleted
                         ? 'bg-green-500 text-white'
                         : 'bg-gray-200 text-gray-600'
-                    }`}
+                      }`}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : step}
                   </div>
                   {step < 3 && !isHidden && (
                     <div
-                      className={`w-12 h-1 mx-2 ${
-                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                      }`}
+                      className={`w-12 h-1 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                        }`}
                     />
                   )}
                 </div>
@@ -525,7 +525,7 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
             })}
           </div>
           <div className="mt-2 text-sm text-gray-600">
-            Step {currentStep} of {skipStreamStep ? 2 : 3}
+            {t.step || 'Step'} {currentStep} {t.of || 'of'} {skipStreamStep ? 2 : 3}
           </div>
         </div>
 
@@ -536,43 +536,40 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Select Level
+                  {t.selectLevel || 'Select Level'}
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <button
                     onClick={() => handleInputChange('level', 'primary')}
-                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${
-                      formData.level === 'primary'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${formData.level === 'primary'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                   >
-                    <div className="font-medium">Primary School</div>
-                    <div className="text-sm text-gray-500 mt-1">Grades 1-5</div>
+                    <div className="font-medium">{t.primarySchool || 'Primary School'}</div>
+                    <div className="text-sm text-gray-500 mt-1">{t.grades1to5 || 'Grades 1 to 5'}</div>
                   </button>
-                  
+
                   <button
                     onClick={() => handleInputChange('level', 'middle')}
-                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${
-                      formData.level === 'middle'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${formData.level === 'middle'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                   >
-                    <div className="font-medium">Middle School</div>
-                    <div className="text-sm text-gray-500 mt-1">Grades 1-4</div>
+                    <div className="font-medium">{t.middleSchool || 'Middle School'}</div>
+                    <div className="text-sm text-gray-500 mt-1">{t.grades1to4 || 'Grades 1 to 4'}</div>
                   </button>
-                  
+
                   <button
                     onClick={() => handleInputChange('level', 'high_school')}
-                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${
-                      formData.level === 'high_school'
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${formData.level === 'high_school'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                   >
-                    <div className="font-medium">High School</div>
-                    <div className="text-sm text-gray-500 mt-1">Years 1-3</div>
+                    <div className="font-medium">{t.highSchool || 'High School'}</div>
+                    <div className="text-sm text-gray-500 mt-1">{t.years1to3 || 'Years 1 to 3'}</div>
                   </button>
                 </div>
                 {errors.level && (
@@ -587,22 +584,21 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Select Stream
+                  {t.selectStream || 'Select Stream'}
                 </label>
                 <div className="grid grid-cols-1 gap-3">
                   {streamOptions.map((stream) => (
                     <button
                       key={stream.value}
                       onClick={() => handleInputChange('stream', stream.value)}
-                      className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${
-                        formData.stream === stream.value
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`p-4 border-2 rounded-lg text-left transition-all duration-200 ${formData.stream === stream.value
+                        ? 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       <div className="font-medium">{stream.label}</div>
                       <div className="text-sm text-gray-500 mt-1">
-                        Available for: {stream.years.map(year => `${year}${year === 1 ? 'st' : year === 2 ? 'nd' : 'rd'} Year`).join(', ')}
+                        Available for: {stream.years.map(year => (year === 1 ? (t.year1 || 'Year 1') : year === 2 ? (t.year2 || 'Year 2') : (t.year3 || 'Year 3'))).join(', ')}
                       </div>
                     </button>
                   ))}
@@ -620,17 +616,16 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
               {/* Grade Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Select Grades to Add Review Courses
+                  {t.selectGradesToAdd || 'Select Grades to Add'}
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {availableGrades.map((grade) => (
                     <div
                       key={grade.value}
-                      className={`p-3 border-2 rounded-lg transition-all duration-200 ${
-                        formData.selectedGrades.includes(grade.value)
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-3 border-2 rounded-lg transition-all duration-200 ${formData.selectedGrades.includes(grade.value)
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -658,18 +653,18 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
               {formData.selectedGrades.length > 0 && (
                 <div className="space-y-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Select Subjects for Each Grade
+                    {t.selectSubjectsForGrade || 'Select Subjects for Grade'}
                   </label>
                   {formData.selectedGrades.map((grade) => {
                     const gradeOption = availableGrades.find(g => g.value === grade);
                     const subjectOptions = getSubjectOptions(formData.level, grade, formData.stream);
                     const selectedSubjects = formData.gradeSubjects[grade] || [];
-                    
+
                     return (
                       <div key={grade} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <div className="flex items-center justify-between mb-3">
                           <label className="block text-sm font-medium text-gray-700">
-                            {gradeOption?.label} Subjects
+                            {gradeOption?.label}
                           </label>
                           <div className="flex gap-2">
                             <button
@@ -677,14 +672,14 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                               onClick={() => handleSelectAllSubjects(grade)}
                               className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
                             >
-                              Select All
+                              {t.selectAll || 'Select All'}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeselectAllSubjects(grade)}
                               className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
                             >
-                              Clear All
+                              {t.clearAll || 'Clear All'}
                             </button>
                           </div>
                         </div>
@@ -692,23 +687,26 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                           {subjectOptions.map((subject) => {
                             const disabled = !data && isSubjectAlreadyExists(grade, subject);
                             return (
-                            <div key={subject} className={`flex items-center gap-2 ${disabled ? 'opacity-50' : ''}`}>
-                              <input
-                                type="checkbox"
-                                checked={selectedSubjects.includes(subject)}
-                                onChange={() => !disabled && handleSubjectToggle(grade, subject)}
-                                disabled={disabled}
-                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                              />
-                              <span className="text-sm text-gray-700">{subject}</span>
-                            </div>
-                          );})}
+                              <div key={subject} className={`flex items-center gap-2 ${disabled ? 'opacity-50' : ''}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSubjects.includes(subject)}
+                                  onChange={() => !disabled && handleSubjectToggle(grade, subject)}
+                                  disabled={disabled}
+                                  className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                />
+                                <span className="text-sm text-gray-700">{subject}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        {selectedSubjects.length > 0 && (
-                          <p className="mt-2 text-xs text-purple-600">
-                            Selected: {selectedSubjects.join(', ')}
-                          </p>
-                        )}
+                        {
+                          selectedSubjects.length > 0 && (
+                            <p className="mt-2 text-xs text-purple-600">
+                              {t.selected || 'Selected'}: {selectedSubjects.join(', ')}
+                            </p>
+                          )
+                        }
                       </div>
                     );
                   })}
@@ -721,18 +719,18 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
               {/* Summary */}
               {formData.selectedGrades.length > 0 && (
                 <div className="p-4 bg-purple-50 rounded-lg">
-                  <h4 className="font-medium text-purple-900 mb-2">Summary</h4>
+                  <h4 className="font-medium text-purple-900 mb-2">{t.summary || 'Summary'}</h4>
                   <div className="space-y-1 text-sm text-purple-800">
-                    <p><strong>Level:</strong> {formData.level === 'primary' ? 'Primary School' : formData.level === 'middle' ? 'Middle School' : 'High School'}</p>
-                    {formData.stream && <p><strong>Stream:</strong> {streamOptions.find(s => s.value === formData.stream)?.label}</p>}
-                    <p><strong>Grades & Subjects:</strong></p>
+                    <p><strong>{t.level || 'Level'}:</strong> {formData.level === 'primary' ? (t.primarySchool || 'Primary') : formData.level === 'middle' ? (t.middleSchool || 'Middle') : (t.highSchool || 'High School')}</p>
+                    {formData.stream && <p><strong>{t.stream || 'Stream'}:</strong> {streamOptions.find(s => s.value === formData.stream)?.label}</p>}
+                    <p><strong>{t.gradesAndSubjects || 'Grades & Subjects'}:</strong></p>
                     <ul className="ml-4 space-y-1">
                       {formData.selectedGrades.map(grade => {
                         const gradeOption = availableGrades.find(g => g.value === grade);
                         const subjects = formData.gradeSubjects[grade] || [];
                         return (
                           <li key={grade}>
-                            • <strong>{gradeOption?.label}:</strong> {subjects.length > 0 ? subjects.join(', ') : 'No subjects selected'}
+                            • <strong>{gradeOption?.label}:</strong> {subjects.length > 0 ? subjects.join(', ') : (t.noSubjectsSelected || 'No subjects selected')}
                           </li>
                         );
                       })}
@@ -752,31 +750,29 @@ const ReviewCourseForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
             disabled={loading}
           >
             <ChevronLeft className="w-4 h-4" />
-            {currentStep === 1 ? 'Cancel' : 'Previous'}
+            {currentStep === 1 ? (t.cancel || 'Cancel') : (t.previous || 'Previous')}
           </button>
-          
+
           <button
             onClick={handleNext}
             disabled={loading}
             className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              'Saving...'
+              t.saving || 'Saving...'
             ) : currentStep === 3 ? (
               <>
-                {data ? 'Update' : 'Create'} Course{formData.selectedGrades.length > 1 ? 's' : ''}
+                {(data ? (t.update || 'Update') : (t.create || 'Create'))} {(t.course || 'Course')}{formData.selectedGrades.length > 1 ? 's' : ''}
                 <ChevronRight className="w-4 h-4" />
               </>
             ) : (
-              <>
-                Next
-                <ChevronRight className="w-4 h-4" />
+              <>{t.next || 'Next'}<ChevronRight className="w-4 h-4" />
               </>
             )}
           </button>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

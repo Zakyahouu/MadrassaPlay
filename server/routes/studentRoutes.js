@@ -15,10 +15,10 @@ const {
   enrollStudent,
   scanByCode
 } = require('../controllers/studentController');
-const { protect, manager } = require('../middleware/authMiddleware');
+const { protect, manager, authorize } = require('../middleware/authMiddleware');
 
-// All routes are protected and require manager role
-router.use(protect, manager);
+// All routes are protected and require manager or staff role
+router.use(protect, authorize('manager', 'staff'));
 
 // Main student routes
 router.route('/')

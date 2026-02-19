@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ResultDetail = () => {
+  const { t } = useLanguage();
   const { resultId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,7 +41,7 @@ const ResultDetail = () => {
           <Link to={-1} className="text-indigo-600 hover:underline">Back</Link>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm text-gray-500">Student</div>
+          <div className="text-sm text-gray-500">{t.student}</div>
           <div>{studentName}</div>
           <div className="text-sm text-gray-500 mt-2">Score</div>
           <div>{data?.result?.score} / {data?.result?.totalPossibleScore}</div>
