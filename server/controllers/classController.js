@@ -14,17 +14,17 @@ const ClassResource = require('../models/ClassResource');
 // @access  Private (Manager)
 const getClasses = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school to access classes');
   }
-  
+
   const classes = await Class.find({ schoolId })
     .populate('teacherId', 'firstName lastName')
     .populate('roomId', 'name capacity')
     .sort({ createdAt: -1 });
-  
+
   res.json(classes);
 });
 
@@ -34,17 +34,17 @@ const getClasses = asyncHandler(async (req, res) => {
 const getClass = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   const classItem = await Class.findOne({ _id: id, schoolId })
     .populate('teacherId', 'firstName lastName email contact.phone1')
     .populate('roomId', 'name capacity activityTypes')
     .populate('enrolledStudents.studentId', 'firstName lastName email studentCode');
-  
+
   if (!classItem) {
     res.status(404);
     throw new Error('Class not found');
   }
-  
+
   res.json(classItem);
 });
 
@@ -53,12 +53,12 @@ const getClass = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const createClass = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school to create classes');
   }
-  
+
   const {
     name,
     catalogItem,
@@ -67,17 +67,17 @@ const createClass = asyncHandler(async (req, res) => {
     schedules,
     capacity,
     enrollmentPeriod,
-  paymentCycle,
-  price,
-  paymentModel: bodyPaymentModel,
-  sessionPrice: bodySessionPrice,
-  cycleSize: bodyCycleSize,
-  cyclePrice: bodyCyclePrice,
+    paymentCycle,
+    price,
+    paymentModel: bodyPaymentModel,
+    sessionPrice: bodySessionPrice,
+    cycleSize: bodyCycleSize,
+    cyclePrice: bodyCyclePrice,
     teacherCut,
     absenceRule,
     description
   } = req.body;
-  
+
   const trimmedName = typeof name === 'string' ? name.trim() : '';
   if (!trimmedName) {
     res.status(400);
@@ -97,21 +97,21 @@ const createClass = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('School catalog not found');
   }
-  
+
   // Validate teacher exists and is assigned to school
   const teacher = await User.findOne({ _id: teacherId, role: 'teacher', school: schoolId });
   if (!teacher) {
     res.status(404);
     throw new Error('Teacher not found');
   }
-  
+
   // Validate room exists and belongs to school
   const room = await Room.findOne({ _id: roomId, schoolId });
   if (!room) {
     res.status(404);
     throw new Error('Room not found');
   }
-  
+
   // Validate schedules
   if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
     res.status(400);
@@ -119,26 +119,26 @@ const createClass = asyncHandler(async (req, res) => {
   }
 
   const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
-  
+
   for (const schedule of schedules) {
     if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
       res.status(400);
       throw new Error('Invalid time format. Use HH:MM format');
     }
-    
+
     // Validate start time is before end time
     if (schedule.startTime >= schedule.endTime) {
       res.status(400);
       throw new Error('Start time must be before end time');
     }
   }
-  
+
   // Validate capacity doesn't exceed room capacity (unless confirmed)
   if (capacity > room.capacity) {
     res.status(400);
     throw new Error(`Capacity (${capacity}) exceeds room capacity (${room.capacity})`);
   }
-  
+
   // Derive pricing fields (support new model and legacy alias)
   let paymentModel = bodyPaymentModel;
   let sessionPrice = bodySessionPrice;
@@ -197,7 +197,7 @@ const createClass = asyncHandler(async (req, res) => {
     absenceRule,
     description
   });
-  
+
   // Check for scheduling conflicts
   const conflict = await newClass.hasConflict();
   if (conflict) {
@@ -210,15 +210,15 @@ const createClass = asyncHandler(async (req, res) => {
       throw new Error(`Teacher is already booked during ${scheduleInfo} by class: ${conflict.conflict.name}`);
     }
   }
-  
+
   // Save the class
   const savedClass = await newClass.save();
-  
+
   // Populate references for response
   const populatedClass = await Class.findById(savedClass._id)
     .populate('teacherId', 'firstName lastName')
     .populate('roomId', 'name capacity');
-  
+
   res.status(201).json({
     success: true,
     class: populatedClass,
@@ -232,13 +232,13 @@ const createClass = asyncHandler(async (req, res) => {
 const updateClass = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   const classItem = await Class.findOne({ _id: id, schoolId });
   if (!classItem) {
     res.status(404);
     throw new Error('Class not found');
   }
-  
+
   const {
     name,
     teacherId,
@@ -246,18 +246,18 @@ const updateClass = asyncHandler(async (req, res) => {
     schedules,
     capacity,
     enrollmentPeriod,
-  paymentCycle,
-  price,
-  paymentModel: bodyPaymentModel,
-  sessionPrice: bodySessionPrice,
-  cycleSize: bodyCycleSize,
-  cyclePrice: bodyCyclePrice,
+    paymentCycle,
+    price,
+    paymentModel: bodyPaymentModel,
+    sessionPrice: bodySessionPrice,
+    cycleSize: bodyCycleSize,
+    cyclePrice: bodyCyclePrice,
     teacherCut,
     absenceRule,
     description,
     status
   } = req.body;
-  
+
   // Validate teacher if being updated
   if (teacherId && teacherId !== classItem.teacherId.toString()) {
     const teacher = await User.findOne({ _id: teacherId, role: 'teacher', school: schoolId });
@@ -267,7 +267,7 @@ const updateClass = asyncHandler(async (req, res) => {
     }
     classItem.teacherId = teacherId;
   }
-  
+
   // Validate room if being updated
   if (roomId && roomId !== classItem.roomId.toString()) {
     const room = await Room.findOne({ _id: roomId, schoolId });
@@ -277,7 +277,7 @@ const updateClass = asyncHandler(async (req, res) => {
     }
     classItem.roomId = roomId;
   }
-  
+
   // Validate schedules if being updated
   if (schedules) {
     if (!Array.isArray(schedules) || schedules.length === 0) {
@@ -286,22 +286,22 @@ const updateClass = asyncHandler(async (req, res) => {
     }
 
     const timeRegex = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
-    
+
     for (const schedule of schedules) {
       if (!timeRegex.test(schedule.startTime) || !timeRegex.test(schedule.endTime)) {
         res.status(400);
         throw new Error('Invalid time format. Use HH:MM format');
       }
-      
+
       if (schedule.startTime >= schedule.endTime) {
         res.status(400);
         throw new Error('Start time must be before end time');
       }
     }
-    
+
     classItem.schedules = schedules;
   }
-  
+
   // Update other fields
   if (name !== undefined) {
     const trimmedName = typeof name === 'string' ? name.trim() : '';
@@ -330,38 +330,38 @@ const updateClass = asyncHandler(async (req, res) => {
       endDate: new Date(enrollmentPeriod.endDate)
     };
   }
-    // Pricing updates: prefer new model, map legacy when provided
-    if (bodyPaymentModel) {
-      classItem.paymentModel = bodyPaymentModel;
-      if (bodyPaymentModel === 'per_session') {
-        if (typeof bodySessionPrice === 'number') classItem.sessionPrice = bodySessionPrice;
-        // clear cycle fields optionally
-        if (classItem.cyclePrice !== undefined) classItem.cyclePrice = classItem.cyclePrice; // no-op to preserve existing if any
-      } else if (bodyPaymentModel === 'per_cycle') {
-        if (typeof bodyCyclePrice === 'number') classItem.cyclePrice = bodyCyclePrice;
-        if (typeof bodyCycleSize === 'number') classItem.cycleSize = bodyCycleSize;
-        // clear session price optionally
-        if (classItem.sessionPrice !== undefined) classItem.sessionPrice = classItem.sessionPrice; // no-op
-      }
-    } else {
-      // Map legacy partial updates when present
-      if (typeof price === 'number') {
-        classItem.cyclePrice = price;
-        if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
-      }
-      if (typeof paymentCycle === 'number') {
-        classItem.cycleSize = paymentCycle;
-        if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
-      }
-      // Ensure existing docs missing new fields get populated from legacy
-      if (!classItem.paymentModel) {
-        if (typeof classItem.price === 'number' && typeof classItem.paymentCycle === 'number') {
-          classItem.paymentModel = 'per_cycle';
-          classItem.cyclePrice = classItem.price;
-          classItem.cycleSize = classItem.paymentCycle;
-        }
+  // Pricing updates: prefer new model, map legacy when provided
+  if (bodyPaymentModel) {
+    classItem.paymentModel = bodyPaymentModel;
+    if (bodyPaymentModel === 'per_session') {
+      if (typeof bodySessionPrice === 'number') classItem.sessionPrice = bodySessionPrice;
+      // clear cycle fields optionally
+      if (classItem.cyclePrice !== undefined) classItem.cyclePrice = classItem.cyclePrice; // no-op to preserve existing if any
+    } else if (bodyPaymentModel === 'per_cycle') {
+      if (typeof bodyCyclePrice === 'number') classItem.cyclePrice = bodyCyclePrice;
+      if (typeof bodyCycleSize === 'number') classItem.cycleSize = bodyCycleSize;
+      // clear session price optionally
+      if (classItem.sessionPrice !== undefined) classItem.sessionPrice = classItem.sessionPrice; // no-op
+    }
+  } else {
+    // Map legacy partial updates when present
+    if (typeof price === 'number') {
+      classItem.cyclePrice = price;
+      if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
+    }
+    if (typeof paymentCycle === 'number') {
+      classItem.cycleSize = paymentCycle;
+      if (!classItem.paymentModel) classItem.paymentModel = 'per_cycle';
+    }
+    // Ensure existing docs missing new fields get populated from legacy
+    if (!classItem.paymentModel) {
+      if (typeof classItem.price === 'number' && typeof classItem.paymentCycle === 'number') {
+        classItem.paymentModel = 'per_cycle';
+        classItem.cyclePrice = classItem.price;
+        classItem.cycleSize = classItem.paymentCycle;
       }
     }
+  }
 
   if (paymentCycle !== undefined) classItem.paymentCycle = paymentCycle;
   if (price !== undefined) classItem.price = price;
@@ -369,7 +369,7 @@ const updateClass = asyncHandler(async (req, res) => {
   if (absenceRule !== undefined) classItem.absenceRule = absenceRule;
   if (description !== undefined) classItem.description = description;
   if (status !== undefined) classItem.status = status;
-  
+
   // Check for conflicts if schedules, teacher, or room changed
   if (schedules || teacherId || roomId) {
     const conflict = await classItem.hasConflict();
@@ -384,13 +384,13 @@ const updateClass = asyncHandler(async (req, res) => {
       }
     }
   }
-  
+
   const updatedClass = await classItem.save();
-  
+
   const populatedClass = await Class.findById(updatedClass._id)
     .populate('teacherId', 'firstName lastName')
     .populate('roomId', 'name capacity');
-  
+
   res.json({
     success: true,
     class: populatedClass,
@@ -404,15 +404,17 @@ const updateClass = asyncHandler(async (req, res) => {
 const deleteClass = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   const classItem = await Class.findOne({ _id: id, schoolId });
   if (!classItem) {
     res.status(404);
     throw new Error('Class not found');
   }
-  
-  // Check if class has enrolled students
-  if (classItem.enrolledStudents.length > 0) {
+
+  // Check if class has actively enrolled students (ignore transferred/withdrawn)
+  const activeRosterStatuses = ['active', 'paused', 'suspended'];
+  const hasActiveStudents = classItem.enrolledStudents.some(e => activeRosterStatuses.includes(e.status || 'active'));
+  if (hasActiveStudents) {
     res.status(400);
     throw new Error('Cannot delete class with enrolled students. Please deactivate instead.');
   }
@@ -425,7 +427,7 @@ const deleteClass = asyncHandler(async (req, res) => {
         // delete file and record
         const uploadsRoot = path.join(__dirname, '..', 'public', 'uploads', 'teacher-resources', String(r.teacherId));
         const filePath = path.join(uploadsRoot, r.fileName);
-        await fs.unlink(filePath).catch(() => {});
+        await fs.unlink(filePath).catch(() => { });
         await r.deleteOne();
       } else {
         await r.save();
@@ -434,7 +436,7 @@ const deleteClass = asyncHandler(async (req, res) => {
   } catch (_) { /* ignore */ }
 
   await classItem.deleteOne();
-  
+
   res.json({
     success: true,
     message: 'Class deleted successfully'
@@ -446,16 +448,16 @@ const deleteClass = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const getAvailableTeachers = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school');
   }
-  
+
   const teachers = await User.find({ role: 'teacher', school: schoolId })
     .select('firstName lastName email contact.phone1 experience activities')
     .sort({ firstName: 1, lastName: 1 });
-  
+
   res.json(teachers);
 });
 
@@ -464,16 +466,16 @@ const getAvailableTeachers = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const getAvailableRooms = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school');
   }
-  
+
   const rooms = await Room.find({ schoolId })
     .select('name capacity activityTypes')
     .sort({ name: 1 });
-  
+
   res.json(rooms);
 });
 
@@ -482,21 +484,21 @@ const getAvailableRooms = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const getCatalogItems = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school');
   }
-  
+
   const catalog = await SchoolCatalog.findOne({ schoolId });
   if (!catalog) {
     res.status(404);
     throw new Error('School catalog not found');
   }
-  
+
   // Flatten catalog items with type information
   const catalogItems = [];
-  
+
   // Support Lessons
   catalog.supportLessons.forEach(item => {
     const fullName = `${item.level} - ${item.grade} - ${item.subject}`;
@@ -510,7 +512,7 @@ const getCatalogItems = asyncHandler(async (req, res) => {
       stream: item.stream
     });
   });
-  
+
   // Review Courses
   catalog.reviewCourses.forEach(item => {
     const fullName = `${item.level} - ${item.grade} - ${item.subject}`;
@@ -524,7 +526,7 @@ const getCatalogItems = asyncHandler(async (req, res) => {
       stream: item.stream
     });
   });
-  
+
   // Vocational Trainings
   catalog.vocationalTrainings.forEach(item => {
     const fullName = `${item.field} - ${item.specialty}`;
@@ -537,7 +539,7 @@ const getCatalogItems = asyncHandler(async (req, res) => {
       certificateType: item.certificateType
     });
   });
-  
+
   // Languages
   catalog.languages.forEach(item => {
     const levelsText = item.levels.join(', ');
@@ -550,7 +552,7 @@ const getCatalogItems = asyncHandler(async (req, res) => {
       levels: item.levels
     });
   });
-  
+
   // Other Activities
   catalog.otherActivities.forEach(item => {
     const fullName = `${item.activityType} - ${item.activityName}`;
@@ -562,7 +564,7 @@ const getCatalogItems = asyncHandler(async (req, res) => {
       activityName: item.activityName
     });
   });
-  
+
   res.json(catalogItems);
 });
 
@@ -571,26 +573,26 @@ const getCatalogItems = asyncHandler(async (req, res) => {
 // @access  Private (Teacher)
 const getClassesByTeacher = asyncHandler(async (req, res) => {
   const { _id: teacherId, school: schoolId } = req.user;
-  
+
   if (!schoolId) {
     res.status(400);
     throw new Error('Teacher must be assigned to a school to access classes');
   }
-  
+
   if (req.user.role !== 'teacher') {
     res.status(403);
     throw new Error('Only teachers can access this endpoint');
   }
-  
-  const classes = await Class.find({ 
-    teacherId, 
+
+  const classes = await Class.find({
+    teacherId,
     schoolId,
     status: { $in: ['active', 'enrolling'] }
   })
     .populate('roomId', 'name capacity')
-  .populate('catalogItem.itemId')
+    .populate('catalogItem.itemId')
     .sort({ 'schedules.dayOfWeek': 1, 'schedules.startTime': 1 });
-  
+
   res.json(classes);
 });
 
@@ -600,9 +602,9 @@ const getClassesByTeacher = asyncHandler(async (req, res) => {
 const checkConflicts = asyncHandler(async (req, res) => {
   const { schedules, teacherId, roomId, excludeClassId } = req.body;
   const { school: schoolId } = req.user;
-  
+
   const Class = require('../models/Class');
-  
+
   // Check each schedule for conflicts
   for (const schedule of schedules) {
     // Check room conflicts
@@ -629,7 +631,7 @@ const checkConflicts = asyncHandler(async (req, res) => {
         }
       ]
     }).populate('teacherId', 'firstName lastName');
-    
+
     if (roomConflict) {
       return res.json({
         hasConflict: true,
@@ -639,7 +641,7 @@ const checkConflicts = asyncHandler(async (req, res) => {
         schedule
       });
     }
-    
+
     // Check teacher conflicts
     const teacherConflict = await Class.findOne({
       _id: { $ne: excludeClassId },
@@ -664,7 +666,7 @@ const checkConflicts = asyncHandler(async (req, res) => {
         }
       ]
     }).populate('roomId', 'name');
-    
+
     if (teacherConflict) {
       return res.json({
         hasConflict: true,
@@ -675,7 +677,7 @@ const checkConflicts = asyncHandler(async (req, res) => {
       });
     }
   }
-  
+
   res.json({
     hasConflict: false,
     message: 'No scheduling conflicts found'
@@ -699,7 +701,18 @@ module.exports = {
 // @access  Private (Student)
 module.exports.getClassesForStudent = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const classes = await Class.find({ 'enrolledStudents.studentId': userId })
+  const schoolId = req.user.school?._id || req.user.school;
+  // Only show classes where the student has an active roster entry
+  const filter = {
+    'enrolledStudents': {
+      $elemMatch: {
+        studentId: userId,
+        status: { $in: ['active', 'paused', 'suspended'] }
+      }
+    }
+  };
+  if (schoolId) filter.schoolId = schoolId;
+  const classes = await Class.find(filter)
     .select('_id name teacherId')
     .populate('teacherId', 'firstName lastName')
     .sort({ name: 1 });
@@ -726,8 +739,10 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
     const key = en.studentId.toString();
     if (!enrollByStudent.has(key)) enrollByStudent.set(key, en._id);
   }
+  // FIX: Only return students with active lifecycle statuses (not transferred/withdrawn)
+  const activeStatuses = ['active', 'paused', 'suspended'];
   const items = (klass.enrolledStudents || [])
-    .filter(e => e && e.studentId)
+    .filter(e => e && e.studentId && activeStatuses.includes(e.status || 'active'))
     .map(e => ({
       id: e.studentId._id,
       name: e.studentId.name || `${e.studentId.firstName} ${e.studentId.lastName}`.trim(),
@@ -748,11 +763,16 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
 module.exports.getTeacherUniqueStudentCount = asyncHandler(async (req, res) => {
   const me = req.user;
   if (me.role !== 'teacher') return res.status(403).json({ message: 'Not authorized' });
-  const classes = await Class.find({ teacherId: me._id, schoolId: me.school, status: { $in: ['active','enrolling'] } })
+  const classes = await Class.find({ teacherId: me._id, schoolId: me.school, status: { $in: ['active', 'enrolling'] } })
     .select('enrolledStudents.studentId');
   const set = new Set();
+  const activeStatuses = ['active', 'paused', 'suspended'];
   for (const c of classes) {
-    (c.enrolledStudents || []).forEach(e => { if (e && e.studentId) set.add(String(e.studentId)); });
+    (c.enrolledStudents || []).forEach(e => {
+      if (e && e.studentId && activeStatuses.includes(e.status || 'active')) {
+        set.add(String(e.studentId));
+      }
+    });
   }
   res.json({ uniqueStudents: set.size });
 });

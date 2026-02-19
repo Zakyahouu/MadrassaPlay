@@ -17,7 +17,7 @@ export const SocketProvider = ({ children }) => {
       // if user signs out, ensure socket is cleared
       setConnected(false);
       if (socket) {
-        try { socket.disconnect(); } catch {};
+        try { socket.disconnect(); } catch { };
         setSocket(null);
       }
       return;
@@ -31,7 +31,8 @@ export const SocketProvider = ({ children }) => {
 
     const newSocket = io(backendUrl, {
       path: '/socket.io/',
-      transports: ['websocket']
+      transports: ['websocket'],
+      auth: { token: user?.token },
     });
 
     // set socket right away so consumers can attach listeners immediately
@@ -60,7 +61,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     return () => {
-      try { newSocket.disconnect(); } catch {}
+      try { newSocket.disconnect(); } catch { }
       setSocket(null);
       setConnected(false);
     };

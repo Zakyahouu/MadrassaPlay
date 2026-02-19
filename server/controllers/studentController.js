@@ -82,13 +82,13 @@ function buildPricingSnapshotForClass(klass) {
 // @access  Private (Manager)
 const getStudents = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   // Check if manager has a school assigned
-    if (!schoolId) {
+  if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school to access students');
   }
-  
+
   const students = await User.find({ school: schoolId, role: 'student' }).select('-password');
 
   // Derive accurate active enrollment counts from Enrollment collection
@@ -107,7 +107,7 @@ const getStudents = asyncHandler(async (req, res) => {
     obj.enrollmentStatus = c > 0 ? 'enrolled' : 'not_enrolled';
     return obj;
   });
-  
+
   res.json(result);
 });
 
@@ -117,9 +117,9 @@ const getStudents = asyncHandler(async (req, res) => {
 const getStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' }).select('-password');
-  
+
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -149,13 +149,13 @@ const getStudent = asyncHandler(async (req, res) => {
 // @access  Private (Manager)
 const createStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
-  
+
   // Check if manager has a school assigned
   if (!schoolId) {
     res.status(400);
     throw new Error('Manager must be assigned to a school to create students');
   }
-  
+
   const {
     firstName,
     lastName,
@@ -209,11 +209,11 @@ const createStudent = asyncHandler(async (req, res) => {
   });
 
   const studentResponse = student.toObject();
-    delete studentResponse.password;
+  delete studentResponse.password;
 
   // Log the activity
-  await LoggingService.logManagerActivity(req, 'manager_student_create', 
-    `Created new student: ${student.firstName} ${student.lastName} (${student.studentCode})`, 
+  await LoggingService.logManagerActivity(req, 'manager_student_create',
+    `Created new student: ${student.firstName} ${student.lastName} (${student.studentCode})`,
     { studentId: student._id, studentCode: student.studentCode },
     { entityType: 'student', entityId: student._id }
   );
@@ -231,9 +231,9 @@ const createStudent = asyncHandler(async (req, res) => {
 const updateStudent = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
-  
+
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -281,13 +281,13 @@ const updateStudent = asyncHandler(async (req, res) => {
   if (status !== undefined) student.studentStatus = status;
 
   const updatedStudent = await student.save();
-  
+
   const studentResponse = updatedStudent.toObject();
   delete studentResponse.password;
 
   // Log the activity
-  await LoggingService.logManagerActivity(req, 'manager_student_update', 
-    `Updated student: ${updatedStudent.firstName} ${updatedStudent.lastName} (${updatedStudent.studentCode})`, 
+  await LoggingService.logManagerActivity(req, 'manager_student_update',
+    `Updated student: ${updatedStudent.firstName} ${updatedStudent.lastName} (${updatedStudent.studentCode})`,
     { studentId: updatedStudent._id, studentCode: updatedStudent.studentCode, changes: req.body },
     { entityType: 'student', entityId: updatedStudent._id }
   );
@@ -315,7 +315,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
     throw new Error('classId is required');
   }
 
-  
+
   const student = await User.findOne({ _id: studentId, school: schoolIdStr, role: 'student' });
   if (!student) {
     res.status(404);
@@ -333,7 +333,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
   }
   // Capacity check
   const activeCount = (klass.enrolledStudents || []).filter(e => e.status === 'active').length;
-  
+
   if (activeCount >= klass.capacity) {
     res.status(409);
     throw new Error('Class is full');
@@ -343,12 +343,12 @@ const enrollStudent = asyncHandler(async (req, res) => {
 
   // Prevent duplicate enrollment - more thorough check
   // First check class roster (quick check)
-  const alreadyEnrolledInRoster = (klass.enrolledStudents || []).some(e => 
+  const alreadyEnrolledInRoster = (klass.enrolledStudents || []).some(e =>
     e.studentId?.toString() === student._id.toString() && e.status === 'active'
   );
-  
+
   if (alreadyEnrolledInRoster) {
-    
+
     // Do not block here; rely on Enrollment collection for idempotency
   }
 
@@ -398,9 +398,9 @@ const enrollStudent = asyncHandler(async (req, res) => {
 
   // Create Enrollment document first, to avoid partial state on failures
   const Enrollment = require('../models/Enrollment');
-  
+
   // Check if enrollment already exists (idempotent behavior)
-  const existingEnrollment = await Enrollment.findOne({ 
+  const existingEnrollment = await Enrollment.findOne({
     studentId: student._id,
     classId: klass._id,
     status: { $in: ['active', 'paused', 'suspended'] }
@@ -426,11 +426,11 @@ const enrollStudent = asyncHandler(async (req, res) => {
       pricingSnapshot,
       ...legacyTotals,
     });
-    
+
   } catch (err) {
     // Handle common validation/duplicate errors gracefully
     if (err?.code === 11000) {
-      
+
       const dup = await Enrollment.findOne({ studentId: student._id, classId: klass._id });
       if (dup) {
         return res.status(200).json({
@@ -445,7 +445,7 @@ const enrollStudent = asyncHandler(async (req, res) => {
       res.status(409);
       throw new Error('Student already enrolled in this class');
     }
-    
+
     res.status(400);
     throw new Error(err?.message || 'Failed to create enrollment');
   }
@@ -461,8 +461,8 @@ const enrollStudent = asyncHandler(async (req, res) => {
   await student.save();
 
   // Log the activity
-  await LoggingService.logManagerActivity(req, 'student_enroll', 
-    `Enrolled student ${student.firstName} ${student.lastName} in class ${klass.name}`, 
+  await LoggingService.logManagerActivity(req, 'student_enroll',
+    `Enrolled student ${student.firstName} ${student.lastName} in class ${klass.name}`,
     { studentId: student._id, classId: klass._id, enrollmentId: enrollmentDoc._id },
     { entityType: 'enrollment', entityId: enrollmentDoc._id }
   );
@@ -535,8 +535,8 @@ const deleteStudent = asyncHandler(async (req, res) => {
   await Payment.deleteMany({ schoolId, studentId: student._id });
 
   // Log the activity before deletion
-  await LoggingService.logManagerActivity(req, 'manager_student_delete', 
-    `Deleted student: ${student.firstName} ${student.lastName} (${student.studentCode})`, 
+  await LoggingService.logManagerActivity(req, 'manager_student_delete',
+    `Deleted student: ${student.firstName} ${student.lastName} (${student.studentCode})`,
     { studentId: student._id, studentCode: student.studentCode },
     { entityType: 'student', entityId: student._id }
   );
@@ -552,7 +552,7 @@ const deleteStudent = asyncHandler(async (req, res) => {
 const getStudentEnrollments = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   // Verify student exists and belongs to school
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   if (!student) {
@@ -567,11 +567,11 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
     .populate('classId.teacherId', 'firstName lastName')
     .populate('classId.roomId', 'name')
     .sort({ createdAt: -1 });
-  
+
   // Format enrollments for frontend
   const formattedEnrollments = enrollments.map(enrollment => ({
     _id: enrollment._id,
-    classId: enrollment.classId?._id || enrollment.classId, 
+    classId: enrollment.classId?._id || enrollment.classId,
     className: enrollment.classId.name,
     teacher: `${enrollment.classId.teacherId.firstName} ${enrollment.classId.teacherId.lastName}`,
     startDate: enrollment.startDate,
@@ -580,7 +580,7 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
     totalAmount: enrollment.totalAmount,
     amountPaid: enrollment.amountPaid,
     status: enrollment.status,
-    schedule: enrollment.classId.schedules.map(s => 
+    schedule: enrollment.classId.schedules.map(s =>
       `${s.dayOfWeek.charAt(0).toUpperCase() + s.dayOfWeek.slice(1)} ${s.startTime}-${s.endTime}`
     ).join(', '),
     remainingSessions: enrollment.remainingSessions,
@@ -597,7 +597,7 @@ const getStudentEnrollments = asyncHandler(async (req, res) => {
 const getStudentPayments = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
-  
+
   // Verify student exists and belongs to school
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
   if (!student) {
@@ -751,6 +751,7 @@ const transferStudent = asyncHandler(async (req, res) => {
     throw new Error('toClassId is required');
   }
 
+  // ── Pre-flight: all reads happen outside the transaction ──
   const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
   if (!student) {
     res.status(404);
@@ -799,87 +800,121 @@ const transferStudent = asyncHandler(async (req, res) => {
     throw new Error('Target class is at capacity');
   }
 
+  // ── Balance calculation ──
   const sourceClassName = sourceEnrollment.classId?.name || 'original class';
-  const remainingSessions = Number(sourceEnrollment.balance) || 0;
+
+  // FIX: Recover held sessions from suspended enrollments so they are not lost
+  let remainingSessions = Number(sourceEnrollment.balance) || 0;
+  if (sourceEnrollment.status === 'suspended' && sourceEnrollment.suspension?.financialHold?.sessions) {
+    remainingSessions += Number(sourceEnrollment.suspension.financialHold.sessions) || 0;
+  }
+
   const transferValue = sessionsToMonetaryValue(remainingSessions, sourceEnrollment.pricingSnapshot);
   const rawConvertedSessions = monetaryValueToSessions(transferValue, targetSnapshot);
   const convertedSessions = Math.max(0, Number.isFinite(rawConvertedSessions)
-    ? Number(rawConvertedSessions.toFixed(4))
+    ? Math.round(rawConvertedSessions * 10000) / 10000
     : 0);
   const appliedValue = sessionsToMonetaryValue(convertedSessions, targetSnapshot);
-  const remainderValue = Number(((transferValue || 0) - (appliedValue || 0)).toFixed(2));
+  const remainderValue = Math.round(((transferValue || 0) - (appliedValue || 0)) * 100) / 100;
   const debtDelta = Math.abs(remainderValue) >= 0.01 ? remainderValue : 0;
-  const sessionDelta = Number((remainingSessions - convertedSessions).toFixed(4));
+  const sessionDelta = Math.round((remainingSessions - convertedSessions) * 10000) / 10000;
 
-  const newEnrollment = await Enrollment.create({
-    schoolId,
-    studentId: student._id,
-    classId: toClassId,
-    status: 'active',
-    pricingSnapshot: targetSnapshot,
-  balance: convertedSessions,
-  });
+  // ── Transaction: all mutations are atomic ──
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // Update target class roster
-  const rosterUpdate = await ClassModel.updateOne(
-    { _id: toClassId, 'enrolledStudents.studentId': student._id },
-    {
-      $set: {
-        'enrolledStudents.$.status': 'active',
-        'enrolledStudents.$.enrolledAt': new Date(),
-        'enrolledStudents.$.endedAt': null,
-      }
-    }
-  );
-  const matched = rosterUpdate?.matchedCount ?? rosterUpdate?.n ?? 0;
-  if (!matched) {
-    await ClassModel.updateOne(
-      { _id: toClassId },
-      {
-        $push: {
-          enrolledStudents: {
-            studentId: student._id,
-            enrolledAt: new Date(),
-            status: 'active',
-          }
-        }
-      }
-    );
-  }
-
-  // Close out original enrollment
-  sourceEnrollment.status = 'transferred';
-  sourceEnrollment.balance = 0;
-  sourceEnrollment.endedAt = new Date();
-  if (reason) {
-    const prefix = sourceEnrollment.notes ? `${sourceEnrollment.notes}\n` : '';
-    sourceEnrollment.notes = `${prefix}Transferred: ${reason}`;
-  }
-  await sourceEnrollment.save();
-
-  const sourceClassId = sourceEnrollment.classId?._id || sourceEnrollment.classId;
-  await ClassModel.updateOne(
-    { _id: sourceClassId, 'enrolledStudents.studentId': student._id },
-    {
-      $set: {
-        'enrolledStudents.$.status': 'transferred',
-        'enrolledStudents.$.endedAt': sourceEnrollment.endedAt,
-        'enrolledStudents.$.notes': reason || 'Transferred',
-      }
-    }
-  ).catch(() => null);
-
-  if (Math.abs(debtDelta) >= 0.01) {
-    await applyDebtAdjustment({
+  let newEnrollment;
+  try {
+    // 1. Create new enrollment in target class
+    [newEnrollment] = await Enrollment.create([{
       schoolId,
       studentId: student._id,
-      enrollmentId: newEnrollment._id,
-      amount: debtDelta,
-      kind: 'transfer_balance_adjustment',
-      note: `Transfer from ${sourceClassName} to ${targetClass.name}`,
-      by: req.user?._id,
-    });
+      classId: toClassId,
+      status: 'active',
+      pricingSnapshot: targetSnapshot,
+      balance: convertedSessions,
+    }], { session });
+
+    // 2. Add student to target class roster (or reactivate if already present)
+    const rosterUpdate = await ClassModel.updateOne(
+      { _id: toClassId, 'enrolledStudents.studentId': student._id },
+      {
+        $set: {
+          'enrolledStudents.$.status': 'active',
+          'enrolledStudents.$.enrolledAt': new Date(),
+          'enrolledStudents.$.endedAt': null,
+          'enrolledStudents.$.notes': '',
+        }
+      },
+      { session }
+    );
+    const matched = rosterUpdate?.matchedCount ?? rosterUpdate?.n ?? 0;
+    if (!matched) {
+      await ClassModel.updateOne(
+        { _id: toClassId },
+        {
+          $push: {
+            enrolledStudents: {
+              studentId: student._id,
+              enrolledAt: new Date(),
+              status: 'active',
+            }
+          }
+        },
+        { session }
+      );
+    }
+
+    // 3. Close out source enrollment
+    sourceEnrollment.status = 'transferred';
+    sourceEnrollment.balance = 0;
+    sourceEnrollment.endedAt = new Date();
+    if (sourceEnrollment.suspension) {
+      sourceEnrollment.suspension = undefined; // Clear the hold since we recovered sessions
+    }
+    if (reason) {
+      const prefix = sourceEnrollment.notes ? `${sourceEnrollment.notes}\n` : '';
+      sourceEnrollment.notes = `${prefix}Transferred to ${targetClass.name}: ${reason}`;
+    }
+    await sourceEnrollment.save({ session });
+
+    // 4. FIX: Remove student from source class roster entirely (not just mark status)
+    //    This prevents the teacher from seeing them in the old class
+    const sourceClassId = sourceEnrollment.classId?._id || sourceEnrollment.classId;
+    await ClassModel.updateOne(
+      { _id: sourceClassId },
+      {
+        $pull: {
+          enrolledStudents: { studentId: student._id }
+        }
+      },
+      { session }
+    );
+
+    // 5. Apply debt adjustment if there's a remainder
+    if (Math.abs(debtDelta) >= 0.01) {
+      await applyDebtAdjustment({
+        schoolId,
+        studentId: student._id,
+        enrollmentId: newEnrollment._id,
+        amount: debtDelta,
+        kind: 'transfer_balance_adjustment',
+        note: `Transfer from ${sourceClassName} to ${targetClass.name}`,
+        by: req.user?._id,
+        session,
+      });
+    }
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
   }
+
+  // ── Post-commit: non-critical logging (outside transaction) ──
+  const sourceClassId = sourceEnrollment.classId?._id || sourceEnrollment.classId;
 
   await StudentLogService.record({
     schoolId,
@@ -912,7 +947,7 @@ const transferStudent = asyncHandler(async (req, res) => {
     classId: toClassId,
     actor: req.user,
     tags: ['transfer'],
-  });
+  }).catch(() => null);
 
   await LoggingService.logManagerActivity(
     req,
@@ -930,7 +965,7 @@ const transferStudent = asyncHandler(async (req, res) => {
       debtDelta,
     },
     { entityType: 'enrollment', entityId: newEnrollment._id }
-  );
+  ).catch(() => null);
 
   res.json({
     success: true,
@@ -1006,10 +1041,10 @@ const suspendStudent = asyncHandler(async (req, res) => {
     issuedBy: req.user?._id,
     financialHold: Math.abs(heldSessions) >= 0.001
       ? {
-          sessions: heldSessions,
-          value: holdValue,
-          note: reason,
-        }
+        sessions: heldSessions,
+        value: holdValue,
+        note: reason,
+      }
       : undefined,
   };
   await enrollment.save();
@@ -1212,17 +1247,17 @@ const getStudentHistory = asyncHandler(async (req, res) => {
   const [classes, enrollments] = await Promise.all([
     classIdSet.size
       ? ClassModel.find({ _id: { $in: Array.from(classIdSet) } })
-          .select('name teacherId roomId catalogs')
-          .populate('teacherId', 'firstName lastName')
-          .populate('roomId', 'name')
-          .lean()
+        .select('name teacherId roomId catalogs')
+        .populate('teacherId', 'firstName lastName')
+        .populate('roomId', 'name')
+        .lean()
       : [],
     enrollmentIdSet.size
       ? Enrollment.find({ _id: { $in: Array.from(enrollmentIdSet) } })
-          .select('classId status balance pricingSnapshot totalSessions sessionsCompleted')
-          .populate('classId', 'name teacherId')
-          .populate('classId.teacherId', 'firstName lastName')
-          .lean()
+        .select('classId status balance pricingSnapshot totalSessions sessionsCompleted')
+        .populate('classId', 'name teacherId')
+        .populate('classId.teacherId', 'firstName lastName')
+        .lean()
       : [],
   ]);
 
@@ -1243,12 +1278,12 @@ const getStudentHistory = asyncHandler(async (req, res) => {
     enrollments.map((enrollment) => {
       const classInfo = enrollment.classId && typeof enrollment.classId === 'object'
         ? {
-            id: enrollment.classId._id,
-            name: enrollment.classId.name,
-            teacherName: enrollment.classId.teacherId
-              ? `${enrollment.classId.teacherId.firstName || ''} ${enrollment.classId.teacherId.lastName || ''}`.trim()
-              : null,
-          }
+          id: enrollment.classId._id,
+          name: enrollment.classId.name,
+          teacherName: enrollment.classId.teacherId
+            ? `${enrollment.classId.teacherId.firstName || ''} ${enrollment.classId.teacherId.lastName || ''}`.trim()
+            : null,
+        }
         : null;
       return [enrollment._id.toString(), {
         id: enrollment._id,
@@ -1288,9 +1323,9 @@ const getStudentHistory = asyncHandler(async (req, res) => {
       summary: log.summary,
       class: classContext
         ? {
-            id: classContext.id,
-            name: classContext.name,
-          }
+          id: classContext.id,
+          name: classContext.name,
+        }
         : null,
       actorName: log.actorName,
       actorRole: log.actorRole,
@@ -1319,9 +1354,9 @@ const updateEnrollmentCount = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
   const { count, increment = true } = req.body;
-  
+
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
-  
+
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -1334,7 +1369,7 @@ const updateEnrollmentCount = asyncHandler(async (req, res) => {
   }
 
   await student.save();
-  
+
   res.json({
     success: true,
     enrollmentCount: student.enrollmentCount,
@@ -1349,9 +1384,9 @@ const updateBalance = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { id } = req.params;
   const { balance, increment = true } = req.body;
-  
+
   const student = await User.findOne({ _id: id, school: schoolId, role: 'student' });
-  
+
   if (!student) {
     res.status(404);
     throw new Error('Student not found');
@@ -1364,7 +1399,7 @@ const updateBalance = asyncHandler(async (req, res) => {
   }
 
   await student.save();
-  
+
   res.json({
     success: true,
     balance: student.balance,
@@ -1378,17 +1413,17 @@ const updateBalance = asyncHandler(async (req, res) => {
 const searchStudents = asyncHandler(async (req, res) => {
   const { school: schoolId } = req.user;
   const { q } = req.query;
-  
+
   if (!q) {
     res.status(400);
     throw new Error('Search query is required');
   }
 
   const searchRegex = new RegExp(q, 'i');
-  
+
   // Check if the query looks like a MongoDB ObjectId (24 hex characters)
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(q.trim());
-  
+
   let searchQuery = {
     school: schoolId,
     role: 'student',
@@ -1408,9 +1443,9 @@ const searchStudents = asyncHandler(async (req, res) => {
   }
 
   console.log('Search query:', { q, isObjectId, searchQuery });
-  
+
   const students = await User.find(searchQuery).select('-password');
-  
+
   console.log('Search results count:', students.length);
 
   res.json(students);

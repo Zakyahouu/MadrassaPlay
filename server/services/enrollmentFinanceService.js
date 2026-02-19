@@ -74,6 +74,7 @@ const applyDebtAdjustment = async ({
   note,
   by,
   receiptId,
+  session,
 }) => {
   const numericAmount = Number(amount || 0);
   if (!numericAmount) return null;
@@ -81,10 +82,12 @@ const applyDebtAdjustment = async ({
   const studentObjId = toObjectId(studentId);
   if (!schoolObjId || !studentObjId) throw new Error('applyDebtAdjustment requires valid schoolId and studentId');
 
+  const opts = session ? { session } : {};
+
   const update = await StudentFinancial.findOneAndUpdate(
     { schoolId: schoolObjId, studentId: studentObjId },
     { $inc: { debt: numericAmount } },
-    { upsert: true, new: true }
+    { upsert: true, new: true, ...opts }
   );
 
   if (enrollmentId) {
@@ -101,7 +104,8 @@ const applyDebtAdjustment = async ({
             at: new Date(),
           },
         },
-      }
+      },
+      opts
     );
   }
 

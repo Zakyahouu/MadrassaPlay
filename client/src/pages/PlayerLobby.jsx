@@ -15,50 +15,52 @@ const PlayerLobby = () => {
 
   // This useEffect hook listens for the game starting
   useEffect(() => {
-    // Attempt to join the game room with full name from profile once socket is present
+    if (!socket) return;
+
     const playerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || 'Player';
     const userId = user?._id;
-    const doJoin = () => {
-      if (roomCode && userId && socket) {
-        try { socket.emit('join-game', { roomCode, playerName, userId }); } catch {}
-      }
-    };
 
-    if (socket) {
-      doJoin();
-    } else if (socketContext && !socket && socketContext.connected === false) {
-      // socket exists but not connected yet — wait for connect
-      socketContext?.socket?.once?.('connect', doJoin);
-    }
+    // ── IMPORTANT: Register listeners FIRST, then emit join-game ──
+    // This avoids the race where the server responds before we're listening.
 
-    // Listen for server events
     const handleGameStarted = ({ gameCreationId }) => {
       console.log(`Player Lobby: Game starting! Navigating to play game: ${gameCreationId}`);
       navigate(`/student/play-game/${gameCreationId}`, { state: { live: { roomCode } } });
     };
 
     const handleScoreboard = ({ ranks }) => {
-      console.log('Live scoreboard update (player):', ranks?.slice(0,5));
+      console.log('Live scoreboard update (player):', ranks?.slice(0, 5));
     };
 
     const handleJoinError = (msg) => {
       setError(msg || 'Could not join this room.');
     };
 
-    if (socket) {
-      socket.on('game-started', handleGameStarted);
-      socket.on('live:scoreboard', handleScoreboard);
-      socket.on('join-error', handleJoinError);
+    socket.on('game-started', handleGameStarted);
+    socket.on('live:scoreboard', handleScoreboard);
+    socket.on('join-error', handleJoinError);
+
+    // ── Now emit join-game (only when connected) ──
+    const doJoin = () => {
+      if (roomCode && userId) {
+        try { socket.emit('join-game', { roomCode, playerName, userId }); } catch { }
+      }
+    };
+
+    if (socketConnected) {
+      doJoin();
+    } else {
+      // Socket exists but isn't connected yet — wait for connect
+      socket.once('connect', doJoin);
     }
 
     return () => {
-      if (socket) {
-        socket.off('game-started', handleGameStarted);
-        socket.off('live:scoreboard', handleScoreboard);
-        socket.off('join-error', handleJoinError);
-      }
+      socket.off('game-started', handleGameStarted);
+      socket.off('live:scoreboard', handleScoreboard);
+      socket.off('join-error', handleJoinError);
+      socket.removeListener('connect', doJoin);
     };
-  }, [socket, socketContext, roomCode, user?._id, navigate]);
+  }, [socket, socketConnected, roomCode, user?._id, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-8 text-center">
