@@ -300,6 +300,292 @@ const getSchoolById = async (req, res) => {
   }
 };
 
+// @desc    Public: Get landing page by school id
+// @route   GET /api/public/landing-page/:schoolId
+// @access  Public
+const getPublicLandingPage = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+    if (!schoolId) return res.status(400).json({ message: 'schoolId is required' });
+    const school = await School.findById(schoolId).select('name logo landingPage');
+    if (!school) return res.status(404).json({ message: 'Landing page not found' });
+    const page = school.landingPage || {};
+    if (!page.isEnabled) return res.status(404).json({ message: 'Landing page not available' });
+    res.json({ name: school.name, logo: school.logo, pageContent: page });
+  } catch (error) {
+    console.error('getPublicLandingPage error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Update landing page settings for the manager's own school
+// @route   PUT /api/schools/my-school/landing-page
+// @access  Private (Manager, Admin)
+const updateMySchoolLandingPage = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    // Only copy allowed landingPage fields
+    const allowed = ['isEnabled', 'heroTitle', 'aboutSection', 'contactPhone', 'contactEmail', 'address', 'galleryImages'];
+    if (!school.landingPage) school.landingPage = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) school.landingPage[key] = req.body[key];
+    }
+
+    await school.save();
+
+    res.json({ success: true, landingPage: school.landingPage });
+  } catch (error) {
+    console.error('updateMySchoolLandingPage error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Upload a single landing page gallery image (manager)
+// @route   POST /api/schools/my-school/landing-page/upload
+// @access  Private (Manager, Admin)
+const uploadMySchoolLandingImage = async (req, res) => {
+  try {
+    // multer handled file and saved it to server/public/uploads/ads by middleware
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    // Construct a public URL for the image
+  const host = req.get('host');
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto || req.protocol || 'http';
+  const path = `/uploads/ads/${req.file.filename}`;
+  const url = `${protocol}://${host}${path}`;
+    res.json({ success: true, url });
+  } catch (error) {
+    console.error('uploadMySchoolLandingImage error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// ============ NEW LANDING PAGE BUILDER ROUTES ============
+
+// @desc    Get landing page config for manager's school
+// @route   GET /api/schools/my-school/landing-page/config
+// @access  Private (Manager, Admin)
+const getLandingPageConfig = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId).select('name logo landingPage');
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    // If no config exists, initialize with default template
+    if (!school.landingPage || !school.landingPage.config) {
+      const DEFAULT_CONFIG = require('../utils/defaultLandingPageTemplate');
+      if (!school.landingPage) school.landingPage = {};
+      school.landingPage.config = DEFAULT_CONFIG;
+      school.landingPage.isDraft = true;
+      school.landingPage.lastEditedAt = new Date();
+      await school.save();
+    }
+
+    res.json({
+      success: true,
+      config: school.landingPage.config,
+      status: {
+        isEnabled: school.landingPage.isEnabled || false,
+        isDraft: school.landingPage.isDraft !== false,
+        publishedAt: school.landingPage.publishedAt,
+        lastEditedAt: school.landingPage.lastEditedAt
+      }
+    });
+  } catch (error) {
+    console.error('getLandingPageConfig error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Update landing page config (saves as draft)
+// @route   PUT /api/schools/my-school/landing-page/config
+// @access  Private (Manager, Admin)
+const updateLandingPageConfig = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    const { config } = req.body;
+    if (!config) return res.status(400).json({ message: 'Config is required' });
+
+    // Save current version to revisions before updating
+    if (school.landingPage && school.landingPage.config) {
+      if (!school.landingPage.revisions) school.landingPage.revisions = [];
+      school.landingPage.revisions.push({
+        config: school.landingPage.config,
+        createdAt: new Date(),
+        createdBy: req.user._id
+      });
+      // Keep only last 10 revisions
+      if (school.landingPage.revisions.length > 10) {
+        school.landingPage.revisions = school.landingPage.revisions.slice(-10);
+      }
+    }
+
+    // Update config
+    if (!school.landingPage) school.landingPage = {};
+    school.landingPage.config = config;
+    school.landingPage.isDraft = true;
+    school.landingPage.lastEditedAt = new Date();
+
+    await school.save();
+
+    res.json({
+      success: true,
+      message: 'Config saved as draft',
+      config: school.landingPage.config
+    });
+  } catch (error) {
+    console.error('updateLandingPageConfig error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Publish landing page (make draft live)
+// @route   POST /api/schools/my-school/landing-page/publish
+// @access  Private (Manager, Admin)
+const publishLandingPage = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    if (!school.landingPage || !school.landingPage.config) {
+      return res.status(400).json({ message: 'No landing page config to publish' });
+    }
+
+    school.landingPage.isDraft = false;
+    school.landingPage.isEnabled = true;
+    school.landingPage.publishedAt = new Date();
+
+    await school.save();
+
+    res.json({
+      success: true,
+      message: 'Landing page published successfully',
+      publishedAt: school.landingPage.publishedAt
+    });
+  } catch (error) {
+    console.error('publishLandingPage error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Get revision history
+// @route   GET /api/schools/my-school/landing-page/revisions
+// @access  Private (Manager, Admin)
+const getLandingPageRevisions = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId)
+      .select('landingPage.revisions')
+      .populate('landingPage.revisions.createdBy', 'firstName lastName email');
+    
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    const revisions = school.landingPage?.revisions || [];
+
+    res.json({
+      success: true,
+      revisions: revisions.reverse() // Most recent first
+    });
+  } catch (error) {
+    console.error('getLandingPageRevisions error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Revert to a previous revision
+// @route   POST /api/schools/my-school/landing-page/revert/:revisionIndex
+// @access  Private (Manager, Admin)
+const revertLandingPageRevision = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const { revisionIndex } = req.params;
+    const school = await School.findById(userSchoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    if (!school.landingPage || !school.landingPage.revisions || !school.landingPage.revisions[revisionIndex]) {
+      return res.status(404).json({ message: 'Revision not found' });
+    }
+
+    const revisionConfig = school.landingPage.revisions[revisionIndex].config;
+
+    // Save current as revision before reverting
+    if (school.landingPage.config) {
+      school.landingPage.revisions.push({
+        config: school.landingPage.config,
+        createdAt: new Date(),
+        createdBy: req.user._id
+      });
+    }
+
+    // Apply old revision
+    school.landingPage.config = revisionConfig;
+    school.landingPage.isDraft = true;
+    school.landingPage.lastEditedAt = new Date();
+
+    await school.save();
+
+    res.json({
+      success: true,
+      message: 'Reverted to previous version',
+      config: school.landingPage.config
+    });
+  } catch (error) {
+    console.error('revertLandingPageRevision error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// @desc    Initialize landing page with default template
+// @route   POST /api/schools/my-school/landing-page/initialize
+// @access  Private (Manager, Admin)
+const initializeLandingPage = async (req, res) => {
+  try {
+    const userSchoolId = (req.user?.school && (req.user.school._id || req.user.school)) || null;
+    if (!userSchoolId) return res.status(403).json({ message: 'User is not assigned to a school' });
+
+    const school = await School.findById(userSchoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+
+    const DEFAULT_CONFIG = require('../utils/defaultLandingPageTemplate');
+    
+    if (!school.landingPage) school.landingPage = {};
+    school.landingPage.config = DEFAULT_CONFIG;
+    school.landingPage.isDraft = true;
+    school.landingPage.isEnabled = false;
+    school.landingPage.lastEditedAt = new Date();
+
+    await school.save();
+
+    res.json({
+      success: true,
+      message: 'Landing page initialized with default template',
+      config: school.landingPage.config
+    });
+  } catch (error) {
+    console.error('initializeLandingPage error:', error.message);
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 module.exports = {
   createSchool,
   getSchools,
@@ -309,4 +595,15 @@ module.exports = {
   updateManagerForSchool,
   deleteManagerForSchool,
   getSchoolById,
+  updateMySchoolLandingPage,
+  uploadMySchoolLandingImage,
+  getPublicLandingPage,
+  // New Landing Page Builder functions
+  getLandingPageConfig,
+  updateLandingPageConfig,
+  publishLandingPage,
+  getLandingPageRevisions,
+  revertLandingPageRevision,
+  initializeLandingPage,
 };
+

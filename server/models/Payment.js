@@ -23,6 +23,12 @@ const paymentSchema = new mongoose.Schema(
     taken: { type: Number, min: 0 },
     // debtDelta = expectedPrice - taken; >0 student owes school, <0 school owes student
     debtDelta: { type: Number, default: 0 },
+    receiptNumber: { type: String, trim: true },
+    receiptMeta: {
+      issuedAt: { type: Date },
+      issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      printable: { type: mongoose.Schema.Types.Mixed } // payload frontend can render/print
+    },
     idempotencyKey: { type: String, trim: true },
     createdAt: { type: Date, default: Date.now },
   },
@@ -37,5 +43,6 @@ paymentSchema.index(
   { enrollmentId: 1, idempotencyKey: 1 },
   { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
 );
+paymentSchema.index({ schoolId: 1, receiptNumber: 1 }, { unique: true, partialFilterExpression: { receiptNumber: { $type: 'string' } } });
 
 module.exports = mongoose.model('Payment', paymentSchema);

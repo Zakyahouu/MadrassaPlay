@@ -26,6 +26,7 @@ if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 
 // Add CORS middleware

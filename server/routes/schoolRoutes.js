@@ -6,8 +6,6 @@ const router = express.Router();
 const { createSchool, getSchools, updateSchool, deleteSchool, createManagerForSchool, updateManagerForSchool, deleteManagerForSchool } = require('../controllers/schoolController');
 // Import middleware for protection
 const { protect, admin, manager } = require('../middleware/authMiddleware');
-<<<<<<< Updated upstream
-=======
 const { authorize } = require('../middleware/authMiddleware');
 const { upload, handleMulterError } = require('../middleware/uploadMiddleware');
 const {
@@ -29,7 +27,6 @@ const {
   getDetailedAnalytics,
   exportAnalytics
 } = require('../controllers/landingPageAnalyticsController');
->>>>>>> Stashed changes
 
 // POST create manager for a school
 router.route('/:id/managers').post(protect, admin, createManagerForSchool);
@@ -59,8 +56,6 @@ router.route('/:id')
   .put(protect, admin, updateSchool)
   .delete(protect, admin, deleteSchool);
 
-<<<<<<< Updated upstream
-=======
 const { checkLandingPageAccess } = require('../middleware/permissionMiddleware');
 
 // Landing page for a manager's school (legacy routes - kept for backward compatibility)
@@ -87,7 +82,6 @@ router.patch('/my-school/inquiries/:id', protect, authorize('manager', 'admin'),
 
 
 
->>>>>>> Stashed changes
 
 // Custom middleware to allow admin or manager to access GET /api/schools/:id
 function adminOrManager(req, res, next) {

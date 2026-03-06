@@ -10,8 +10,24 @@ const enrollmentSchema = new mongoose.Schema(
     classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
 
     // Lifecycle
-    status: { type: String, enum: ['active', 'paused', 'completed'], default: 'active' },
+    status: {
+      type: String,
+      enum: ['active', 'paused', 'completed', 'suspended', 'withdrawn', 'transferred'],
+      default: 'active'
+    },
     enrolledAt: { type: Date, default: Date.now },
+    endedAt: { type: Date },
+
+    suspension: {
+      reason: { type: String, trim: true },
+      issuedAt: { type: Date },
+      issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      financialHold: {
+        sessions: { type: Number, default: 0 },
+        value: { type: Number, default: 0 },
+        note: { type: String, trim: true },
+      }
+    },
 
     // Pricing snapshot copied from Class at time of enrollment
     pricingSnapshot: {

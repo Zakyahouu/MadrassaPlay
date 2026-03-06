@@ -28,7 +28,8 @@ import {
   Activity,
   Box,
   Tag,
-  FolderOpen
+  FolderOpen,
+  Globe
 } from 'lucide-react';
 
 const UnifiedSidebar = ({
@@ -68,20 +69,6 @@ const UnifiedSidebar = ({
           ])
         ];
       case 'manager':
-<<<<<<< Updated upstream
-        const managerItems = [
-          { id: 'overview', name: t('overview'), icon: BarChart3 },
-          { id: 'classes', name: t('classes'), icon: BookOpen },
-          { id: 'attendance', name: t('attendance'), icon: Calendar },
-          { id: 'timetable', name: t('timetable'), icon: Calendar },
-          { id: 'students', name: t('students'), icon: Users },
-          { id: 'teachers', name: t('teachers'), icon: UserCheck },
-          { id: 'employees', name: t('employees'), icon: Building2 },
-          { id: 'rooms', name: t('rooms'), icon: Building2 },
-          { id: 'equipment', name: t('equipment'), icon: Package },
-          { id: 'catalog', name: t('catalog'), icon: Package },
-          { id: 'ads', name: t('ads'), icon: Megaphone }
-=======
         // Helper to check permission (managers always have access, staff needs explicit permission)
         const hasPerm = (perm) => role === 'manager' || userPermissions?.[perm] === true;
 
@@ -111,7 +98,6 @@ const UnifiedSidebar = ({
           createGroup(t.overview || 'Dashboard', [
             { id: 'overview', name: t.overview, icon: BarChart3 }
           ])
->>>>>>> Stashed changes
         ];
 
         if (academicItems.length > 0) groups.push(createGroup(t.academic || 'Academic', academicItems));

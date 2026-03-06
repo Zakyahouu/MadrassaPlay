@@ -17,6 +17,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import ManagerDashboardPage from './pages/ManagerDashboard';
 import ManagerPasswordReset from './pages/ManagerPasswordReset';
 import Finance from './pages/Finance';
+import LandingPageBuilder from './components/manager/LandingPageBuilder';
+import InquiriesManager from './components/manager/InquiriesManager';
 import CreateGame from './pages/CreateGame';
 import EditGame from './pages/EditGame';
 import PlayGame from './pages/PlayGame';
@@ -29,6 +31,8 @@ import ResultDetail from './components/teacher/ResultDetail';
 import Profile from './pages/Profile';
 import SharedModelViewer from './pages/SharedModelViewer';
 import FullScreenModelViewer from './pages/FullScreenModelViewer';
+import PublicSchoolPage from './pages/PublicSchoolPage';
+import PublicSchoolLandingPage from './pages/PublicSchoolLandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import GameAnalyticsDashboard from './components/analytics/GameAnalyticsDashboard';
 import RoleBasedRedirect from './components/RoleBasedRedirect';
@@ -107,17 +111,6 @@ function App() {
                 }
               />
 
-<<<<<<< Updated upstream
-          {/* Route 9: The Create Game Page */}
-          <Route
-            path="/teacher/create-game/:templateId"
-            element={
-              <ProtectedRoute>
-                <CreateGame />
-              </ProtectedRoute>
-            }
-          />
-=======
               {/* Route 8: The Finance Page (Manager only) */}
               <Route
                 path="/manager/finance"
@@ -147,7 +140,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
->>>>>>> Stashed changes
 
               {/* Route 9: The Create Game Page */}
               <Route
@@ -269,19 +261,6 @@ function App() {
                 }
               />
 
-<<<<<<< Updated upstream
-          {/* Shared Model Viewer - Public route (no authentication required) */}
-          <Route
-            path="/shared/:authKey"
-            element={<SharedModelViewer />}
-          />
-          {/* Full-screen 3D Model viewer (authenticated via underlying API token) */}
-          <Route
-            path="/viewer/:modelId"
-            element={<FullScreenModelViewer />}
-          />
-        </Routes>
-=======
               {/* Profile Route - Unified for all roles */}
               <Route
                 path="/profile"
@@ -308,7 +287,6 @@ function App() {
                 element={<FullScreenModelViewer />}
               />
             </Routes>
->>>>>>> Stashed changes
           </div>
         </Router>
       </ToastProvider>

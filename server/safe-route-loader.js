@@ -69,12 +69,8 @@ function loadAllRoutes(app) {
     { path: '/api/rooms', file: './routes/roomRoutes' },
     { path: '/api/equipment', file: './routes/equipmentRoutes' },
     { path: '/api/advertisements', file: './routes/advertisementRoutes' },
-<<<<<<< Updated upstream
-  { path: '/api/announcements', file: './routes/announcementRoutes' },
-=======
     { path: '/api/public', file: './routes/publicRoutes' },
     { path: '/api/announcements', file: './routes/announcementRoutes' },
->>>>>>> Stashed changes
     { path: '/api/manager', file: './routes/managerRoutes' },
     { path: '/api/finance', file: './routes/financeRoutes' },
     { path: '/api/logs', file: './routes/logRoutes' },

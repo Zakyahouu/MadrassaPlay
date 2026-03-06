@@ -27,9 +27,6 @@ const schoolSchema = new mongoose.Schema(
       phone: String,
       address: String
     },
-<<<<<<< Updated upstream
-    
-=======
     logo: { type: String },
 
     // Comprehensive Landing Page System
@@ -97,7 +94,6 @@ const schoolSchema = new mongoose.Schema(
       default: null,
     },
 
->>>>>>> Stashed changes
     // Trial System Fields
     status: {
       type: String,

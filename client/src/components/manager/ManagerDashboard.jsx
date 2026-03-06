@@ -20,6 +20,7 @@ import EmployeesTab from './EmployeesTab';
 import AttendanceTab from './AttendanceTab';
 import ManagerTimetable from './ManagerTimetable';
 import AdsTab from './AdsTab';
+import LandingPageSettings from './LandingPageSettings';
 import LogTab from './LogTab';
 import { Link } from 'react-router-dom';
 import StatsCard from './shared/StatsCard';
@@ -189,21 +190,6 @@ export const ManagerDashboard = () => {
   ];
 
   const navigationItems = [
-<<<<<<< Updated upstream
-    { id: 'overview', name: 'Aperçu' },
-    { id: 'classes', name: 'Classes' },
-    { id: 'attendance', name: 'Présence' },
-    { id: 'students', name: 'Étudiants' },
-    { id: 'teachers', name: 'Enseignants' },
-    { id: 'employees', name: 'Personnel' },
-    { id: 'timetable', name: 'Emploi du Temps' },
-    { id: 'rooms', name: 'Salles' },
-    { id: 'equipment', name: 'Équipement' },
-    { id: 'catalog', name: 'Catalogue' },
-    { id: 'ads', name: 'Publicités' },
-    { id: 'reports', name: 'Rapports' },
-    { id: 'finance', name: 'Finance' } // ✅ added to navigation
-=======
     { id: 'overview', name: t.overview },
     { id: 'classes', name: t.classes },
     { id: 'attendance', name: t.attendance },
@@ -218,7 +204,6 @@ export const ManagerDashboard = () => {
     { id: 'landing', name: t.landing },
     { id: 'reports', name: t.reports },
     { id: 'finance', name: t.finance }
->>>>>>> Stashed changes
   ];
 
   const handleUpdateCatalog = async (updatedCatalog) => {
@@ -306,6 +291,9 @@ export const ManagerDashboard = () => {
         return <EquipmentTab />;
       case 'ads':
         return <AdsTab />;
+      case 'landing':
+        window.location.href = '/manager/landing-page-builder';
+        return null;
       case 'reports':
         return <ReportsTab />;
       case 'log':

@@ -1,9 +1,81 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const ClassModel = require('../models/Class');
-const SchoolCatalog = require('../models/SchoolCatalog');
 const asyncHandler = require('express-async-handler');
 const Enrollment = require('../models/Enrollment');
 const LoggingService = require('../services/loggingService');
+const Payment = require('../models/Payment');
+const { applyDebtAdjustment } = require('../services/enrollmentFinanceService');
+const StudentLogService = require('../services/studentLogService');
+
+function sessionsToMonetaryValue(balance, snapshot = {}) {
+  const sessions = Number(balance) || 0;
+  if (sessions === 0) return 0;
+  const { paymentModel, sessionPrice, cycleSize, cyclePrice } = snapshot || {};
+  if (paymentModel === 'per_session' && typeof sessionPrice === 'number' && sessionPrice > 0) {
+    return sessions * sessionPrice;
+  }
+  if (paymentModel === 'per_cycle' && typeof cycleSize === 'number' && cycleSize > 0 && typeof cyclePrice === 'number' && cyclePrice > 0) {
+    return (sessions / cycleSize) * cyclePrice;
+  }
+  return sessions;
+}
+
+function monetaryValueToSessions(value, snapshot = {}) {
+  const amount = Number(value) || 0;
+  if (amount === 0) return 0;
+  const { paymentModel, sessionPrice, cycleSize, cyclePrice } = snapshot || {};
+  if (paymentModel === 'per_session' && typeof sessionPrice === 'number' && sessionPrice > 0) {
+    return amount / sessionPrice;
+  }
+  if (paymentModel === 'per_cycle' && typeof cycleSize === 'number' && cycleSize > 0 && typeof cyclePrice === 'number' && cyclePrice > 0) {
+    return (amount / cyclePrice) * cycleSize;
+  }
+  return amount;
+}
+
+function buildPricingSnapshotForClass(klass) {
+  if (!klass) throw new Error('Class not found');
+  let { paymentModel, sessionPrice, cyclePrice, cycleSize } = klass;
+  if (!paymentModel) {
+    if (typeof klass.price === 'number' && typeof klass.paymentCycle === 'number') {
+      paymentModel = 'per_cycle';
+      cyclePrice = klass.price;
+      cycleSize = klass.paymentCycle;
+    } else {
+      throw new Error('Class pricing not configured. Please update class pricing.');
+    }
+  }
+
+  if (paymentModel === 'per_session') {
+    if (typeof sessionPrice !== 'number') {
+      throw new Error('Class per-session price missing. Please update class pricing.');
+    }
+    return {
+      paymentModel,
+      sessionPrice,
+      cycleSize: undefined,
+      cyclePrice: undefined,
+    };
+  }
+
+  // per_cycle
+  if (typeof cyclePrice !== 'number') {
+    cyclePrice = typeof klass.price === 'number' ? klass.price : undefined;
+  }
+  if (typeof cycleSize !== 'number') {
+    cycleSize = typeof klass.paymentCycle === 'number' ? klass.paymentCycle : undefined;
+  }
+  if (typeof cyclePrice !== 'number' || typeof cycleSize !== 'number') {
+    throw new Error('Class cycle price/size missing. Please update class pricing.');
+  }
+  return {
+    paymentModel,
+    sessionPrice: undefined,
+    cycleSize,
+    cyclePrice,
+  };
+}
 
 // @desc    Get all students for a school (manager only)
 // @route   GET /api/students
@@ -313,27 +385,6 @@ const enrollStudent = asyncHandler(async (req, res) => {
     }
   }
 
-  // Create Enrollment document first, to avoid partial state on failures
-  const Enrollment = require('../models/Enrollment');
-  
-  // Check if enrollment already exists (idempotent behavior)
-  const existingEnrollment = await Enrollment.findOne({ 
-    studentId: student._id,
-    classId: klass._id
-  });
-  if (existingEnrollment) {
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Student already enrolled (idempotent)',
-      class: klass,
-      enrollmentId: existingEnrollment._id,
-      pricingSnapshot: existingEnrollment.pricingSnapshot || pricingSnapshot,
-      className: klass.name,
-    });
-  }
-  
-  
   const pricingSnapshot = {
     paymentModel,
     sessionPrice: paymentModel === 'per_session' ? sessionPrice : undefined,
@@ -347,8 +398,6 @@ const enrollStudent = asyncHandler(async (req, res) => {
     legacyTotals = { totalSessions: 0, totalAmount: 0, sessionsCompleted: 0, amountPaid: 0 };
   }
 
-<<<<<<< Updated upstream
-=======
   // Create Enrollment document first, to avoid partial state on failures
   const Enrollment = require('../models/Enrollment');
 
@@ -369,7 +418,6 @@ const enrollStudent = asyncHandler(async (req, res) => {
     });
   }
 
->>>>>>> Stashed changes
   let enrollmentDoc;
   try {
     enrollmentDoc = await Enrollment.create({
@@ -420,6 +468,22 @@ const enrollStudent = asyncHandler(async (req, res) => {
     { studentId: student._id, classId: klass._id, enrollmentId: enrollmentDoc._id },
     { entityType: 'enrollment', entityId: enrollmentDoc._id }
   );
+
+  await StudentLogService.record({
+    schoolId: klass.schoolId,
+    studentId: student._id,
+    action: 'enroll',
+    summary: `Enrolled in ${klass.name}`,
+    details: {
+      enrollmentId: enrollmentDoc._id,
+      classId: klass._id,
+      pricingSnapshot,
+    },
+    enrollmentId: enrollmentDoc._id,
+    classId: klass._id,
+    actor: req.user,
+    tags: ['enroll'],
+  });
 
   res.status(201).json({
     success: true,
@@ -543,25 +607,78 @@ const getStudentPayments = asyncHandler(async (req, res) => {
     throw new Error('Student not found');
   }
 
-  // For now, return mock data. In a real implementation, you would:
-  // 1. Have a Payment model
-  // 2. Query payments where studentId matches
-  // 3. Include enrollment details
-  
-  const mockPayments = [
-    {
-      _id: '1',
-      amount: 2000,
-      method: 'cash',
-      date: '2024-01-15',
-      description: 'Payment for Math Support - Grade 5',
-      status: 'completed'
-    }
-  ];
+  const payments = await Payment.find({ schoolId, studentId: id })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate('classId', 'name')
+    .lean();
 
-<<<<<<< Updated upstream
-  res.json(mockPayments);
-=======
+  res.json(payments);
+});
+
+// @desc    Unenroll student from a class and convert remaining balance into debt (school owes student)
+// @route   POST /api/students/:id/unenroll
+// @access  Private (Manager)
+const unenrollStudent = asyncHandler(async (req, res) => {
+  const schoolId = (req.user?.school && (req.user.school._id || req.user.school))?.toString?.();
+  if (!schoolId) {
+    res.status(400);
+    throw new Error('Manager must be assigned to a school to unenroll students');
+  }
+
+  const { id: studentId } = req.params;
+  const { enrollmentId, reason } = req.body || {};
+  if (!enrollmentId || !mongoose.isValidObjectId(enrollmentId)) {
+    res.status(400);
+    throw new Error('Valid enrollmentId is required');
+  }
+
+  const student = await User.findOne({ _id: studentId, school: schoolId, role: 'student' });
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const enrollment = await Enrollment.findOne({ _id: enrollmentId, schoolId, studentId }).populate('classId', 'name');
+  if (!enrollment) {
+    res.status(404);
+    throw new Error('Enrollment not found');
+  }
+
+  if (!['active', 'paused', 'suspended'].includes(enrollment.status)) {
+    res.status(409);
+    throw new Error('Only active enrollments can be unenrolled');
+  }
+
+  const classId = enrollment.classId?._id || enrollment.classId;
+  const className = enrollment.classId?.name || 'class';
+  const remainingSessions = Number(enrollment.balance) || 0;
+  const refundableSessions = remainingSessions > 0 ? remainingSessions : 0;
+  const refundValue = refundableSessions > 0
+    ? sessionsToMonetaryValue(refundableSessions, enrollment.pricingSnapshot)
+    : 0;
+
+  enrollment.status = 'withdrawn';
+  enrollment.balance = 0;
+  enrollment.endedAt = new Date();
+  if (reason) {
+    const prefix = enrollment.notes ? `${enrollment.notes}\n` : '';
+    enrollment.notes = `${prefix}Unenrolled: ${reason}`;
+  }
+  await enrollment.save();
+
+  // Update class roster if entry exists
+  await ClassModel.updateOne(
+    { _id: classId, 'enrolledStudents.studentId': student._id },
+    {
+      $set: {
+        'enrolledStudents.$.status': 'withdrawn',
+        'enrolledStudents.$.endedAt': enrollment.endedAt,
+        'enrolledStudents.$.notes': reason || 'Unenrolled',
+      }
+    }
+  ).catch(() => null);
+
   if (refundValue > 0) {
     await applyDebtAdjustment({
       schoolId,
@@ -1195,7 +1312,6 @@ const getStudentHistory = asyncHandler(async (req, res) => {
     total: logs.total,
     pageInfo: logs.pageInfo,
   });
->>>>>>> Stashed changes
 });
 
 // @desc    Update student enrollment count
@@ -1310,6 +1426,11 @@ module.exports = {
   deleteStudent,
   getStudentEnrollments,
   getStudentPayments,
+  unenrollStudent,
+  transferStudent,
+  suspendStudent,
+  unsuspendStudent,
+  getStudentHistory,
   updateEnrollmentCount,
   updateBalance,
   searchStudents,
