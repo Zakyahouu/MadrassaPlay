@@ -13,6 +13,14 @@ const CredentialsPopup = ({
   const { t } = useLanguage();
   const [showPassword, setShowPassword] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const getManagerValue = (...values) => {
+    for (const value of values) {
+      if (value && String(value).trim()) {
+        return value;
+      }
+    }
+    return null;
+  };
 
   if (!isOpen || !schoolData) return null;
 
@@ -108,6 +116,14 @@ const CredentialsPopup = ({
     
     // Manager Information Section
     if (managerData) {
+      const managerFullName = getManagerValue(
+        `${managerData?.firstName || ''} ${managerData?.lastName || ''}`.trim(),
+        managerData?.name
+      ) || 'N/A';
+      const managerAddress = getManagerValue(managerData?.address, managerData?.contact?.address) || 'N/A';
+      const managerPhone1 = getManagerValue(managerData?.phone1, managerData?.contact?.phone1) || 'N/A';
+      const managerPhone2 = getManagerValue(managerData?.phone2, managerData?.contact?.phone2);
+
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('MANAGER CREDENTIALS', 20, yPosition);
@@ -117,10 +133,10 @@ const CredentialsPopup = ({
       doc.setFont('helvetica', 'normal');
       
       const managerInfo = [
-        { label: 'Full Name:', value: `${managerData?.firstName || ''} ${managerData?.lastName || ''}` },
+        { label: 'Full Name:', value: managerFullName },
         { label: 'Email Address:', value: managerData?.email || 'N/A' },
-        { label: 'Address:', value: managerData?.address || 'N/A' },
-        { label: 'Primary Phone:', value: managerData?.phone1 || 'N/A' }
+        { label: 'Address:', value: managerAddress },
+        { label: 'Primary Phone:', value: managerPhone1 }
       ];
       
       // Add password only if it exists
@@ -136,11 +152,11 @@ const CredentialsPopup = ({
         yPosition += 8;
       });
       
-      if (managerData?.phone2) {
+      if (managerPhone2) {
         doc.setFont('helvetica', 'bold');
         doc.text('Secondary Phone:', 20, yPosition);
         doc.setFont('helvetica', 'normal');
-        doc.text(managerData.phone2, 80, yPosition);
+        doc.text(managerPhone2, 80, yPosition);
         yPosition += 8;
       }
     } else {
@@ -247,20 +263,32 @@ const CredentialsPopup = ({
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div>
-                    <span className="font-medium">Name:</span> {managerData?.firstName || ''} {managerData?.lastName || ''}
+                    <span className="font-medium">Name:</span> {getManagerValue(
+                      `${managerData?.firstName || ''} ${managerData?.lastName || ''}`.trim(),
+                      managerData?.name
+                    ) || 'N/A'}
                   </div>
                   <div>
                     <span className="font-medium">Email:</span> {managerData?.email || 'N/A'}
                   </div>
                   <div className="md:col-span-2">
-                    <span className="font-medium">Address:</span> {managerData?.address || 'N/A'}
+                    <span className="font-medium">Address:</span> {getManagerValue(
+                      managerData?.address,
+                      managerData?.contact?.address
+                    ) || 'N/A'}
                   </div>
                   <div>
-                    <span className="font-medium">Primary Phone:</span> {managerData?.phone1 || 'N/A'}
+                    <span className="font-medium">Primary Phone:</span> {getManagerValue(
+                      managerData?.phone1,
+                      managerData?.contact?.phone1
+                    ) || 'N/A'}
                   </div>
-                  {managerData?.phone2 && (
+                  {getManagerValue(managerData?.phone2, managerData?.contact?.phone2) && (
                     <div>
-                      <span className="font-medium">Secondary Phone:</span> {managerData.phone2}
+                      <span className="font-medium">Secondary Phone:</span> {getManagerValue(
+                        managerData?.phone2,
+                        managerData?.contact?.phone2
+                      )}
                     </div>
                   )}
                 </div>

@@ -17,6 +17,19 @@ const protect = async (req, res, next) => {
       // and attach it to the request object so our controllers can access it
       req.user = await User.findById(decoded.id).select('-password').populate('school');
 
+      if (req.user?.school) {
+        const school = req.user.school;
+        if (school.status === 'inactive' || school.status === 'deleted') {
+          return res.status(403).json({ message: 'Your school subscription is deactivated. Please contact the administrator.' });
+        }
+        if (school.status === 'trial' && school.trialExpiresAt) {
+          const expiresAt = new Date(school.trialExpiresAt);
+          if (!Number.isNaN(expiresAt.getTime()) && expiresAt < new Date()) {
+            return res.status(403).json({ message: 'Your school trial has expired. Please contact the administrator.' });
+          }
+        }
+      }
+
       next(); // Move on to the next piece of middleware or the controller
     } catch (error) {
       console.error(error);
@@ -27,6 +40,22 @@ const protect = async (req, res, next) => {
   if (!token) {
     res.status(401).json({ message: 'Not authorized, no token' });
   }
+};
+
+const optionalProtect = async (req, res, next) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password').populate('school');
+      return next();
+    } catch (error) {
+      console.error(error);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
+  }
+
+  return next();
 };
 
 // Middleware to check for a specific role
@@ -116,4 +145,4 @@ const checkPermission = (permission) => async (req, res, next) => {
   res.status(403).json({ message: 'Not authorized.' });
 };
 
-module.exports = { protect, admin, manager, staff, teacher, authorize, checkPermission };
+module.exports = { protect, optionalProtect, admin, manager, staff, teacher, authorize, checkPermission };

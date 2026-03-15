@@ -211,7 +211,7 @@ Implement React error boundaries to gracefully handle unexpected errors in the U
 1. `server/controllers/userController.js` - Enhanced user registration
 2. `server/controllers/schoolController.js` - Fixed manager creation
 3. `client/src/components/admin/SchoolCreationWizard.jsx` - Improved creation flow
-4. `SCHOOL_CREATION_FIXES.md` - This documentation
+4. `docs/features/SCHOOL_CREATION_FIXES.md` - This documentation
 
 ## Impact
 

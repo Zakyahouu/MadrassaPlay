@@ -288,7 +288,7 @@ sudo chmod -R 755 /var/www/madrassaplay
 ### 7.1 Create PM2 Ecosystem File
 ```bash
 cd /var/www/madrassaplay
-nano ecosystem.config.js
+nano configs/process/ecosystem.config.js
 ```
 
 ### 7.2 PM2 Configuration
@@ -323,7 +323,7 @@ sudo chown -R $USER:$USER /var/log/pm2
 ### 7.4 Start Application with PM2
 ```bash
 cd /var/www/madrassaplay
-pm2 start ecosystem.config.js
+pm2 start configs/process/ecosystem.config.js
 pm2 save
 pm2 startup
 ```

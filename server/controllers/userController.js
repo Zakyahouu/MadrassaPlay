@@ -55,11 +55,32 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10); // Generate a "salt" for hashing
     const hashedPassword = await bcrypt.hash(password, salt); // Hash the password with the salt
 
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized, no token' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isManager = req.user.role === 'manager';
+    let effectiveRole = role;
+
+    if (isAdmin) {
+      if (effectiveRole !== 'manager') {
+        return res.status(403).json({ message: 'Admins can only create manager accounts.' });
+      }
+    } else if (isManager) {
+      const allowedRoles = new Set(['teacher', 'student', 'staff', 'employee', 'staff pedagogique']);
+      if (!effectiveRole || !allowedRoles.has(effectiveRole)) {
+        return res.status(403).json({ message: 'Managers can only create teacher, student, or staff accounts.' });
+      }
+    } else {
+      return res.status(403).json({ message: 'Not authorized to create accounts.' });
+    }
+
     // Create the user with the HASHED password
     const userData = {
       email,
       password: hashedPassword, // Store the hashed password
-      role,
+      role: effectiveRole,
     };
 
     // Handle name fields - support both formats
@@ -70,9 +91,19 @@ const registerUser = async (req, res) => {
       userData.name = name;
     }
 
-    // Add school if provided
-    if (school) {
+    // Assign school based on creator role
+    if (isAdmin) {
+      if (!school) {
+        return res.status(400).json({ message: 'School is required when creating a manager.' });
+      }
       userData.school = school;
+    }
+
+    if (isManager) {
+      if (!req.user.school) {
+        return res.status(403).json({ message: 'Manager is not assigned to a school.' });
+      }
+      userData.school = req.user.school;
     }
 
     // Add additional fields for managers - Map to contact object
@@ -166,6 +197,12 @@ const loginUser = async (req, res) => {
         const school = await School.findById(user.school);
         if (school && (school.status === 'inactive' || school.status === 'deleted')) {
           return res.status(403).json({ message: 'Your school subscription is deactivated. Please contact the administrator.' });
+        }
+        if (school && school.status === 'trial' && school.trialExpiresAt) {
+          const expiresAt = new Date(school.trialExpiresAt);
+          if (!Number.isNaN(expiresAt.getTime()) && expiresAt < new Date()) {
+            return res.status(403).json({ message: 'Your school trial has expired. Please contact the administrator.' });
+          }
         }
       }
       // Log successful login

@@ -1,0 +1,52 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentence Order</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="ready-screen" class="screen">
+            <div class="card">
+                <h1>Sentence Order</h1>
+                <p>Fill in the gaps to complete the story.</p>
+                <button id="start-btn" class="btn">Start</button>
+            </div>
+        </div>
+
+        <div id="countdown-screen" class="screen hidden">
+            <div class="countdown-circle">
+                <span id="countdown-number">3</span>
+            </div>
+        </div>
+
+        <div id="play-screen" class="screen hidden">
+            <div class="hud">
+                <div id="progress" class="hud-item">1/5</div>
+                <div id="timer" class="hud-item">00:60</div>
+            </div>
+
+            <div id="story-container" class="story-container">
+                </div>
+
+            <div id="sentence-bank" class="sentence-bank">
+                </div>
+            
+            <div class="action-buttons">
+                <button id="check-btn" class="btn">Check Answer</button>
+                <button id="next-btn" class="btn hidden">Next</button>
+            </div>
+        </div>
+
+        <div id="done-screen" class="screen hidden">
+             <div class="card">
+                <h1>Complete!</h1>
+                <p id="final-score"></p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

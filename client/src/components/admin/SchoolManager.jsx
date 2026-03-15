@@ -119,13 +119,13 @@ const SchoolCard = ({ school, onEdit, onDelete, onViewManagers, onChangeStatus, 
             </span>
           </div>
         )}
-        {school.status === 'active' && school.subscriptionStartDate && (
+        {school.status === 'active' && school.subscriptionStartedAt && (
           <div className="flex items-center gap-2 text-green-600">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="16,12 12,8 8,12"></polyline>
             </svg>
-            <span>{t.activeSince}: {formatDate(school.subscriptionStartDate)}</span>
+            <span>{t.activeSince}: {formatDate(school.subscriptionStartedAt)}</span>
           </div>
         )}
       </div>
@@ -417,14 +417,16 @@ const StatusChangeModal = ({ school, onSave, onClose }) => {
 
       // If extending trial or setting to trial, calculate new expiration date
       if (newStatus === 'trial') {
-        const newExpirationDate = new Date();
+        const baseDate = school.trialExpiresAt ? new Date(school.trialExpiresAt) : new Date();
+        const normalizedBase = Number.isNaN(baseDate.getTime()) ? new Date() : baseDate;
+        const newExpirationDate = normalizedBase > new Date() ? normalizedBase : new Date();
         newExpirationDate.setDate(newExpirationDate.getDate() + trialExtensionDays);
         additionalData.trialExpiresAt = newExpirationDate.toISOString();
       }
 
       // If setting to active, set subscription start date
       if (newStatus === 'active') {
-        additionalData.subscriptionStartDate = new Date().toISOString();
+        additionalData.subscriptionStartedAt = new Date().toISOString();
       }
 
       await onSave(school._id, newStatus, additionalData);

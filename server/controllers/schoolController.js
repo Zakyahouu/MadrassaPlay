@@ -73,7 +73,7 @@ const bcrypt = require('bcryptjs');
 const createManagerForSchool = async (req, res) => {
   try {
     const schoolId = req.params.id;
-    const { name, firstName, lastName, email, password } = req.body;
+    const { name, firstName, lastName, email, password, contact, address, phone1, phone2 } = req.body;
 
     // Support both name (legacy) and firstName/lastName (new) formats
     const hasName = name || (firstName && lastName);
@@ -112,6 +112,19 @@ const createManagerForSchool = async (req, res) => {
       managerData.name = name;
     }
 
+    const contactPayload = {};
+    const contactSource = (contact && typeof contact === 'object') ? contact : {};
+    const resolvedAddress = contactSource.address ?? address;
+    const resolvedPhone1 = contactSource.phone1 ?? phone1;
+    const resolvedPhone2 = contactSource.phone2 ?? phone2;
+
+    if (resolvedAddress !== undefined) contactPayload.address = resolvedAddress;
+    if (resolvedPhone1 !== undefined) contactPayload.phone1 = resolvedPhone1;
+    if (resolvedPhone2 !== undefined) contactPayload.phone2 = resolvedPhone2;
+    if (Object.keys(contactPayload).length > 0) {
+      managerData.contact = contactPayload;
+    }
+
     const manager = await User.create(managerData);
 
     // Add manager to school's managers array
@@ -143,7 +156,7 @@ const createSchool = async (req, res) => {
   // --------------------
 
   try {
-    const { name, contact, managers } = req.body;
+    const { name, contact, managers, status, trialExpiresAt, customTrialDays } = req.body;
 
     if (!name) {
       console.log('Validation Failed: No name provided.');
@@ -175,6 +188,21 @@ const createSchool = async (req, res) => {
       contact: contactInfo,
       managers: managerIds
     };
+
+    if (status) {
+      schoolData.status = status;
+    }
+
+    if (status === 'trial') {
+      schoolData.trialStartedAt = new Date();
+      if (trialExpiresAt) {
+        schoolData.trialExpiresAt = trialExpiresAt;
+      } else if (Number.isFinite(customTrialDays) && customTrialDays > 0) {
+        const expires = new Date();
+        expires.setDate(expires.getDate() + customTrialDays);
+        schoolData.trialExpiresAt = expires.toISOString();
+      }
+    }
     if (req.body.principal) {
       schoolData.principal = req.body.principal;
     }
@@ -233,7 +261,8 @@ const updateSchool = async (req, res) => {
     
     if (updateData.status !== undefined) school.status = updateData.status;
     if (updateData.trialExpiresAt !== undefined) school.trialExpiresAt = updateData.trialExpiresAt;
-    if (updateData.subscriptionStartDate !== undefined) school.subscriptionStartDate = updateData.subscriptionStartDate;
+    if (updateData.subscriptionStartedAt !== undefined) school.subscriptionStartedAt = updateData.subscriptionStartedAt;
+    if (updateData.subscriptionStartDate !== undefined) school.subscriptionStartedAt = updateData.subscriptionStartDate;
     if (updateData.commercialRegistryNo !== undefined) school.commercialRegistryNo = updateData.commercialRegistryNo;
     
     if (updateData.socialLinks) {
@@ -281,7 +310,7 @@ const deleteSchool = async (req, res) => {
 const getSchoolById = async (req, res) => {
   try {
     const school = await School.findById(req.params.id)
-      .populate('managers', 'firstName lastName name email username contact');
+      .populate('managers', 'firstName lastName name email username contact phone1 phone2 address');
     if (!school) {
       return res.status(404).json({ message: 'School not found.' });
     }

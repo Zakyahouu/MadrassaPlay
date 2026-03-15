@@ -2,7 +2,7 @@
   "name": "madrassaplay",
   "version": "1.0.0",
   "description": "An educational gaming platform for teachers to create and host interactive games for students.",
-  "main": "ecosystem.config.js",
+  "main": "configs/process/ecosystem.config.js",
   "directories": {
     "doc": "docs"
   },

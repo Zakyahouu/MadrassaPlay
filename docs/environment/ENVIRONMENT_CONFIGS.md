@@ -80,7 +80,7 @@ BACKUP_ON_START=false
 ### For Development:
 ```bash
 # Copy development config
-cp ENVIRONMENT_CONFIGS.md .env.development
+cp docs/environment/ENVIRONMENT_CONFIGS.md .env.development
 # Edit the file with your development settings
 nano .env.development
 
@@ -94,7 +94,7 @@ npm run start
 ### For Production:
 ```bash
 # Copy production config
-cp ENVIRONMENT_CONFIGS.md .env.production
+cp docs/environment/ENVIRONMENT_CONFIGS.md .env.production
 # Edit the file with your production settings
 nano .env.production
 
@@ -102,7 +102,7 @@ nano .env.production
 cp .env.production .env
 
 # Start production server
-pm2 start ecosystem.config.js
+pm2 start configs/process/ecosystem.config.js
 ```
 
 ## 🌐 **CORS Configuration Details**
@@ -134,7 +134,7 @@ CORS_ORIGIN=https://yourdomain.com
 ### Development:
 ```bash
 # 1. Copy development config
-cp ENVIRONMENT_CONFIGS.md .env.development
+cp docs/environment/ENVIRONMENT_CONFIGS.md .env.development
 
 # 2. Edit with your settings
 nano .env.development
@@ -149,7 +149,7 @@ npm run start
 ### Production:
 ```bash
 # 1. Copy production config
-cp ENVIRONMENT_CONFIGS.md .env.production
+cp docs/environment/ENVIRONMENT_CONFIGS.md .env.production
 
 # 2. Edit with your VPS settings
 nano .env.production

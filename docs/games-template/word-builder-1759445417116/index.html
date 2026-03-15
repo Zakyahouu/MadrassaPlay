@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="container" class="container">
+        <div id="ready-screen" class="screen">
+            <div id="loader" class="loader">Loading Assets...</div>
+            <img src="assets/word_game_name-removebg-preview.png" alt="Word Builder Logo" class="logo hidden" />
+            <h1 class="title hidden">WORD BUILDER</h1>
+            <button id="start-btn" class="start-btn hidden">Start</button>
+        </div>
+
+        <div id="play-screen" class="screen hidden">
+            <div class="hud">
+                <div id="timer-container" class="hud-item">
+                    <img src="assets/alarm-clock.png" alt="Timer"/>
+                    <span id="timer"></span>
+                </div>
+                <div id="score-container" class="hud-item">
+                    <img src="assets/circle-star.png" alt="Score"/>
+                    <span id="progress"></span>
+                </div>
+                <div id="attempts-container" class="hud-item hidden">
+                    <span>Tries Left:</span>
+                    <span id="attempts"></span>
+                </div>
+                <div id="hint-bubble" class="hint-bubble">
+                    <div class="hud-icon-btn">
+                        <img src="assets/bulb.png" alt="Hint" />
+                    </div>
+                    <div id="hint-box" class="hint-box">
+                        <p id="hint-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-area">
+                <div id="word-preview" class="word-preview"></div>
+                
+                <div id="build-area" class="build-area">
+                    <span class="placeholder">Drop letters here to build your world . . .</span>
+                </div>
+
+                <div id="letter-bank" class="letter-bank">
+                    </div>
+            </div>
+
+            <div class="action-buttons">
+                <button id="clear-btn" class="game-btn clear-btn">Clear</button>
+                <button id="check-btn" class="game-btn check-btn">Check</button>
+                <button id="go-next-btn" class="game-btn check-btn hidden">Go next</button>
+            </div>
+        </div>
+
+        <div id="done-screen" class="screen hidden">
+            <div class="done-card">
+                <h1>Game Over!</h1>
+                <p id="summary-text"></p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
