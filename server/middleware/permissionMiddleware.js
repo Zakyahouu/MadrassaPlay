@@ -1,5 +1,12 @@
 const Employee = require('../models/Employee');
 
+const STAFF_ROLES = new Set(['staff', 'employee', 'staff pedagogique']);
+
+const getEmployeeForRequest = async (req) => Employee.findOne({
+  userId: req.user._id,
+  schoolId: req.user.school
+});
+
 /**
  * Middleware to check if a staff user has permission to access a specific section
  * @param {string} section - The section to check permission for ('finance' or 'logs')
@@ -7,17 +14,14 @@ const Employee = require('../models/Employee');
 const checkPermission = (section) => {
   return async (req, res, next) => {
     try {
-      // Only check permissions for staff users
-      if (req.user.role !== 'staff') {
+      // Only check permissions for staff-like users
+      if (!STAFF_ROLES.has(req.user.role)) {
         return next();
       }
 
       // Find the employee record for this staff user
       console.log('Looking for employee with userId:', req.user._id, 'schoolId:', req.user.school);
-      const employee = await Employee.findOne({
-        userId: req.user._id,
-        schoolId: req.user.school
-      });
+      const employee = await getEmployeeForRequest(req);
 
       console.log('Found employee:', employee ? 'Yes' : 'No');
       if (employee) {
@@ -62,6 +66,46 @@ const checkPermission = (section) => {
 };
 
 /**
+ * Middleware to check if a staff user has any of the provided permissions
+ * @param {string[]} sections - Permissions to allow
+ */
+const checkAnyPermission = (sections = []) => {
+  return async (req, res, next) => {
+    try {
+      if (!STAFF_ROLES.has(req.user.role)) {
+        return next();
+      }
+
+      const employee = await getEmployeeForRequest(req);
+
+      if (!employee) {
+        return res.status(403).json({
+          success: false,
+          message: 'Employee record not found. Please contact your administrator.'
+        });
+      }
+
+      const allowed = sections.some((section) => employee.permissions?.[section] === true);
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You do not have permission to access this section.'
+        });
+      }
+
+      req.employee = employee;
+      next();
+    } catch (error) {
+      console.error('Permission check error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error checking permissions. Please try again.'
+      });
+    }
+  };
+};
+
+/**
  * Middleware to check finance access
  */
 const checkFinanceAccess = checkPermission('finance');
@@ -81,10 +125,23 @@ const checkAdsAccess = checkPermission('ads');
  */
 const checkLandingPageAccess = checkPermission('landingPage');
 
+/**
+ * Middleware to check employees access
+ */
+const checkEmployeesAccess = checkPermission('employees');
+
+/**
+ * Middleware to allow employees list access for employees or finance permission
+ */
+const checkEmployeesOrFinanceAccess = checkAnyPermission(['employees', 'finance']);
+
 module.exports = {
   checkPermission,
+  checkAnyPermission,
   checkFinanceAccess,
   checkLogsAccess,
   checkAdsAccess,
-  checkLandingPageAccess
+  checkLandingPageAccess,
+  checkEmployeesAccess,
+  checkEmployeesOrFinanceAccess
 };

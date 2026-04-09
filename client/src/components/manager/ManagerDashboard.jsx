@@ -46,6 +46,10 @@ export const ManagerDashboard = () => {
   ]);
   const [loading, setLoading] = useState(true);
   const [userPermissions, setUserPermissions] = useState({});
+  const staffRoles = ['staff', 'employee', 'staff pedagogique'];
+  const isManager = user?.role === 'manager';
+  const isStaff = staffRoles.includes(user?.role);
+  const hasPerm = (perm) => isManager || (isStaff && userPermissions?.[perm] === true);
 
   // School state
   const [school, setSchool] = useState(null);
@@ -58,7 +62,7 @@ export const ManagerDashboard = () => {
     try {
       console.log('Fetching permissions for user:', user?.role, user?.username);
 
-      if (user?.role === 'staff') {
+      if (['staff', 'employee', 'staff pedagogique'].includes(user?.role)) {
         const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
         if (!token) {
           console.log('No token found for staff user');
@@ -160,30 +164,34 @@ export const ManagerDashboard = () => {
       description: t.viewManageSchedules,
       icon: Calendar,
       color: 'text-blue-600',
-      onClick: () => setActiveTab('timetable')
+      onClick: () => setActiveTab('timetable'),
+      perm: 'timetable'
     },
     {
       title: t.studentRecords,
       description: t.accessStudentInfo,
       icon: GraduationCap,
       color: 'text-green-600',
-      onClick: () => setActiveTab('students')
+      onClick: () => setActiveTab('students'),
+      perm: 'students'
     },
     {
       title: t.reportsAnalytics,
       description: t.generatePerformanceReports,
       icon: BarChart3,
       color: 'text-purple-600',
-      onClick: () => setActiveTab('reports')
+      onClick: () => setActiveTab('reports'),
+      perm: 'reports'
     },
     {
       title: t.systemSettings,
       description: t.configureSchoolSettings,
       icon: Settings,
       color: 'text-gray-600',
-      onClick: () => setActiveTab('catalog')
+      onClick: () => setActiveTab('catalog'),
+      perm: 'catalog'
     },
-  ];
+  ].filter((action) => hasPerm(action.perm));
 
   const notifications = [
     { message: t.notificationsComingSoon, time: t.stayTuned, type: 'info' },
@@ -226,6 +234,36 @@ export const ManagerDashboard = () => {
   };
 
   const renderTabContent = () => {
+    const permissionByTab = {
+      classes: 'classes',
+      attendance: 'attendance',
+      students: 'students',
+      teachers: 'teachers',
+      employees: 'employees',
+      timetable: 'timetable',
+      rooms: 'rooms',
+      equipment: 'equipment',
+      catalog: 'catalog',
+      ads: 'ads',
+      landing: 'landingPage',
+      reports: 'reports',
+      log: 'logs',
+      finance: 'finance'
+    };
+
+    const requiredPerm = permissionByTab[activeTab];
+    if (isStaff && requiredPerm && !userPermissions?.[requiredPerm]) {
+      return (
+        <div className="card-base p-8 text-center">
+          <Settings className="w-16 h-16 text-text-muted-light mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-text-main-light mb-2">{t.notAuthorized || 'Not authorized'}</h3>
+          <p className="text-text-muted-light">
+            {t.notAuthorizedDesc || 'You do not have access to this section. Please contact your administrator.'}
+          </p>
+        </div>
+      );
+    }
+
     if (activeTab === 'overview') {
       return (
         <>

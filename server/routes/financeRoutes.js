@@ -25,7 +25,7 @@ const { checkFinanceAccess } = require('../middleware/permissionMiddleware');
 // All routes are protected and require Manager or Staff role
 // checkFinanceAccess ensures staff have the 'finance' permission
 router.use(protect);
-router.use(authorize('manager', 'staff'));
+router.use(authorize('manager', 'staff', 'employee', 'staff pedagogique'));
 router.use(checkFinanceAccess);
 
 // @route   GET /api/finance/overview/:schoolId/:year/:month

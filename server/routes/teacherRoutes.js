@@ -11,12 +11,14 @@ const {
 
 // Import the security middleware
 const { protect, manager, authorize } = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 
 // Apply middleware to all routes in this file.
 // 1. 'protect' runs first to ensure the user is logged in.
 // 2. 'authorize' runs second to ensure the logged-in user has the correct role.
 router.use(protect);
-router.use(authorize('manager', 'staff'));
+router.use(authorize('manager', 'staff', 'employee', 'staff pedagogique'));
+router.use(checkPermission('teachers'));
 
 // --- All routes below are now protected ---
 

@@ -8,14 +8,179 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const LoggingService = require('../services/loggingService');
 
+const STAFF_SYNC_ROLES = new Set(['staff', 'employee', 'staff pedagogique']);
+const PERMISSION_KEYS = [
+  'dashboard',
+  'classes',
+  'students',
+  'teachers',
+  'attendance',
+  'timetable',
+  'employees',
+  'finance',
+  'logs',
+  'rooms',
+  'equipment',
+  'catalog',
+  'ads',
+  'landingPage',
+  'reports',
+  'settings'
+];
+
+const normalizePermissionValue = (value) => value === true || value === 'true';
+
+const buildPermissions = (incoming = {}, base = {}) => {
+  const next = {};
+  PERMISSION_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(incoming, key)) {
+      next[key] = normalizePermissionValue(incoming[key]);
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(base, key)) {
+      next[key] = base[key];
+      return;
+    }
+    next[key] = key === 'dashboard';
+  });
+  return next;
+};
+
+const permissionsToArray = (permissions = {}) => PERMISSION_KEYS.filter((key) => permissions[key]);
+
+const permissionsFromArray = (permissions = []) => {
+  const next = buildPermissions({});
+  if (Array.isArray(permissions)) {
+    permissions.forEach((key) => {
+      if (PERMISSION_KEYS.includes(key)) {
+        next[key] = true;
+      }
+    });
+  }
+  return next;
+};
+
+const mapStaffStatusFromEmployee = (status) => {
+  if (!status) return undefined;
+  if (status === 'inactive') return 'stopped';
+  if (status === 'on_vacation') return 'on_vacation';
+  return status;
+};
+
+const mapEmployeeStatusFromStaff = (staffStatus) => {
+  if (staffStatus === 'stopped') return 'inactive';
+  if (staffStatus === 'on_vacation') return 'on_vacation';
+  return 'active';
+};
+
+const splitName = (name = '') => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) {
+    return { firstName: 'Employee', lastName: 'User' };
+  }
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: 'Employee' };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' ')
+  };
+};
+
+const buildNameFromUser = (user) => {
+  const fromParts = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+  if (fromParts) return fromParts;
+  if (user?.email) return user.email;
+  return 'Staff';
+};
+
+const extractUserId = (employee) => {
+  if (!employee?.userId) return null;
+  if (typeof employee.userId === 'string') return employee.userId;
+  if (employee.userId._id) return employee.userId._id.toString();
+  return employee.userId.toString();
+};
+
+const buildEmployeeDataFromUser = (user, schoolId, options = {}) => {
+  const includeUsername = options.includeUsername !== false;
+  const parsedSalary = Number(user.salary);
+  const normalizedSalary = Number.isFinite(parsedSalary) && parsedSalary > 0 ? parsedSalary : 1;
+  return {
+  schoolId: new mongoose.Types.ObjectId(schoolId),
+  name: buildNameFromUser(user),
+  role: 'Other',
+  employeeType: 'staff',
+  salaryType: 'fixed',
+  salaryValue: normalizedSalary,
+  hireDate: user.startDate || user.createdAt || new Date(),
+  status: mapEmployeeStatusFromStaff(user.staffStatus),
+  phone: user.contact?.phone1 || '',
+  email: user.email || '',
+  address: user.contact?.address || '',
+  permissions: permissionsFromArray(user.permissions),
+  userId: user._id,
+  username: includeUsername ? (user.username || undefined) : undefined
+  };
+};
+
+const mergeEmployeeWithUser = (employee, user) => {
+  if (!employee) return null;
+  const merged = { ...employee };
+  if (user) {
+    merged.user = user;
+    merged.email = merged.email || user.email || '';
+    merged.username = merged.username || user.username || '';
+    merged.phone = merged.phone || user.contact?.phone1 || '';
+    merged.address = merged.address || user.contact?.address || '';
+    merged.contact = user.contact || merged.contact;
+    merged.banking = user.banking || merged.banking;
+    merged.contractType = user.contractType || merged.contractType;
+    merged.startDate = user.startDate || merged.hireDate || merged.startDate;
+    if (user.salary !== undefined) {
+      merged.salary = user.salary;
+    }
+    merged.staffStatus = user.staffStatus || merged.staffStatus;
+    merged.userRole = user.role || merged.userRole;
+    if (!merged.permissions || Object.keys(merged.permissions).length === 0) {
+      merged.permissions = permissionsFromArray(user.permissions);
+    }
+  }
+  if (merged.password) {
+    delete merged.password;
+  }
+  return merged;
+};
+
+const userSelect = 'firstName lastName email username role contact banking contractType startDate salary staffStatus permissions';
+
 /**
  * @desc    Create a new employee
  * @route   POST /api/employees
  * @access  Private (Manager)
  */
 const createEmployee = asyncHandler(async (req, res) => {
-  const { name, role, employeeType, salaryType, salaryValue, hireDate, phone, email, address, notes, username, password, permissions } = req.body;
-
+  const {
+    name,
+    role,
+    employeeType,
+    salaryType,
+    salaryValue,
+    hireDate,
+    phone,
+    phone2,
+    email,
+    address,
+    notes,
+    status,
+    username,
+    password,
+    permissions,
+    contact,
+    banking,
+    contractType,
+    startDate,
+    salary
+  } = req.body;
   // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
 
@@ -26,19 +191,23 @@ const createEmployee = asyncHandler(async (req, res) => {
     });
   }
 
+  const resolvedEmployeeType = employeeType || 'other';
+  const normalizedUsername = typeof username === 'string' ? username.trim() : username;
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : email;
+
   // Validate required fields
-  if (!name || !role || !employeeType || !salaryType || !salaryValue || !hireDate) {
+  if (!name || !role || !salaryType || salaryValue === undefined || salaryValue === null || !hireDate) {
     return res.status(400).json({ message: 'Please provide all required fields' });
   }
 
   // Validate employee type
-  if (!['staff', 'other'].includes(employeeType)) {
+  if (!['staff', 'other'].includes(resolvedEmployeeType)) {
     return res.status(400).json({ message: 'Employee type must be staff or other' });
   }
 
   // For staff employees, validate platform access fields
-  if (employeeType === 'staff') {
-    if (!email || !username || !password) {
+  if (resolvedEmployeeType === 'staff') {
+    if (!normalizedEmail || !normalizedUsername || !password) {
       return res.status(400).json({ message: 'Staff employees require email, username, and password' });
     }
   }
@@ -49,37 +218,40 @@ const createEmployee = asyncHandler(async (req, res) => {
   }
 
 
-  if (salaryValue <= 0) {
+  const numericSalaryValue = Number(salaryValue);
+  if (!Number.isFinite(numericSalaryValue) || numericSalaryValue <= 0) {
     return res.status(400).json({ message: 'Salary value must be greater than 0' });
   }
 
   try {
+    const contactData = {
+      phone1: contact?.phone1 ?? phone ?? '',
+      phone2: contact?.phone2 ?? phone2 ?? '',
+      address: contact?.address ?? address ?? ''
+    };
+    const bankingData = banking && typeof banking === 'object' ? banking : undefined;
     const employeeData = {
       schoolId: new mongoose.Types.ObjectId(userSchoolId),
       name,
       role,
-      employeeType,
+      employeeType: resolvedEmployeeType,
       salaryType,
-      salaryValue,
+      salaryValue: numericSalaryValue,
       hireDate: new Date(hireDate),
-      phone: phone || '',
-      email: email || '',
-      address: address || '',
+      status: status || 'active',
+      phone: contactData.phone1,
+      email: normalizedEmail || '',
+      address: contactData.address,
       notes: notes || ''
     };
 
     // Add platform access fields for staff
-    if (employeeType === 'staff') {
-      employeeData.username = username;
-      employeeData.password = password; // Note: In production, this should be hashed
+    if (resolvedEmployeeType === 'staff') {
+      const staffPermissions = buildPermissions(permissions);
+      employeeData.username = normalizedUsername;
 
       // Add permissions for staff
-      employeeData.permissions = {
-        finance: permissions?.finance === true || permissions?.finance === 'true',
-        logs: permissions?.logs === true || permissions?.logs === 'true',
-        ads: permissions?.ads === true || permissions?.ads === 'true',
-        landingPage: permissions?.landingPage === true || permissions?.landingPage === 'true'
-      };
+      employeeData.permissions = staffPermissions;
 
       console.log('Saving permissions for staff employee:', employeeData.permissions);
       console.log('Received permissions from request:', permissions);
@@ -90,26 +262,44 @@ const createEmployee = asyncHandler(async (req, res) => {
     const employee = await Employee.create(employeeData);
 
     // If this is a staff employee, also create a User record for login
-    if (employeeType === 'staff') {
+    if (resolvedEmployeeType === 'staff') {
       try {
+        const userFilters = [];
+        if (normalizedEmail) userFilters.push({ email: normalizedEmail });
+        if (normalizedUsername) userFilters.push({ username: normalizedUsername });
+        if (userFilters.length > 0) {
+          const existingUser = await User.findOne({ $or: userFilters });
+          if (existingUser) {
+            await Employee.findByIdAndDelete(employee._id);
+            return res.status(400).json({
+              success: false,
+              message: 'A user with this email or username already exists'
+            });
+          }
+        }
+
         // Hash the password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        const { firstName, lastName } = splitName(name);
+
         // Create User record
         const userData = {
-          firstName: name.split(' ')[0] || name,
-          lastName: name.split(' ').slice(1).join(' ') || '',
-          name: name,
-          email: email,
-          username: username,
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          username: normalizedUsername,
           password: hashedPassword,
           role: 'staff',
           school: new mongoose.Types.ObjectId(userSchoolId),
-          contact: {
-            phone1: phone || '',
-            address: address || ''
-          }
+          contact: contactData,
+          banking: bankingData,
+          contractType: contractType,
+          startDate: startDate ? new Date(startDate) : new Date(hireDate),
+          salary: salary !== undefined && salary !== null ? Number(salary) : numericSalaryValue,
+          staffStatus: mapStaffStatusFromEmployee(status),
+          permissions: permissionsToArray(buildPermissions(permissions))
         };
 
         const user = await User.create(userData);
@@ -141,13 +331,26 @@ const createEmployee = asyncHandler(async (req, res) => {
       { entityType: 'employee', entityId: employee._id }
     );
 
+    const hydratedEmployee = await Employee.findById(employee._id)
+      .populate('userId', userSelect)
+      .lean();
+    const mergedEmployee = mergeEmployeeWithUser(hydratedEmployee, hydratedEmployee?.userId);
+
     res.status(201).json({
       success: true,
-      data: employee
+      data: mergedEmployee
     });
 
   } catch (error) {
     console.error('Error creating employee:', error);
+    if (error?.code === 11000) {
+      const key = Object.keys(error.keyPattern || error.keyValue || {})[0];
+      const field = key || 'value';
+      return res.status(400).json({
+        success: false,
+        message: `${field} already exists. Please use a different ${field}.`
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -177,13 +380,51 @@ const getEmployees = asyncHandler(async (req, res) => {
   }
 
   try {
-    const employees = await Employee.getBySchool(userSchoolId);
+    const staffRoles = Array.from(STAFF_SYNC_ROLES);
+    let employees = await Employee.find({ schoolId: new mongoose.Types.ObjectId(userSchoolId) })
+      .populate('userId', userSelect)
+      .lean();
 
-    // Ensure all employees have employeeType field (for backward compatibility)
-    const employeesWithDefaults = employees.map(emp => ({
-      ...emp,
-      employeeType: emp.employeeType || 'other'
-    }));
+    const existingUserIds = new Set(
+      employees
+        .map((employee) => extractUserId(employee))
+        .filter(Boolean)
+    );
+
+    const staffUsers = await User.find({
+      school: userSchoolId,
+      role: { $in: staffRoles }
+    })
+      .select(userSelect)
+      .lean();
+
+    const missingStaffUsers = staffUsers.filter((user) => !existingUserIds.has(user._id.toString()));
+    if (missingStaffUsers.length > 0) {
+      const backfillData = missingStaffUsers.map((user) =>
+        buildEmployeeDataFromUser(user, userSchoolId, { includeUsername: false })
+      );
+
+      if (backfillData.length > 0) {
+        try {
+          await Employee.insertMany(backfillData, { ordered: false });
+        } catch (error) {
+          if (error?.code !== 11000) {
+            throw error;
+          }
+        }
+        employees = await Employee.find({ schoolId: new mongoose.Types.ObjectId(userSchoolId) })
+          .populate('userId', userSelect)
+          .lean();
+      }
+    }
+
+    const employeesWithDefaults = employees.map((employee) => {
+      const normalized = {
+        ...employee,
+        employeeType: employee.employeeType || 'other'
+      };
+      return mergeEmployeeWithUser(normalized, employee.userId);
+    });
 
     res.json({
       success: true,
@@ -209,7 +450,9 @@ const getEmployee = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
-    const employee = await Employee.findById(id);
+    const employee = await Employee.findById(id)
+      .populate('userId', userSelect)
+      .lean();
 
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
@@ -217,7 +460,7 @@ const getEmployee = asyncHandler(async (req, res) => {
 
     res.json({
       success: true,
-      data: employee
+      data: mergeEmployeeWithUser(employee, employee.userId)
     });
 
   } catch (error) {
@@ -233,7 +476,30 @@ const getEmployee = asyncHandler(async (req, res) => {
  */
 const updateEmployee = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, role, salaryType, salaryValue, hireDate, phone, email, address, notes, status } = req.body;
+  const {
+    name,
+    role,
+    employeeType,
+    salaryType,
+    salaryValue,
+    hireDate,
+    phone,
+    phone2,
+    email,
+    address,
+    notes,
+    status,
+    username,
+    password,
+    permissions,
+    contact,
+    banking,
+    contractType,
+    startDate,
+    salary
+  } = req.body;
+  const normalizedUsername = typeof username === 'string' ? username.trim() : username;
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : email;
 
   try {
     const employee = await Employee.findById(id);
@@ -242,34 +508,164 @@ const updateEmployee = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
+    const nextEmployeeType = employeeType || employee.employeeType;
+    if (employeeType && !['staff', 'other'].includes(employeeType)) {
+      return res.status(400).json({ message: 'Employee type must be staff or other' });
+    }
+
+    const resolvedPhone = contact?.phone1 ?? phone;
+    const resolvedAddress = contact?.address ?? address;
+
     // Update fields
-    if (name) employee.name = name;
-    if (role) employee.role = role;
-    if (salaryType) employee.salaryType = salaryType;
-    if (salaryValue !== undefined) employee.salaryValue = salaryValue;
-    if (hireDate) employee.hireDate = new Date(hireDate);
-    if (phone !== undefined) employee.phone = phone;
-    if (email !== undefined) employee.email = email;
-    if (address !== undefined) employee.address = address;
+    if (name !== undefined) employee.name = name;
+    if (role !== undefined) employee.role = role;
+    if (employeeType !== undefined) employee.employeeType = employeeType;
+    if (salaryType !== undefined) {
+      if (!['fixed', 'hourly'].includes(salaryType)) {
+        return res.status(400).json({ message: 'Salary type must be fixed or hourly' });
+      }
+      employee.salaryType = salaryType;
+    }
+    if (salaryValue !== undefined) {
+      const numericSalaryValue = Number(salaryValue);
+      if (!Number.isFinite(numericSalaryValue) || numericSalaryValue <= 0) {
+        return res.status(400).json({ message: 'Salary value must be greater than 0' });
+      }
+      employee.salaryValue = numericSalaryValue;
+    }
+    if (startDate || hireDate) employee.hireDate = new Date(startDate || hireDate);
+    if (resolvedPhone !== undefined) employee.phone = resolvedPhone;
+    if (normalizedEmail !== undefined) employee.email = normalizedEmail;
+    if (resolvedAddress !== undefined) employee.address = resolvedAddress;
     if (notes !== undefined) employee.notes = notes;
-    if (status) employee.status = status;
+    if (status !== undefined) employee.status = status;
+    if (normalizedUsername !== undefined) employee.username = normalizedUsername;
 
     // Update permissions if provided (and if employee is staff)
-    if (employee.employeeType === 'staff' && req.body.permissions) {
-      employee.permissions = {
-        ...employee.permissions,
-        ...req.body.permissions
-      };
+    if (nextEmployeeType === 'staff' && permissions) {
+      employee.permissions = buildPermissions(permissions, employee.permissions);
+    } else if (nextEmployeeType === 'staff' && !employee.permissions) {
+      employee.permissions = buildPermissions({}, employee.permissions);
+    }
 
-      // Also update the linked User's permissions if we decide to sync them later
-      // For now, checks are done against the Employee record
+    let user = null;
+    if (employee.userId) {
+      user = await User.findById(employee.userId);
+    }
+
+    if (nextEmployeeType === 'staff' && !user) {
+      if (!normalizedEmail || !normalizedUsername || !password) {
+        return res.status(400).json({ message: 'Staff employees require email, username, and password' });
+      }
+      const userFilters = [];
+      if (normalizedEmail) userFilters.push({ email: normalizedEmail });
+      if (normalizedUsername) userFilters.push({ username: normalizedUsername });
+      if (userFilters.length > 0) {
+        const existingUser = await User.findOne({ $or: userFilters });
+        if (existingUser) {
+          return res.status(400).json({ message: 'A user with this email or username already exists' });
+        }
+      }
+      const { firstName, lastName } = splitName(name || employee.name);
+      user = await User.create({
+        firstName,
+        lastName,
+        email: normalizedEmail,
+        username: normalizedUsername,
+        password,
+        role: 'staff',
+        school: employee.schoolId,
+        contact: {
+          phone1: resolvedPhone || '',
+          phone2: contact?.phone2 ?? phone2 ?? '',
+          address: resolvedAddress || ''
+        },
+        banking: banking && typeof banking === 'object' ? banking : undefined,
+        contractType: contractType,
+        startDate: startDate ? new Date(startDate) : employee.hireDate,
+        salary: salary !== undefined && salary !== null ? Number(salary) : employee.salaryValue,
+        staffStatus: mapStaffStatusFromEmployee(status),
+        permissions: permissionsToArray(buildPermissions(permissions, employee.permissions))
+      });
+      employee.userId = user._id;
+    }
+
+    if (user) {
+      if (normalizedEmail !== undefined && normalizedEmail !== user.email) {
+        const existingEmail = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+        if (existingEmail) {
+          return res.status(400).json({ message: 'A user with this email already exists' });
+        }
+        user.email = normalizedEmail;
+      }
+      if (normalizedUsername !== undefined && normalizedUsername !== user.username) {
+        const existingUsername = await User.findOne({ username: normalizedUsername, _id: { $ne: user._id } });
+        if (existingUsername) {
+          return res.status(400).json({ message: 'A user with this username already exists' });
+        }
+        user.username = normalizedUsername;
+      }
+      if (name !== undefined) {
+        const { firstName, lastName } = splitName(name);
+        user.firstName = firstName;
+        user.lastName = lastName;
+      }
+      if (password) {
+        user.password = password;
+      }
+
+      const contactUpdates = {};
+      if (contact?.phone1 !== undefined || phone !== undefined) {
+        contactUpdates.phone1 = contact?.phone1 ?? phone ?? '';
+      }
+      if (contact?.phone2 !== undefined || phone2 !== undefined) {
+        contactUpdates.phone2 = contact?.phone2 ?? phone2 ?? '';
+      }
+      if (contact?.address !== undefined || address !== undefined) {
+        contactUpdates.address = contact?.address ?? address ?? '';
+      }
+      if (Object.keys(contactUpdates).length > 0) {
+        user.contact = { ...user.contact, ...contactUpdates };
+      }
+
+      if (banking && typeof banking === 'object') {
+        user.banking = { ...user.banking, ...banking };
+      }
+      if (contractType !== undefined) {
+        user.contractType = contractType;
+      }
+      if (startDate || hireDate) {
+        user.startDate = new Date(startDate || hireDate);
+      }
+      if (salary !== undefined) {
+        user.salary = Number(salary);
+      } else if (salaryValue !== undefined) {
+        user.salary = Number(salaryValue);
+      }
+      if (status !== undefined) {
+        user.staffStatus = mapStaffStatusFromEmployee(status);
+      }
+      if (employeeType && employeeType !== 'staff') {
+        user.staffStatus = 'stopped';
+      }
+      if (permissions) {
+        user.permissions = permissionsToArray(buildPermissions(permissions, employee.permissions));
+      }
+      if (nextEmployeeType === 'staff' && !STAFF_SYNC_ROLES.has(user.role)) {
+        user.role = 'staff';
+      }
+      await user.save();
     }
 
     await employee.save();
 
+    const hydratedEmployee = await Employee.findById(employee._id)
+      .populate('userId', userSelect)
+      .lean();
+
     res.json({
       success: true,
-      data: employee
+      data: mergeEmployeeWithUser(hydratedEmployee, hydratedEmployee?.userId)
     });
 
   } catch (error) {
@@ -296,6 +692,10 @@ const deleteEmployee = asyncHandler(async (req, res) => {
     // Archive instead of hard delete
     employee.status = 'inactive';
     await employee.save();
+
+    if (employee.userId) {
+      await User.findByIdAndUpdate(employee.userId, { staffStatus: 'stopped' });
+    }
 
     res.json({
       success: true,
@@ -349,24 +749,14 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { year, month, paidAmount, paymentMethod, notes } = req.body;
 
-  // Check if user has access to this school - TEMPORARILY DISABLED FOR TESTING
+  // Check if user has access to this school
   const userSchoolId = req.user.school?._id?.toString() || req.user.school?.toString();
 
-  // if (!userSchoolId) {
-  //   return res.status(403).json({ message: 'Access denied to this school' });
-  // }
-
-  // Get school ID (fallback for testing)
-  let schoolId = userSchoolId;
-  if (!schoolId) {
-    const School = require('../models/School');
-    const firstSchool = await School.findOne();
-    schoolId = firstSchool?._id;
+  if (!userSchoolId) {
+    return res.status(403).json({ message: 'Access denied to this school' });
   }
 
-  if (!schoolId) {
-    return res.status(400).json({ message: 'No school found' });
-  }
+  const schoolId = userSchoolId;
 
   // Validate required fields
   if (!year || !month || !paidAmount || !paymentMethod) {
@@ -382,6 +772,10 @@ const payEmployeeSalary = asyncHandler(async (req, res) => {
     const employee = await Employee.findById(id);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    if (!['active', 'on_vacation'].includes(employee.status)) {
+      return res.status(400).json({ message: 'salaryPaymentNotAllowed' });
     }
 
     // Calculate salary for the month
@@ -483,21 +877,38 @@ const getEmployeeByUsername = asyncHandler(async (req, res) => {
   }
 
   try {
-    const employee = await Employee.findOne({
+    let employee = await Employee.findOne({
       username: username,
       schoolId: userSchoolId
-    });
+    })
+      .populate('userId', userSelect)
+      .lean();
 
     if (!employee) {
-      return res.status(404).json({
-        success: false,
-        message: 'Employee not found'
-      });
+      const staffUser = await User.findOne({
+        username: username,
+        school: userSchoolId,
+        role: { $in: Array.from(STAFF_SYNC_ROLES) }
+      })
+        .select(userSelect)
+        .lean();
+
+      if (!staffUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+      }
+
+      const createdEmployee = await Employee.create(buildEmployeeDataFromUser(staffUser, userSchoolId));
+      employee = await Employee.findById(createdEmployee._id)
+        .populate('userId', userSelect)
+        .lean();
     }
 
     res.json({
       success: true,
-      data: employee
+      data: mergeEmployeeWithUser(employee, employee.userId)
     });
   } catch (error) {
     console.error('Error getting employee by username:', error);
@@ -524,28 +935,45 @@ const getEmployeeByUserId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const employee = await Employee.findOne({
+    let employee = await Employee.findOne({
       userId: userId,
       schoolId: userSchoolId
-    });
+    })
+      .populate('userId', userSelect)
+      .lean();
 
     if (!employee) {
-      return res.status(404).json({
-        success: false,
-        message: 'Employee not found'
-      });
+      const staffUser = await User.findOne({
+        _id: userId,
+        school: userSchoolId,
+        role: { $in: Array.from(STAFF_SYNC_ROLES) }
+      })
+        .select(userSelect)
+        .lean();
+
+      if (!staffUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'Employee not found'
+        });
+      }
+
+      const createdEmployee = await Employee.create(buildEmployeeDataFromUser(staffUser, userSchoolId));
+      employee = await Employee.findById(createdEmployee._id)
+        .populate('userId', userSelect)
+        .lean();
     }
 
     console.log('Returning employee data for user ID:', userId, {
-      id: employee._id,
-      permissions: employee.permissions,
-      financeType: typeof employee.permissions?.finance,
-      logsType: typeof employee.permissions?.logs
+      id: employee?._id,
+      permissions: employee?.permissions,
+      financeType: typeof employee?.permissions?.finance,
+      logsType: typeof employee?.permissions?.logs
     });
 
     res.json({
       success: true,
-      data: employee
+      data: mergeEmployeeWithUser(employee, employee.userId)
     });
   } catch (error) {
     console.error('Error getting employee by user ID:', error);

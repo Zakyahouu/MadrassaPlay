@@ -156,6 +156,18 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
     });
   };
 
+  const getStatusMeta = (status) => {
+    switch (status) {
+      case 'active':
+        return { label: t.active || 'Active', className: 'bg-green-100 text-green-800' };
+      case 'on_vacation':
+        return { label: t.onVacation || 'On Vacation', className: 'bg-amber-100 text-amber-800' };
+      case 'inactive':
+      default:
+        return { label: t.inactive || 'Inactive', className: 'bg-red-100 text-red-800' };
+    }
+  };
+
   // Filter employees
   const filteredEmployees = (employees || []).filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,6 +270,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
             >
               <option value="all">{t.allStatus}</option>
               <option value="active">{t.active}</option>
+              <option value="on_vacation">{t.onVacation || 'On Vacation'}</option>
               <option value="inactive">{t.inactive}</option>
             </select>
           </div>
@@ -328,13 +341,14 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      employee.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {employee.status}
-                    </span>
+                    {(() => {
+                      const statusMeta = getStatusMeta(employee.status);
+                      return (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusMeta.className}`}>
+                          {statusMeta.label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -352,7 +366,7 @@ const EmployeesTab = ({ schoolId, year, month, onRefresh, loading }) => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      {employee.status === 'active' && (
+                      {['active', 'on_vacation'].includes(employee.status) && (
                         <button
                           onClick={() => handlePaySalary(employee)}
                           className="text-green-600 hover:text-green-900"

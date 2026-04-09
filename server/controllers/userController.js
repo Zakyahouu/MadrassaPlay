@@ -259,6 +259,9 @@ const loginUser = async (req, res) => {
 
     // Check if user exists AND if the provided password matches the hashed password in the DB
     if (user && (await bcrypt.compare(password, user.password))) {
+      if (['staff', 'employee', 'staff pedagogique'].includes(user.role) && user.staffStatus === 'stopped') {
+        return res.status(403).json({ message: 'Your account is deactivated. Please contact your administrator.' });
+      }
       // If user is assigned to a school, check school status
       if (user.school) {
         const School = require('../models/School');

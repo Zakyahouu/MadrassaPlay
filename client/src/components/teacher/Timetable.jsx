@@ -38,12 +38,13 @@ const Timetable = () => {
   const [rooms, setRooms] = useState([]);
   const [filterCategory, setFilterCategory] = useState('all'); // New state for dropdown filter category
 
-  // Generate 1-hour time slots from 8 AM to 8 PM
+  // Generate 1-hour time slots from 8 AM to midnight
   const formatTimeLabel = (time) => {
     const [hStr, m] = time.split(':');
-    let h = parseInt(hStr, 10);
-    const suffix = h >= 12 ? 'PM' : 'AM';
-    const displayH = ((h % 12) || 12).toString();
+    const h = parseInt(hStr, 10);
+    const normalizedH = h === 24 ? 0 : h;
+    const suffix = normalizedH >= 12 ? 'PM' : 'AM';
+    const displayH = ((normalizedH % 12) || 12).toString();
     return `${displayH}:${m} ${suffix}`;
   };
 
@@ -54,7 +55,7 @@ const Timetable = () => {
     return 'Evening';
   };
 
-  const generateHourlyTimeSlots = (start = '08:00', end = '20:00') => {
+  const generateHourlyTimeSlots = (start = '08:00', end = '24:00') => {
     const s = parseInt(start.split(':')[0], 10);
     const e = parseInt(end.split(':')[0], 10);
     const slots = [];
@@ -71,7 +72,7 @@ const Timetable = () => {
     return slots;
   };
 
-  const timeSlots = generateHourlyTimeSlots('08:00', '20:00');
+  const timeSlots = generateHourlyTimeSlots('08:00', '24:00');
 
   // Days of the week starting from Friday
   const daysOfWeek = [

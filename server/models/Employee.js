@@ -33,7 +33,7 @@ const employeeSchema = new mongoose.Schema(
     salaryValue: {
       type: Number,
       required: true,
-      min: 0
+      min: 1
     },
     hireDate: {
       type: Date,
@@ -41,7 +41,7 @@ const employeeSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['active', 'inactive'],
+      enum: ['active', 'inactive', 'on_vacation'],
       default: 'active'
     },
     phone: {

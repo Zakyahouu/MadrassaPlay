@@ -6,9 +6,11 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const { protect } = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 const { listResourcesForTeacher, listResourcesForClass, uploadTeacherResource, updateTeacherResource, deleteTeacherResource, downloadResource } = require('../controllers/classResourceController');
 
 router.use(protect);
+router.use(checkPermission('classes'));
 
 // Teacher scoped: list own resources
 router.get('/me/resources', listResourcesForTeacher);

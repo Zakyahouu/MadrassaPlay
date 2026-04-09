@@ -16,15 +16,15 @@ const {
 router.use(protect);
 
 // Apply specific permissions
-router.post('/', authorize('manager', 'staff'), checkAdsAccess, createAdvertisement);
-router.get('/', authorize('manager', 'staff'), checkAdsAccess, getAdvertisements);
-router.put('/:id', authorize('manager', 'staff'), checkAdsAccess, updateAdvertisement);
-router.delete('/:id', authorize('manager', 'staff'), checkAdsAccess, deleteAdvertisement);
+router.post('/', authorize('manager', 'staff', 'employee', 'staff pedagogique'), checkAdsAccess, createAdvertisement);
+router.get('/', authorize('manager', 'staff', 'employee', 'staff pedagogique'), checkAdsAccess, getAdvertisements);
+router.put('/:id', authorize('manager', 'staff', 'employee', 'staff pedagogique'), checkAdsAccess, updateAdvertisement);
+router.delete('/:id', authorize('manager', 'staff', 'employee', 'staff pedagogique'), checkAdsAccess, deleteAdvertisement);
 
 // Upload banner image (single file under field name 'banner')
 router.post(
   '/:id/banner',
-  authorize('manager', 'staff'),
+  authorize('manager', 'staff', 'employee', 'staff pedagogique'),
   checkAdsAccess,
   (req, res, next) => { req.uploadTarget = 'ads'; next(); },
   upload.single('banner'),

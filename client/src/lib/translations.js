@@ -1706,6 +1706,7 @@ export const translations = {
         viewDetails: "View Details",
         editEmployee: "Edit Employee",
         paySalary: "Pay Salary",
+        salaryPaymentNotAllowed: "Salary payments are allowed only for active or on vacation employees",
         archiveEmployee: "Archive Employee",
         getStartedAddFirstEmployee: "Get started by adding your first employee",
 
@@ -4351,6 +4352,7 @@ export const translations = {
         employeeArchivedSuccessfully: "تم أرشفة الموظف بنجاح",
         failedDeleteEmployee: "فشل حذف الموظف",
         failedFetchEmployees: "فشل جلب الموظفين",
+        salaryPaymentNotAllowed: "يسمح بدفع الرواتب فقط للموظفين النشطين أو في إجازة",
 
         // Finance - Expenses Tab
         manualTransactions: "المعاملات اليدوية",
@@ -6477,6 +6479,7 @@ export const translations = {
         employeeArchivedSuccessfully: "Employé archivé avec succès",
         failedDeleteEmployee: "Échec de la suppression de l'employé",
         failedFetchEmployees: "Échec de récupération des employés",
+        salaryPaymentNotAllowed: "Le paiement du salaire est autorisé uniquement pour les employés actifs ou en congé",
 
         // Finance - Expenses Tab
         manualTransactions: "Transactions Manuelles",

@@ -21,9 +21,11 @@ const {
   scanByCode
 } = require('../controllers/studentController');
 const { protect, manager, authorize } = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 
 // All routes are protected and require manager or staff role
-router.use(protect, authorize('manager', 'staff'));
+router.use(protect, authorize('manager', 'staff', 'employee', 'staff pedagogique'));
+router.use(checkPermission('students'));
 
 // Main student routes
 router.route('/')

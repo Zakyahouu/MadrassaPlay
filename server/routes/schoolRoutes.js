@@ -59,21 +59,21 @@ router.route('/:id')
 const { checkLandingPageAccess } = require('../middleware/permissionMiddleware');
 
 // Landing page for a manager's school (legacy routes - kept for backward compatibility)
-router.put('/my-school/landing-page', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, updateMySchoolLandingPage);
-router.post('/my-school/landing-page/upload', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, (req, res, next) => { req.uploadTarget = 'ads'; next(); }, upload.single('image'), handleMulterError, uploadMySchoolLandingImage);
+router.put('/my-school/landing-page', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, updateMySchoolLandingPage);
+router.post('/my-school/landing-page/upload', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, (req, res, next) => { req.uploadTarget = 'ads'; next(); }, upload.single('image'), handleMulterError, uploadMySchoolLandingImage);
 
 // NEW Landing Page Builder Routes
-router.get('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageConfig);
-router.put('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, updateLandingPageConfig);
-router.post('/my-school/landing-page/publish', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, publishLandingPage);
-router.get('/my-school/landing-page/revisions', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageRevisions);
-router.post('/my-school/landing-page/revert/:revisionIndex', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, revertLandingPageRevision);
-router.post('/my-school/landing-page/initialize', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, initializeLandingPage);
+router.get('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, getLandingPageConfig);
+router.put('/my-school/landing-page/config', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, updateLandingPageConfig);
+router.post('/my-school/landing-page/publish', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, publishLandingPage);
+router.get('/my-school/landing-page/revisions', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, getLandingPageRevisions);
+router.post('/my-school/landing-page/revert/:revisionIndex', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, revertLandingPageRevision);
+router.post('/my-school/landing-page/initialize', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, initializeLandingPage);
 
 // Landing Page Analytics Routes
-router.get('/my-school/landing-page/analytics', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getLandingPageAnalytics);
-router.get('/my-school/landing-page/analytics/detailed', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, getDetailedAnalytics);
-router.get('/my-school/landing-page/analytics/export', protect, authorize('manager', 'admin', 'staff'), checkLandingPageAccess, exportAnalytics);
+router.get('/my-school/landing-page/analytics', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, getLandingPageAnalytics);
+router.get('/my-school/landing-page/analytics/detailed', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, getDetailedAnalytics);
+router.get('/my-school/landing-page/analytics/export', protect, authorize('manager', 'admin', 'staff', 'employee', 'staff pedagogique'), checkLandingPageAccess, exportAnalytics);
 
 // Contact Inquiries Routes
 router.get('/my-school/inquiries', protect, authorize('manager', 'admin'), getInquiries);

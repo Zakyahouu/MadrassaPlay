@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect, manager, authorize } = require('../middleware/authMiddleware');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 const {
   getSchoolCatalog,
   updateSchoolCatalog,
@@ -29,7 +30,7 @@ router.use(protect);
 // Main catalog routes
 router.route('/:schoolId')
   // Allow managers, staff and teachers to read catalog; teachers cannot modify
-  .get(authorize('manager', 'staff', 'teacher'), getSchoolCatalog)
+  .get(authorize('manager', 'staff', 'employee', 'staff pedagogique', 'teacher'), checkPermission('catalog'), getSchoolCatalog)
   .put(manager, updateSchoolCatalog);
 
 // Support Lessons routes

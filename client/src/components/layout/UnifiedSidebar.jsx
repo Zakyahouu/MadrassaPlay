@@ -70,7 +70,10 @@ const UnifiedSidebar = ({
         ];
       case 'manager':
         // Helper to check permission (managers always have access, staff needs explicit permission)
-        const hasPerm = (perm) => role === 'manager' || userPermissions?.[perm] === true;
+        const staffRoles = ['staff', 'employee', 'staff pedagogique'];
+        const isManager = user?.role === 'manager';
+        const isStaff = staffRoles.includes(user?.role);
+        const hasPerm = (perm) => isManager || (isStaff && userPermissions?.[perm] === true);
 
         const academicItems = [];
         if (hasPerm('classes')) academicItems.push({ id: 'classes', name: t.classes, icon: BookOpen });

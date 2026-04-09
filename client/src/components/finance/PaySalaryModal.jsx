@@ -14,6 +14,19 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const getPaySalaryErrorMessage = (message) => {
+    if (!message) {
+      return t.failedToRecordPayment || 'Failed to record payment';
+    }
+    if (message === 'salaryPaymentNotAllowed') {
+      return t.salaryPaymentNotAllowed || 'Salary payments are allowed only for active or on vacation employees';
+    }
+    if (message === 'Authentication required') {
+      return t.authenticationRequired || message;
+    }
+    return message;
+  };
+
   // Payment methods
   const paymentMethods = [
     { value: 'cash', label: 'Cash' },
@@ -38,7 +51,6 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Handle input change
   const handleChange = (e) => {
-  const { t } = useLanguage();
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -55,7 +67,7 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
     try {
       const token = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).token : null;
       if (!token) {
-        setError('Authentication required');
+        setError(t.authenticationRequired || 'Authentication required');
         return;
       }
 
@@ -74,12 +86,12 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
       if (response.data.success) {
         onSuccess();
       } else {
-        setError(response.data.message || 'Failed to record payment');
+        setError(getPaySalaryErrorMessage(response.data.message));
       }
 
     } catch (err) {
       console.error('Error recording payment:', err);
-      setError(err.response?.data?.message || 'Failed to record payment');
+      setError(getPaySalaryErrorMessage(err.response?.data?.message));
     } finally {
       setLoading(false);
     }
@@ -87,7 +99,6 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Format currency
   const formatCurrency = (amount) => {
-  const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -98,7 +109,6 @@ const PaySalaryModal = ({ employee, year, month, onClose, onSuccess }) => {
 
   // Get month name
   const getMonthName = (month) => {
-  const { t } = useLanguage();
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'

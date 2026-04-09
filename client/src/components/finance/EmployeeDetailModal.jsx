@@ -46,7 +46,6 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Format currency
   const formatCurrency = (amount) => {
-  const { t } = useLanguage();
     return new Intl.NumberFormat('en-DZ', {
       style: 'currency',
       currency: 'DZD',
@@ -57,7 +56,6 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Format date
   const formatDate = (dateString) => {
-  const { t } = useLanguage();
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -67,7 +65,6 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get month name
   const getMonthName = (month) => {
-  const { t } = useLanguage();
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
@@ -77,7 +74,6 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get status color
   const getStatusColor = (remaining) => {
-  const { t } = useLanguage();
     if (remaining <= 0) return 'bg-green-100 text-green-800';
     if (remaining > 0) return 'bg-orange-100 text-orange-800';
     return 'bg-gray-100 text-gray-800';
@@ -85,7 +81,6 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
 
   // Get status text
   const getStatusText = (remaining) => {
-  const { t } = useLanguage();
     if (remaining <= 0) return 'Paid';
     if (remaining > 0) return 'Partial';
     return 'Unpaid';
@@ -320,7 +315,7 @@ const EmployeeDetailModal = ({ employee, year, month, onClose, onPaySalary }) =>
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >{t.close}</button>
-          {employee?.status === 'active' && (
+          {['active', 'on_vacation'].includes(employee?.status) && (
             <button
               onClick={onPaySalary}
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

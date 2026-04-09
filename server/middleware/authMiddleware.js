@@ -78,7 +78,7 @@ const manager = (req, res, next) => {
 
 // Middleware to check for staff role
 const staff = (req, res, next) => {
-  if (req.user && req.user.role === 'staff') {
+  if (req.user && ['staff', 'employee', 'staff pedagogique'].includes(req.user.role)) {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized as staff' });
@@ -115,7 +115,7 @@ const checkPermission = (permission) => async (req, res, next) => {
   }
 
   // Staff need specific permission check
-  if (req.user.role === 'staff') {
+  if (['staff', 'employee', 'staff pedagogique'].includes(req.user.role)) {
     try {
       // Find the employee record associated with this user
       // We need to look up the Employee model to get permissions

@@ -57,7 +57,6 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
 
   // Handle input change
   const handleChange = (e) => {
-  const { t } = useLanguage();
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -82,7 +81,8 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
       
       const payload = {
         ...formData,
-        salaryValue: parseFloat(formData.salaryValue)
+        salaryValue: parseFloat(formData.salaryValue),
+        employeeType: 'other'
       };
 
       let response;
@@ -272,7 +272,7 @@ const AddEmployeeModal = ({ employee, onClose, onSuccess }) => {
                     value={formData.salaryValue}
                     onChange={handleChange}
                     required
-                    min="0"
+                    min="1"
                     step="0.01"
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={formData.salaryType === 'fixed' ? 'Monthly amount' : 'Rate per hour'}

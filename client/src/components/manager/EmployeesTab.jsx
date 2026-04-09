@@ -13,6 +13,18 @@ const authConfig = () => {
   return { headers: { Authorization: `Bearer ${user?.token}` } };
 };
 
+const getStatusMeta = (status, t) => {
+  switch (status) {
+    case 'active':
+      return { label: t.active || 'Active', className: 'bg-green-100 text-green-800' };
+    case 'on_vacation':
+      return { label: t.onVacation || 'On Vacation', className: 'bg-amber-100 text-amber-800' };
+    case 'inactive':
+    default:
+      return { label: t.inactive || 'Inactive', className: 'bg-red-100 text-red-800' };
+  }
+};
+
 const EmployeesTab = () => {
   const { t } = useLanguage();
   const [items, setItems] = useState([]);
@@ -83,16 +95,15 @@ const EmployeesTab = () => {
 
   const onSave = async (form) => {
     try {
-      // Strip permissions so UI remains non-functional for backend
       const payload = { ...form };
-      // Remove banking always
-      delete payload.banking;
       if (modal.mode === 'edit') {
-        const { data } = await axios.put(`/api/employees/${modal.data._id}`, payload, authConfig());
-        setItems(prev => prev.map(i => i._id === data._id ? data : i));
+        const response = await axios.put(`/api/employees/${modal.data._id}`, payload, authConfig());
+        const saved = response.data?.data || response.data;
+        setItems(prev => prev.map(i => i._id === saved._id ? saved : i));
       } else {
-        const { data } = await axios.post('/api/employees', payload, authConfig());
-        setItems(prev => [data, ...prev]);
+        const response = await axios.post('/api/employees', payload, authConfig());
+        const saved = response.data?.data || response.data;
+        setItems(prev => [saved, ...prev]);
       }
       setModal({ open: false, mode: 'create', data: null });
     } catch (err) {
@@ -234,23 +245,25 @@ const EmployeesTab = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filtered.map(e => (
             <div key={e._id} className="card-base p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold">
-                    {(e.name?.[0] || '?').toUpperCase()}
+              {(() => {
+                const statusMeta = getStatusMeta(e.status, t);
+                return (
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold">
+                        {(e.name?.[0] || '?').toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-lg text-text-main-light">{e.name}</div>
+                        <div className="text-sm text-text-muted-light">{e.role}</div>
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${statusMeta.className}`}>
+                      {statusMeta.label}
+                    </span>
                   </div>
-                  <div>
-                    <div className="font-semibold text-lg text-text-main-light">{e.name}</div>
-                    <div className="text-sm text-text-muted-light">{e.role}</div>
-                  </div>
-                </div>
-                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${e.status === 'active'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-                  }`}>
-                  {e.status}
-                </span>
-              </div>
+                );
+              })()}
 
               <div className="flex items-center gap-2 mb-3">
                 <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${(e.employeeType || 'other') === 'staff'
@@ -376,7 +389,7 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
         employeeType: 'other',
         salaryType: 'fixed',
         salaryValue: '',
-        hireDate: '',
+        hireDate: new Date().toISOString().substring(0, 10),
         phone: '',
         email: '',
         address: '',
@@ -455,15 +468,17 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
                 {mode === 'edit' ? t.editEmployee : mode === 'view' ? t.employeeProfile : t.addNewEmployee}
               </h2>
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
-                {mode === 'view' && (
-                  <>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${form.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                      {form.status}
-                    </span>
-                    <span>•</span>
-                  </>
-                )}
+                {mode === 'view' && (() => {
+                  const statusMeta = getStatusMeta(form.status, t);
+                  return (
+                    <>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${statusMeta.className}`}>
+                        {statusMeta.label}
+                      </span>
+                      <span>•</span>
+                    </>
+                  );
+                })()}
                 <span>{form.employeeType === 'staff' ? 'Staff' : 'General Employee'}</span>
               </div>
             </div>
@@ -607,6 +622,7 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
                       className="w-full pl-9 p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       value={form.hireDate}
                       onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
@@ -631,6 +647,8 @@ const EmployeeModal = ({ mode, data, onClose, onSave }) => {
                     value={form.salaryValue}
                     onChange={(e) => setForm({ ...form, salaryValue: e.target.value })}
                     placeholder="0.00"
+                      min="1"
+                      required
                   />
                 </div>
               </div>
