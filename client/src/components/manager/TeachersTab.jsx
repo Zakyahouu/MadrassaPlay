@@ -405,6 +405,12 @@ const TeachersTab = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-3 border-t border-border-light">
                     <button
+                      onClick={() => openModal('edit', teacher)}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-700 rounded text-sm hover:bg-slate-200 transition-colors"
+                    >
+                      <Edit className="w-3 h-3" />{t.edit}
+                    </button>
+                    <button
                       onClick={() => openModal('view', teacher)}
                       className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-sm hover:bg-primary/20 transition-colors"
                     >
@@ -519,6 +525,13 @@ const TeachersTab = () => {
                           <div className="font-medium text-gray-900 flex items-center gap-2">
                             <Mail className="w-4 h-4 text-gray-400" />
                             {modalContent.data.email}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs font-medium text-gray-500 uppercase">{t.username || 'Username'}</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            {modalContent.data.username || 'N/A'}
                           </div>
                         </div>
                       </div>
@@ -675,11 +688,21 @@ const TeachersTab = () => {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.phone || 'PRIMARY PHONE'} *</label>
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.primaryPhone || t.phone || 'PRIMARY PHONE'} *</label>
                           <input
                             required
                             value={formData.phone1 || ''}
                             onChange={(e) => setFormData({ ...formData, phone1: e.target.value })}
+                            placeholder="+1 (555) 000-0000"
+                            className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.secondaryPhone || 'SECONDARY PHONE'}</label>
+                          <input
+                            value={formData.phone2 || ''}
+                            onChange={(e) => setFormData({ ...formData, phone2: e.target.value })}
                             placeholder="+1 (555) 000-0000"
                             className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
                           />
@@ -699,6 +722,23 @@ const TeachersTab = () => {
                               <option value="2">2 Years</option>
                               <option value="5">5+ Years</option>
                               <option value="10">10+ Years</option>
+                            </select>
+                            <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.status || 'STATUS'} *</label>
+                          <div className="relative">
+                            <select
+                              required
+                              value={formData.status || 'employed'}
+                              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                              className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none bg-transparent appearance-none"
+                            >
+                              <option value="employed">{t.employed || 'Employed'}</option>
+                              <option value="freelance">{t.freelance || 'Freelance'}</option>
+                              <option value="retired">{t.retired || 'Retired'}</option>
                             </select>
                             <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                           </div>
@@ -731,6 +771,30 @@ const TeachersTab = () => {
                             placeholder="Enter physical address"
                             className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
                           />
+                        </div>
+
+                        <div className="md:col-span-2 pt-2">
+                          <h4 className="text-sm font-semibold text-gray-900">{t.banking || 'Banking'}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">CCP</label>
+                              <input
+                                value={formData.ccp || ''}
+                                onChange={(e) => setFormData({ ...formData, ccp: e.target.value })}
+                                placeholder="CCP"
+                                className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.bankAccountPlaceholder || 'RIB'}</label>
+                              <input
+                                value={formData.bankAccount || ''}
+                                onChange={(e) => setFormData({ ...formData, bankAccount: e.target.value })}
+                                placeholder={t.bankAccountPlaceholder || 'RIB'}
+                                className="w-full py-2 border-b border-gray-200 focus:border-primary focus:outline-none transition-colors placeholder:text-gray-300"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
 

@@ -72,6 +72,13 @@ const lessonSchema = {
     type: String,
     required: true,
     trim: true,
+    validate: {
+      validator: function(subject) {
+        if (typeof subject !== 'string') return false;
+        return !/[,،]/.test(subject);
+      },
+      message: 'Subject must be a single value'
+    },
   },
 };
 

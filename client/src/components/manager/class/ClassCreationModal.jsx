@@ -788,7 +788,7 @@ const ClassCreationModal = ({
                 <option value="">{t.chooseRoom}</option>
                 {rooms.map(room => (
                   <option key={room._id} value={room._id}>
-                    {room.name} - {room.type}
+                    {room.name} ({t.capacity || 'Capacity'}: {room.capacity ?? '-'})
                   </option>
                 ))}
               </select>

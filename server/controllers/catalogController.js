@@ -1,7 +1,7 @@
 // server/controllers/catalogController.js
 
 const SchoolCatalog = require('../models/SchoolCatalog');
-const School = require('../models/School');
+const subjectSeparatorRegex = /[,،]/;
 
 // Helper: normalize user.school to an id string whether it's populated (document) or ObjectId/string
 const getUserSchoolId = (user) => {
@@ -17,6 +17,68 @@ const getUserSchoolId = (user) => {
   } catch (e) {
     return undefined;
   }
+};
+
+const normalizeLessonSubjects = (lessons) => {
+  if (!Array.isArray(lessons)) return lessons;
+  const normalized = [];
+
+  lessons.forEach((lesson) => {
+    if (!lesson || typeof lesson !== 'object') return;
+    const rawSubject = typeof lesson.subject === 'string' ? lesson.subject : '';
+    const parts = rawSubject
+      .split(subjectSeparatorRegex)
+      .map((subject) => subject.trim())
+      .filter(Boolean);
+
+    if (parts.length <= 1) {
+      normalized.push(lesson);
+      return;
+    }
+
+    parts.forEach((subject, index) => {
+      const nextLesson = { ...lesson, subject };
+      if (index > 0) delete nextLesson._id;
+      normalized.push(nextLesson);
+    });
+  });
+
+  return normalized;
+};
+
+const hasMultipleSubjects = (subject) => subjectSeparatorRegex.test(String(subject || ''));
+
+const buildLessonKey = (lesson) => {
+  const level = String(lesson?.level || '').trim().toLowerCase();
+  const grade = String(lesson?.grade ?? '').trim();
+  const stream = String(lesson?.stream || '').trim().toLowerCase();
+  const subject = String(lesson?.subject || '').trim().toLowerCase();
+  return `${level}|${grade}|${stream}|${subject}`;
+};
+
+const hasDuplicateLessons = (lessons) => {
+  const seen = new Set();
+  for (const lesson of lessons || []) {
+    const key = buildLessonKey(lesson);
+    if (!key || key.endsWith('||')) continue;
+    if (seen.has(key)) return true;
+    seen.add(key);
+  }
+  return false;
+};
+
+const normalizeOtherActivities = (activities) => {
+  if (!Array.isArray(activities)) return activities;
+  return activities
+    .filter((activity) => activity && typeof activity === 'object')
+    .map((activity) => {
+      const activityType = activity.activityType ?? activity.type;
+      const activityName = activity.activityName ?? activity.name;
+      const next = { ...activity, activityType, activityName };
+      delete next.type;
+      delete next.name;
+      return next;
+    });
 };
 
 // @desc    Get school catalog
@@ -74,19 +136,30 @@ const updateSchoolCatalog = async (req, res) => {
 
     // Update only the fields that are provided
     if (updateData.supportLessons !== undefined) {
-      catalog.supportLessons = updateData.supportLessons;
+      const normalized = normalizeLessonSubjects(updateData.supportLessons);
+      if (hasDuplicateLessons(normalized)) {
+        return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
+      }
+      catalog.supportLessons = normalized;
     }
     if (updateData.reviewCourses !== undefined) {
-      catalog.reviewCourses = updateData.reviewCourses;
+      const normalized = normalizeLessonSubjects(updateData.reviewCourses);
+      if (hasDuplicateLessons(normalized)) {
+        return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
+      }
+      catalog.reviewCourses = normalized;
     }
     if (updateData.vocationalTrainings !== undefined) {
       catalog.vocationalTrainings = updateData.vocationalTrainings;
+    } else if (updateData.vocationalTraining !== undefined) {
+      // Backward compatibility for legacy clients
+      catalog.vocationalTrainings = updateData.vocationalTraining;
     }
     if (updateData.languages !== undefined) {
       catalog.languages = updateData.languages;
     }
     if (updateData.otherActivities !== undefined) {
-      catalog.otherActivities = updateData.otherActivities;
+      catalog.otherActivities = normalizeOtherActivities(updateData.otherActivities);
     }
 
     const updatedCatalog = await catalog.save();
@@ -117,6 +190,16 @@ const addSupportLesson = async (req, res) => {
     
     if (!catalog) {
       catalog = new SchoolCatalog({ schoolId });
+    }
+
+    if (hasMultipleSubjects(lessonData.subject)) {
+      return res.status(400).json({ message: 'Subject must be a single value' });
+    }
+
+    const incomingKey = buildLessonKey(lessonData);
+    const hasDuplicate = (catalog.supportLessons || []).some((lesson) => buildLessonKey(lesson) === incomingKey);
+    if (hasDuplicate) {
+      return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
     }
 
     catalog.supportLessons.push(lessonData);
@@ -155,6 +238,19 @@ const updateSupportLesson = async (req, res) => {
     
     if (lessonIndex === -1) {
       return res.status(404).json({ message: 'Support lesson not found.' });
+    }
+
+    if (hasMultipleSubjects(lessonData.subject)) {
+      return res.status(400).json({ message: 'Subject must be a single value' });
+    }
+
+    const incomingKey = buildLessonKey({ ...catalog.supportLessons[lessonIndex].toObject(), ...lessonData });
+    const hasDuplicate = (catalog.supportLessons || []).some((lesson, index) => {
+      if (index === lessonIndex) return false;
+      return buildLessonKey(lesson) === incomingKey;
+    });
+    if (hasDuplicate) {
+      return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
     }
 
     catalog.supportLessons[lessonIndex] = { ...catalog.supportLessons[lessonIndex].toObject(), ...lessonData };
@@ -217,6 +313,16 @@ const addReviewCourse = async (req, res) => {
       catalog = new SchoolCatalog({ schoolId });
     }
 
+    if (hasMultipleSubjects(courseData.subject)) {
+      return res.status(400).json({ message: 'Subject must be a single value' });
+    }
+
+    const incomingKey = buildLessonKey(courseData);
+    const hasDuplicate = (catalog.reviewCourses || []).some((course) => buildLessonKey(course) === incomingKey);
+    if (hasDuplicate) {
+      return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
+    }
+
     catalog.reviewCourses.push(courseData);
     const updatedCatalog = await catalog.save();
     
@@ -253,6 +359,19 @@ const updateReviewCourse = async (req, res) => {
     
     if (courseIndex === -1) {
       return res.status(404).json({ message: 'Review course not found.' });
+    }
+
+    if (hasMultipleSubjects(courseData.subject)) {
+      return res.status(400).json({ message: 'Subject must be a single value' });
+    }
+
+    const incomingKey = buildLessonKey({ ...catalog.reviewCourses[courseIndex].toObject(), ...courseData });
+    const hasDuplicate = (catalog.reviewCourses || []).some((course, index) => {
+      if (index === courseIndex) return false;
+      return buildLessonKey(course) === incomingKey;
+    });
+    if (hasDuplicate) {
+      return res.status(400).json({ message: 'Duplicate subjects are not allowed' });
     }
 
     catalog.reviewCourses[courseIndex] = { ...catalog.reviewCourses[courseIndex].toObject(), ...courseData };
@@ -498,7 +617,7 @@ const deleteLanguage = async (req, res) => {
 const addOtherActivity = async (req, res) => {
   try {
   const { schoolId } = req.params;
-    const activityData = req.body;
+    const activityData = normalizeOtherActivities([req.body])?.[0] || req.body;
     
     // Verify the user has access to this school
   if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {
@@ -530,7 +649,7 @@ const addOtherActivity = async (req, res) => {
 const updateOtherActivity = async (req, res) => {
   try {
   const { schoolId, activityId } = req.params;
-    const activityData = req.body;
+    const activityData = normalizeOtherActivities([req.body])?.[0] || req.body;
     
     // Verify the user has access to this school
   if (req.user.role === 'manager' && getUserSchoolId(req.user) !== schoolId) {

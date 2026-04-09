@@ -713,7 +713,7 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
   const me = req.user;
   if (me.role !== 'teacher') return res.status(403).json({ message: 'Not authorized' });
   const klass = await Class.findOne({ _id: id, teacherId: me._id })
-    .populate('enrolledStudents.studentId', 'firstName lastName name email studentCode xp level');
+    .populate('enrolledStudents.studentId', 'firstName lastName email studentCode xp level');
   if (!klass) return res.status(404).json({ message: 'Class not found' });
   // Map active enrollments to include enrollmentId for attendance/payment history
   const Enrollment = require('../models/Enrollment');
@@ -730,7 +730,7 @@ module.exports.getClassStudents = asyncHandler(async (req, res) => {
     .filter(e => e && e.studentId)
     .map(e => ({
       id: e.studentId._id,
-      name: e.studentId.name || `${e.studentId.firstName} ${e.studentId.lastName}`.trim(),
+      name: `${e.studentId.firstName || ''} ${e.studentId.lastName || ''}`.trim() || e.studentId.email || '',
       email: e.studentId.email || '',
       studentCode: e.studentId.studentCode || '',
       xp: typeof e.studentId.xp === 'number' ? e.studentId.xp : 0,

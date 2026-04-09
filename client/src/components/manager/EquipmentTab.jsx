@@ -41,6 +41,7 @@ const EquipmentTab = () => {
   const [filters, setFilters] = useState({ majorType: '' });
   const [modal, setModal] = useState({ open: false, mode: 'create', data: null });
   const [equipmentPopup, setEquipmentPopup] = useState({ open: false, item: null });
+  const [manageUnits, setManageUnits] = useState({ open: false, item: null });
 
   const fetchItems = async () => {
     setLoading(true);
@@ -280,9 +281,17 @@ const EquipmentTab = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <UnitAdjuster item={item} onUpdated={(updated) => {
-                              setItems(prev => prev.map(i => i._id === updated._id ? updated : i));
-                            }} />
+                            <button
+                              onClick={() => setManageUnits({ open: true, item })}
+                              className="
+                                p-2 text-gray-400 hover:text-blue-600
+                                hover:bg-blue-50 rounded-lg transition-all duration-200
+                                group-hover:bg-blue-50
+                              "
+                              title={t.manageUnits}
+                            >
+                              <Wrench className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => setModal({ open: true, mode: 'edit', data: item })}
                               className="
@@ -344,6 +353,18 @@ const EquipmentTab = () => {
             onUpdated={(updated) => {
               setItems(prev => prev.map(i => i._id === updated._id ? updated : i));
               setEquipmentPopup(prev => ({ ...prev, item: updated }));
+            }}
+          />
+        )}
+
+        {manageUnits.open && (
+          <ManageUnitsDialog
+            item={manageUnits.item}
+            onClose={() => setManageUnits({ open: false, item: null })}
+            onUpdated={(updated) => {
+              setItems(prev => prev.map(i => i._id === updated._id ? updated : i));
+              setEquipmentPopup(prev => (prev.item?._id === updated._id ? { ...prev, item: updated } : prev));
+              setManageUnits({ open: false, item: null });
             }}
           />
         )}
@@ -635,79 +656,138 @@ const EquipmentModal = ({ mode, data, onClose, onSave }) => {
   );
 };
 
-// Inline components
-const stateColors = {
-  'Working Fine': 'bg-green-100 text-green-700 border-green-200',
-  'Broken': 'bg-red-100 text-red-700 border-red-200',
-  'Under Maintenance': 'bg-yellow-100 text-yellow-700 border-yellow-200'
-};
-
-const UnitBadge = ({ itemId, unit, onUpdated }) => {
-  const [open, setOpen] = useState(false);
-  const [state, setState] = useState(unit.state);
-  const save = async () => {
-    try {
-      const { data } = await axios.patch(`/api/equipment/${itemId}/units/${unit.serial}/state`, { state }, authConfig());
-      onUpdated(data);
-      setOpen(false);
-    } catch (err) {
-      alert(err.response?.data?.message || t.failUpdateUnitState);
-    }
-  };
-  return (
-    <div className={`relative inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs ${stateColors[state] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-      <span>#{unit.serial}</span>
-      <button className="underline" onClick={() => setOpen(o => !o)}>{state}</button>
-      {open && (
-        <div className="absolute mt-6 bg-white border rounded shadow p-2 z-10">
-          <select value={state} onChange={(e) => setState(e.target.value)} className="border rounded p-1 text-sm">
-            <option value="Working Fine">{t.workingFine}</option>
-            <option value="Broken">{t.broken}</option>
-            <option value="Under Maintenance">{t.underMaintenance}</option>
-          </select>
-          <div className="flex gap-2 mt-2">
-            <button onClick={() => setOpen(false)} className="px-2 py-1 border rounded text-xs">{t.cancel}</button>
-            <button onClick={save} className="px-2 py-1 bg-indigo-600 text-white rounded text-xs">{t.save}</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const UnitAdjuster = ({ item, onUpdated }) => {
+const ManageUnitsDialog = ({ item, onClose, onUpdated }) => {
   const { t } = useLanguage();
-  const [delta, setDelta] = useState(1);
-  const adjust = async (d) => {
+  const [addCount, setAddCount] = useState(0);
+  const [selectedSerials, setSelectedSerials] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const units = item?.units || [];
+
+  const toggleSerial = (serial) => {
+    setSelectedSerials(prev => (
+      prev.includes(serial) ? prev.filter(s => s !== serial) : [...prev, serial]
+    ));
+  };
+
+  const applyChanges = async () => {
+    const removeSerials = selectedSerials;
+    if (addCount <= 0 && removeSerials.length === 0) return;
+    if (removeSerials.length > 0) {
+      const message = t.confirmRemoveUnits.replace('{count}', removeSerials.length);
+      if (!confirm(message)) return;
+    }
+    const payload = {};
+    if (addCount > 0) payload.addCount = addCount;
+    if (removeSerials.length > 0) payload.removeSerials = removeSerials;
+
+    setSubmitting(true);
     try {
-      const { data } = await axios.post(`/api/equipment/${item._id}/units`, { delta: d }, authConfig());
+      const { data } = await axios.post(`/api/equipment/${item._id}/units/manage`, payload, authConfig());
       onUpdated(data);
     } catch (err) {
       alert(err.response?.data?.message || t.failAdjustUnits);
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const selectedLabel = `${selectedSerials.length} ${selectedSerials.length === 1 ? t.unitCount : t.unitsCount}`;
+
   return (
-    <span className="inline-flex items-center gap-2">
-      <button
-        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200"
-        onClick={() => adjust(-Math.abs(delta))}
-      >
-        - {delta}
-      </button>
-      <input
-        type="number"
-        min={1}
-        value={delta}
-        onChange={(e) => setDelta(Math.max(1, Number(e.target.value)))}
-        className="w-16 p-1 border rounded text-xs"
-      />
-      <button
-        className="px-2 py-1 border rounded text-xs hover:bg-gray-50 transition-colors duration-200"
-        onClick={() => adjust(Math.abs(delta))}
-      >
-        + {delta}
-      </button>
-    </span>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-3xl relative shadow-2xl" onClick={e => e.stopPropagation()}>
+        <button
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          onClick={onClose}
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <Wrench className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h4 className="text-xl font-semibold text-gray-900">{t.manageUnits}</h4>
+            <p className="text-sm text-gray-500">{t.manageUnitsHint}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-700">{t.unitsToAdd}</label>
+            <div className="relative">
+              <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="number"
+                min={0}
+                className="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                value={addCount}
+                onChange={(e) => setAddCount(Math.max(0, Number(e.target.value)))}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">{t.unitsToRemove}</label>
+                <p className="text-xs text-gray-500">{t.selectUnitsToRemove}</p>
+              </div>
+              <span className="text-xs text-gray-500">{selectedLabel}</span>
+            </div>
+            <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+              {units.length === 0 ? (
+                <div className="p-4 text-sm text-gray-500">{t.noUnitsAvailable}</div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {units.map(unit => (
+                    <li key={unit.serial} className="flex items-center gap-3 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedSerials.includes(unit.serial)}
+                        onChange={() => toggleSerial(unit.serial)}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {unit.name ? unit.name : `#${unit.serial}`}
+                        </div>
+                        <div className="text-xs text-gray-500">#{unit.serial}</div>
+                      </div>
+                      <span className={`
+                        inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border
+                        ${getUnitStateStyle(unit.state)}
+                      `}>
+                        {unit.state === 'Working Fine' ? t.workingFine : unit.state === 'Broken' ? t.broken : unit.state === 'Under Maintenance' ? t.underMaintenance : unit.state}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-6">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-200 font-medium"
+          >
+            {t.cancel}
+          </button>
+          <button
+            type="button"
+            onClick={applyChanges}
+            disabled={submitting || (addCount <= 0 && selectedSerials.length === 0)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? t.processing : t.applyUnitsChanges}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -26,11 +26,16 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     throw new Error('classId and message are required');
   }
 
+  const authorName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim()
+    || req.user.email
+    || req.user.username
+    || 'Unknown User';
+
   const announcement = await Announcement.create({
     schoolId,
     classId,
     authorId: req.user._id,
-    authorName: req.user.name || `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim(),
+    authorName,
     authorRole: role,
     message,
     attachments: Array.isArray(attachments) ? attachments : []

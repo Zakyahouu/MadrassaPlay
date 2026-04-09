@@ -102,27 +102,47 @@ exports.deleteEquipment = async (req, res) => {
   }
 };
 
-// POST /api/equipment/:id/units -> increase by N or decrease by N
-exports.adjustUnits = async (req, res) => {
+// POST /api/equipment/:id/units/manage -> add units and/or remove specific serials
+exports.manageUnits = async (req, res) => {
   try {
-    const { delta = 0 } = req.body; // positive to add, negative to remove
+    const rawAddCount = req.body.addCount ?? 0;
+    const addCount = Number(rawAddCount);
+    const removeSerials = Array.isArray(req.body.removeSerials) ? req.body.removeSerials : [];
+
+    if (!Number.isInteger(addCount) || addCount < 0) {
+      return res.status(400).json({ message: 'addCount must be a non-negative integer' });
+    }
+
+    const serialsToRemove = Array.from(
+      new Set(removeSerials.map(value => Number(value)).filter(value => Number.isInteger(value)))
+    );
+
+    if (addCount === 0 && serialsToRemove.length === 0) {
+      return res.status(400).json({ message: 'No unit changes requested' });
+    }
+
     const item = await Equipment.findById(req.params.id);
     if (!item) return res.status(404).json({ message: 'Equipment not found' });
     if (!assertManagerAccess(req, item.schoolId)) return res.status(403).json({ message: 'Not authorized' });
 
-    const current = item.units?.length || 0;
-    const target = current + Number(delta);
-    if (target < 0) return res.status(400).json({ message: 'Resulting quantity cannot be negative' });
-
-    if (delta > 0) {
-      const start = current + 1;
-      const newUnits = Array.from({ length: delta }, (_, i) => ({ serial: start + i, name: `#${start + i}`, state: 'Working Fine' }));
-      item.units = [...(item.units || []), ...newUnits];
-    } else if (delta < 0) {
-      // Remove units from the end (highest serials first)
-      item.units = (item.units || []).slice(0, target);
+    const units = item.units || [];
+    const existingSerials = new Set(units.map(unit => unit.serial));
+    const missingSerials = serialsToRemove.filter(serial => !existingSerials.has(serial));
+    if (missingSerials.length > 0) {
+      return res.status(400).json({ message: `Units not found: ${missingSerials.join(', ')}` });
     }
 
+    let nextUnits = units.filter(unit => !serialsToRemove.includes(unit.serial));
+    if (addCount > 0) {
+      const maxSerial = nextUnits.reduce((max, unit) => Math.max(max, unit.serial), 0);
+      const newUnits = Array.from({ length: addCount }, (_, i) => {
+        const serial = maxSerial + i + 1;
+        return { serial, name: `#${serial}`, state: 'Working Fine' };
+      });
+      nextUnits = [...nextUnits, ...newUnits];
+    }
+
+    item.units = nextUnits;
     await item.save();
     res.json(item);
   } catch (err) {

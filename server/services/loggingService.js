@@ -73,7 +73,7 @@ class LoggingService {
       schoolId: user.school,
       userId: user._id,
       userRole: user.role,
-      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.username || 'Unknown User',
       action,
       description,
       details,
@@ -96,7 +96,7 @@ class LoggingService {
       schoolId: user.school,
       userId: user._id,
       userRole: user.role,
-      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.username || 'Unknown User',
       action,
       description,
       details,
@@ -119,7 +119,7 @@ class LoggingService {
       schoolId: user.school,
       userId: user._id,
       userRole: user.role,
-      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.username || 'Unknown User',
       action,
       description,
       details,
@@ -142,7 +142,7 @@ class LoggingService {
       schoolId: user.school,
       userId: user._id,
       userRole: user.role,
-      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name,
+      userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.username || 'Unknown User',
       action,
       description,
       details,
@@ -164,7 +164,7 @@ class LoggingService {
       schoolId: user.school,
       userId: user._id,
       userRole: user.role,
-      userName: userName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name,
+      userName: userName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || user.username || 'Unknown User',
       action,
       description,
       details,
@@ -236,7 +236,7 @@ class LoggingService {
 
     const [logs, total] = await Promise.all([
       ActivityLog.find(query)
-        .populate('user', 'firstName lastName name email')
+        .populate('user', 'firstName lastName email username')
         .sort({ timestamp: -1 })
         .skip(skip)
         .limit(limit)
@@ -318,7 +318,7 @@ class LoggingService {
 
     // Get recent activities
     const recentActivities = await ActivityLog.find({ school: schoolId })
-      .populate('user', 'firstName lastName name')
+      .populate('user', 'firstName lastName email username')
       .sort({ timestamp: -1 })
       .limit(10)
       .lean();

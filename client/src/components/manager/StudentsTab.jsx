@@ -105,13 +105,16 @@ const StudentsTab = () => {
       }
     };
 
+    const contact = {};
+    if (formData.phone?.trim()) contact.phone1 = formData.phone.trim();
+    if (formData.phone2?.trim()) contact.phone2 = formData.phone2.trim();
+    if (formData.address?.trim()) contact.address = formData.address.trim();
+
     const payload = {
       firstName: formData.firstName?.trim(),
       lastName: formData.lastName?.trim(),
       email: formData.email?.trim() || undefined,
-      phone: formData.phone?.trim(),
-      phone2: formData.phone2?.trim(),
-      address: formData.address?.trim() || undefined,
+      contact: Object.keys(contact).length > 0 ? contact : undefined,
       educationLevel: formData.educationLevel,
       username: formData.username?.trim(),
       password: formData.password,

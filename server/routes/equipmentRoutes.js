@@ -15,7 +15,7 @@ router.route('/:id')
   .delete(ctrl.deleteEquipment);
 
 // Units management
-router.post('/:id/units', ctrl.adjustUnits); // body: { delta: +N | -N }
+router.post('/:id/units/manage', ctrl.manageUnits); // body: { addCount?, removeSerials? }
 router.patch('/:id/units/:serial/state', ctrl.updateUnitState); // body: { state }
 router.patch('/:id/units/:serial', ctrl.updateUnit); // body: { name?, state?, notes? }
 

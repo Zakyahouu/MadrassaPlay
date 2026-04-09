@@ -221,14 +221,14 @@ module.exports = function (io) {
             // Fetch all participants and calculate ranks
             const allParticipants = await LiveParticipant.find({
               sessionId: room.sessionId
-            }).populate('studentId', 'firstName lastName name').lean();
+            }).populate('studentId', 'firstName lastName').lean();
 
             const ranks = allParticipants
               .map(p => {
                 const stu = p.studentId;
                 const pName = (stu && typeof stu === 'object')
-                  ? (stu.name || [stu.firstName, stu.lastName].filter(Boolean).join(' ') || 'Unknown')
-                  : (p.firstName ? [p.firstName, p.lastName].filter(Boolean).join(' ') : 'Unknown');
+                  ? ([stu.firstName, stu.lastName].filter(Boolean).join(' ').trim() || 'Unknown')
+                  : (p.firstName ? [p.firstName, p.lastName].filter(Boolean).join(' ').trim() : 'Unknown');
                 return {
                   userId: String(stu?._id || p.studentId),
                   name: pName,

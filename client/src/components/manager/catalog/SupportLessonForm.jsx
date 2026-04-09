@@ -5,6 +5,7 @@ import { useLanguage } from '../../../context/LanguageContext';
 const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
+  const isEditMode = Boolean(data);
   const [formData, setFormData] = useState({
     level: '',
     stream: '',
@@ -14,14 +15,75 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  const subjectLabels = {
+    'اللغة العربية': t.subjectArabic || 'Arabic Language',
+    'اللغة الإنجليزية': t.subjectEnglish || 'English Language',
+    'اللغة الفرنسية': t.subjectFrench || 'French Language',
+    'الرياضيات': t.subjectMath || 'Mathematics',
+    'العلوم': t.subjectScience || 'Science',
+    'الفيزياء': t.subjectPhysics || 'Physics',
+    'الفلسفة': t.subjectPhilosophy || 'Philosophy',
+    'التاريخ والجغرافيا': t.subjectHistoryGeography || 'History & Geography',
+    'التربية الإسلامية': t.subjectIslamicEducation || 'Islamic Education',
+    'اللغة الأمازيغية': t.subjectAmazigh || 'Tamazight',
+    'العلوم الفيزيائية والتكنولوجيا': t.subjectPhysicsTech || 'Physical Sciences & Technology',
+    'الاجتماعيات (تاريخ + جغرافيا + تربية مدنية)': t.subjectSocialStudies || 'Social Studies (History + Geography + Civics)',
+    'الاقتصاد والمحاسبة': t.subjectEconomicsAccounting || 'Economics & Accounting',
+    'القانون': t.subjectLaw || 'Law',
+    'مادة تقنية (هندسة)': t.subjectTechnicalEngineering || 'Technical Subject (Engineering)',
+    'لغة أجنبية ثانية (ألمانية/إسبانية)': t.subjectSecondForeignLanguage || 'Second Foreign Language (German/Spanish)',
+  };
+
+  const subjectNormalization = {
+    'لغة عربية': 'اللغة العربية',
+    'اللغة العربية': 'اللغة العربية',
+    'لغة إنجليزية': 'اللغة الإنجليزية',
+    'اللغة الإنجليزية': 'اللغة الإنجليزية',
+    'لغة فرنسية': 'اللغة الفرنسية',
+    'اللغة الفرنسية': 'اللغة الفرنسية',
+    'رياضيات': 'الرياضيات',
+    'الرياضيات': 'الرياضيات',
+    'علوم طبيعية': 'العلوم',
+    'العلوم الطبيعية': 'العلوم',
+    'العلوم الطبيعية (علوم الطبيعة والحياة)': 'العلوم',
+    'العلوم': 'العلوم',
+    'فيزياء': 'الفيزياء',
+    'الفيزياء': 'الفيزياء',
+    'فلسفة': 'الفلسفة',
+    'الفلسفة': 'الفلسفة',
+    'تربية إسلامية': 'التربية الإسلامية',
+    'التربية الإسلامية': 'التربية الإسلامية',
+    'تاريخ و جغرافيا': 'التاريخ والجغرافيا',
+    'تاريخ وجغرافيا': 'التاريخ والجغرافيا',
+    'التاريخ والجغرافيا': 'التاريخ والجغرافيا',
+    'اقتصاد ومحاسبة': 'الاقتصاد والمحاسبة',
+    'الاقتصاد والمحاسبة': 'الاقتصاد والمحاسبة',
+    'قانون': 'القانون',
+    'القانون': 'القانون',
+  };
+
+  const normalizeSubjectValue = (value) => {
+    const trimmed = String(value || '').trim();
+    return subjectNormalization[trimmed] || trimmed;
+  };
+
+  const buildSubjectOptions = (values) => values.map((value) => ({
+    value,
+    label: subjectLabels[value] || value,
+  }));
+
   // Initialize form data if editing
   useEffect(() => {
     if (data) {
+      const normalizedSubjects = data.subject
+        ? data.subject.split(',').map(s => normalizeSubjectValue(s)).filter(Boolean)
+        : [];
+      const subjectForEdit = normalizedSubjects[0] ? [normalizedSubjects[0]] : [];
       setFormData({
         level: data.level || '',
         stream: data.stream || '',
         selectedGrades: data.grade ? [data.grade] : [],
-        gradeSubjects: data.grade ? { [data.grade]: data.subject ? data.subject.split(',').map(s => s.trim()) : [] } : {}
+        gradeSubjects: data.grade ? { [data.grade]: subjectForEdit } : {}
       });
     }
   }, [data]);
@@ -58,111 +120,112 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   // Subject options based on level and grade
   const getSubjectOptions = (level, grade, stream) => {
     if (level === 'primary') {
-      return [
+      return buildSubjectOptions([
         'اللغة العربية',
         'اللغة الإنجليزية',
+        'اللغة الفرنسية',
         'الرياضيات',
         'العلوم',
         'التاريخ والجغرافيا',
         'التربية الإسلامية'
-      ];
+      ]);
     }
 
     if (level === 'middle') {
-      return [
+      return buildSubjectOptions([
         'اللغة العربية',
         'اللغة الأمازيغية',
         'الرياضيات',
-        'العلوم الطبيعية (علوم الطبيعة والحياة)',
+        'العلوم',
         'العلوم الفيزيائية والتكنولوجيا',
         'الاجتماعيات (تاريخ + جغرافيا + تربية مدنية)',
         'التربية الإسلامية',
         'اللغة الفرنسية',
         'اللغة الإنجليزية'
-      ];
+      ]);
     }
 
     if (level === 'high_school') {
       if (grade === 1) {
-        return [
-          'رياضيات',
-          'لغة عربية',
-          'لغة فرنسية',
-          'لغة إنجليزية',
-          'علوم طبيعية',
-          'فيزياء',
-          'تاريخ و جغرافيا',
-          'فلسفة',
-          'تربية إسلامية'
-        ];
+        return buildSubjectOptions([
+          'الرياضيات',
+          'اللغة العربية',
+          'اللغة الفرنسية',
+          'اللغة الإنجليزية',
+          'العلوم',
+          'الفيزياء',
+          'التاريخ والجغرافيا',
+          'الفلسفة',
+          'التربية الإسلامية'
+        ]);
       } else if (grade === 2 || grade === 3) {
         switch (stream) {
           case 'experimental sciences':
-            return [
-              'رياضيات',
-              'علوم طبيعية',
-              'فيزياء',
-              'لغة عربية',
-              'لغة فرنسية',
-              'لغة إنجليزية',
-              'فلسفة',
-              'تاريخ وجغرافيا',
-              'تربية إسلامية'
-            ];
+            return buildSubjectOptions([
+              'الرياضيات',
+              'العلوم',
+              'الفيزياء',
+              'اللغة العربية',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
+              'الفلسفة',
+              'التاريخ والجغرافيا',
+              'التربية الإسلامية'
+            ]);
           case 'mathematics':
-            return [
-              'رياضيات',
-              'فيزياء',
-              'لغة عربية',
-              'لغة فرنسية',
-              'لغة إنجليزية',
-              'فلسفة',
-              'تاريخ وجغرافيا',
-              'تربية إسلامية'
-            ];
+            return buildSubjectOptions([
+              'الرياضيات',
+              'الفيزياء',
+              'اللغة العربية',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
+              'الفلسفة',
+              'التاريخ والجغرافيا',
+              'التربية الإسلامية'
+            ]);
           case 'technical math':
-            return [
-              'رياضيات',
-              'فيزياء',
+            return buildSubjectOptions([
+              'الرياضيات',
+              'الفيزياء',
               'مادة تقنية (هندسة)',
-              'لغة عربية',
-              'لغة فرنسية',
-              'لغة إنجليزية',
-              'فلسفة',
-              'تاريخ وجغرافيا',
-              'تربية إسلامية'
-            ];
+              'اللغة العربية',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
+              'الفلسفة',
+              'التاريخ والجغرافيا',
+              'التربية الإسلامية'
+            ]);
           case 'management & economics':
-            return [
-              'رياضيات',
-              'اقتصاد ومحاسبة',
-              'قانون',
-              'لغة عربية',
-              'لغة فرنسية',
-              'لغة إنجليزية',
-              'فلسفة',
-              'تاريخ وجغرافيا',
-              'تربية إسلامية'
-            ];
+            return buildSubjectOptions([
+              'الرياضيات',
+              'الاقتصاد والمحاسبة',
+              'القانون',
+              'اللغة العربية',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
+              'الفلسفة',
+              'التاريخ والجغرافيا',
+              'التربية الإسلامية'
+            ]);
           case 'literature & philosophy':
-            return [
-              'لغة عربية',
-              'فلسفة',
-              'تاريخ و جغرافيا',
-              'لغة فرنسية',
-              'لغة إنجليزية',
-              'تربية إسلامية'
-            ];
+            return buildSubjectOptions([
+              'اللغة العربية',
+              'الفلسفة',
+              'التاريخ والجغرافيا',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
+              'التربية الإسلامية'
+            ]);
           case 'foreign languages':
-            return [
-              'لغة عربية',
-              'فلسفة',
-              'لغة فرنسية',
-              'لغة إنجليزية',
+            return buildSubjectOptions([
+              'اللغة العربية',
+              'الفلسفة',
+              'اللغة الفرنسية',
+              'اللغة الإنجليزية',
               'لغة أجنبية ثانية (ألمانية/إسبانية)',
-              'تاريخ وجغرافيا',
-              'تربية إسلامية'
-            ];
+              'التاريخ والجغرافيا',
+              'التربية الإسلامية'
+            ]);
           default:
             return [];
         }
@@ -257,6 +320,14 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         if (missingSubjects.length > 0) {
           newErrors.gradeSubjects = t.pleaseSelectOneSubject || 'Please select at least one subject';
         }
+        if (!newErrors.gradeSubjects) {
+          const hasConflicts = formData.selectedGrades.some((grade) =>
+            (formData.gradeSubjects[grade] || []).some((subject) => isSubjectAlreadyExists(grade, subject))
+          );
+          if (hasConflicts) {
+            newErrors.gradeSubjects = t.subjectAlreadyExists || 'This subject already exists for the selected grade.';
+          }
+        }
         break;
     }
 
@@ -318,7 +389,7 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
         const submitData = {
           level: formData.level,
           grade,
-          subject: subjects.join(', '),
+          subject: subjects[0] || '',
         };
         if (formData.level === 'high_school' && formData.stream) {
           submitData.stream = formData.stream;
@@ -345,7 +416,10 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
       const level = (item.level || '').trim();
       const grade = item.grade;
       const stream = (item.stream || '').trim();
-      const subjects = (item.subject || '').split(',').map(s => s.trim()).filter(Boolean);
+      const subjects = (item.subject || '')
+        .split(',')
+        .map(s => normalizeSubjectValue(s))
+        .filter(Boolean);
       subjects.forEach((subj) => {
         const key = `${level}|${grade}|${stream}|${subj}`.toLowerCase();
         // If editing, ignore the current item to allow keeping same subject
@@ -391,9 +465,11 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
   const handleGradeToggle = (grade) => {
     setFormData(prev => ({
       ...prev,
-      selectedGrades: prev.selectedGrades.includes(grade)
-        ? prev.selectedGrades.filter(g => g !== grade)
-        : [...prev.selectedGrades, grade]
+      selectedGrades: isEditMode
+        ? [grade]
+        : prev.selectedGrades.includes(grade)
+          ? prev.selectedGrades.filter(g => g !== grade)
+          : [...prev.selectedGrades, grade]
     }));
 
     // Clear error for selectedGrades
@@ -408,9 +484,11 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
       ...prev,
       gradeSubjects: {
         ...prev.gradeSubjects,
-        [grade]: prev.gradeSubjects[grade]?.includes(subject)
-          ? prev.gradeSubjects[grade].filter(s => s !== subject)
-          : [...(prev.gradeSubjects[grade] || []), subject]
+        [grade]: isEditMode
+          ? [subject]
+          : prev.gradeSubjects[grade]?.includes(subject)
+            ? prev.gradeSubjects[grade].filter(s => s !== subject)
+            : [...(prev.gradeSubjects[grade] || []), subject]
       }
     }));
 
@@ -422,12 +500,14 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
 
   // Handle select all subjects for a grade
   const handleSelectAllSubjects = (grade) => {
+    if (isEditMode) return;
     const subjectOptions = getSubjectOptions(formData.level, grade, formData.stream);
+    const subjectValues = subjectOptions.map((opt) => opt.value ?? opt);
     setFormData(prev => ({
       ...prev,
       gradeSubjects: {
         ...prev.gradeSubjects,
-        [grade]: subjectOptions
+        [grade]: subjectValues
       }
     }));
 
@@ -439,6 +519,7 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
 
   // Handle deselect all subjects for a grade
   const handleDeselectAllSubjects = (grade) => {
+    if (isEditMode) return;
     setFormData(prev => ({
       ...prev,
       gradeSubjects: {
@@ -674,14 +755,22 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                             <button
                               type="button"
                               onClick={() => handleSelectAllSubjects(grade)}
-                              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              disabled={isEditMode}
+                              className={`px-3 py-1 text-xs rounded transition-colors ${isEditMode
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
                             >
                               {t.selectAll || 'Select All'}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeselectAllSubjects(grade)}
-                              className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                              disabled={isEditMode}
+                              className={`px-3 py-1 text-xs rounded transition-colors ${isEditMode
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                : 'bg-gray-600 text-white hover:bg-gray-700'
+                                }`}
                             >
                               {t.clearAll || 'Clear All'}
                             </button>
@@ -689,17 +778,19 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {subjectOptions.map((subject) => {
-                            const disabled = !data && isSubjectAlreadyExists(grade, subject);
+                            const value = subject.value ?? subject;
+                            const label = subject.label ?? subject;
+                            const disabled = isSubjectAlreadyExists(grade, value);
                             return (
-                              <div key={subject} className={`flex items-center gap-2 ${disabled ? 'opacity-50' : ''}`}>
+                              <div key={value} className={`flex items-center gap-2 ${disabled ? 'opacity-50' : ''}`}>
                                 <input
                                   type="checkbox"
-                                  checked={selectedSubjects.includes(subject)}
-                                  onChange={() => !disabled && handleSubjectToggle(grade, subject)}
+                                  checked={selectedSubjects.includes(value)}
+                                  onChange={() => !disabled && handleSubjectToggle(grade, value)}
                                   disabled={disabled}
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <span className="text-sm text-gray-700">{subject}</span>
+                                <span className="text-sm text-gray-700">{label}</span>
                               </div>
                             );
                           })}
@@ -707,7 +798,7 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                         {
                           selectedSubjects.length > 0 && (
                             <p className="mt-2 text-xs text-blue-600">
-                              {t.selected || 'Selected'}: {selectedSubjects.join(', ')}
+                              {t.selected || 'Selected'}: {selectedSubjects.map((s) => subjectLabels[s] || s).join(', ')}
                             </p>
                           )
                         }
@@ -734,7 +825,7 @@ const SupportLessonForm = ({ isOpen, onClose, onSubmit, data, catalog }) => {
                         const subjects = formData.gradeSubjects[grade] || [];
                         return (
                           <li key={grade}>
-                            • <strong>{gradeOption?.label}:</strong> {subjects.length > 0 ? subjects.join(', ') : (t.noSubjectsSelected || 'No subjects selected')}
+                            • <strong>{gradeOption?.label}:</strong> {subjects.length > 0 ? subjects.map((s) => subjectLabels[s] || s).join(', ') : (t.noSubjectsSelected || 'No subjects selected')}
                           </li>
                         );
                       })}

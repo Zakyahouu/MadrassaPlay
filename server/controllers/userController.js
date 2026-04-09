@@ -21,6 +21,74 @@ const generateToken = (id) => {
   });
 };
 
+// @desc    Bootstrap the first admin (only if no admin exists)
+// @route   POST /api/users/bootstrap-admin
+// @access  Public (dev) / Key-gated (optional via ADMIN_BOOTSTRAP_KEY)
+const bootstrapAdmin = async (req, res) => {
+  try {
+    // Optional hard gate: if ADMIN_BOOTSTRAP_KEY is set, it must match.
+    // If not set, we only allow bootstrapping outside production.
+    const bootstrapKey = process.env.ADMIN_BOOTSTRAP_KEY;
+    const providedKey = req.headers['x-admin-bootstrap-key'] || req.body?.bootstrapKey;
+
+    if (bootstrapKey) {
+      if (!providedKey || String(providedKey) !== String(bootstrapKey)) {
+        return res.status(403).json({ message: 'Invalid bootstrap key.' });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      // Avoid leaving an open public bootstrap endpoint in production.
+      return res.status(404).json({ message: 'Not found.' });
+    }
+
+    const adminExists = await User.exists({ role: 'admin' });
+    if (adminExists) {
+      return res.status(409).json({ message: 'Admin already exists.' });
+    }
+
+    const { firstName, lastName, email, password, username } = req.body;
+
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({ message: 'firstName, lastName, email and password are required.' });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const userExists = await User.findOne({ email: normalizedEmail });
+    if (userExists) {
+      return res.status(400).json({ message: 'User with this email already exists.' });
+    }
+
+    // Hash password (User model also hashes, but we keep consistent behavior with registerUser)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: 'admin',
+      username: username ? String(username).trim() : undefined,
+    });
+
+    return res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      school: user.school,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
 
 // 3. DEFINE THE CONTROLLER FUNCTIONS
 // ==============================================================================
@@ -463,5 +531,6 @@ module.exports = {
   loginUser,
   getUserProfile,
   updateUserProfile,
+  bootstrapAdmin,
   getUserBreakdownAnalytics,
 };

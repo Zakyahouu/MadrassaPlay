@@ -27,23 +27,67 @@ function assertManagerAccess(req, resourceSchoolId) {
   return false;
 }
 
+const ACTIVITY_TYPE_KEYS = [
+  'supportLessons',
+  'reviewCourses',
+  'vocationalTrainings',
+  'languages',
+  'otherActivities'
+];
+
+const ACTIVITY_TYPE_LABEL_TO_KEY = new Map([
+  ['support lessons', 'supportLessons'],
+  ['review courses', 'reviewCourses'],
+  ['vocational trainings', 'vocationalTrainings'],
+  ['vocational training', 'vocationalTrainings'],
+  ['languages', 'languages'],
+  ['other activities', 'otherActivities']
+]);
+
+const normalizeActivityType = (value) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return '';
+  if (ACTIVITY_TYPE_KEYS.includes(trimmed)) return trimmed;
+  const lowered = trimmed.toLowerCase();
+  return ACTIVITY_TYPE_LABEL_TO_KEY.get(lowered) || trimmed;
+};
+
+const normalizeActivityTypes = (activityTypes = []) => {
+  if (!Array.isArray(activityTypes)) return [];
+  const seen = new Set();
+  const normalized = [];
+  activityTypes.forEach((value) => {
+    const next = normalizeActivityType(value);
+    if (!next || seen.has(next)) return;
+    seen.add(next);
+    normalized.push(next);
+  });
+  return normalized;
+};
+
+const buildAllowedActivityTypes = (catalog) => {
+  const allowed = new Set();
+  if (Array.isArray(catalog.supportLessons) && catalog.supportLessons.length) allowed.add('supportLessons');
+  if (Array.isArray(catalog.reviewCourses) && catalog.reviewCourses.length) allowed.add('reviewCourses');
+  if (Array.isArray(catalog.vocationalTrainings) && catalog.vocationalTrainings.length) allowed.add('vocationalTrainings');
+  if (Array.isArray(catalog.languages) && catalog.languages.length) allowed.add('languages');
+  if (Array.isArray(catalog.otherActivities) && catalog.otherActivities.length) allowed.add('otherActivities');
+  return allowed;
+};
+
 // Validate activityTypes against SchoolCatalog for the manager's school
 async function validateActivityTypesForSchool(schoolId, activityTypes = []) {
-  if (!Array.isArray(activityTypes) || activityTypes.length === 0) return true; // allow empty list
+  if (!Array.isArray(activityTypes) || activityTypes.length === 0) {
+    return { valid: true, normalized: [] };
+  }
   const catalog = await SchoolCatalog.findOne({ schoolId });
-  if (!catalog) return false; // must have a catalog to validate against
+  if (!catalog) return { valid: false, normalized: [] };
 
-  // Build set of allowed activity types from catalog sections
-  const allowed = new Set();
-  // Derive human-readable activity buckets from catalog presence
-  if (Array.isArray(catalog.supportLessons) && catalog.supportLessons.length) allowed.add('Support Lessons');
-  if (Array.isArray(catalog.reviewCourses) && catalog.reviewCourses.length) allowed.add('Review Courses');
-  if (Array.isArray(catalog.vocationalTrainings) && catalog.vocationalTrainings.length) allowed.add('Vocational Training');
-  if (Array.isArray(catalog.languages) && catalog.languages.length) allowed.add('Languages');
-  if (Array.isArray(catalog.otherActivities) && catalog.otherActivities.length) allowed.add('Other Activities');
+  const allowed = buildAllowedActivityTypes(catalog);
+  const normalized = normalizeActivityTypes(activityTypes);
 
-  // All provided activityTypes must be within allowed set
-  return activityTypes.every(t => allowed.has(t));
+  const invalid = normalized.filter((value) => ACTIVITY_TYPE_KEYS.includes(value) && !allowed.has(value));
+  return { valid: invalid.length === 0, normalized };
 }
 
 exports.listRooms = async (req, res) => {
@@ -82,10 +126,10 @@ exports.createRoom = async (req, res) => {
     if (capacity < 1) return res.status(400).json({ message: 'capacity must be at least 1' });
 
     // Validate activity types from SchoolCatalog
-    const valid = await validateActivityTypesForSchool(schoolId, activityTypes);
+    const { valid, normalized } = await validateActivityTypesForSchool(schoolId, activityTypes);
     if (!valid) return res.status(400).json({ message: 'Invalid activityTypes for this school catalog' });
 
-    const room = await Room.create({ schoolId, name, capacity, activityTypes });
+    const room = await Room.create({ schoolId, name, capacity, activityTypes: normalized });
     res.status(201).json(room);
   } catch (err) {
     if (err.code === 11000) {
@@ -108,9 +152,9 @@ exports.updateRoom = async (req, res) => {
       room.capacity = capacity;
     }
     if (activityTypes !== undefined) {
-      const valid = await validateActivityTypesForSchool(room.schoolId, activityTypes);
+      const { valid, normalized } = await validateActivityTypesForSchool(room.schoolId, activityTypes);
       if (!valid) return res.status(400).json({ message: 'Invalid activityTypes for this school catalog' });
-      room.activityTypes = activityTypes;
+      room.activityTypes = normalized;
     }
 
     await room.save();

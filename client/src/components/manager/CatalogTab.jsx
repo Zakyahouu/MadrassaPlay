@@ -44,7 +44,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
       case 'review_courses':
         return catalog?.reviewCourses || [];
       case 'vocational_training':
-        return catalog?.vocationalTraining || [];
+        return catalog?.vocationalTrainings || [];
       case 'languages':
         return catalog?.languages || [];
       case 'other_activities':
@@ -60,12 +60,24 @@ const CatalogTab = ({ catalog, onUpdate }) => {
 
   const sanitizeCatalogForBackend = (catalogData) => {
     const cleanData = { ...catalogData };
-    const categories = ['supportLessons', 'reviewCourses', 'vocationalTraining', 'languages', 'otherActivities'];
+    const categories = ['supportLessons', 'reviewCourses', 'vocationalTrainings', 'languages', 'otherActivities'];
 
     categories.forEach(category => {
       if (cleanData[category]) {
         cleanData[category] = cleanData[category].map(item => {
           const cleanItem = { ...item };
+
+          if (category === 'otherActivities') {
+            if (cleanItem.activityType === undefined && cleanItem.type !== undefined) {
+              cleanItem.activityType = cleanItem.type;
+            }
+            if (cleanItem.activityName === undefined && cleanItem.name !== undefined) {
+              cleanItem.activityName = cleanItem.name;
+            }
+            delete cleanItem.type;
+            delete cleanItem.name;
+          }
+
           // Remove temporary IDs
           if (cleanItem._id && !isValidObjectId(cleanItem._id)) {
             delete cleanItem._id;
@@ -90,7 +102,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
           updatedCatalog.reviewCourses = updatedCatalog.reviewCourses.filter(item => item._id !== itemId);
           break;
         case 'vocational_training':
-          updatedCatalog.vocationalTraining = updatedCatalog.vocationalTraining.filter(item => item._id !== itemId);
+          updatedCatalog.vocationalTrainings = updatedCatalog.vocationalTrainings.filter(item => item._id !== itemId);
           break;
         case 'languages':
           updatedCatalog.languages = updatedCatalog.languages.filter(item => item._id !== itemId);
@@ -115,7 +127,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
       // Initialize arrays if they don't exist
       if (!updatedCatalog.supportLessons) updatedCatalog.supportLessons = [];
       if (!updatedCatalog.reviewCourses) updatedCatalog.reviewCourses = [];
-      if (!updatedCatalog.vocationalTraining) updatedCatalog.vocationalTraining = [];
+      if (!updatedCatalog.vocationalTrainings) updatedCatalog.vocationalTrainings = [];
       if (!updatedCatalog.languages) updatedCatalog.languages = [];
       if (!updatedCatalog.otherActivities) updatedCatalog.otherActivities = [];
 
@@ -133,7 +145,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
             );
             break;
           case 'vocational_training':
-            updatedCatalog.vocationalTraining = updatedCatalog.vocationalTraining.map(item =>
+            updatedCatalog.vocationalTrainings = updatedCatalog.vocationalTrainings.map(item =>
               item._id === editingItem._id ? { ...item, ...formData } : item
             );
             break;
@@ -172,7 +184,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
             }
             break;
           case 'vocational_training':
-            updatedCatalog.vocationalTraining.push(newItem);
+            updatedCatalog.vocationalTrainings.push(newItem);
             break;
           case 'languages':
             updatedCatalog.languages.push(newItem);
@@ -188,7 +200,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
       setEditingItem(null);
     } catch (error) {
       console.error('Error saving item:', error);
-      alert(t.failedToSaveCatalogItem);
+      alert(t.failedToSaveCatalogItem || t.failedToSaveLesson || t.failedToSaveCourse || t.failedToSaveActivity || t.failedToSaveTraining || 'Failed to save item. Please try again.');
     }
   };
 
@@ -376,7 +388,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
                 <>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.field}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.specialty}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.certificate}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.certificateType || t.certificate || 'Certificate Type'}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.gender}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.ageRange}</th>
                 </>
@@ -389,8 +401,8 @@ const CatalogTab = ({ catalog, onUpdate }) => {
               )}
               {activeTab === 'other_activities' && (
                 <>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.type}</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.name}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.activityType || t.type || 'Type'}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t.activityName || t.name || 'Name'}</th>
                 </>
               )}
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t.actions}</th>
@@ -441,8 +453,8 @@ const CatalogTab = ({ catalog, onUpdate }) => {
                 )}
                 {activeTab === 'other_activities' && (
                   <>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.type}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.activityType || item.type}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.activityName || item.name}</td>
                   </>
                 )}
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -536,7 +548,7 @@ const CatalogTab = ({ catalog, onUpdate }) => {
               <h3 className="text-lg font-semibold">{t.confirmDeleteItem}</h3>
             </div>
             <p className="text-gray-600 mb-6">
-              {t.confirmDelete}
+              {t.confirmDelete || t.confirmDeleteItem || 'Are you sure you want to delete this item?'}
             </p>
             <div className="flex justify-end gap-3">
               <button

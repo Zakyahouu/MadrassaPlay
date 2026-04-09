@@ -48,5 +48,20 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: ['socket.io-client'],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('react')) return 'react';
+            if (id.includes('chart.js') || id.includes('recharts')) return 'charts';
+            if (id.includes('three')) return 'three';
+            if (id.includes('socket.io')) return 'socket';
+            if (id.includes('jspdf') || id.includes('html2canvas')) return 'pdf';
+            return 'vendor';
+          },
+        },
+      },
+    },
   }
 })

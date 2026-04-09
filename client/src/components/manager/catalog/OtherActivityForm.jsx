@@ -5,8 +5,8 @@ import { useLanguage } from '../../../context/LanguageContext';
 const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
   const { t } = useLanguage();
   const [formData, setFormData] = useState({
-    type: '',
-    name: ''
+    activityType: '',
+    activityName: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -15,8 +15,8 @@ const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
   useEffect(() => {
     if (data) {
       setFormData({
-        type: data.type || '',
-        name: data.name || ''
+        activityType: data.activityType || data.type || '',
+        activityName: data.activityName || data.name || ''
       });
     }
   }, [data]);
@@ -25,11 +25,11 @@ const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.type.trim()) {
-      newErrors.type = t.activityTypeRequired || 'Activity type is required';
+    if (!formData.activityType.trim()) {
+      newErrors.activityType = t.activityTypeRequired || 'Activity type is required';
     }
-    if (!formData.name.trim()) {
-      newErrors.name = t.activityNameRequired || 'Activity name is required';
+    if (!formData.activityName.trim()) {
+      newErrors.activityName = t.activityNameRequired || 'Activity name is required';
     }
 
     setErrors(newErrors);
@@ -96,14 +96,14 @@ const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
             </label>
             <input
               type="text"
-              value={formData.type}
-              onChange={(e) => handleInputChange('type', e.target.value)}
+              value={formData.activityType}
+              onChange={(e) => handleInputChange('activityType', e.target.value)}
               placeholder={t.activityTypePlaceholder || 'e.g., Sport, Art, Music'}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${errors.type ? 'border-red-500' : 'border-gray-300'
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${errors.activityType ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
-            {errors.type && (
-              <p className="mt-1 text-sm text-red-600">{errors.type}</p>
+            {errors.activityType && (
+              <p className="mt-1 text-sm text-red-600">{errors.activityType}</p>
             )}
           </div>
 
@@ -114,14 +114,14 @@ const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
             </label>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
+              value={formData.activityName}
+              onChange={(e) => handleInputChange('activityName', e.target.value)}
               placeholder={t.activityNamePlaceholder || 'e.g., Football Club, Piano Lesson'}
-              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${errors.name ? 'border-red-500' : 'border-gray-300'
+              className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${errors.activityName ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            {errors.activityName && (
+              <p className="mt-1 text-sm text-red-600">{errors.activityName}</p>
             )}
           </div>
 
@@ -129,8 +129,8 @@ const OtherActivityForm = ({ isOpen, onClose, onSubmit, data }) => {
           <div className="p-4 bg-purple-50 rounded-lg">
             <h4 className="font-medium text-purple-900 mb-2">{t.summary || 'Summary'}</h4>
             <div className="space-y-1 text-sm text-purple-800">
-              <p><strong>{t.type || 'Type'}:</strong> {formData.type || (t.notSpecified || 'Not Specified')}</p>
-              <p><strong>{t.name || 'Name'}:</strong> {formData.name || (t.notSpecified || 'Not Specified')}</p>
+              <p><strong>{t.activityType || t.type || 'Type'}:</strong> {formData.activityType || (t.notSpecified || 'Not Specified')}</p>
+              <p><strong>{t.activityName || t.name || 'Name'}:</strong> {formData.activityName || (t.notSpecified || 'Not Specified')}</p>
             </div>
           </div>
         </form>

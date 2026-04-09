@@ -6,8 +6,6 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema(
   {
     // =============== Core Identity ===============
-    // Legacy 'name' kept for backward compatibility with older endpoints
-    name: { type: String, required: false },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: {
@@ -35,11 +33,6 @@ const userSchema = new mongoose.Schema(
     },
 
     // =============== Contact & Banking (optional) ===============
-    // Support legacy root-level fields
-    phone1: { type: String, trim: true },
-    phone2: { type: String, trim: true },
-    address: { type: String, trim: true },
-
     contact: {
       phone1: { type: String, trim: true },
       phone2: { type: String, trim: true },
@@ -188,6 +181,19 @@ userSchema.virtual('fullName').get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
+// Backward-compatible display fields derived from contact/name parts
+userSchema.virtual('name').get(function () {
+  return this.fullName;
+});
+
+userSchema.virtual('phone').get(function () {
+  return this.contact?.phone1;
+});
+
+userSchema.virtual('address').get(function () {
+  return this.contact?.address;
+});
+
 // Unified status (compatibility):
 // - teacher -> teacherStatus
 // - staff/employee -> staffStatus
@@ -222,27 +228,11 @@ userSchema.pre('validate', function (next) {
   next();
 });
 
-// Pre-save: maintain legacy 'name' behavior and hash password
+// Pre-save: hash password
 userSchema.pre('save', async function (next) {
   // Safety: ensure non-students never persist a studentCode value
   if (this.role !== 'student' && this.studentCode !== undefined) {
     try { delete this.studentCode; } catch (_) { this.studentCode = undefined; }
-  }
-  // Maintain backward compatibility with 'name' field
-  if (this.firstName && this.lastName && !this.name) {
-    this.name = `${this.firstName} ${this.lastName}`;
-  }
-
-  // If name is provided but not firstName/lastName, split it
-  if (this.name && (!this.firstName || !this.lastName)) {
-    const nameParts = this.name.trim().split(' ');
-    if (nameParts.length >= 2) {
-      this.firstName = nameParts[0];
-      this.lastName = nameParts.slice(1).join(' ');
-    } else {
-      this.firstName = nameParts[0] || '';
-      this.lastName = '';
-    }
   }
 
   // Hash password if modified and not already hashed

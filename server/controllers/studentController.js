@@ -160,9 +160,7 @@ const createStudent = asyncHandler(async (req, res) => {
     firstName,
     lastName,
     email,
-    phone, // legacy key, map to contact.phone1
-    phone2, // new optional phone 2
-    address, // legacy key, map to contact.address
+    contact,
     educationLevel,
     username,
     password,
@@ -195,18 +193,29 @@ const createStudent = asyncHandler(async (req, res) => {
     throw new Error('Student code already exists');
   }
 
-  const student = await User.create({
+  const studentData = {
     firstName,
     lastName,
     email,
-    contact: { phone1: phone, phone2, address },
     educationLevel,
     username,
     password,
     studentCode: finalStudentCode,
     role: 'student',
     school: schoolId
-  });
+  };
+
+  if (contact && typeof contact === 'object') {
+    const payload = {};
+    if (contact.phone1 !== undefined) payload.phone1 = contact.phone1;
+    if (contact.phone2 !== undefined) payload.phone2 = contact.phone2;
+    if (contact.address !== undefined) payload.address = contact.address;
+    if (Object.keys(payload).length > 0) {
+      studentData.contact = payload;
+    }
+  }
+
+  const student = await User.create(studentData);
 
   const studentResponse = student.toObject();
   delete studentResponse.password;
@@ -243,9 +252,7 @@ const updateStudent = asyncHandler(async (req, res) => {
     firstName,
     lastName,
     email,
-    phone,
-    phone2,
-    address,
+    contact,
     educationLevel,
     username,
     password,
@@ -274,9 +281,15 @@ const updateStudent = asyncHandler(async (req, res) => {
   if (firstName !== undefined) student.firstName = firstName;
   if (lastName !== undefined) student.lastName = lastName;
   if (email !== undefined) student.email = email;
-  if (phone !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), phone1: phone };
-  if (phone2 !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), phone2 };
-  if (address !== undefined) student.contact = { ...(student.contact?.toObject?.() || student.contact || {}), address };
+  if (contact && typeof contact === 'object') {
+    const current = student.contact?.toObject?.() || student.contact || {};
+    student.contact = {
+      ...current,
+      ...(contact.phone1 !== undefined ? { phone1: contact.phone1 } : {}),
+      ...(contact.phone2 !== undefined ? { phone2: contact.phone2 } : {}),
+      ...(contact.address !== undefined ? { address: contact.address } : {}),
+    };
+  }
   if (educationLevel !== undefined) student.educationLevel = educationLevel;
   if (username !== undefined) student.username = username;
   if (password !== undefined && password.trim() !== '') student.password = password;
@@ -1305,7 +1318,8 @@ const getStudentHistory = asyncHandler(async (req, res) => {
   res.json({
     student: {
       id: student._id,
-      name: `${student.firstName} ${student.lastName}`.trim(),
+      firstName: student.firstName,
+      lastName: student.lastName,
       studentCode: student.studentCode,
     },
     timeline,
@@ -1397,7 +1411,6 @@ const searchStudents = asyncHandler(async (req, res) => {
     $or: [
       { firstName: searchRegex },
       { lastName: searchRegex },
-      { name: searchRegex },
       { email: searchRegex },
       { 'contact.phone1': searchRegex },
       { studentCode: searchRegex }

@@ -5,20 +5,85 @@ import {
   Building2, Users, RefreshCw, Lightbulb
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { translations } from '../../lib/translations';
 
 const getUser = () => {
   try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
 };
 const authConfig = () => ({ headers: { Authorization: `Bearer ${getUser()?.token}` } });
 
-const deriveActivityTypes = (catalog, t) => {
+const ACTIVITY_TYPE_KEYS = [
+  'supportLessons',
+  'reviewCourses',
+  'vocationalTrainings',
+  'languages',
+  'otherActivities'
+];
+
+const ACTIVITY_TYPE_LABELS = {
+  supportLessons: (t) => t.supportLessons || 'Support Lessons',
+  reviewCourses: (t) => t.reviewCourses || 'Review Courses',
+  vocationalTrainings: (t) => t.vocationalTrainings || 'Vocational Trainings',
+  languages: (t) => t.languages || 'Languages',
+  otherActivities: (t) => t.otherActivities || 'Other Activities'
+};
+
+const ACTIVITY_TYPE_ALIAS_MAP = new Map();
+
+const registerActivityAlias = (label, key) => {
+  if (!label) return;
+  const trimmed = String(label).trim();
+  if (trimmed) ACTIVITY_TYPE_ALIAS_MAP.set(trimmed, key);
+};
+
+Object.values(translations).forEach((lang) => {
+  registerActivityAlias(lang.supportLessons, 'supportLessons');
+  registerActivityAlias(lang.reviewCourses, 'reviewCourses');
+  registerActivityAlias(lang.vocationalTrainings, 'vocationalTrainings');
+  registerActivityAlias(lang.languages, 'languages');
+  registerActivityAlias(lang.otherActivities, 'otherActivities');
+});
+
+registerActivityAlias('Support Lessons', 'supportLessons');
+registerActivityAlias('Review Courses', 'reviewCourses');
+registerActivityAlias('Vocational Trainings', 'vocationalTrainings');
+registerActivityAlias('Vocational Training', 'vocationalTrainings');
+registerActivityAlias('Languages', 'languages');
+registerActivityAlias('Other Activities', 'otherActivities');
+
+const normalizeActivityType = (value) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return '';
+  if (ACTIVITY_TYPE_KEYS.includes(trimmed)) return trimmed;
+  return ACTIVITY_TYPE_ALIAS_MAP.get(trimmed) || trimmed;
+};
+
+const normalizeActivityTypes = (types) => {
+  if (!Array.isArray(types)) return [];
+  const normalized = [];
+  const seen = new Set();
+  types.forEach((type) => {
+    const next = normalizeActivityType(type);
+    if (!next || seen.has(next)) return;
+    seen.add(next);
+    normalized.push(next);
+  });
+  return normalized;
+};
+
+const getActivityTypeLabel = (key, t) => {
+  const labelFn = ACTIVITY_TYPE_LABELS[key];
+  return labelFn ? labelFn(t) : key;
+};
+
+const deriveActivityTypes = (catalog) => {
   const types = [];
   if (!catalog) return types;
-  if (Array.isArray(catalog.supportLessons) && catalog.supportLessons.length) types.push(t.supportLessons);
-  if (Array.isArray(catalog.reviewCourses) && catalog.reviewCourses.length) types.push(t.reviewCourses);
-  if (Array.isArray(catalog.vocationalTrainings) && catalog.vocationalTrainings.length) types.push(t.vocationalTrainings);
-  if (Array.isArray(catalog.languages) && catalog.languages.length) types.push(t.languages);
-  if (Array.isArray(catalog.otherActivities) && catalog.otherActivities.length) types.push(t.otherActivities);
+  if (Array.isArray(catalog.supportLessons) && catalog.supportLessons.length) types.push('supportLessons');
+  if (Array.isArray(catalog.reviewCourses) && catalog.reviewCourses.length) types.push('reviewCourses');
+  if (Array.isArray(catalog.vocationalTrainings) && catalog.vocationalTrainings.length) types.push('vocationalTrainings');
+  if (Array.isArray(catalog.languages) && catalog.languages.length) types.push('languages');
+  if (Array.isArray(catalog.otherActivities) && catalog.otherActivities.length) types.push('otherActivities');
   return types;
 };
 
@@ -161,7 +226,11 @@ const RoomsTab = () => {
     setError(null);
     try {
       const { data } = await axios.get('/api/rooms', authConfig());
-      setRooms(data || []);
+      const normalizedRooms = (data || []).map((room) => ({
+        ...room,
+        activityTypes: normalizeActivityTypes(room.activityTypes)
+      }));
+      setRooms(normalizedRooms);
     } catch (err) {
       setError(err.response?.data?.message || t.failedLoadData);
     } finally {
@@ -175,7 +244,7 @@ const RoomsTab = () => {
         const user = getUser();
         if (user?.school) {
           const { data: catalog } = await axios.get(`/api/catalog/${user.school}`, authConfig());
-          setActivityOptions(deriveActivityTypes(catalog, t));
+          setActivityOptions(deriveActivityTypes(catalog));
         }
       } catch (e) {
         // if catalog missing, leave options empty
@@ -352,7 +421,7 @@ const RoomsTab = () => {
                                     bg-blue-50 text-blue-700 border border-blue-200
                                   "
                                 >
-                                  {type}
+                                  {getActivityTypeLabel(type, t)}
                                 </span>
                               ))
                             ) : (
@@ -435,15 +504,15 @@ const RoomModal = ({ mode, data, onClose, onSave, activityOptions, existingRooms
   const [form, setForm] = useState({
     name: data?.name || (mode === 'create' ? generateNextRoomName(existingRooms, t) : ''),
     capacity: data?.capacity || 1,
-    activityTypes: data?.activityTypes || [],
+    activityTypes: normalizeActivityTypes(data?.activityTypes || []),
   });
 
-  const toggleActivity = (t) => {
+  const toggleActivity = (typeKey) => {
     setForm(prev => ({
       ...prev,
-      activityTypes: prev.activityTypes.includes(t)
-        ? prev.activityTypes.filter(x => x !== t)
-        : [...prev.activityTypes, t]
+      activityTypes: prev.activityTypes.includes(typeKey)
+        ? prev.activityTypes.filter(x => x !== typeKey)
+        : [...prev.activityTypes, typeKey]
     }));
   };
 
@@ -531,20 +600,20 @@ const RoomModal = ({ mode, data, onClose, onSave, activityOptions, existingRooms
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {activityOptions.map(t => (
+                {activityOptions.map(typeKey => (
                   <button
                     type="button"
-                    key={t}
-                    onClick={() => toggleActivity(t)}
+                    key={typeKey}
+                    onClick={() => toggleActivity(typeKey)}
                     className={`
                       px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200
-                      ${form.activityTypes.includes(t)
+                      ${form.activityTypes.includes(typeKey)
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
                       }
                     `}
                   >
-                    {t}
+                    {getActivityTypeLabel(typeKey, t)}
                   </button>
                 ))}
               </div>

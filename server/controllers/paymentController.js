@@ -68,7 +68,7 @@ async function buildReceiptMeta({ schoolId, enrollment, paymentPayload, actor })
     },
     cashier: {
       id: actor?._id?.toString(),
-      name: `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || actor?.name,
+      name: `${actor?.firstName || ''} ${actor?.lastName || ''}`.trim() || actor?.email || actor?.username || 'Unknown User',
       role: actor?.role,
     }
   };
@@ -100,7 +100,7 @@ const createPayment = async (req, res) => {
       return res.status(400).json({ message: 'Invalid school assignment.' });
     }
     const schoolId = new mongoose.Types.ObjectId(schoolIdRaw);
-    const enrollment = await Enrollment.findById(enrollmentId).populate('studentId', 'firstName lastName name');
+    const enrollment = await Enrollment.findById(enrollmentId).populate('studentId', 'firstName lastName');
     if (!enrollment || enrollment.schoolId.toString() !== schoolId.toString()) {
       return res.status(404).json({ message: 'Enrollment not found.' });
     }
@@ -193,7 +193,7 @@ const createPayment = async (req, res) => {
     const studentName = enrollment.studentId
       ? (enrollment.studentId.firstName && enrollment.studentId.lastName
         ? `${enrollment.studentId.firstName} ${enrollment.studentId.lastName}`
-        : enrollment.studentId.name || enrollment.studentId._id)
+        : enrollment.studentId._id)
       : 'Unknown Student';
 
     await LoggingService.logManagerActivity(req, 'manager_payment_record',
@@ -600,7 +600,7 @@ module.exports.getPaymentsForTeacher = async (req, res) => {
 
     const items = await Payment.find(visibility)
       .sort({ createdAt: -1 })
-      .populate('studentId', 'firstName lastName name studentCode')
+      .populate('studentId', 'firstName lastName studentCode')
       .populate('classId', 'name')
       .limit(safeLimit)
       .skip(safeSkip)

@@ -23,12 +23,11 @@ const listUsersForManager = asyncHandler(async (req, res) => {
     filter.$or = [
       { firstName: new RegExp(q, 'i') },
       { lastName: new RegExp(q, 'i') },
-      { name: new RegExp(q, 'i') },
       { email: new RegExp(q, 'i') },
     ];
   }
 
-  const users = await User.find(filter).select('_id firstName lastName name email role studentCode').limit(500).lean();
+  const users = await User.find(filter).select('_id firstName lastName email role studentCode').limit(500).lean();
   res.json(users || []);
 });
 

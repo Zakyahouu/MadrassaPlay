@@ -249,7 +249,7 @@ const getResultsForGame = async (req, res) => {
     }
 
     const results = await GameResult.find(resultQuery)
-      .populate('student', 'name')
+      .populate('student', 'firstName lastName')
       .sort({ createdAt: -1 });
 
     res.status(200).json(results);
@@ -271,7 +271,7 @@ module.exports = {
 module.exports.getResultDetail = async (req, res) => {
   try {
     const { resultId } = req.params;
-    const result = await GameResult.findById(resultId).populate('student', 'firstName lastName name').lean();
+    const result = await GameResult.findById(resultId).populate('student', 'firstName lastName').lean();
     if (!result) return res.status(404).json({ message: 'Result not found' });
 
     // Authorization: teacher must own the game; admin/manager allowed; student can only see own
