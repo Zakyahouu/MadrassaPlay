@@ -36,8 +36,8 @@ const TeacherOverview = () => {
         const [creRes, clsRes, pastRes, actRes, uniqRes] = await Promise.all([
           axios.get('/api/creations', { headers }),
           axios.get('/api/classes/teacher', { headers }),
-          axios.get('/api/live-sessions', { params: { status: 'past' }, headers }),
-          axios.get('/api/live-sessions', { params: { status: 'active' }, headers }),
+          axios.get('/api/live-sessions', { params: { status: 'past', limit: 50 }, headers }),
+          axios.get('/api/live-sessions', { params: { status: 'active', limit: 50 }, headers }),
           axios.get('/api/classes/teacher/students/count', { headers }),
         ]);
         if (!mounted) return;

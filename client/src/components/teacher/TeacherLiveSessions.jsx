@@ -68,7 +68,7 @@ const TeacherLiveSessions = () => {
     try {
       setLoadingActive(true);
       setErrorActive(null);
-      const { data } = await axios.get('/api/live-sessions', { params: { status: 'active' }, headers: authHeaders() });
+      const { data } = await axios.get('/api/live-sessions', { params: { status: 'active', limit: 50 }, headers: authHeaders() });
       setActiveSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
       console.error('Failed to load active sessions', e);
@@ -83,7 +83,7 @@ const TeacherLiveSessions = () => {
     try {
       setLoadingPast(true);
       setErrorPast(null);
-      const { data } = await axios.get('/api/live-sessions', { params: { status: 'past' }, headers: authHeaders() });
+      const { data } = await axios.get('/api/live-sessions', { params: { status: 'past', limit: 50 }, headers: authHeaders() });
       setPastSessions(Array.isArray(data) ? data : (data?.sessions || []));
     } catch (e) {
       console.error('Failed to load past sessions', e);

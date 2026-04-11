@@ -49,6 +49,7 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const [actionModal, setActionModal] = useState({ type: null, enrollment: null });
   const [actionForm, setActionForm] = useState({ reason: '', targetClassId: '' });
   const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [attendanceNotes, setAttendanceNotes] = useState({});
   const [transferClasses, setTransferClasses] = useState([]);
   const actionTitles = {
     transfer: 'Transfer Enrollment',
@@ -340,7 +341,18 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
   const markAttendance = async (enrollmentId, status) => {
     try {
       const date = new Date().toISOString().slice(0, 10);
-      await axios.post('/api/attendance/mark', { enrollmentId, date, status });
+      const noteValue = (attendanceNotes[enrollmentId] || '').trim();
+      const payload = { enrollmentId, date, status };
+      if (noteValue) payload.note = noteValue;
+      await axios.post('/api/attendance/mark', payload);
+      if (noteValue) {
+        setAttendanceNotes((prev) => {
+          if (!prev[enrollmentId]) return prev;
+          const nextNotes = { ...prev };
+          delete nextNotes[enrollmentId];
+          return nextNotes;
+        });
+      }
       await fetchStudentData();
     } catch (e) {
       alert(e?.response?.data?.message || 'Failed to mark attendance');
@@ -877,6 +889,20 @@ const StudentProfilePopup = ({ student, isOpen, onClose, onRefresh, onEdit }) =>
                                   <span className="inline-flex items-center gap-1">
                                     <CreditCard className="w-4 h-4" />{t.payment}</span>
                                 </button>
+                              </div>
+
+                              <div className="mt-3">
+                                <label className="block text-xs font-medium text-gray-500 mb-1">
+                                  {t.noteOptional || t.note || 'Note (Optional)'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={attendanceNotes[enrollment._id] || ''}
+                                  onChange={(eArg) => setAttendanceNotes(prev => ({ ...prev, [enrollment._id]: eArg.target.value }))}
+                                  placeholder={t.noteOptional || t.note || 'Note (Optional)'}
+                                  maxLength={500}
+                                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                />
                               </div>
 
                               <div className="mt-3 flex flex-wrap gap-2 text-xs">

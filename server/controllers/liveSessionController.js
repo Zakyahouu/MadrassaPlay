@@ -56,7 +56,7 @@ exports.createSession = async (req, res) => {
 exports.listSessions = async (req, res) => {
   try {
     if (req.user.role !== 'teacher') return res.status(403).json({ message: 'Teacher only' });
-    const { status } = req.query;
+    const { status, limit } = req.query;
     const q = { teacherId: req.user._id };
     // Map friendly filters to schema statuses
     if (status === 'active') {
@@ -67,7 +67,10 @@ exports.listSessions = async (req, res) => {
       q.status = status; // allow direct usage if provided
     }
 
-    const sessions = await LiveSession.find(q).sort({ createdAt: -1 }).lean();
+    const cappedLimit = Math.min(Math.max(parseInt(limit, 10) || 0, 0), 200) || null;
+    let query = LiveSession.find(q).sort({ createdAt: -1 });
+    if (cappedLimit) query = query.limit(cappedLimit);
+    const sessions = await query.lean();
     if (!sessions.length) return res.json([]);
 
     // Attach basic game info
@@ -99,7 +102,7 @@ exports.getSummary = async (req, res) => {
     const { id } = req.params;
     const s = await LiveSession.findById(id).lean();
     if (!s) return res.status(404).json({ message: 'Not found' });
-    if (String(s.teacherId) !== String(req.user._id) && req.user.role !== 'admin' && req.user.role !== 'manager') {
+    if (String(s.teacherId) !== String(req.user._id)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     const participants = await LiveParticipant.find({ sessionId: id }).lean();
@@ -125,7 +128,7 @@ exports.getDetails = async (req, res) => {
     const { id } = req.params;
     const s = await LiveSession.findById(id).lean();
     if (!s) return res.status(404).json({ message: 'Not found' });
-    if (String(s.teacherId) !== String(req.user._id) && req.user.role !== 'admin' && req.user.role !== 'manager') {
+    if (String(s.teacherId) !== String(req.user._id)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     const creation = await GameCreation.findById(s.gameCreationId).select('_id name').lean();
@@ -138,7 +141,7 @@ exports.endSession = async (req, res) => {
     const { id } = req.params;
     const s = await LiveSession.findById(id);
     if (!s) return res.status(404).json({ message: 'Not found' });
-    if (String(s.teacherId) !== String(req.user._id) && req.user.role !== 'admin' && req.user.role !== 'manager') {
+    if (String(s.teacherId) !== String(req.user._id)) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     if (s.status === 'ended') return res.json({ message: 'Already ended' });
@@ -157,9 +160,9 @@ exports.deleteSession = async (req, res) => {
     const { id } = req.params;
     const s = await LiveSession.findById(id).lean();
     if (!s) return res.status(404).json({ message: 'Not found' });
-    // Only the owning teacher (or admins/managers) can delete
+    // Only the owning teacher can delete
     const isOwner = String(s.teacherId) === String(req.user._id);
-    if (!isOwner && req.user.role !== 'admin' && req.user.role !== 'manager') {
+    if (!isOwner) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     // Only allow deleting ended sessions to avoid accidental active removal

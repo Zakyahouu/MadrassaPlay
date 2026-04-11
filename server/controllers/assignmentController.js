@@ -52,6 +52,9 @@ const getCanAttempt = async (req, res) => {
 // @access  Private/Teacher
 const createAssignment = async (req, res) => {
   try {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Teacher only' });
+  }
   const { title, description, gameCreations, startDate, endDate, classIds, attemptLimit } = req.body;
 
     // Basic validation
@@ -172,6 +175,9 @@ const getMyAssignments = async (req, res) => {
 // @access  Private/Teacher
 const getAssignmentsForTeacher = async (req, res) => {
   try {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Teacher only' });
+  }
   const { page, limit, status } = req.query;
     const teacherOnly = { teacher: req.user._id };
     const now = new Date();
@@ -447,6 +453,14 @@ const updateAssignment = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
   const { title, description, startDate, endDate, attemptLimit } = req.body;
+    const nextStart = startDate !== undefined ? new Date(startDate) : a.startDate;
+    const nextEnd = endDate !== undefined ? new Date(endDate) : a.endDate;
+    if (nextStart && nextEnd && nextStart >= nextEnd) {
+      return res.status(400).json({ message: 'End date must be after start date.' });
+    }
+    if (attemptLimit !== undefined && (!Number.isInteger(attemptLimit) || attemptLimit < 1 || attemptLimit > 10)) {
+      return res.status(400).json({ message: 'Attempt limit must be an integer between 1 and 10.' });
+    }
     if (title !== undefined) a.title = title;
   if (description !== undefined) a.description = description;
     if (startDate !== undefined) a.startDate = new Date(startDate);

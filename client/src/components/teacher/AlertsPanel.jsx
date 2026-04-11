@@ -1,12 +1,9 @@
 import React from 'react';
-import { AlertCircle, X, CheckCircle, Bell } from 'lucide-react';
+import { X, Bell } from 'lucide-react';
 
-const AlertsPanel = ({ onClose }) => {
-    const alerts = [
-        { id: 1, type: 'urgent', message: 'Submit grades for Grade 10 Math by Friday.', time: '2h ago' },
-        { id: 2, type: 'info', message: 'Staff meeting at 3:00 PM in the conference room.', time: '5h ago' },
-        { id: 3, type: 'success', message: 'System maintenance completed successfully.', time: '1d ago' },
-    ];
+const AlertsPanel = ({ onClose, alerts = [] }) => {
+    const items = Array.isArray(alerts) ? alerts : [];
+    const hasAlerts = items.length > 0;
 
     return (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
@@ -23,7 +20,13 @@ const AlertsPanel = ({ onClose }) => {
             </div>
 
             <div className="p-4 space-y-3 overflow-y-auto">
-                {alerts.map(alert => (
+                {!hasAlerts && (
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600">
+                        No alerts yet.
+                    </div>
+                )}
+
+                {items.map(alert => (
                     <div key={alert.id} className="p-3 rounded-xl border border-gray-100 bg-gray-50 flex gap-3 items-start">
                         <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${alert.type === 'urgent' ? 'bg-red-500' :
                                 alert.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
@@ -34,10 +37,6 @@ const AlertsPanel = ({ onClose }) => {
                         </div>
                     </div>
                 ))}
-
-                <button className="w-full py-2 text-xs font-medium text-gray-500 hover:text-indigo-600 hover:bg-gray-50 rounded-lg border border-dashed border-gray-200 transition-colors">
-                    + Create New Alert
-                </button>
             </div>
         </div>
     );

@@ -27,6 +27,7 @@ const attendanceSchema = new mongoose.Schema(
       enum: ['present', 'absent'],
       required: true,
     },
+    note: { type: String, trim: true, maxlength: 500 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     createdAt: { type: Date, default: Date.now },
   },

@@ -49,9 +49,17 @@ const history = asyncHandler(async (req, res) => {
   }
 
   const q = { enrollmentId: new Types.ObjectId(enrollmentId) };
-  if (status && ['present','absent'].includes(status)) q.status = status;
-  const items = await Attendance.find(q).sort({ date: -1 });
-  res.json({ items });
+  if (status && ['present', 'absent'].includes(status)) q.status = status;
+  const items = await Attendance.find(q)
+    .populate('createdBy', 'firstName lastName role')
+    .sort({ date: -1 })
+    .lean();
+
+  const mapped = items.map((item) => ({
+    ...item,
+    markedBy: item.createdBy || null,
+  }));
+  res.json({ items: mapped });
 });
 
 // Normalize YYYY-MM-DD to UTC date-only
@@ -62,10 +70,19 @@ function toUtcDateOnly(dateStr) {
 
 // POST /api/attendance/mark
 const mark = asyncHandler(async (req, res) => {
-  const { enrollmentId, date, status } = req.body || {};
+  const { enrollmentId, date, status, note } = req.body || {};
   if (!enrollmentId || !date || !['present', 'absent'].includes(status)) {
     res.status(400);
     throw new Error('enrollmentId, date (YYYY-MM-DD) and valid status are required');
+  }
+  if (note !== undefined && typeof note !== 'string') {
+    res.status(400);
+    throw new Error('note must be a string');
+  }
+  const trimmedNote = typeof note === 'string' ? note.trim() : undefined;
+  if (trimmedNote && trimmedNote.length > 500) {
+    res.status(400);
+    throw new Error('note is too long (max 500 characters)');
   }
   if (!mongoose.isValidObjectId(enrollmentId)) {
     res.status(400);
@@ -116,6 +133,9 @@ const mark = asyncHandler(async (req, res) => {
       createdAt: new Date(),
     },
   };
+  if (trimmedNote) {
+    updateDoc.$set.note = trimmedNote;
+  }
   const attendanceUpserted = await Attendance.findOneAndUpdate(
     { enrollmentId, date: dateOnly },
     updateDoc,

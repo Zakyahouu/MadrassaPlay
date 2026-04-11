@@ -12,9 +12,7 @@ import {
   Calendar,
   FileText,
   Play,
-  Award,
-  Target,
-  Sparkles
+  Award
 } from 'lucide-react';
 
 const TeacherSideBar = ({
@@ -22,7 +20,8 @@ const TeacherSideBar = ({
   setActiveTab,
   sidebarOpen,
   setSidebarOpen,
-  user
+  user,
+  stats
 }) => {
   const { t } = useLanguage();
   const navigationItems = [
@@ -37,6 +36,12 @@ const TeacherSideBar = ({
     { id: 'performance', name: 'Performance', icon: TrendingUp },
     { id: 'achievements', name: 'Achievements', icon: Award }
   ];
+
+  const quickStats = [
+    { label: t.activeGames || 'Active Games', value: stats?.activeGames },
+    { label: t.totalStudents || 'Total Students', value: stats?.totalStudents },
+    { label: t.averageScore || 'Avg. Score', value: stats?.averageScore },
+  ].filter((item) => item.value !== undefined && item.value !== null);
 
   return (
     <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-surface-light border-r border-border-light shadow-sm transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-all duration-300 ease-out lg:translate-x-0 lg:static lg:inset-0`}>
@@ -79,26 +84,21 @@ const TeacherSideBar = ({
         </div>
       </nav>
 
-      {/* Quick Stats */}
-      <div className="mt-8 px-4">
-        <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
-          <h3 className="text-sm font-semibold text-text-main-light mb-3">Quick Stats</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-text-muted-light">Active Games</span>
-              <span className="font-semibold text-text-main-light">12</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-muted-light">Total Students</span>
-              <span className="font-semibold text-text-main-light">156</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-text-muted-light">Avg. Score</span>
-              <span className="font-semibold text-text-main-light">87%</span>
+      {quickStats.length > 0 && (
+        <div className="mt-8 px-4">
+          <div className="bg-primary/5 rounded-xl p-4 border border-primary/10">
+            <h3 className="text-sm font-semibold text-text-main-light mb-3">Quick Stats</h3>
+            <div className="space-y-2">
+              {quickStats.map((stat) => (
+                <div key={stat.label} className="flex justify-between text-xs">
+                  <span className="text-text-muted-light">{stat.label}</span>
+                  <span className="font-semibold text-text-main-light">{stat.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Sidebar Footer */}
       <div className="absolute bottom-6 left-4 right-4">

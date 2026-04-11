@@ -411,6 +411,22 @@ const deleteGameCreation = asyncHandler(async (req, res) => {
     res.status(403);
     throw new Error('User not authorized to delete this game');
   }
+  // Prevent deletion if the game is used in any active/upcoming assignment
+  try {
+    const Assignment = require('../models/Assignment');
+    const now = new Date();
+    const inUse = await Assignment.exists({
+      gameCreations: gameCreation._id,
+      status: { $nin: ['canceled', 'completed'] },
+      endDate: { $gte: now },
+    });
+    if (inUse) {
+      res.status(400);
+      throw new Error('Cannot delete: game is used in an active assignment.');
+    }
+  } catch (e) {
+    if (e && e.message) throw e;
+  }
   // Also delete associated results and uploaded assets under /public/uploads/templates/<templateId>/creations/<creationId>
   const GameResult = require('../models/GameResult');
   await GameResult.deleteMany({ gameCreation: gameCreation._id });

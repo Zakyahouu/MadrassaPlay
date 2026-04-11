@@ -121,7 +121,8 @@ const UnifiedSidebar = ({
             { id: 'students', name: t.myClasses, icon: Users },
             { id: 'timetable', name: t.timetable, icon: Calendar },
             { id: 'live-sessions', name: t.liveSessions, icon: Play },
-            { id: 'assignments', name: t.assignments, icon: FileText }
+            { id: 'assignments', name: t.assignments, icon: FileText },
+            { id: 'results', name: t.results || 'Results', icon: TrendingUp }
           ]),
           createGroup(t.content || 'Content', [
             { id: 'my-games', name: t.myGames, icon: BookOpen },

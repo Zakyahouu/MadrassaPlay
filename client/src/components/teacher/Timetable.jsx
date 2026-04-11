@@ -37,6 +37,7 @@ const Timetable = () => {
   const [teachers, setTeachers] = useState([]); // kept for future; hidden in UI for teacher role
   const [rooms, setRooms] = useState([]);
   const [filterCategory, setFilterCategory] = useState('all'); // New state for dropdown filter category
+  const [error, setError] = useState(null);
 
   // Generate 1-hour time slots from 8 AM to midnight
   const formatTimeLabel = (time) => {
@@ -107,13 +108,14 @@ const Timetable = () => {
   const fetchClasses = async () => {
     try {
       setLoading(true);
+      setError(null);
       // Fetch classes for the current teacher
       const response = await axios.get('/api/classes/teacher', { headers: authHeaders() });
       setClasses(response.data || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
-      // For demo purposes, use mock data
-      setClasses(mockClasses);
+      setClasses([]);
+      setError('Failed to load classes.');
     } finally {
       setLoading(false);
     }
@@ -136,87 +138,9 @@ const Timetable = () => {
       setRooms(response.data || []);
     } catch (error) {
       console.error('Error fetching rooms:', error);
-      // Mock room data for demonstration
-      setRooms([
-        { _id: 'room1', name: 'Room 101' },
-        { _id: 'room2', name: 'Room 102' },
-        { _id: 'room3', name: 'Lab 201' },
-        { _id: 'room4', name: 'Computer Lab' },
-        { _id: 'room5', name: 'Art Studio' },
-        { _id: 'room6', name: 'Room 103' }
-      ]);
+      setRooms([]);
     }
   };
-
-  // Mock data for demonstration
-  const mockClasses = [
-    {
-      _id: '1',
-      name: 'Advanced Mathematics',
-      catalogItem: { type: 'reviewCourses' },
-      teacherId: 'teacher1',
-      roomId: { _id: 'room1', name: 'Room 101', capacity: 25 },
-      capacity: 25,
-      status: 'active',
-      schedules: [
-        { dayOfWeek: 'saturday', startTime: '08:00', endTime: '10:00' },
-        { dayOfWeek: 'monday', startTime: '08:00', endTime: '10:00' },
-        { dayOfWeek: 'wednesday', startTime: '08:00', endTime: '10:00' }
-      ]
-    },
-    {
-      _id: '2',
-      name: 'English Literature',
-      catalogItem: { type: 'languages' },
-      teacherId: 'teacher1',
-      roomId: { _id: 'room2', name: 'Room 102', capacity: 20 },
-      capacity: 20,
-      status: 'active',
-      schedules: [
-        { dayOfWeek: 'saturday', startTime: '10:00', endTime: '12:00' },
-        { dayOfWeek: 'tuesday', startTime: '10:00', endTime: '12:00' },
-        { dayOfWeek: 'thursday', startTime: '10:00', endTime: '12:00' }
-      ]
-    },
-    {
-      _id: '3',
-      name: 'Science Lab',
-      catalogItem: { type: 'supportLessons' },
-      teacherId: 'teacher1',
-      roomId: { _id: 'room3', name: 'Lab 201', capacity: 15 },
-      capacity: 15,
-      status: 'active',
-      schedules: [
-        { dayOfWeek: 'sunday', startTime: '14:00', endTime: '16:00' },
-        { dayOfWeek: 'tuesday', startTime: '14:00', endTime: '16:00' }
-      ]
-    },
-    {
-      _id: '4',
-      name: 'Computer Programming',
-      catalogItem: { type: 'vocationalTrainings' },
-      teacherId: 'teacher1',
-      roomId: { _id: 'room4', name: 'Computer Lab', capacity: 18 },
-      capacity: 18,
-      status: 'active',
-      schedules: [
-        { dayOfWeek: 'monday', startTime: '16:00', endTime: '18:00' },
-        { dayOfWeek: 'wednesday', startTime: '16:00', endTime: '18:00' }
-      ]
-    },
-    {
-      _id: '5',
-      name: 'Art & Creativity',
-      catalogItem: { type: 'otherActivities' },
-      teacherId: 'teacher1',
-      roomId: { _id: 'room5', name: 'Art Studio', capacity: 12 },
-      capacity: 12,
-      status: 'active',
-      schedules: [
-        { dayOfWeek: 'friday', startTime: '18:00', endTime: '20:00' }
-      ]
-    }
-  ];
 
   const getClassesForTimeSlot = (day, timeSlot) => {
     const normalizeTime = (t) => {
@@ -341,6 +265,12 @@ const Timetable = () => {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Advanced Filters */}
       {showFilters && (

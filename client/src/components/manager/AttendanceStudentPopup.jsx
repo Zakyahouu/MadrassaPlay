@@ -13,6 +13,7 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [marking, setMarking] = useState(false);
+  const [notesByEnrollment, setNotesByEnrollment] = useState({});
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [activeTab, setActiveTab] = useState('payments'); // 'payments' or 'attendance'
@@ -88,7 +89,18 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
     try {
       setMarking(true);
       const date = new Date().toISOString().slice(0, 10);
-      await axios.post('/api/attendance/mark', { enrollmentId, date, status });
+      const noteValue = (notesByEnrollment[enrollmentId] || '').trim();
+      const payload = { enrollmentId, date, status };
+      if (noteValue) payload.note = noteValue;
+      await axios.post('/api/attendance/mark', payload);
+      if (noteValue) {
+        setNotesByEnrollment((prev) => {
+          if (!prev[enrollmentId]) return prev;
+          const nextNotes = { ...prev };
+          delete nextNotes[enrollmentId];
+          return nextNotes;
+        });
+      }
       if (student?._id) {
         const { data } = await axios.get(`/api/enrollments/student/${student._id}`);
         setEnrollments(Array.isArray(data) ? data.filter(e => e.status === 'active') : []);
@@ -342,6 +354,20 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
                           </button>
                         </div>
                       </div>
+
+                      <div className="mt-4">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          {t.noteOptional || t.note}
+                        </label>
+                        <input
+                          type="text"
+                          value={notesByEnrollment[e._id] || ''}
+                          onChange={(eArg) => setNotesByEnrollment(prev => ({ ...prev, [e._id]: eArg.target.value }))}
+                          placeholder={t.noteOptional || t.note}
+                          maxLength={500}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        />
+                      </div>
                     </div>
                   );
                 })}
@@ -519,37 +545,37 @@ const AttendanceStudentPopup = ({ isOpen, onClose, student, initialEnrollments }
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {attendanceHistory.map((record, index) => (
-                            <tr key={record._id || index} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                              <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                {record.date ? new Date(record.date).toLocaleDateString() : '—'}
-                              </td>
-                              <td className="px-6 py-4 text-sm">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${record.status === 'present'
-                                  ? 'bg-green-100 text-green-800'
-                                  : record.status === 'absent'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                  {record.status === 'present' ? (
-                                    <CheckCircle className="w-3 h-3 mr-1" />
-                                  ) : record.status === 'absent' ? (
-                                    <XCircle className="w-3 h-3 mr-1" />
-                                  ) : null}
-                                  {t[record.status] || record.status || '—'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-700">
-                                {record.markedBy ?
-                                  `${record.markedBy.firstName || ''} ${record.markedBy.lastName || ''}`.trim() :
-                                  '—'
-                                }
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                                {record.note || '—'}
-                              </td>
-                            </tr>
-                          ))}
+                          {attendanceHistory.map((record, index) => {
+                            const marker = record.markedBy || record.createdBy;
+                            return (
+                              <tr key={record._id || index} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                  {record.date ? new Date(record.date).toLocaleDateString() : '—'}
+                                </td>
+                                <td className="px-6 py-4 text-sm">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${record.status === 'present'
+                                    ? 'bg-green-100 text-green-800'
+                                    : record.status === 'absent'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                    {record.status === 'present' ? (
+                                      <CheckCircle className="w-3 h-3 mr-1" />
+                                    ) : record.status === 'absent' ? (
+                                      <XCircle className="w-3 h-3 mr-1" />
+                                    ) : null}
+                                    {t[record.status] || record.status || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-700">
+                                  {marker ? `${marker.firstName || ''} ${marker.lastName || ''}`.trim() : '—'}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                  {record.note || '—'}
+                                </td>
+                              </tr>
+                            );
+                          })}
                           {attendanceHistory.length === 0 && (
                             <tr>
                               <td colSpan={4} className="px-6 py-16 text-center">

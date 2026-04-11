@@ -11,6 +11,7 @@ import TopNav from '../components/layout/TopNav';
 import TeacherOverview from '../components/teacher/TeacherOverview';
 import TeacherLiveSessions from '../components/teacher/TeacherLiveSessions';
 import TeacherAssignments from '../components/teacher/TeacherAssignments';
+import TeacherResults from '../components/teacher/TeacherResults';
 import TeacherStudents from '../components/teacher/TeacherStudents';
 import TeacherResources from '../components/teacher/TeacherResources';
 import MyCreations from '../components/teacher/MyCreations';
@@ -40,14 +41,7 @@ const TeacherDashboard = () => {
   const [adsPanelOpen, setAdsPanelOpen] = useState(false);
   // Removed fake stats state
 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const [loading] = useState(false);
 
   // React to tab query param changes (e.g., when navigating back from summary)
   useEffect(() => {
@@ -64,6 +58,7 @@ const TeacherDashboard = () => {
     { id: 'create-game', name: t.createGame },
     { id: 'live-sessions', name: t.liveSessions },
     { id: 'assignments', name: t.assignments },
+    { id: 'results', name: t.results || 'Results' },
     { id: 'resources', name: t.resources },
     { id: 'timetable', name: t.timetable },
     { id: 'students', name: t.myClasses },
@@ -94,6 +89,8 @@ const TeacherDashboard = () => {
         return <TeacherLiveSessions />;
       case 'assignments':
         return <TeacherAssignments />;
+      case 'results':
+        return <TeacherResults />;
       case 'resources':
         return <TeacherResources />;
       case 'timetable':
@@ -112,16 +109,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{t.loadingDashboard}</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   return (
     <div className="min-h-screen bg-background-light lg:flex">

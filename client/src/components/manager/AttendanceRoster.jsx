@@ -16,6 +16,10 @@ const AttendanceRoster = ({ classId, date }) => {
 	const [historyLoading, setHistoryLoading] = useState(false);
 	const [historyItems, setHistoryItems] = useState([]);
 	const [historyFor, setHistoryFor] = useState(null); // enrollmentId
+	const [notesByEnrollment, setNotesByEnrollment] = useState({});
+	const [noteOpenByEnrollment, setNoteOpenByEnrollment] = useState({});
+	const [bulkMarking, setBulkMarking] = useState(false);
+	const [showUnmarkedOnly, setShowUnmarkedOnly] = useState(false);
 	const [savingIds, setSavingIds] = useState(() => new Set()); // enrollmentIds currently saving
 	const [recentActions, setRecentActions] = useState(() => new Map()); // enrollmentId -> { action, timestamp }
 
@@ -54,12 +58,40 @@ const AttendanceRoster = ({ classId, date }) => {
 		if (classId && date) fetchRoster();
 	}, [classId, date]);
 
+	const attendanceCounts = useMemo(() => {
+		const counts = { present: 0, absent: 0, unmarked: 0 };
+		for (const it of items) {
+			if (it.todayStatus === 'present') counts.present += 1;
+			else if (it.todayStatus === 'absent') counts.absent += 1;
+			else counts.unmarked += 1;
+		}
+		return counts;
+	}, [items]);
+
+	const unmarkedCount = attendanceCounts.unmarked;
+
+	const displayItems = useMemo(() => {
+		if (!showUnmarkedOnly) return items;
+		return items.filter((it) => !it.todayStatus);
+	}, [items, showUnmarkedOnly]);
+
 	const mark = async (enrollmentId, status) => {
 		setSavingIds(prev => new Set(prev).add(enrollmentId));
 		try {
-			const res = await axios.post('/api/attendance/mark', { enrollmentId, date, status });
+			const noteValue = (notesByEnrollment[enrollmentId] || '').trim();
+			const payload = { enrollmentId, date, status };
+			if (noteValue) payload.note = noteValue;
+			const res = await axios.post('/api/attendance/mark', payload);
 			const next = (res && res.data && Array.isArray(res.data.items)) ? res.data.items : items;
 			setItems(next);
+			if (noteValue) {
+				setNotesByEnrollment(prev => {
+					if (!prev[enrollmentId]) return prev;
+					const nextNotes = { ...prev };
+					delete nextNotes[enrollmentId];
+					return nextNotes;
+				});
+			}
 
 			setRecentActions(prev => {
 				const newMap = new Map(prev);
@@ -121,6 +153,31 @@ const AttendanceRoster = ({ classId, date }) => {
 				n.delete(enrollmentId);
 				return n;
 			});
+		}
+	};
+
+	const markAllPresent = async () => {
+		if (bulkMarking || unmarkedCount === 0) return;
+		const message = (t.confirmMarkAllPresent || 'Mark all unmarked students as present?')
+			.replace('{count}', String(unmarkedCount));
+		if (!window.confirm(message)) return;
+		const targets = items
+			.filter((it) => !it.todayStatus)
+			.map((it) => (it.enrollmentId || '').toString())
+			.filter(Boolean);
+		if (!targets.length) return;
+		setBulkMarking(true);
+		try {
+			await Promise.allSettled(
+				targets.map((enrollmentId) =>
+					axios.post('/api/attendance/mark', { enrollmentId, date, status: 'present' })
+				)
+			);
+			await fetchRoster();
+		} catch (e) {
+			alert(e?.response?.data?.message || t.failedToMark);
+		} finally {
+			setBulkMarking(false);
 		}
 	};
 
@@ -186,6 +243,36 @@ const AttendanceRoster = ({ classId, date }) => {
 	return (
 		<>
 			<div className="space-y-4">
+				{items.length > 0 && (
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="flex flex-wrap items-center gap-3">
+							<button
+								type="button"
+								onClick={markAllPresent}
+								disabled={bulkMarking || unmarkedCount === 0}
+								className={`px-3 py-2 text-sm font-medium rounded-md border transition-colors ${bulkMarking || unmarkedCount === 0
+									? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+									: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+									}`}
+							>
+								{bulkMarking ? t.processing : t.markAllPresent}
+							</button>
+							<label className="flex items-center gap-2 text-sm text-gray-600">
+								<input
+									type="checkbox"
+									className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/20"
+									checked={showUnmarkedOnly}
+									onChange={(e) => setShowUnmarkedOnly(e.target.checked)}
+								/>
+								{t.showUnmarkedOnly}
+							</label>
+						</div>
+						<div className="text-xs text-gray-500">
+							{t.present}: {attendanceCounts.present} • {t.absent}: {attendanceCounts.absent} • {t.notMarked}: {attendanceCounts.unmarked}
+						</div>
+					</div>
+				)}
+
 				{items.length === 0 && (
 					<div className="flex flex-col items-center justify-center py-16 px-4">
 						<div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
@@ -198,13 +285,14 @@ const AttendanceRoster = ({ classId, date }) => {
 					</div>
 				)}
 
-				{items.map((it) => {
+				{displayItems.map((it) => {
 					const eid = (it.enrollmentId || '').toString();
 					const balance = typeof it.balance === 'number' ? it.balance : 0;
 					const overdue = balance < 0 || (it.owedSessions || 0) > 0;
 					const lastPay = paymentsIndex[eid];
 					const isSaving = savingIds.has(eid);
 					const recentAction = recentActions.get(eid);
+					const isNoteOpen = !!noteOpenByEnrollment[eid];
 
 					return (
 						<div
@@ -332,6 +420,27 @@ const AttendanceRoster = ({ classId, date }) => {
 											</svg>
 											{t.absent}
 										</button>
+										<button
+											type="button"
+											disabled={isSaving}
+											onClick={(e) => {
+												e.stopPropagation();
+												setNoteOpenByEnrollment(prev => ({ ...prev, [eid]: !prev[eid] }));
+											}}
+											title={t.note}
+											className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border transition-colors ${isNoteOpen
+												? 'border-primary text-primary bg-primary/5'
+												: 'border-gray-200 text-gray-600 hover:bg-gray-50'
+											}`}
+										>
+											<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h7l4 4v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3v5h5" />
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6" />
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17h6" />
+											</svg>
+											{t.note}
+										</button>
 									</div>
 
 									<button
@@ -343,6 +452,24 @@ const AttendanceRoster = ({ classId, date }) => {
 										</svg>{t.payment}</button>
 								</div>
 							</div>
+
+							{isNoteOpen && (
+								<div className="mt-4" onClick={(e) => e.stopPropagation()}>
+									<label className="block text-xs font-medium text-gray-500 mb-1">
+										{t.noteOptional || t.note}
+									</label>
+									<input
+										type="text"
+										value={notesByEnrollment[eid] || ''}
+										onChange={(e) => setNotesByEnrollment(prev => ({ ...prev, [eid]: e.target.value }))}
+										placeholder={t.noteOptional || t.note}
+										maxLength={500}
+										className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+										onClick={(e) => e.stopPropagation()}
+										onFocus={(e) => e.stopPropagation()}
+									/>
+								</div>
+							)}
 						</div>
 					);
 				})}
