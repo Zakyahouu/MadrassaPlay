@@ -1,0 +1,13 @@
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;background:radial-gradient(1200px 800px at 10% 10%,#172554,#0f172a);color:#e5e7eb}
+.container{max-width:900px;margin:0 auto;padding:24px;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.logo{font-size:28px;margin-bottom:16px}
+.btn{background:#22c55e;color:#0b141a;border:none;padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer}
+.btn.subtle{background:#0b1220;color:#cbd5e1;border:1px solid #1e293b}
+.screen.hidden{display:none}
+.hud{display:flex;gap:12px;justify-content:space-between;margin-bottom:16px;color:#93c5fd}
+.bank{display:flex;flex-wrap:wrap;gap:10px;background:#0b1220;border:1px solid #1e293b;border-radius:12px;padding:12px;min-height:70px}
+.num{padding:8px 10px;background:#111827;border:1px solid #374151;border-radius:10px;cursor:pointer}
+.num.selected{outline:2px solid #93c5fd}
+.correct{outline:2px solid #22c55e}
+.wrong{outline:2px solid #ef4444}
+.count{font-size:64px}

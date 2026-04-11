@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arithmetic Sprint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="screen">
+      <div class="logo">🚀 Loading...</div>
+      <p>Preparing cosmic calculations...</p>
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div id="ready" class="screen hidden">
+      <div class="logo">⚡ Arithmetic Sprint</div>
+      <p>Solve the equations as fast as you can!</p>
+      <div class="start-button-container">
+        <button id="enterBtn" class="btn">Start</button>
+      </div>
+    </div>
+
+    <div id="countdown" class="screen hidden"><div class="count">3</div></div>
+
+    <div id="play" class="screen hidden">
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar-fill"></div>
+      </div>
+      <div class="hud">
+        <span id="timer" class="hud-item"><span class="icon">⏱️</span><span class="text"></span></span>
+        <span id="progress" class="hud-item"><span class="icon">🔢</span><span class="text"></span></span>
+        <span id="score" class="hud-item"><span class="icon">⭐</span><span class="text"></span></span>
+      </div>
+      <div id="streak-counter" class="streak-counter hidden"></div>
+      
+      <div class="question-wrapper">
+        <div class="question-card" id="question-card">
+          <div id="question" class="question-text"></div>
+        </div>
+        <div id="options-container" class="options-container">
+        </div>
+      </div>
+    </div>
+
+    <div id="done" class="screen hidden">
+      <div class="logo">✅ Finished!</div>
+      <div id="summary" class="summary-text"></div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
